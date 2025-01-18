@@ -1,0 +1,44 @@
+{
+  "texture_name": "atlas.terrain",
+  "resource_pack_name": "test",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "compass_block_down": {
+      "textures": "textures/blocks/compass_block_down"
+    },
+    "compass_block_east": {
+      "textures": "textures/blocks/compass_block_east"
+    },
+    "compass_block_north": {
+      "textures": "textures/blocks/compass_block_north"
+    },
+    "compass_block_south": {
+      "textures": "textures/blocks/compass_block_south"
+    },
+    "compass_block_up": {
+      "textures": "textures/blocks/compass_block_up"
+    },
+    "compass_block_west": {
+      "textures": "textures/blocks/compass_block_west"
+    },
+    "garlic_stage_0": {
+      "textures": "textures/blocks/garlic_stage_0"
+    },
+    "garlic_stage_1": {
+      "textures": "textures/blocks/garlic_stage_1"
+    },
+    "garlic_stage_2": {
+      "textures": "textures/blocks/garlic_stage_2"
+    },
+    "garlic_stage_3": {
+      "textures": "textures/blocks/garlic_stage_3"
+    },
+    "test_log_oak": {
+      "textures": "textures/blocks/test_log_oak"
+    },
+    "test_log_top": {
+      "textures": "textures/blocks/test_log_top"
+    }
+  }
+}
