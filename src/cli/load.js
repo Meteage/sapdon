@@ -1,12 +1,13 @@
-import { pathToFileURL } from "url";
-import { ItemAPI } from "../core/factory/ItemFactory.js";
-import { Item } from "../core/item/item.js";
 import path from "path";
+import { pathToFileURL } from "url";
+import { Item } from "../core/item/item.js";
+import { Attachable } from "../core/item/attachable.js";
+import { BasicBlock } from "../core/block/BasicBlock.js";
 import { saveFile } from "./utils.js";
 import { BlockAPI } from "../core/factory/BlockFactory.js";
-import { BasicBlock } from "../core/block/BasicBlock.js";
+import { ItemAPI } from "../core/factory/ItemFactory.js";
 import { RecipeAPI } from "../core/factory/RecipeFactory.js";
-import { AddonRecipe } from "../core/addon/recipe/recipe.js";
+
 
 /**
  * 加载并执行模组文件
@@ -26,7 +27,7 @@ export const loadAndExecuteMod = async (modPath, buildDirPath) => {
 		const buildResDirPath = path.join(buildDirPath, "resource_packs/");
 
 		// 处理物品
-		await processItems(buildBehDirPath);
+		await processItems(buildBehDirPath,buildResDirPath);
 
 		// 处理方块
 		await processBlocks(buildBehDirPath, buildResDirPath);
@@ -44,8 +45,9 @@ export const loadAndExecuteMod = async (modPath, buildDirPath) => {
  * 处理物品
  * @param {string} buildBehDirPath 行为包目录路径
  */
-const processItems = async buildBehDirPath => {
+const processItems = async (buildBehDirPath,buildResDirPath) => {
 	const itemsDirPath = path.join(buildBehDirPath, "items/");
+	const attachableDirPath = path.join(buildResDirPath,"attachables/")
 
 	const ItemList = ItemAPI.getAllItems();
 	console.log("itemList:", ItemList);
@@ -56,6 +58,11 @@ const processItems = async buildBehDirPath => {
 			console.log("保存物品文件:", itemPath);
 			saveFile(itemPath, JSON.stringify(item.toJson(), null, 2));
 		}
+		else if (item instanceof Attachable) {
+            const itemPath = path.join(attachableDirPath, `${item.identifier.replace(":", "_")}.json`);
+            console.log("保存物品文件:", itemPath);
+            saveFile(itemPath, JSON.stringify(item.toJson(), null, 2));
+        }
 	}
 };
 
@@ -102,6 +109,6 @@ const processBlocks = async (buildBehDirPath, buildResDirPath) => {
 	saveFile(blocksJsonPath, JSON.stringify(blocksJson, null, 2));
 };
 
-const processRecipe = async (buildBehDirPath) => {
+const processRecipe = async (buildBehDirPath,buildResDirPath) => {
     RecipeAPI.generate(buildBehDirPath, buildResDirPath);
 }

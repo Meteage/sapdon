@@ -8,7 +8,7 @@
       0,
       0
     ],
-    "uuid": "d589e105-eb0f-4020-aaec-af2b74af7026",
+    "uuid": "2a9fb64d-1fe9-4c7a-a43c-3c8975dc3512",
     "min_engine_version": [
       1,
       19,
@@ -19,7 +19,7 @@
     {
       "description": "行为模块",
       "type": "data",
-      "uuid": "ee21c328-0f8a-4188-a8e6-a308cf306013",
+      "uuid": "d4abccc6-aa77-4a07-9940-dfd7008f781e",
       "version": [
         1,
         0,
@@ -29,7 +29,7 @@
     {
       "description": "脚本模块",
       "type": "script",
-      "uuid": "7bf210d9-2c13-4452-86f6-e0904e0188fa",
+      "uuid": "8edd46a8-2e15-4e5d-af77-7a4baed94aaa",
       "version": [
         1,
         0,

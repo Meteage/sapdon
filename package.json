@@ -3,16 +3,16 @@
   "version": "1.0.0",
   "main": "src/core/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "sapdon": "node src/cli/index.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["bedrock","tools","addon"],
+  "author": "Meteage",
   "license": "ISC",
   "type": "module",
   "bin": {
     "sapdon": "src/cli/index.js"
   },
-  "description": "",
+  "description": "The Sapdon is a Node.js toolkit designed for building Bedrock Edition Minecraft addon packs.",
   "dependencies": {
     "commander": "^13.0.0",
     "download-git-repo": "^3.0.2",

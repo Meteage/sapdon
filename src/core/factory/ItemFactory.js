@@ -1,5 +1,7 @@
+import { Attachable } from "../item/attachable.js";
 import { Food } from "../item/food.js";
 import { Item } from "../item/item.js";
+
 
 //函数工厂
 export const ItemAPI = {
@@ -39,6 +41,13 @@ export const ItemAPI = {
      */
     createFood:function(identifier,category, texture, options = {}){
         const item = new Food(identifier,category, texture, options);
+        this.registerItem(item)
+        return item;
+    },
+    createAttachable:function(identifier, texture, material, options = {}){
+        const item = new Attachable(identifier)
+        item.addTexture("default",texture)
+        item.addMaterial("default",material)
         this.registerItem(item)
         return item;
     },
