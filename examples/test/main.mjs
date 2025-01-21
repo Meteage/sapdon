@@ -37,20 +37,3 @@ const block = BlockAPI.createBasicBlock("sapdon:test_block","construction",
         "compass_block_north",
     ]
 );
-
-
-ItemAPI.createItem("sapdon:chest","equipment","custom_chestplate",{group: "itemGroup.name.chestplate"})
-       .addComponent(
-            ItemComponent.combineComponents(
-                ItemComponent.setDisplayName("My Custom Armor"),
-                ItemComponent.setMaxStackSize(1),
-                ItemComponent.setWearable(5,"slot.armor.chest")
-            )
-        );
-
-ItemAPI.createAttachable("sapdon:chest","textures/models/armor/custom_main","armor")
-       .addMaterial("enchanted","armor_enchanted")
-       .addTexture("enchanted", "textures/misc/enchanted_actor_glint")
-       .addGeometry("default", "geometry.player.armor.chestplate")
-       .addRenderController("controller.render.armor")
-       .setScript("parent_setup","v.chest_layer_visible = 0.0;")

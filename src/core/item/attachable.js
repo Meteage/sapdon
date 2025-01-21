@@ -1,20 +1,21 @@
-import { AddonAttachable, AddonAttachableDefinition, AddonAttachableDescription } from "../addon/item/attachable.js";
+import { AddonClientEntityDefinition} from "../addon/entity/client_entity.js"
+import { AddonAttachable } from "../addon/item/attachable.js"
+import { ClientEntity } from "../entity/client_entity.js"
 
 
-export class Attachable extends AddonAttachableDescription{
-    constructor(identifier){
-        super(identifier);
+export class Attachable extends ClientEntity{
+    constructor(identifier, min_engine_version = "1.8.0"){
+        super(identifier, min_engine_version);
     }
     toJson() {
         const entity = new AddonAttachable(
             "1.8.0",
-            new AddonAttachableDefinition(this)
+            new AddonClientEntityDefinition(this.description.toJson())
         );
         return entity.toJson();
     }
 }
 
-/*
 const attachable = new Attachable("test")
       attachable.addMaterial("default", "armor")
       attachable.addMaterial("enchanted","armor_enchanted")
@@ -26,4 +27,3 @@ const attachable = new Attachable("test")
 
       console.log(JSON.stringify(attachable.toJson(),null,2))
 debugger
-*/

@@ -144,9 +144,10 @@ export class ItemComponent {
    * 设置物品的可穿戴组件。
    * @param {Number} [protection=0] - 物品提供的保护值。
    * @param {String} [slot] - 物品可以穿戴的槽位（如 "head"、"chest" 等）。
+   * @param {Boolean} [dispensable] - 物品是否可以通过发射器分配给玩家。
    * @returns {Map} - 新的组件集合。
    */
-  static setWearable(protection = 0, slot) {
+  static setWearable(protection = 0, slot, dispensable) {
     const wearableComponent = { protection };
 
     if (slot !== undefined) {
@@ -154,6 +155,13 @@ export class ItemComponent {
         throw new Error('slot 必须是字符串类型');
       }
       wearableComponent.slot = slot;
+    }
+
+    if (dispensable !== undefined) {
+      if (typeof dispensable !== "boolean") {
+        throw new Error('dispensable 必须是布尔类型');
+      }
+      wearableComponent.dispensable = dispensable;
     }
 
     return new Map().set("minecraft:wearable", wearableComponent);

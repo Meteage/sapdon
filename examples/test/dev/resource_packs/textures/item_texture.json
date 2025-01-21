@@ -2,9 +2,6 @@
   "resource_pack_name": "test",
   "texture_name": "atlas.items",
   "texture_data": {
-    "custom_chestplate": {
-      "textures": "textures/items/custom_chestplate"
-    },
     "masterball": {
       "textures": "textures/items/masterball"
     }

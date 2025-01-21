@@ -1,17 +1,19 @@
 
 
 export class Registry {
-	#List = [];
 	constructor(path, instance) {
 		this.path = path;
 		this.instance = instance;
 	}
+
+	_list: [];
+
 	getAll() {
-		return [...this.#List];
+		return [...this._list];
 	}
 
 	register(data) {
-		this.#List.push(data);
+		this._list.push(data);
 	}
 
 	generate(behavior, resource) {}
