@@ -1,4 +1,4 @@
-import { BlockComponent } from "../addon/component/blockComponent.js";
+import { BlockComponent } from "./blockComponent.js";
 import { BasicBlock } from "./BasicBlock.js";
 
 export class Block extends BasicBlock {

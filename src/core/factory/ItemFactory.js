@@ -1,6 +1,6 @@
-import { Attachable } from "../item/attachable.js";
-import { Food } from "../item/food.js";
-import { Item } from "../item/item.js";
+import { Attachable } from "../item/Attachable.js";
+import { Food } from "../item/Food.js";
+import { Item } from "../item/Item.js";
 
 
 //函数工厂

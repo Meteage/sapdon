@@ -34,6 +34,10 @@
 7.添加了Block类封装创建一般方块的方法 [2024,1,17,20,10]
 8.添加了AddonClientEntityDescription类及其AddonAttachableDescription类  [2024,1,17,21,14]
 9.添加了Attachable类封装创建一般可附着物的方法 [2024,1,18,22,14]
+10.添加了实体接口支持 [2024,1,21,15,27]
+11.添加了实体基类BasicEntity封装  [2024,1,21,22,45]
+12.添加了实体部分常用组件及其行为组件  [2024,1,21,22,45]
 
 修复
 1.重写AddonClientEntityDescription类及其AddonAttachableDescription类以更方便地使用 [2024,1,18,22,14]
+2.修改ClientEntity类以更方便使用 [2024,1,21,22,45]

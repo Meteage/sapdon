@@ -1,4 +1,4 @@
-import { ItemComponent } from "../addon/component/itemComponents.js";
+import { ItemComponent } from "./ItemComponents.js";
 import { Item } from "./item.js";
 
 export class Food extends Item {

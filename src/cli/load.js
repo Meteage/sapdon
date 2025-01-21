@@ -1,7 +1,7 @@
 import path from "path";
 import { pathToFileURL } from "url";
 import { Item } from "../core/item/item.js";
-import { Attachable } from "../core/item/attachable.js";
+import { Attachable } from "../core/item/Attachable.js";
 import { BasicBlock } from "../core/block/BasicBlock.js";
 import { saveFile } from "./utils.js";
 import { BlockAPI } from "../core/factory/BlockFactory.js";

@@ -1,5 +1,5 @@
-import { BlockComponent } from "../../src/core/addon/component/blockComponent.js";
-import { ItemComponent} from "../../src/core/addon/component/itemComponents.js";
+import { BlockComponent } from "../../src/core/block/blockComponent.js";
+import { ItemComponent} from "../../src/core/item/ItemComponents.js";
 import { RecipeTags } from "../../src/core/addon/recipe/data.js";
 import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
 import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
