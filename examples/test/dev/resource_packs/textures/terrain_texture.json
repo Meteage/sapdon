@@ -22,6 +22,9 @@
     "compass_block_west": {
       "textures": "textures/blocks/compass_block_west"
     },
+    "custom_chestplate": {
+      "textures": "textures/blocks/custom_chestplate"
+    },
     "garlic_stage_0": {
       "textures": "textures/blocks/garlic_stage_0"
     },

@@ -1,0 +1,24 @@
+{
+  "format_version": "1.21.40",
+  "minecraft:item": {
+    "description": {
+      "identifier": "sapdon:chest",
+      "menu_category": {
+        "category": "equipment",
+        "group": "itemGroup.name.chestplate",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": "custom_chestplate",
+      "minecraft:max_stack_size": 1,
+      "minecraft:display_name": {
+        "value": "My Custom Armor"
+      },
+      "minecraft:wearable": {
+        "protection": 5,
+        "slot": "slot.armor.chest"
+      }
+    }
+  }
+}

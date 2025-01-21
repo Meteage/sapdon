@@ -23,17 +23,23 @@ export function copyFileSync(src, dest) {
 
 //检查路径
 export const checkPath = (filePath) => {
-  return !fs.existsSync(filePath);
+    if(!fs.existsSync(filePath)){
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 
 //读取文件
 export const readFile = (filePath) => {
     try {
-        return fs.readFileSync(filePath, 'utf8');
+        const data = fs.readFileSync(filePath, 'utf8');
+        return data;
     } catch (error) {
         console.log(error);
+        return null;
     }
-    return null;
 }
 
 /**
