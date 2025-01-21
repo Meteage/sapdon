@@ -1,9 +1,9 @@
 import path from "path";
-
 import { Registry } from "../registry.js";
 import { AddonRecipe } from "../addon/recipe/recipe.js";
 import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
 import { RecipeTags } from "../addon/recipe/data.js";
+import { saveFile } from "../../cli/utils.js";
 
 class RecipeRegistry extends Registry {
 	/**
@@ -27,7 +27,7 @@ class RecipeRegistry extends Registry {
 		for (let recipe of this._list) {
 			if (recipe instanceof AddonRecipe) {
 				const recipePath = path.join(rootPath, `${recipe.getId().replace(":", "_")}.json`);
-				saveFile(recipePath, JSON.stringify(item.toJson(), null, 2));
+				saveFile(recipePath, JSON.stringify(recipe.toJson(), null, 2));
 				console.log(`${recipePath} 处理完成`)
 			}
 		}

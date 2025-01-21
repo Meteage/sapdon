@@ -1,12 +1,11 @@
 
 
 export class Registry {
+	_list = [];
 	constructor(path, instance) {
 		this.path = path;
 		this.instance = instance;
 	}
-
-	_list: [];
 
 	getAll() {
 		return [...this._list];

@@ -1,3 +1,23 @@
 {
-  "format_version": "1.20.20"
+  "format_version": "1.20.20",
+  "sapdon:block": {
+    "textures": {
+      "up": "garlic_stage_0",
+      "down": "garlic_stage_0",
+      "east": "garlic_stage_0",
+      "west": "garlic_stage_0",
+      "south": "garlic_stage_0",
+      "north": "garlic_stage_0"
+    }
+  },
+  "sapdon:test_block": {
+    "textures": {
+      "up": "compass_block_up",
+      "down": "compass_block_down",
+      "east": "compass_block_east",
+      "west": "compass_block_west",
+      "south": "compass_block_south",
+      "north": "compass_block_north"
+    }
+  }
 }

@@ -1,7 +1,9 @@
 import { BlockComponent } from "../../src/core/addon/component/blockComponent.js";
 import { ItemComponent} from "../../src/core/addon/component/itemComponents.js";
+import { RecipeTags } from "../../src/core/addon/recipe/data.js";
 import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
 import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
+import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
 
 
 ItemAPI.createItem("sapdon:test_item","items","masterball")
@@ -54,3 +56,8 @@ ItemAPI.createAttachable("sapdon:chest","textures/models/armor/custom_main","arm
        .addGeometry("default", "geometry.player.armor.chestplate")
        .addRenderController("controller.render.armor")
        .setScript("parent_setup","v.chest_layer_visible = 0.0;")
+
+RecipeAPI.registerFurnace("sapdon:test_furnace",["furnace"],
+    "sapdon:test_food",
+    "sapdon:test_item"
+)

@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "src/core/index.js",
   "scripts": {
-    "sapdon": "node src/cli/index.js"
+    "sapdon": "node src/cli/index.js",
+    "create": "node src/cli/index.js create",
+    "build": "node src/cli/index.js build"
   },
   "keywords": ["bedrock","tools","addon"],
   "author": "Meteage",
