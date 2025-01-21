@@ -1,6 +1,6 @@
 {
   "texture_name": "atlas.terrain",
-  "resource_pack_name": ".\\examples\\test",
+  "resource_pack_name": "./examples/test",
   "padding": 8,
   "num_mip_levels": 4,
   "texture_data": {

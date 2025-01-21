@@ -1,10 +1,6 @@
-
-
 export class Registry {
-	_list = [];
-	constructor(path, instance) {
-		this.path = path;
-		this.instance = instance;
+	constructor() {
+		this._list = [];
 	}
 
 	getAll() {
@@ -13,7 +9,8 @@ export class Registry {
 
 	register(data) {
 		this._list.push(data);
+		return data;
 	}
 
-	generate(behavior, resource) {}
+	generate(JsonGenerator) {}
 }
