@@ -1,0 +1,13 @@
+{
+  "format_version": "1.17",
+  "minecraft:recipe_furnace": {
+    "description": {
+      "identifier": "sapdon:furnace_test_item_test_food"
+    },
+    "tags": [
+      "furnace"
+    ],
+    "input": "sapdon:test_food",
+    "output": "sapdon:test_item"
+  }
+}

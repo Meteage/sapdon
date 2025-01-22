@@ -5,6 +5,11 @@ export class Attachable extends AddonAttachableDescription{
     constructor(identifier){
         super(identifier);
     }
+
+    getId() {
+        return this.identifier;
+    }
+    
     toJson() {
         const entity = new AddonAttachable(
             "1.8.0",

@@ -8,13 +8,15 @@ import { BlockAPI } from "../core/factory/BlockFactory.js";
 import { ItemAPI } from "../core/factory/ItemFactory.js";
 import { RecipeAPI } from "../core/factory/RecipeFactory.js";
 
+import { GenerateTypes, JsonGenerator } from '../core/generator.js';
+
 
 /**
  * 加载并执行模组文件
  * @param {string} modPath 模组文件路径
- * @param {string} buildDirPath 构建目录路径
+ * @param {string} buildPath 构建目录路径
  */
-export const loadAndExecuteMod = async (modPath, buildDirPath) => {
+export const loadAndExecuteMod = async (modPath, buildPath) => {
 	try {
 		// 将路径转换为 file:// URL
 		const fileUrl = pathToFileURL(modPath).href;
@@ -23,8 +25,8 @@ export const loadAndExecuteMod = async (modPath, buildDirPath) => {
 		await import(fileUrl);
 
 		// 构建行为包和资源包目录路径
-		const buildBehDirPath = path.join(buildDirPath, "behavior_packs/");
-		const buildResDirPath = path.join(buildDirPath, "resource_packs/");
+		const buildBehDirPath = path.join(buildPath, "behavior_packs/");
+		const buildResDirPath = path.join(buildPath, "resource_packs/");
 
 		// 处理物品
 		await processItems(buildBehDirPath,buildResDirPath);
@@ -33,7 +35,9 @@ export const loadAndExecuteMod = async (modPath, buildDirPath) => {
 		await processBlocks(buildBehDirPath, buildResDirPath);
 
         // 处理配方
-        await processRecipe(buildBehDirPath, buildResDirPath);
+        await processRecipe(buildPath);
+
+		
 
 		console.log(`已加载并执行 ${modPath} 文件！`);
 	} catch (err) {
@@ -109,6 +113,6 @@ const processBlocks = async (buildBehDirPath, buildResDirPath) => {
 	saveFile(blocksJsonPath, JSON.stringify(blocksJson, null, 2));
 };
 
-const processRecipe = async (buildBehDirPath,buildResDirPath) => {
-    RecipeAPI.generate(buildBehDirPath, buildResDirPath);
+const processRecipe = async (buildPath) => {
+	RecipeAPI.generate(new JsonGenerator(buildPath, GenerateTypes.Recipes));
 }

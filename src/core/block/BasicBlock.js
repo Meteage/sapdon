@@ -36,6 +36,10 @@ export class BasicBlock {
         this.permutations = [];
     }
     
+    getId() {
+        return this.identifier;
+    }
+
     registerState(key,value){
         this.states.set(key,value);
     }

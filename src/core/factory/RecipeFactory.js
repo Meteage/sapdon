@@ -1,36 +1,36 @@
-import path from "path";
 import { Registry } from "../registry.js";
-import { AddonRecipe } from "../addon/recipe/recipe.js";
-import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
 import { RecipeTags } from "../addon/recipe/data.js";
-import { saveFile } from "../../cli/utils.js";
+import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
+import { AddonRecipeShaped_1_20 } from "../addon/recipe/recipeShaped.js";
+import { AddonRecipeShapeless_1_17 } from "../addon/recipe/recipeShapeless.js";
 
 class RecipeRegistry extends Registry {
-	/**
-	 *
-	 * @param {string} input
-	 * @param {string} output
-	 */
-	registerSimpleFurnace(input, output) {
-		this.registerFurnace(`sapdon:furnace_${output.split(":")[1]}_${input.split(":")[1]}`, [RecipeTags.Furnace], input, output);
+	registerSimpleFurnace(identifier, output, input) {
+		return this.registerFurnace(identifier).tags([RecipeTags.Furnace]).input(input).output(output);
 	}
 
-	registerFurnace(identifier, tags, input, output) {
-		this.register(new AddonRecipeFurnace_1_17().identifier(identifier).tags(tags).input(input).output(output));
+	registerFurnace(identifier) {
+		return this.register(new AddonRecipeFurnace_1_17().identifier(identifier));
 	}
 
-	generate(behavior, resource) {
-		const rootPath = path.join(behavior, "recipes/");
+	registerSimpleShaped(identifier, output, pattern, key) {
+		return this.registerShaped(identifier).tags([RecipeTags.CraftingTable]).pattern(pattern).key(key).output(output);
+	}
 
-		console.log("开始处理配方文件");
+	registerShaped(identifier) {
+		return this.register(new AddonRecipeShaped_1_20().identifier(identifier));
+	}
 
-		for (let recipe of this._list) {
-			if (recipe instanceof AddonRecipe) {
-				const recipePath = path.join(rootPath, `${recipe.getId().replace(":", "_")}.json`);
-				saveFile(recipePath, JSON.stringify(recipe.toJson(), null, 2));
-				console.log(`${recipePath} 处理完成`)
-			}
-		}
+	registerSimpleShapeless(identifier, output, ingredients) {
+		return this.registerShapeless(identifier).tags([RecipeTags.CraftingTable]).ingredients(ingredients).output(output);
+	}
+
+	registerShapeless(identifier) {
+		return this.register(new AddonRecipeShapeless_1_17().identifier(identifier));
+	}
+
+	generate(generator) {
+		this.getAll().forEach(value => generator.recipe(value));
 	}
 }
 
