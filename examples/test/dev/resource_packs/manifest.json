@@ -8,7 +8,7 @@
       0,
       0
     ],
-    "uuid": "9db386a8-0605-4503-917d-ab628e293639",
+    "uuid": "4c6c1806-ec5f-464e-a377-3c874ae23c6a",
     "min_engine_version": [
       1,
       19,
@@ -19,7 +19,7 @@
     {
       "description": "资源模块",
       "type": "resources",
-      "uuid": "ffa95d74-18d9-4539-8332-7e1b0edcbeef",
+      "uuid": "46b13d36-e685-4c62-aa2c-751d8d34a7f1",
       "version": [
         1,
         0,

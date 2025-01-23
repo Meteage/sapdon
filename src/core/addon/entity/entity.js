@@ -39,10 +39,12 @@ export class AddonEntityDescription {
      * @param {string} identifier 实体标识符
      * @param {boolean} is_spawnable 是否可生成
      * @param {boolean} is_summonable 是否可召唤
+     * @param {string} runtime_identifier 复刻标识符
      */
-    constructor(identifier, is_spawnable = false, is_summonable = false) {
+    constructor(identifier, is_spawnable = false, is_summonable = false, runtime_identifier) {
         this.identifier = identifier;
         this.is_spawnable = is_spawnable;
         this.is_summonable = is_summonable;
+        this.runtime_identifier = runtime_identifier;
     }
 }

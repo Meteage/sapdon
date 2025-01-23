@@ -1,4 +1,12 @@
 export class EntityComponent {
+  /**
+     * 将多个组件集合合并为一个。
+     * @param {...Map} componentMaps - 多个组件集合。
+     * @returns {Map} - 合并后的组件集合。
+     */
+  static combineComponents(...componentMaps) {
+    return new Map(componentMaps.flatMap(map => [...map]));
+  }
  
 /**
    * 创建 minecraft:health 组件。

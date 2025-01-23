@@ -1,4 +1,32 @@
 export class ItemComponent {
+    
+  /**
+   * 设置物品的可投掷组件。
+   * @param {Boolean} doSwingAnimation - 是否使用挥动动画。
+   * @param {Number} launchPowerScale - 投掷力量的缩放比例。
+   * @param {Number} maxDrawDuration - 最大蓄力时间。
+   * @param {Number} maxLaunchPower - 最大投掷力量。
+   * @param {Number} minDrawDuration - 最小蓄力时间。
+   * @param {Boolean} scalePowerByDrawDuration - 投掷力量是否随蓄力时间增加。
+   * @returns {Map} - 新的组件集合。
+   */
+  static setThrowable(
+    doSwingAnimation = false,
+    launchPowerScale = 1.0,
+    maxDrawDuration = 0.0,
+    maxLaunchPower = 1.0,
+    minDrawDuration = 0.0,
+    scalePowerByDrawDuration = false
+  ) {
+    return new Map().set("minecraft:throwable", {
+      do_swing_animation: doSwingAnimation,
+      launch_power_scale: launchPowerScale,
+      max_draw_duration: maxDrawDuration,
+      max_launch_power: maxLaunchPower,
+      min_draw_duration: minDrawDuration,
+      scale_power_by_draw_duration: scalePowerByDrawDuration,
+    });
+  }
   /**
    * 设置物品的显示名称。
    * @param {String} displayName - 显示名称或本地化键。

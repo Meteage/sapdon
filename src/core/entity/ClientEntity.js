@@ -6,7 +6,7 @@ export class ClientEntity extends AddonClientEntityDescription {
     }
     toJson() {
         const entity = new AddonClientEntity(
-            "1.8.0",
+            "1.10.0",
             new AddonClientEntityDefinition(this)
         );
         return entity.toJson();
