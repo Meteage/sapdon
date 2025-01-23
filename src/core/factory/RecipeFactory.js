@@ -1,16 +1,26 @@
-import { Registry } from "../registry.js";
+
 import { RecipeTags } from "../addon/recipe/data.js";
 import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
 import { AddonRecipeShaped_1_20 } from "../addon/recipe/recipeShaped.js";
 import { AddonRecipeShapeless_1_17 } from "../addon/recipe/recipeShapeless.js";
+import { GRegistry } from "../registry.js";
 
-class RecipeRegistry extends Registry {
+class RecipeRegistry  {
+	/**
+	 * 
+	 * @param {AddonRecipeFurnace_1_17} recipe 
+	 */
+	registerRecipe(recipe) {
+		GRegistry.register(recipe.getId().replace(":", "_"), "behavior", "recipes/", recipe);
+	}
 	registerSimpleFurnace(identifier, output, input) {
 		return this.registerFurnace(identifier).tags([RecipeTags.Furnace]).input(input).output(output);
 	}
 
 	registerFurnace(identifier) {
-		return this.register(new AddonRecipeFurnace_1_17().identifier(identifier));
+		const recipe = new AddonRecipeFurnace_1_17().identifier(identifier);
+		this.registerRecipe(recipe);
+		return recipe;
 	}
 
 	registerSimpleShaped(identifier, output, pattern, key) {
@@ -18,7 +28,9 @@ class RecipeRegistry extends Registry {
 	}
 
 	registerShaped(identifier) {
-		return this.register(new AddonRecipeShaped_1_20().identifier(identifier));
+		const recipe = new AddonRecipeShaped_1_20().identifier(identifier);
+		this.registerRecipe(recipe);
+		return recipe;
 	}
 
 	registerSimpleShapeless(identifier, output, ingredients) {
@@ -26,11 +38,9 @@ class RecipeRegistry extends Registry {
 	}
 
 	registerShapeless(identifier) {
-		return this.register(new AddonRecipeShapeless_1_17().identifier(identifier));
-	}
-
-	generate(generator) {
-		this.getAll().forEach(value => generator.recipe(value));
+		const recipe = new AddonRecipeShapeless_1_17().identifier(identifier);
+		this.registerRecipe(recipe);
+		return recipe;
 	}
 }
 
