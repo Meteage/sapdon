@@ -116,8 +116,8 @@ export const buildProject = (projectPath,projectName) => {
     setTimeout(()=>{
         //将编译好的文件夹拷贝至mc
         //console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`));
-        copyFolder(buildBehDirPath,path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`));
-        copyFolder(buildResDirPath,path.join(pathConfig.mojangPath,`development_resource_packs/${projectName}_RP/`));
+        copyFolder(buildBehDirPath,path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName.replace("/", "_")}_BP/`));
+        copyFolder(buildResDirPath,path.join(pathConfig.mojangPath,`development_resource_packs/${projectName.replace(":", "_")}_RP/`));
     },1000);
 
 }
