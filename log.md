@@ -44,3 +44,4 @@
 修复
 1.重写AddonClientEntityDescription类及其AddonAttachableDescription类以更方便地使用 [2024,1,18,22,14]
 2.修改ClientEntity类以更方便使用 [2024,1,21,22,45]
+3.修复GRegister的一些bug

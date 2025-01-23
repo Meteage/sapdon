@@ -11,7 +11,14 @@
     },
     "components": {
       "minecraft:icon": "custom_chestplate",
-      "minecraft:max_stack_size": 64
+      "minecraft:max_stack_size": 1,
+      "minecraft:display_name": {
+        "value": "My Custom Armor"
+      },
+      "minecraft:wearable": {
+        "protection": 5,
+        "slot": "slot.armor.chest"
+      }
     }
   }
 }

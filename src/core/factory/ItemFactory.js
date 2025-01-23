@@ -12,7 +12,7 @@ export const ItemAPI = {
      */
     registerItem: function(item) {
         const item_name = item.identifier.replace(":", "_");
-        GRegistry.register(item_name, "behavior", "items/", item.toJson());
+        GRegistry.register(item_name, "behavior", "items/", item);
     },
     /**
      * 物品类 item
@@ -50,7 +50,7 @@ export const ItemAPI = {
         const item = new Attachable(identifier)
         item.addTexture("default",texture)
         item.addMaterial("default",material)
-        GRegistry.register(item.identifier.replace(":", "_"), "resource", "attachables/", item.toJson());
+        GRegistry.register(item.identifier.replace(":", "_"), "resource", "attachables/", item);
         return item;
     },
 }

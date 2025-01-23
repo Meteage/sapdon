@@ -10,7 +10,7 @@ export const BlockAPI = {
      */
     registerBlock: function(block) {
         const block_name = block.identifier.replace(":", "_");
-        GRegistry.register(block_name, "behavior", "blocks/", block.toJson());
+        GRegistry.register(block_name, "behavior", "blocks/", block);
     },
   
     /**

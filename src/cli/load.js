@@ -24,16 +24,16 @@ export const loadAndExecuteMod = async (modPath, buildPath) => {
         console.log("dataList:", dataList);
 
         // 遍历数据并保存到相应的目录
-        dataList.forEach(({ name, root, path: dataPath, data }) => {
+        dataList.forEach(({ name, root, path: dataPath, data },index) => {
             // 根据数据类型确定根目录
             const rootPath = root === "behavior" ? "behavior_packs" : "resource_packs";
             const buildRootPath = path.join(buildPath, rootPath);
 
             // 拼接文件路径
             const filePath = path.join(buildRootPath, dataPath, `${name}.json`);
-
+			
             // 保存文件
-            saveFile(filePath, JSON.stringify(data, null, 2));
+            saveFile(filePath, JSON.stringify(data.toJson(), null, 2));
         });
 
         console.log(`已加载并执行 ${modPath} 文件！`);

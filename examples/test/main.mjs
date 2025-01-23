@@ -31,7 +31,7 @@ BlockAPI.createBlock(
 		render_method: "alpha_test"
 	}
 ).addComponent(BlockComponent.setGeometry("geometry.crop"));
-debugger
+
 const block = BlockAPI.createBasicBlock("sapdon:test_block", "construction", [
 	"compass_block_up",
 	"compass_block_down",

@@ -16,7 +16,9 @@
         "is_hidden_in_commands": false
       }
     },
-    "components": {},
+    "components": {
+      "minecraft:geometry": "geometry.crop"
+    },
     "permutations": [
       {
         "condition": "q.block_state('sapdon:block_variant_tag') == 0",
