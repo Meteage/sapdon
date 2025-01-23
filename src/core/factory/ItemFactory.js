@@ -1,8 +1,8 @@
 import { Attachable } from "../item/Attachable.js";
 import { Food } from "../item/Food.js";
-import { Item } from "../item/Item.js";
-import { GRegistry } from "../registry.js";
+import { Item } from "../item/item.js";
 
+import { GRegistry } from "../registry.js";
 
 //函数工厂
 export const ItemAPI = {

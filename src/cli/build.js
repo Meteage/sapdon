@@ -111,9 +111,8 @@ export const buildProject = (projectPath,projectName) => {
 
     //动态加载用户modjs文件
     loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath);
-
     
-    
+    //延迟1s
     setTimeout(()=>{
         //将编译好的文件夹拷贝至mc
         //console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`));

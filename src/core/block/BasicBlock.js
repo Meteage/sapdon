@@ -22,6 +22,11 @@ export class BasicBlock {
         if (!Array.isArray(textures_arr) ) {
             throw new Error("textures_arr must be an array ");
         }
+        if (textures_arr.length !== 6) {
+            for (let i = textures_arr.length; i < 6; i++) {
+                textures_arr.push(textures_arr[0]);
+            }
+        }
 
         const { hide_in_command = false } = options;
 

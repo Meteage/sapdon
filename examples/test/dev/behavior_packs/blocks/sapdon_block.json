@@ -29,6 +29,36 @@
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
+            },
+            "up": {
+              "texture": "garlic_stage_0",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "down": {
+              "texture": "garlic_stage_0",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "north": {
+              "texture": "garlic_stage_0",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "south": {
+              "texture": "garlic_stage_0",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "east": {
+              "texture": "garlic_stage_0",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
             }
           }
         }

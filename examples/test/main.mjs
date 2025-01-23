@@ -49,6 +49,7 @@ ItemAPI.createItem("sapdon:chest", "equipment", "custom_chestplate", { group: "i
 	)
 );
 
+
 ItemAPI.createAttachable("sapdon:chest", "textures/models/armor/custom_main", "armor")
 	.addMaterial("enchanted", "armor_enchanted")
 	.addTexture("enchanted", "textures/misc/enchanted_actor_glint")
