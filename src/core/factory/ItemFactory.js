@@ -1,16 +1,18 @@
 import { Attachable } from "../item/Attachable.js";
 import { Food } from "../item/Food.js";
 import { Item } from "../item/Item.js";
+import { GRegistry } from "../registry.js";
 
 
 //函数工厂
 export const ItemAPI = {
-    _itemList: [],
+    /**
+     * 
+     * @param {Item} item 
+     */
     registerItem: function(item) {
-        this._itemList.push(item);
-    },
-    getAllItems: function() {
-        return [...this._itemList];
+        const item_name = item.identifier.replace(":", "_");
+        GRegistry.register(item_name, "behavior", "items/", item.toJson());
     },
     /**
      * 物品类 item
@@ -48,7 +50,7 @@ export const ItemAPI = {
         const item = new Attachable(identifier)
         item.addTexture("default",texture)
         item.addMaterial("default",material)
-        this.registerItem(item)
+        GRegistry.register(item.identifier.replace(":", "_"), "resource", "attachables/", item.toJson());
         return item;
     },
 }

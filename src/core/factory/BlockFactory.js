@@ -1,15 +1,18 @@
 import { BasicBlock } from "../block/BasicBlock.js";
 import { Block } from "../block/block.js";
+import { GRegistry } from "../registry.js";
 
 
 export const BlockAPI = {
-    _blockList:[],
-    registerBlock: function(item) {
-        this._blockList.push(item);
+    /**
+     * 
+     * @param {Block} block 
+     */
+    registerBlock: function(block) {
+        const block_name = block.identifier.replace(":", "_");
+        GRegistry.register(block_name, "behavior", "blocks/", block.toJson());
     },
-    getAllBlocks: function(){
-        return [...this._blockList];
-    },
+  
     /**
      * 基础方块类
      * @param {string} identifier 方块唯一标识符

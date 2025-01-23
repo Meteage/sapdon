@@ -10,20 +10,7 @@
     },
     "components": {
       "minecraft:icon": "masterball",
-      "minecraft:max_stack_size": 16,
-      "minecraft:display_name": {
-        "value": "大师球"
-      },
-      "minecraft:use_modifiers": {
-        "movement_modifier": 0.9,
-        "use_duration": 1
-      },
-      "minecraft:food": {
-        "can_always_eat": true,
-        "nutrition": 1,
-        "saturation_modifier": 1,
-        "using_converts_to": "minecraft:stick"
-      }
+      "minecraft:max_stack_size": 64
     }
   }
 }

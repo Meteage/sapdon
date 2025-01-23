@@ -1,15 +1,7 @@
 import path from "path";
 import { pathToFileURL } from "url";
-import { Item } from "../core/item/item.js";
-import { Attachable } from "../core/item/Attachable.js";
-import { BasicBlock } from "../core/block/BasicBlock.js";
 import { saveFile } from "./utils.js";
-import { BlockAPI } from "../core/factory/BlockFactory.js";
-import { ItemAPI } from "../core/factory/ItemFactory.js";
-import { RecipeAPI } from "../core/factory/RecipeFactory.js";
-
-import { GenerateTypes, JsonGenerator } from '../core/generator.js';
-
+import { GRegistry } from "../core/registry.js";
 
 /**
  * 加载并执行模组文件
@@ -17,38 +9,42 @@ import { GenerateTypes, JsonGenerator } from '../core/generator.js';
  * @param {string} buildPath 构建目录路径
  */
 export const loadAndExecuteMod = async (modPath, buildPath) => {
-	try {
-		// 将路径转换为 file:// URL
-		const fileUrl = pathToFileURL(modPath).href;
+    try {
+        // 将 modPath 解析为绝对路径
+        const absoluteModPath = path.resolve(modPath);
 
-		// 动态加载 JavaScript 文件
-		await import(fileUrl);
+        // 将路径转换为 file:// URL
+        const fileUrl = pathToFileURL(absoluteModPath).href;
 
-		// 构建行为包和资源包目录路径
-		const buildBehDirPath = path.join(buildPath, "behavior_packs/");
-		const buildResDirPath = path.join(buildPath, "resource_packs/");
+        // 动态加载 JavaScript 文件
+        await import(fileUrl);
 
-		// 处理物品
-		await processItems(buildBehDirPath,buildResDirPath);
+        // 从全局注册表中获取数据
+        const dataList = GRegistry.getDataList();
+        console.log("dataList:", dataList);
 
-		// 处理方块
-		await processBlocks(buildBehDirPath, buildResDirPath);
+        // 遍历数据并保存到相应的目录
+        dataList.forEach(({ name, root, path: dataPath, data }) => {
+            // 根据数据类型确定根目录
+            const rootPath = root === "behavior" ? "behavior_packs" : "resource_packs";
+            const buildRootPath = path.join(buildPath, rootPath);
 
-        // 处理配方
-        await processRecipe(buildPath);
+            // 拼接文件路径
+            const filePath = path.join(buildRootPath, dataPath, `${name}.json`);
 
-		
+            // 保存文件
+            saveFile(filePath, JSON.stringify(data, null, 2));
+        });
 
-		console.log(`已加载并执行 ${modPath} 文件！`);
-	} catch (err) {
-		console.error(`加载或执行 ${modPath} 失败：${err.message}`);
-	}
+        console.log(`已加载并执行 ${modPath} 文件！`);
+    } catch (err) {
+        console.error(`加载或执行 ${modPath} 失败：${err.message}`);
+        console.error(err.stack); // 打印堆栈跟踪以便调试
+    }
 };
 
-/**
- * 处理物品
- * @param {string} buildBehDirPath 行为包目录路径
- */
+/*
+
 const processItems = async (buildBehDirPath,buildResDirPath) => {
 	const itemsDirPath = path.join(buildBehDirPath, "items/");
 	const attachableDirPath = path.join(buildResDirPath,"attachables/")
@@ -70,11 +66,7 @@ const processItems = async (buildBehDirPath,buildResDirPath) => {
 	}
 };
 
-/**
- * 处理方块
- * @param {string} buildBehDirPath 行为包目录路径
- * @param {string} buildResDirPath 资源包目录路径
- */
+
 const processBlocks = async (buildBehDirPath, buildResDirPath) => {
 	const blocksDirPath = path.join(buildBehDirPath, "blocks/");
 
@@ -116,3 +108,5 @@ const processBlocks = async (buildBehDirPath, buildResDirPath) => {
 const processRecipe = async (buildPath) => {
 	RecipeAPI.generate(new JsonGenerator(buildPath, GenerateTypes.Recipes));
 }
+
+*/
