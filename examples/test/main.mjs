@@ -5,6 +5,7 @@ import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
 import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
 import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
 import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
+import { BlockWire } from "./lib/wire.js";
 
 ItemAPI.createItem("sapdon:test_item", "items", "masterball").addComponent(
 	ItemComponent.combineComponents(
@@ -64,3 +65,4 @@ RecipeAPI.registerSimpleFurnace("sapdon:test_furnace","sapdon:test_item", "sapdo
 
 
 
+const wire = new BlockWire("sapdon:wire", "construction", [{ stateTag: 0, textures: ["wire"] }]);

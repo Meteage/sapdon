@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "examples/masterball_RP",
+    "description": "神奇的大师球",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "a9fc4462-df16-45b3-8df8-55ce3a519ae7",
+    "min_engine_version": [
+      1,
+      20,
+      20
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "4480f827-3180-4819-9742-14d75d27107b",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}

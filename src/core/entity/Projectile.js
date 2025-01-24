@@ -11,6 +11,7 @@ export class Projectile extends BasicEntity{
             EntityComponent.combineComponents(
                 EntityComponent.setPhysics(true, true),
                 EntityComponent.setPushable(true, true),
+                EntityComponent.setCollisionBox(0.25, 0.25),
             )   
         );
     }

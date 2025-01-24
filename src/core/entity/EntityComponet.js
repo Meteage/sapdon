@@ -1,4 +1,11 @@
 export class EntityComponent {
+
+  static setCollisionBox(width, height) {
+    return new Map().set("minecraft:collision_box", {
+      width: width,
+      height: height,
+    });
+  }
   /**
      * 将多个组件集合合并为一个。
      * @param {...Map} componentMaps - 多个组件集合。

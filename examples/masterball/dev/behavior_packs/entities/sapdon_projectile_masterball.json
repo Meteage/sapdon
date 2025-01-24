@@ -1,0 +1,59 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sapdon:projectile_masterball",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "runtime_identifier": "minecraft:snowball"
+    },
+    "components": {
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": true,
+        "push_towards_closest_space": false
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:collision_box": {
+        "width": 0.25,
+        "height": 0.25
+      },
+      "minecraft:projectile": {
+        "anchor": 1,
+        "angle_offset": 0,
+        "catch_fire": false,
+        "crit_particle_on_hurt": false,
+        "destroy_on_hurt": false,
+        "fire_affected_by_griefing": false,
+        "gravity": 0.03,
+        "homing": false,
+        "inertia": 0.99,
+        "is_dangerous": false,
+        "knockback": true,
+        "lightning": false,
+        "liquid_inertia": 0.6,
+        "multiple_targets": true,
+        "offset": [
+          0,
+          -0.1,
+          0
+        ],
+        "on_fire_time": 0,
+        "particle": "ironcrack",
+        "power": 1.5,
+        "reflect_immunity": 0,
+        "reflect_on_hurt": false,
+        "shoot_target": true,
+        "should_bounce": false,
+        "splash_potion": false,
+        "splash_range": 4,
+        "stop_on_hurt": false,
+        "uncertainty_base": 0,
+        "uncertainty_multiplier": 0
+      }
+    }
+  }
+}

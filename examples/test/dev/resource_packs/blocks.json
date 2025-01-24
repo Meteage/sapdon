@@ -19,5 +19,15 @@
       "south": "compass_block_south",
       "north": "compass_block_north"
     }
+  },
+  "sapdon:wire": {
+    "textures": {
+      "up": "wire",
+      "down": "wire",
+      "east": "wire",
+      "west": "wire",
+      "south": "wire",
+      "north": "wire"
+    }
   }
 }

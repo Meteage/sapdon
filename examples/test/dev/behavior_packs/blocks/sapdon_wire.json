@@ -2,14 +2,38 @@
   "format_version": "1.21.50",
   "minecraft:block": {
     "description": {
-      "identifier": "sapdon:block",
+      "identifier": "sapdon:wire",
       "states": {
         "sapdon:block_variant_tag": {
           "values": {
             "min": 0,
-            "max": 3
+            "max": 1
           }
-        }
+        },
+        "wire:north": [
+          0,
+          1
+        ],
+        "wire:south": [
+          0,
+          1
+        ],
+        "wire:east": [
+          0,
+          1
+        ],
+        "wire:west": [
+          0,
+          1
+        ],
+        "wire:top": [
+          0,
+          1
+        ],
+        "wire:bottom": [
+          0,
+          1
+        ]
       },
       "menu_category": {
         "category": "construction",
@@ -18,7 +42,15 @@
     },
     "components": {
       "minecraft:geometry": {
-        "identifier": "geometry.crop"
+        "identifier": "geometry.wire",
+        "bone_visibility": {
+          "north": "q.block_state('wire:north') == 1",
+          "south": "q.block_state('wire:south') == 1",
+          "east": "q.block_state('wire:east') == 1",
+          "west": "q.block_state('wire:west') == 1",
+          "top": "q.block_state('wire:top') == 1",
+          "bottom": "q.block_state('wire:bottom') == 1"
+        }
       }
     },
     "permutations": [
@@ -27,76 +59,37 @@
         "components": {
           "minecraft:material_instances": {
             "*": {
-              "texture": "garlic_stage_0",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
             },
             "up": {
-              "texture": "garlic_stage_0",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
             },
             "down": {
-              "texture": "garlic_stage_0",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
             },
             "north": {
-              "texture": "garlic_stage_0",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
             },
             "south": {
-              "texture": "garlic_stage_0",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"
             },
             "east": {
-              "texture": "garlic_stage_0",
-              "ambient_occlusion": true,
-              "face_dimming": true,
-              "render_method": "alpha_test"
-            }
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('sapdon:block_variant_tag') == 1",
-        "components": {
-          "minecraft:material_instances": {
-            "*": {
-              "texture": "garlic_stage_1",
-              "ambient_occlusion": true,
-              "face_dimming": true,
-              "render_method": "alpha_test"
-            }
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('sapdon:block_variant_tag') == 2",
-        "components": {
-          "minecraft:material_instances": {
-            "*": {
-              "texture": "garlic_stage_2",
-              "ambient_occlusion": true,
-              "face_dimming": true,
-              "render_method": "alpha_test"
-            }
-          }
-        }
-      },
-      {
-        "condition": "q.block_state('sapdon:block_variant_tag') == 3",
-        "components": {
-          "minecraft:material_instances": {
-            "*": {
-              "texture": "garlic_stage_3",
+              "texture": "wire",
               "ambient_occlusion": true,
               "face_dimming": true,
               "render_method": "alpha_test"

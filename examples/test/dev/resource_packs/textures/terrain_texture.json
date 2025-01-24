@@ -42,6 +42,9 @@
     },
     "test_log_top": {
       "textures": "textures/blocks/test_log_top"
+    },
+    "wire": {
+      "textures": "textures/blocks/wire"
     }
   }
 }

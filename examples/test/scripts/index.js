@@ -1,141 +1,95 @@
-import {ItemStack, world} from "@minecraft/server"
+import {Direction, world } from "@minecraft/server"
 
-//思路 物品使用前把数据记录到堆栈里 当抛掷物生成时记录抛掷物的id 抛掷物落地生成相应生物
-const entityReleseStack = [];
-const projectileIdStack = [];
+const wireBlock = [];
 
 
-world.afterEvents.itemUse.subscribe((afterItemUseEvent) => {
-    //world.sendMessage("afterItemUseEvent:"+afterItemUseEvent.itemStack.typeId);
-    if(afterItemUseEvent.itemStack.typeId != "poke:caught_masterball") return 
-    const entityId = afterItemUseEvent.itemStack.getLore()[2].substring(3);
-    entityReleseStack.push(entityId);
-    //world.sendMessage("已添加实体ID入栈:"+entityId);
-});
-
-world.afterEvents.entitySpawn.subscribe((afterEntitySpawnEvent)=>{
-    //world.sendMessage(`entityType:${afterEntitySpawnEvent.entity.typeId} cause:${afterEntitySpawnEvent.cause}`)
-    const entity = afterEntitySpawnEvent.entity;
-    if(entity.typeId != "poke:projectile_masterball") return
-    if(entityReleseStack.length <= projectileIdStack.length) return
-    projectileIdStack.push(entity.id);
-    //world.sendMessage("已添加抛掷物ID:"+ entity.id);
-});
-
-
-
-world.afterEvents.projectileHitEntity.subscribe((event)=>{
-    const source = event.source;
-    const projectile = event.projectile;
-    const hitedEntity = event.getEntityHit().entity;
-
-    if(!source||!projectile) return
-    //world.sendMessage(`source:${source.typeId} projectile:${projectile.typeId} hitedEntity:${hitedEntity.typeId}`);
-    if(source.typeId != "minecraft:player"||projectile.typeId!= "poke:projectile_masterball") return
-
-    //world.sendMessage("成功");
-    //world.sendMessage("eee:"+projectile.isValid());
-    //world.sendMessage("eeeID:"+projectile.id);
-
-    const dimension = source.dimension;
-    const dropLocation = hitedEntity.location;
-
-    //检查抛掷物ID是否为栈中元素 是就释放 否就捕捉
-    const state = projectileIdStack.includes(projectile.id);
-
-    if(!state){
-        //world.sendMessage("捕捉");
-        const entityRemoveLocation = {
-            x:dropLocation.x,
-            y:dropLocation.y+100,
-            z:dropLocation.z
+world.afterEvents.itemUseOn.subscribe((event) => {
+    const block = event.block;
+    const blockId = event.block.typeId;
+    const blockFace = event.blockFace;
+    if(blockId == "sapdon:wire"){
+        world.sendMessage("if wire");
+        switch(blockFace){
+            case Direction.North:
+                world.sendMessage("north");
+                //设置方块状态
+                block.setPermutation(
+                    block.permutation.withState("wire:north",1)
+                )
+                const north_block = block.north();
+                if(north_block.typeId == "sapdon:wire"){
+                    world.sendMessage("north is wire");
+                    north_block.setPermutation(
+                        north_block.permutation.withState("wire:south",1)
+                    )
+                }
+                break;
+            case Direction.South:
+                world.sendMessage("south");
+                block.setPermutation(
+                    block.permutation.withState("wire:south",1)
+                )
+                const south_block = block.south();
+                if(south_block.typeId == "sapdon:wire"){
+                    world.sendMessage("south is wire");
+                    south_block.setPermutation(
+                        south_block.permutation.withState("wire:north",1)
+                    )
+                }
+                break;
+            case Direction.East:
+                world.sendMessage("east");
+                block.setPermutation(
+                    block.permutation.withState("wire:east",1)
+                )
+                const east_block = block.east();
+                if(east_block.typeId == "sapdon:wire"){
+                    world.sendMessage("east is wire");
+                    east_block.setPermutation(
+                        east_block.permutation.withState("wire:west",1)
+                    )
+                }
+                break;
+            case Direction.West:    
+                world.sendMessage("west");
+                block.setPermutation(
+                    block.permutation.withState("wire:west",1)
+                )
+                const west_block = block.west();
+                if(west_block.typeId == "sapdon:wire"){
+                    world.sendMessage("west is wire");
+                    west_block.setPermutation(
+                        west_block.permutation.withState("wire:east",1)
+                    )
+                }
+                break;
+            case Direction.Up:
+                world.sendMessage("up");
+                block.setPermutation(
+                    block.permutation.withState("wire:top",1)
+                )
+                const up_block = block.above();
+                if(up_block.typeId == "sapdon:wire"){
+                    world.sendMessage("up is wire");
+                    up_block.setPermutation(
+                        up_block.permutation.withState("wire:bottom",1)
+                    )
+                }
+                break;
+            case Direction.Down:    
+                world.sendMessage("down");
+                block.setPermutation(
+                    block.permutation.withState("wire:bottom",1)
+                )
+                const down_block = block.below();
+                if(down_block.typeId == "sapdon:wire"){
+                    world.sendMessage("down is wire");
+                    down_block.setPermutation(
+                        down_block.permutation.withState("wire:top",1)
+                    )
+                }
+                break;
         }
-        hitedEntity.teleport(entityRemoveLocation,{});
-
-        const entityData = {
-            Id:hitedEntity.id,
-            typeID:hitedEntity.typeId,
-            name:hitedEntity.nameTag,
-            heath:hitedEntity.getComponent("health").currentValue
-        };
-        const structureName = replaceNumbersWithLetters(`${-hitedEntity.id}`);
-        //world.sendMessage("structureName:"+structureName);
-        dimension.runCommand(`structure save masterball_space_${structureName} ${entityRemoveLocation.x} ${entityRemoveLocation.y} ${entityRemoveLocation.z} ${entityRemoveLocation.x+1} ${entityRemoveLocation.y+1} ${entityRemoveLocation.z+1} true memory false`);
-        hitedEntity.remove();
-        const masterball = new ItemStack("poke:caught_masterball",1);
-
-            masterball.nameTag = "大师球("+entityData.typeID+")";
-            masterball.setLore([
-                `name:${entityData.name}`,
-                `typeID:${entityData.typeID}`,
-                `Id:${entityData.Id}`,
-                `Heath:${entityData.heath}`,
-                `stackable:${masterball.isStackable}`
-            ]);
-            //masterball.setDynamicProperty("poke:entity_id",entityData.Id);
-        dimension.spawnItem(masterball,dropLocation);
     }
-    else{
-        //world.sendMessage("释放");
-        const index = projectileIdStack.indexOf(projectile.id);
-        const entityId = entityReleseStack[index];
-        //删除stack里的
-        entityReleseStack.slice(index,1);
-        projectileIdStack.slice(index,1);
-        const structureName = replaceNumbersWithLetters(`${-entityId}`);
-        //world.sendMessage("structureName1:"+structureName);
-        dimension.runCommand(`structure load masterball_space_${structureName} ${dropLocation.x} ${dropLocation.y} ${dropLocation.z} 0_degrees none true false false`);
-        dimension.runCommand(`structure delete masterball_space_${structureName}`);
-
-        const masterball = new ItemStack("poke:uncaught_masterball",1);
-        dimension.spawnItem(masterball,dropLocation);
-    }
-});
-
-world.afterEvents.projectileHitBlock.subscribe((afterprojectileHitBlockEvent)=>{
-    const source = afterprojectileHitBlockEvent.source;
-    const dimension = afterprojectileHitBlockEvent.dimension;
-    const projectile = afterprojectileHitBlockEvent.projectile;
-    const  dropLocation = afterprojectileHitBlockEvent.location;
-
-    if(!source||!projectile) return
-    if(source.typeId != "minecraft:player"||projectile.typeId!= "poke:projectile_masterball") return
-
-    //检查抛掷物ID是否为栈中元素 是就释放 否就捕捉
-    const state = projectileIdStack.includes(projectile.id);
-
-    if(!state) return
-
-    const index = projectileIdStack.indexOf(projectile.id);
-    const entityId = entityReleseStack[index];
-    //删除stack里的
-    entityReleseStack.slice(index,1);
-    projectileIdStack.slice(index,1);
-    const structureName = replaceNumbersWithLetters(`${-entityId}`);
-    //world.sendMessage("structureName1:"+structureName);
-    dimension.runCommand(`structure load masterball_space_${structureName} ${dropLocation.x} ${dropLocation.y} ${dropLocation.z} 0_degrees none true false false`);
-    dimension.runCommand(`structure delete masterball_space_${structureName}`);
-
-    const masterball = new ItemStack("poke:uncaught_masterball",1);
-    dimension.spawnItem(masterball,dropLocation);
-
+    world.sendMessage("blockId:"+event.block.typeId);
 })
-
-function replaceNumbersWithLetters(str) {
-    // 创建一个映射表，将数字对应的小写字母存储起来
-    const numberToLetter = {
-      '0': 'a',
-      '1': 'b',
-      '2': 'c',
-      '3': 'd',
-      '4': 'e',
-      '5': 'f',
-      '6': 'g',
-      '7': 'h',
-      '8': 'i',
-      '9': 'j'
-    };
-  
-    // 使用正则表达式匹配字符串中的数字，并替换为小写字母
-    return str.replace(/[0-9]/g, match => numberToLetter[match]);
-  }

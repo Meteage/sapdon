@@ -7,7 +7,11 @@
     "create": "node src/cli/index.js create",
     "build": "node src/cli/index.js build"
   },
-  "keywords": ["bedrock","tools","addon"],
+  "keywords": [
+    "bedrock",
+    "tools",
+    "addon"
+  ],
   "author": "Meteage",
   "license": "ISC",
   "type": "module",
@@ -20,5 +24,8 @@
     "download-git-repo": "^3.0.2",
     "inquirer": "^12.3.1",
     "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "@minecraft/server": "^1.18.0-beta.1.21.60-preview.28"
   }
 }

@@ -201,13 +201,18 @@ export class BlockComponent {
     /**
      * 设置方块的几何模型。
      * @param {String} identifier - 几何模型标识符。
+     * @param {Object} bone_visibility - 骨骼可见性配置。
      * @returns {Map} - 新的组件集合。
      */
-    static setGeometry(identifier) {
+    static setGeometry(identifier,bone_visibility) {
       if (typeof identifier !== "string") {
         throw new Error('identifier must be a string');
       }
-      return new Map().set("minecraft:geometry", identifier);
+      return new Map().set("minecraft:geometry", 
+        {
+          identifier:identifier,
+          bone_visibility:bone_visibility
+        });
     }
   
     /**
