@@ -11,14 +11,16 @@ import {
 
 import { generateItemTextureJson, generateBlockTextureJson } from './tools/textureSet.js';
 
+import { fileURLToPath } from 'url';
 
+// 获取当前文件的目录路径
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const pathConfig = {
-    mojangPath: `C:/Users/${process.env.USERNAME}/AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/`,
-    mojangBetaPath:`C:/Users/${process.env.USERNAME}/AppData/Local/Packages/Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe/LocalState/games/com.mojang`,
-    projectsPath: './projects'
-};
+//读取配置文件
+const pathConfig = JSON.parse(readFile(path.join(__dirname,"./build.config")));
 
+//构建项目
 export const buildProject = (projectPath,projectName) => {
    console.log("开始构建项目");
    console.log("项目路径：" + projectPath);
@@ -66,8 +68,8 @@ export const buildProject = (projectPath,projectName) => {
 
     const buildDirPath = path.join(projectPath,buildConfig.defaultConfig.buildDir);
 
-    const buildBehDirPath = path.join(buildDirPath,"behavior_packs/");
-    const buildResDirPath = path.join(buildDirPath,"resource_packs/");
+    const buildBehDirPath = path.join(buildDirPath,`${projectName}_BP/`);
+    const buildResDirPath = path.join(buildDirPath,`${projectName}_RP/`);
     //生成manifest.json文件
     //判断manifest.json是否已经生成过了，生成过了就不用生成
     const manifestPath = path.join(buildBehDirPath,"manifest.json");
@@ -110,14 +112,14 @@ export const buildProject = (projectPath,projectName) => {
     generateBlockTextureJson(terrain_texture_dir,terrain_texture_json_path,projectName);
 
     //动态加载用户modjs文件
-    loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath);
+    loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath,projectName);
     
     //延迟1s
     setTimeout(()=>{
         //将编译好的文件夹拷贝至mc
         //console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`));
-        copyFolder(buildBehDirPath,path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName.replace("/", "_")}_BP/`));
-        copyFolder(buildResDirPath,path.join(pathConfig.mojangPath,`development_resource_packs/${projectName.replace("/", "_")}_RP/`));
+        copyFolder(buildBehDirPath,path.join(pathConfig.mojangPath,"development_behavior_packs/",`${projectName}_BP/`));
+        copyFolder(buildResDirPath,path.join(pathConfig.mojangPath,"development_resource_packs/",`${projectName}_RP/`));
     },1000);
 
 }

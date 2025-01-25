@@ -11,6 +11,7 @@
     "components": {
       "minecraft:icon": "masterball",
       "minecraft:max_stack_size": 1,
+      "minecraft:glint": true,
       "minecraft:display_name": {
         "value": "捕捉到的大师球"
       },

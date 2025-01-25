@@ -27,9 +27,11 @@ export class AddonEntityDefinition {
      * @param {AddonEntityDescription} description 实体描述
      * @param {Object} components 实体组件
      */
-    constructor(description, components = {}) {
+    constructor(description, components = {}, component_groups = {}, events = {}) {
         this.description = description;
         this.components = components; // 修正拼写错误
+        this.component_groups = component_groups;
+        this.events = events;   
     }
 }
 

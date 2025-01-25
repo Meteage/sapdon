@@ -1,25 +1,25 @@
 {
   "format_version": 2,
   "header": {
-    "name": "examples/masterball_BP",
-    "description": "神奇的大师球",
+    "name": "test_BP",
+    "description": "A new sapdon project",
     "version": [
       1,
       0,
       0
     ],
-    "uuid": "db11e36e-2cd7-4d5a-9ecf-b255bd927847",
+    "uuid": "c5f41f23-9216-4157-9827-475b52c8e3a5",
     "min_engine_version": [
       1,
-      20,
-      20
+      19,
+      50
     ]
   },
   "modules": [
     {
       "description": "行为模块",
       "type": "data",
-      "uuid": "8bcd03bf-d74f-462f-9ad2-5f9a84cc2060",
+      "uuid": "02c7530f-cf74-4e5c-b344-e880279e1dcd",
       "version": [
         1,
         0,
@@ -29,7 +29,7 @@
     {
       "description": "脚本模块",
       "type": "script",
-      "uuid": "b08b8901-66f5-4079-9c8e-428bab3f762b",
+      "uuid": "20d61ee0-c93c-4415-9ebe-77be273f3261",
       "version": [
         1,
         0,
@@ -41,7 +41,7 @@
   "dependencies": [
     {
       "module_name": "@minecraft/server",
-      "version": "1.8.0"
+      "version": "1.16.0"
     }
   ],
   "metadata": {

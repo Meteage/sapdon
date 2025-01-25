@@ -25,6 +25,24 @@ export class BasicEntity {
         this.is_summonable = is_summonable;
         this.runtime_identifier = options.runtime_identifier;
         this.components = new Map();
+        this.component_groups = new Map();
+        this.events = new Map();
+    }
+
+    addEvent(name, eventMap) {
+        if (!(eventMap instanceof Map)) {
+            throw new Error("eventMap must be an instance of Map.");
+        }
+        this.events.set(name, eventMap);
+        return this;
+    }
+
+    addComponentGroup(name, componentMaps) {    
+        if (!(componentMaps instanceof Map)) {
+            throw new Error("componentMap must be an instance of Map.");
+        }
+        this.component_groups.set(name, componentMaps);
+        return this;
     }
 
     /**
@@ -57,7 +75,9 @@ export class BasicEntity {
                     this.is_summonable,
                     this.runtime_identifier
                 ),
-                Object.fromEntries(this.components)
+                Object.fromEntries(this.components),
+                Object.fromEntries(this.component_groups),
+                Object.fromEntries(this.events)
             )
         ).toJson();
     }

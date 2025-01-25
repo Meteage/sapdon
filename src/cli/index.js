@@ -13,7 +13,7 @@ program.command("create <project-name>").description("Create a new project").act
             type: "input",
             name: "name",
             message: "Project Name:",
-            default: projectName
+            default: path.basename(projectName)
         },
         {
             type: "input",
@@ -40,16 +40,16 @@ program.command("create <project-name>").description("Create a new project").act
             default: "1.19.50",
         }
     ]).then((answers) => {
-        const projectPath = path.join(process.cwd(), answers.name);
+        const projectPath = path.join(process.cwd(), projectName);
         console.log('项目路径:', projectPath);
         initProject(projectPath, answers);
     });
 });
 
-program.command("build <project-name>").description("Build the project").action((name) => {
+program.command("build <project-name>").description("Build the project").action((projectName) => {
     console.log("Building the project...");
-    const projectPath = path.join(process.cwd(), name);
-    buildProject(projectPath,name);
+    const projectPath = path.join(process.cwd(), projectName);
+    buildProject(projectPath, path.basename(projectName));
 });
 
 

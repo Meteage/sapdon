@@ -38,7 +38,7 @@ const processBlocksData = (data) => {
  * @param {string} modPath 模组文件路径
  * @param {string} buildPath 构建目录路径
  */
-export const loadAndExecuteMod = async (modPath, buildPath) => {
+export const loadAndExecuteMod = async (modPath, buildPath,projectName) => {
     try {
         // 将 modPath 解析为绝对路径
         const absoluteModPath = path.resolve(modPath);
@@ -50,7 +50,7 @@ export const loadAndExecuteMod = async (modPath, buildPath) => {
         await import(fileUrl);
 
         // 初始化 blocks.json 数据
-        const blocksJsonPath = path.join(buildPath, "resource_packs/blocks.json");
+        const blocksJsonPath = path.join(buildPath, `${projectName}_RP`,"blocks.json");
         const blocks = {"format_version": "1.20.20"};
 
         // 从全局注册表中获取数据
@@ -66,7 +66,7 @@ export const loadAndExecuteMod = async (modPath, buildPath) => {
             }
 
             // 根据数据类型确定根目录
-            const rootPath = root === "behavior" ? "behavior_packs" : "resource_packs";
+            const rootPath = root === "behavior" ?  `${projectName}_BP`: `${projectName}_RP`;
             const buildRootPath = path.join(buildPath, rootPath);
 
             // 拼接文件路径

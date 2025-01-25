@@ -5,6 +5,7 @@ import { ItemComponent } from "../../src/core/item/ItemComponents.js";
  ItemAPI.createItem("sapdon:caught_masterball","items","masterball")
         .addComponent(
             ItemComponent.combineComponents(
+                ItemComponent.setGlint(true),
                 ItemComponent.setDisplayName("捕捉到的大师球"),
                 ItemComponent.setMaxStackSize(1),
                 ItemComponent.setProjectile(1,"sapdon:projectile_masterball"),
