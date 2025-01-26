@@ -1,0 +1,7 @@
+{
+  "name": "digitCircuit",
+  "description": "感受数字电子的魅力",
+  "author": "爱喝粥的小奔",
+  "version": "1.0.0",
+  "min_engine_version": "1.20.20"
+}

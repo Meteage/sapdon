@@ -22,7 +22,6 @@ export class Block extends BasicBlock {
             throw new Error('variantDatas 必须是一个非空数组');
         }
 
-
         // 调用父类构造函数
         super(identifier, category, variantDatas[0]["textures"], options);
 

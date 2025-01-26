@@ -45,8 +45,14 @@ export class BasicBlock {
         return this.identifier;
     }
 
+    registerTrait(key,value){
+        this.traits.set(key,value);
+        return this;
+    }
+
     registerState(key,value){
         this.states.set(key,value);
+        return this;
     }
 
     /**
@@ -60,6 +66,7 @@ export class BasicBlock {
         for (const [key, value] of componentMap.entries()) {
             this.components.set(key, value);
         }
+        return this;
     }
 
     /**
@@ -71,6 +78,7 @@ export class BasicBlock {
             throw new Error("key is required and must be a string");
         }
         this.components.delete(key);
+        return this;
     }
 
     /**
@@ -89,6 +97,7 @@ export class BasicBlock {
             condition: condition,
             components: Object.fromEntries(componentMap)
         });
+        return this;
     }
 
     /**
@@ -101,6 +110,7 @@ export class BasicBlock {
             new AddonBlockDefinition(
                 new AddonBlockDescription(
                     this.identifier,
+                    Object.fromEntries(this.traits), // 将 Map 转换为普通对象
                     Object.fromEntries(this.states), // 将 Map 转换为普通对象
                     new AddonMenuCategory(
                         this.category,

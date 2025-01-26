@@ -1,0 +1,103 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:block": {
+    "description": {
+      "identifier": "sapdon:wire",
+      "traits": {},
+      "states": {
+        "sapdon:block_variant_tag": {
+          "values": {
+            "min": 0,
+            "max": 1
+          }
+        },
+        "wire:north": [
+          0,
+          1
+        ],
+        "wire:south": [
+          0,
+          1
+        ],
+        "wire:east": [
+          0,
+          1
+        ],
+        "wire:west": [
+          0,
+          1
+        ],
+        "wire:top": [
+          0,
+          1
+        ],
+        "wire:bottom": [
+          0,
+          1
+        ]
+      },
+      "menu_category": {
+        "category": "construction",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:geometry": {
+        "identifier": "geometry.wire",
+        "bone_visibility": {
+          "north": "q.block_state('wire:north') == 1",
+          "south": "q.block_state('wire:south') == 1",
+          "east": "q.block_state('wire:east') == 1",
+          "west": "q.block_state('wire:west') == 1",
+          "top": "q.block_state('wire:top') == 1",
+          "bottom": "q.block_state('wire:bottom') == 1"
+        }
+      }
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 0",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "up": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "down": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "north": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "south": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "east": {
+              "texture": "wire",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

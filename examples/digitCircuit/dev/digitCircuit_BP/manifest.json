@@ -1,0 +1,60 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "digitCircuit_BP",
+    "description": "感受数字电子的魅力",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "711ee142-b0e1-4cba-b4af-be96ec216842",
+    "min_engine_version": [
+      1,
+      20,
+      20
+    ]
+  },
+  "modules": [
+    {
+      "description": "行为模块",
+      "type": "data",
+      "uuid": "49845941-8f4e-4193-8c83-1840ba86a78d",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "description": "脚本模块",
+      "type": "script",
+      "uuid": "61353e69-4104-4f54-88ef-e7cfda22c71b",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/index.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.8.0"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}
