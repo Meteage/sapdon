@@ -6,6 +6,10 @@ import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
 import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
 import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
 import { BlockWire } from "./lib/wire.js";
+import { BasicEntity } from "../../src/core/entity/BasicEntity.js";
+import { NativeEntityData } from "../../src/core/entity/data/NativeEntityData.js";
+import { ClientEntity } from "../../src/core/entity/ClientEntity.js";
+import { GRegistry } from "../../src/core/registry.js";
 
 ItemAPI.createItem("sapdon:test_item", "items", "masterball").addComponent(
 	ItemComponent.combineComponents(
@@ -66,3 +70,15 @@ RecipeAPI.registerSimpleFurnace("sapdon:test_furnace","sapdon:test_item", "sapdo
 
 
 const wire = new BlockWire("sapdon:wire", "construction", [{ stateTag: 0, textures: ["wire"] }]);
+
+
+const SlimeSe = new BasicEntity("sapdon:slime",{},
+	NativeEntityData.getDataById("beh","minecraft:slime")["minecraft:entity"]
+)
+
+const SlimeCe = new ClientEntity("sapdon:slime",
+	NativeEntityData.getDataById("res","minecraft:slime")["minecraft:client_entity"]["description"]
+)
+
+GRegistry.register(SlimeSe.identifier.replace(":","_"),"behavior","entities/",SlimeSe);
+GRegistry.register(SlimeCe.identifier.replace(":","_"),"resource","entity/",SlimeCe);

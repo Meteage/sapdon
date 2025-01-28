@@ -8,9 +8,12 @@ export class BasicEntity {
      * @param {boolean} [options.is_spawnable=true] - 是否可生成
      * @param {boolean} [options.is_summonable=true] - 是否可召唤
      * @param {string} [options.runtime_identifier] - 复刻标识符
+     * @param {Object} data - 继承的数据
+     * @param {Object} [data.components={}] - 继承的组件
+     * @param {Object} [data.component_groups={}] - 继承的组件组
+     * @param {Object} [data.events={}] - 继承的事件
      */
-    constructor(identifier, options = {}) {
-        const { is_spawnable = true, is_summonable = true } = options;
+    constructor(identifier, options = {}, data = {}) {
 
         // 参数验证
         if (typeof identifier !== 'string' || !identifier) {
@@ -21,14 +24,22 @@ export class BasicEntity {
         }
 
         this.identifier = identifier;
-        this.is_spawnable = is_spawnable;
-        this.is_summonable = is_summonable;
+        this.is_spawnable = options.is_spawnable || true;
+        this.is_summonable = options.is_summonable || true;
         this.runtime_identifier = options.runtime_identifier;
-        this.components = new Map();
-        this.component_groups = new Map();
-        this.events = new Map();
+
+        // 初始化 components、component_groups 和 events，确保 data 中的值为对象
+        this.components = new Map(Object.entries(data.components || {}));
+        this.component_groups = new Map(Object.entries(data.component_groups || {}));
+        this.events = new Map(Object.entries(data.events || {}));
     }
 
+    /**
+     * 添加事件到实体
+     * @param {string} name - 事件名称
+     * @param {Map} eventMap - 事件的键值对 Map
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
     addEvent(name, eventMap) {
         if (!(eventMap instanceof Map)) {
             throw new Error("eventMap must be an instance of Map.");
@@ -37,17 +48,23 @@ export class BasicEntity {
         return this;
     }
 
-    addComponentGroup(name, componentMaps) {    
-        if (!(componentMaps instanceof Map)) {
+    /**
+     * 添加组件组到实体
+     * @param {string} name - 组件组名称
+     * @param {Map} componentMap - 组件组的键值对 Map
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    addComponentGroup(name, componentMap) {
+        if (!(componentMap instanceof Map)) {
             throw new Error("componentMap must be an instance of Map.");
         }
-        this.component_groups.set(name, componentMaps);
+        this.component_groups.set(name, componentMap);
         return this;
     }
 
     /**
      * 添加组件到实体
-     * @param {Map} componentMap - 组件键值对的 Map 对象
+     * @param {Map} componentMap - 组件的键值对 Map
      * @returns {BasicEntity} - 返回当前实例以支持链式调用
      */
     addComponent(componentMap) {
@@ -63,7 +80,7 @@ export class BasicEntity {
 
     /**
      * 将实体转换为 JSON 格式
-     * @returns {AddonEntity} - 返回 AddonEntity 实例
+     * @returns {Object} - 返回 JSON 格式的实体数据
      */
     toJson() {
         return new AddonEntity(
@@ -75,9 +92,9 @@ export class BasicEntity {
                     this.is_summonable,
                     this.runtime_identifier
                 ),
-                Object.fromEntries(this.components),
-                Object.fromEntries(this.component_groups),
-                Object.fromEntries(this.events)
+                Object.fromEntries(this.components), // 将 Map 转换为普通对象
+                Object.fromEntries(this.component_groups), // 将 Map 转换为普通对象
+                Object.fromEntries(this.events) // 将 Map 转换为普通对象
             )
         ).toJson();
     }

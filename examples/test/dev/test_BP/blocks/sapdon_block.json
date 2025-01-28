@@ -3,6 +3,7 @@
   "minecraft:block": {
     "description": {
       "identifier": "sapdon:block",
+      "traits": {},
       "states": {
         "sapdon:block_variant_tag": {
           "values": {
