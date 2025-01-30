@@ -2,9 +2,10 @@
   "format_version": "1.16.0",
   "minecraft:entity": {
     "description": {
-      "identifier": "sapdon:slime",
+      "identifier": "sapdon:test_entity",
       "is_spawnable": true,
-      "is_summonable": true
+      "is_summonable": true,
+      "runtime_identifier": "minecraft:slime"
     },
     "components": {
       "minecraft:is_hidden_when_invisible": {},

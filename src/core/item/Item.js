@@ -46,9 +46,6 @@ export class Item {
         );
     }
     
-    getId() {
-        return this.identifier;
-    }
 
     /**
      * 添加组件

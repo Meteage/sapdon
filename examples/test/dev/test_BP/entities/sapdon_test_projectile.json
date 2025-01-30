@@ -37,11 +37,7 @@
           0
         ]
       },
-      "minecraft:physics": {
-        "has_collision": true,
-        "has_gravity": true,
-        "push_towards_closest_space": false
-      },
+      "minecraft:physics": {},
       "minecraft:pushable": {
         "is_pushable": true,
         "is_pushable_by_piston": true

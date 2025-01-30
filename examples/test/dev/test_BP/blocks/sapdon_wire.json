@@ -38,6 +38,7 @@
       },
       "menu_category": {
         "category": "construction",
+        "group": "construction",
         "is_hidden_in_commands": false
       }
     },

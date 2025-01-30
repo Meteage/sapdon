@@ -2,7 +2,7 @@
   "format_version": "1.10.0",
   "minecraft:client_entity": {
     "description": {
-      "identifier": "minecraft:slime",
+      "identifier": "sapdon:test_entity",
       "materials": {
         "default": "slime",
         "outer": "slime_outer"

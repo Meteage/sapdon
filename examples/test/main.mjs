@@ -6,10 +6,9 @@ import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
 import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
 import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
 import { BlockWire } from "./lib/wire.js";
-import { BasicEntity } from "../../src/core/entity/BasicEntity.js";
 import { NativeEntityData } from "../../src/core/entity/data/NativeEntityData.js";
-import { ClientEntity } from "../../src/core/entity/ClientEntity.js";
-import { GRegistry } from "../../src/core/registry.js";
+
+
 
 ItemAPI.createItem("sapdon:test_item", "items", "masterball").addComponent(
 	ItemComponent.combineComponents(
@@ -49,6 +48,9 @@ const block = BlockAPI.createBasicBlock("sapdon:test_block", "construction", [
 	"compass_block_north"
 ]);
 
+ItemAPI.createChestArmor("sapdon:chest", "custom_chestplate", "textures/models/armor/custom_main");
+
+/*
 ItemAPI.createItem("sapdon:chest", "equipment", "custom_chestplate", { group: "itemGroup.name.chestplate" }).addComponent(
 	ItemComponent.combineComponents(
 		ItemComponent.setDisplayName("My Custom Armor"),
@@ -65,6 +67,7 @@ ItemAPI.createAttachable("sapdon:chest", "textures/models/armor/custom_main", "a
 	.addRenderController("controller.render.armor")
 	.setScript("parent_setup", "v.chest_layer_visible = 0.0;");
 
+*/	
 RecipeAPI.registerSimpleFurnace("sapdon:test_furnace","sapdon:test_item", "sapdon:test_food");
 
 
@@ -72,13 +75,4 @@ RecipeAPI.registerSimpleFurnace("sapdon:test_furnace","sapdon:test_item", "sapdo
 const wire = new BlockWire("sapdon:wire", "construction", [{ stateTag: 0, textures: ["wire"] }]);
 
 
-const SlimeSe = new BasicEntity("sapdon:slime",{},
-	NativeEntityData.getDataById("beh","minecraft:slime")["minecraft:entity"]
-)
-
-const SlimeCe = new ClientEntity("sapdon:slime",
-	NativeEntityData.getDataById("res","minecraft:slime")["minecraft:client_entity"]["description"]
-)
-
-GRegistry.register(SlimeSe.identifier.replace(":","_"),"behavior","entities/",SlimeSe);
-GRegistry.register(SlimeCe.identifier.replace(":","_"),"resource","entity/",SlimeCe);
+EntityAPI.createNativeEntity("sapdon:test_entity","minecraft:slime");
