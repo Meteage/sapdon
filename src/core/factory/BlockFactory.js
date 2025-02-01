@@ -1,5 +1,6 @@
 import { BasicBlock } from "../block/BasicBlock.js";
 import { Block } from "../block/block.js";
+import { GeometryBlock } from "../block/GeometryBlock.js";
 import { RotatableBlock } from "../block/RotatableBlock.js";
 import { GRegistry } from "../registry.js";
 
@@ -28,7 +29,7 @@ export const BlockAPI = {
      * @returns {BasicBlock} 创建的基础方块对象。
      */
     createBasicBlock: function (identifier, category, textures_arr, options = {}) {
-        if (!identifier || !category || !textures_arr || textures_arr.length !== 6) {
+        if (!identifier || !category || !textures_arr ) {
             throw new Error("必须提供 identifier、category 和长度为 6 的 textures_arr。");
         }
 
@@ -86,8 +87,8 @@ export const BlockAPI = {
      * @returns {RotatableBlock} 创建的可旋转方块对象。
      */
     createRotatableBlock: function (identifier, category, textures_arr, options = {}) {
-        if (!identifier || !category || !textures_arr || textures_arr.length !== 6) {
-            throw new Error("必须提供 identifier、category 和长度为 6 的 textures_arr。");
+        if (!identifier || !category || !textures_arr ) {
+            throw new Error("必须提供 identifier、category 和 textures_arr。");
         }
 
         const block = new RotatableBlock(identifier, category, textures_arr, {
@@ -101,4 +102,12 @@ export const BlockAPI = {
         registerBlock(block); // 调用注册方法
         return block;
     },
+    createGeometryBlock: function (identifier, category, geometry, material_instances, options = {}) {
+        if (!identifier || !category || !geometry || !material_instances ) {
+            throw new Error("必须提供 identifier、category、geometry 和 material_instances。");
+        }
+        const block = new GeometryBlock(identifier, category, geometry, material_instances, options);
+        registerBlock(block); // 调用注册方法
+        return block;
+    }
 };

@@ -391,7 +391,7 @@ export class BlockComponent {
       throw new Error('instances must be an object');
     }
 
-    if (!instances["*"] || typeof instances["*"] !== "object") {
+    if (!instances["*"] ) {
       throw new Error('material_instances must include a "*" material instance');
     }
 

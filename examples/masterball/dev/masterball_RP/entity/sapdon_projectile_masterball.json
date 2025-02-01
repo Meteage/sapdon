@@ -3,11 +3,11 @@
   "minecraft:client_entity": {
     "description": {
       "identifier": "sapdon:projectile_masterball",
-      "textures": {
-        "default": "textures/items/masterball"
-      },
       "materials": {
         "default": "snowball"
+      },
+      "textures": {
+        "default": "textures/items/masterball"
       },
       "geometry": {
         "default": "geometry.item_sprite"

@@ -1,0 +1,61 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sapdon:test_entity_ctrl2",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "runtime_identifier": "minecraft:slime"
+    },
+    "components": {
+      "minecraft:health": {
+        "max": 20,
+        "value": 20
+      },
+      "minecraft:collision_box": {
+        "width": 1,
+        "height": 1
+      },
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": true,
+        "push_towards_closest_space": true
+      },
+      "minecraft:movement": {
+        "value": 0.2
+      },
+      "minecraft:movement.basic": {
+        "max_turn": 30
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:type_family": {
+        "family": [
+          "test_entity_ctrl2"
+        ]
+      },
+      "minecraft:behavior.follow_caravan": {
+        "priority": 3,
+        "speed_multiplier": 2.1,
+        "entity_count": 10,
+        "entity_types": {
+          "filters": {
+            "test": "is_family",
+            "subject": "other",
+            "value": "test_entity_body"
+          }
+        }
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10,
+        "can_be_stolen": false
+      }
+    },
+    "component_groups": {},
+    "events": {}
+  }
+}

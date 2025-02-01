@@ -1,0 +1,118 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sapdon:body",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "runtime_identifier": "minecraft:pig"
+    },
+    "components": {
+      "minecraft:health": {
+        "max": 20,
+        "value": 20
+      },
+      "minecraft:collision_box": {
+        "width": 1,
+        "height": 1
+      },
+      "minecraft:physics": {
+        "has_collision": true,
+        "has_gravity": true,
+        "push_towards_closest_space": true
+      },
+      "minecraft:movement": {
+        "value": 0.2
+      },
+      "minecraft:movement.basic": {
+        "max_turn": 30
+      },
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:navigation.walk": {
+        "avoid_damage_blocks": true,
+        "avoid_portals": false,
+        "avoid_sun": false,
+        "avoid_water": true,
+        "blocks_to_avoid": [],
+        "can_breach": false,
+        "can_break_doors": false,
+        "can_jump": true,
+        "can_open_doors": false,
+        "can_open_iron_doors": false,
+        "can_pass_doors": true,
+        "can_path_from_air": false,
+        "can_path_over_lava": false,
+        "can_path_over_water": true,
+        "can_sink": true,
+        "can_swim": false,
+        "can_walk": true,
+        "can_walk_in_lava": false,
+        "is_amphibious": false
+      },
+      "minecraft:type_family": {
+        "family": [
+          "test_entity_body"
+        ]
+      },
+      "minecraft:behavior.follow_caravan": {
+        "priority": 3,
+        "speed_multiplier": 2.1,
+        "entity_count": 10,
+        "entity_types": {
+          "filters": {
+            "test": "is_family",
+            "subject": "other",
+            "value": "test_entity_body"
+          }
+        }
+      },
+      "minecraft:leashable": {
+        "soft_distance": 4,
+        "hard_distance": 6,
+        "max_distance": 10,
+        "can_be_stolen": false
+      },
+      "minecraft:rideable": {
+        "controlling_seat": 0,
+        "crouching_skip_interact": true,
+        "family_types": [
+          "test_entity_ctrl1",
+          "test_entity_ctrl2"
+        ],
+        "interact_text": "Ride me",
+        "pull_in_entities": true,
+        "rider_can_interact": false,
+        "seat_count": 2,
+        "seats": [
+          {
+            "lock_rider_rotation": 181,
+            "max_rider_count": 1,
+            "min_rider_count": 0,
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotate_rider_by": 0
+          },
+          {
+            "lock_rider_rotation": 181,
+            "max_rider_count": 1,
+            "min_rider_count": 0,
+            "position": [
+              0,
+              0,
+              4
+            ],
+            "rotate_rider_by": 0
+          }
+        ]
+      }
+    },
+    "component_groups": {},
+    "events": {}
+  }
+}

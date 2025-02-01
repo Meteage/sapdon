@@ -25,7 +25,7 @@ export class Armor {
 }
 
 // 扩展 Armor 类，实现胸甲
-export class Chest extends Armor {
+export class Chestplate extends Armor {
     constructor(identifier, item_texture, texture_path, options = {}) {
         super(identifier, "equipment", item_texture, texture_path, options);
 

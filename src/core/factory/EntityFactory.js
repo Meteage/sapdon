@@ -1,3 +1,4 @@
+import { BasicEntity } from "../entity/BasicEntity.js";
 import { ClientEntity } from "../entity/ClientEntity.js";
 import { NativeEntity } from "../entity/NativeEntity.js";
 import { Projectile } from "../entity/Projectile.js";
@@ -22,7 +23,7 @@ export const EntityAPI = {
      * @param {string} proto_id - 实体的原型 ID。
      * @param {string} texture - 实体的纹理。
      * @param {Object} options - 额外选项。
-     * @returns {Object} 包含行为数据和资源数据的对象。
+     * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
     createNativeEntity: function (identifier, proto_id, options = {}) {
         if (!identifier || !proto_id ) {

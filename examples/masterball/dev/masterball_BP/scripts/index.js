@@ -128,20 +128,19 @@ world.afterEvents.projectileHitBlock.subscribe((afterprojectileHitBlockEvent) =>
 
     // 检查抛掷物ID是否有对应的实体ID
     const entityId = entityReleseMap.get(projectile.id);
-    if (!entityId) return;
+    if (entityId){
+        // 释放逻辑
+        const structureName = replaceNumbersWithLetters(`${-entityId}`);
 
-    // 释放逻辑
-    const structureName = replaceNumbersWithLetters(`${-entityId}`);
-
-    // 加载实体结构
-    try {
-        dimension.runCommand(`structure load masterball_space_${structureName} ${dropLocation.x} ${dropLocation.y} ${dropLocation.z} 0_degrees none true false false`);
-        dimension.runCommand(`structure delete masterball_space_${structureName}`);
-    } catch (error) {
-        //world.sendMessage(`加载或删除结构失败: ${error}`);
-        return;
+        // 加载实体结构
+        try {
+            dimension.runCommand(`structure load masterball_space_${structureName} ${dropLocation.x} ${dropLocation.y} ${dropLocation.z} 0_degrees none true false false`);
+            dimension.runCommand(`structure delete masterball_space_${structureName}`);
+        } catch (error) {
+            //world.sendMessage(`加载或删除结构失败: ${error}`);
+            return;
+        }
     }
-
     // 生成空的大师球
     const masterball = new ItemStack("sapdon:uncaught_masterball", 1);
     dimension.spawnItem(masterball, dropLocation);

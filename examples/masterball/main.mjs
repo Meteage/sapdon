@@ -2,7 +2,7 @@ import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
 import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
 import { ItemComponent } from "../../src/core/item/ItemComponents.js";
 
- ItemAPI.createItem("sapdon:caught_masterball","items","masterball")
+ ItemAPI.createItem("sapdon:caught_masterball","none","masterball",{hide_in_command:true})
         .addComponent(
             ItemComponent.combineComponents(
                 ItemComponent.setGlint(true),

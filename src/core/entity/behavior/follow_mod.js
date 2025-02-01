@@ -1,4 +1,4 @@
-class FollowMobBehavior {
+export class FollowMobBehavior {
     constructor(priority) {
         this.priority = priority;
         this.searchRange = 0;
@@ -31,13 +31,13 @@ class FollowMobBehavior {
             throw new Error("Priority must be set for FollowMobBehavior.");
         }
 
-        return {
-            "minecraft:behavior.follow_mob": {
+        return new Map().set("minecraft:behavior.follow_mob", 
+            {
                 priority: this.priority,
                 search_range: this.searchRange,
                 speed_multiplier: this.speedMultiplier,
                 stop_distance: this.stopDistance
             }
-        };
+        );
     }
 }

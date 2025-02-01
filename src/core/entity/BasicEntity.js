@@ -14,7 +14,6 @@ export class BasicEntity {
      * @param {Object} [data.events={}] - 继承的事件
      */
     constructor(identifier, options = {}, data = {}) {
-
         // 参数验证
         if (typeof identifier !== 'string' || !identifier) {
             throw new Error('identifier must be a non-empty string.');
@@ -24,8 +23,8 @@ export class BasicEntity {
         }
 
         this.identifier = identifier;
-        this.is_spawnable = options.is_spawnable || true;
-        this.is_summonable = options.is_summonable || true;
+        this.is_spawnable = options.is_spawnable ?? true;
+        this.is_summonable = options.is_summonable ?? true;
         this.runtime_identifier = options.runtime_identifier;
 
         // 初始化 components、component_groups 和 events，确保 data 中的值为对象
@@ -49,6 +48,25 @@ export class BasicEntity {
     }
 
     /**
+     * 删除事件
+     * @param {string} name - 事件名称
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    removeEvent(name) {
+        this.events.delete(name);
+        return this;
+    }
+
+    /**
+     * 清除所有事件
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    clearEvents() {
+        this.events.clear();
+        return this;
+    }
+
+    /**
      * 添加组件组到实体
      * @param {string} name - 组件组名称
      * @param {Map} componentMap - 组件组的键值对 Map
@@ -59,6 +77,25 @@ export class BasicEntity {
             throw new Error("componentMap must be an instance of Map.");
         }
         this.component_groups.set(name, componentMap);
+        return this;
+    }
+
+    /**
+     * 删除组件组
+     * @param {string} name - 组件组名称
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    removeComponentGroup(name) {
+        this.component_groups.delete(name);
+        return this;
+    }
+
+    /**
+     * 清除所有组件组
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    clearComponentGroups() {
+        this.component_groups.clear();
         return this;
     }
 
@@ -76,6 +113,35 @@ export class BasicEntity {
             this.components.set(key, value);
         }
         return this; // 支持链式调用
+    }
+
+    /**
+     * 删除组件
+     * @param {string} key - 组件名称
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    removeComponent(key) {
+        this.components.delete(key);
+        return this;
+    }
+
+    /**
+     * 清除所有组件
+     * @returns {BasicEntity} - 返回当前实例以支持链式调用
+     */
+    clearComponents() {
+        this.components.clear();
+        return this;
+    }
+
+    /**
+     * 清除所有数据
+     */
+    clearAll() {
+        this.components.clear();
+        this.component_groups.clear();
+        this.events.clear();
+        return this;
     }
 
     /**

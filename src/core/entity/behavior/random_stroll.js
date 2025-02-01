@@ -1,4 +1,4 @@
-export class EntityBehaviorRandomStroll {
+export class RandomStrollBehavior {
     /**
      * 随机漫步行为
      * @param {number} priority 优先级
@@ -56,14 +56,14 @@ export class EntityBehaviorRandomStroll {
      * @returns {Object} minecraft:behavior.random_stroll 组件的 JSON 对象
      */
     toJSON() {
-      return {
-        "minecraft:behavior.random_stroll": {
+      return new Map().set("minecraft:behavior.random_stroll",
+        {
           priority: this.priority,
           interval: this.interval,
           speed_multiplier: this.speed_multiplier,
           xz_dist: this.xz_dist,
           y_dist: this.y_dist,
         },
-      };
+      );
     }
   }

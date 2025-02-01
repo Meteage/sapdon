@@ -1,0 +1,781 @@
+{
+  "texture_data": {
+    "alumentum": {
+      "textures": "textures/items/alumentum.png"
+    },
+    "amber": {
+      "textures": "textures/items/amber.png"
+    },
+    "amulet_fancy": {
+      "textures": "textures/items/amulet_fancy.png"
+    },
+    "amulet_mundane": {
+      "textures": "textures/items/amulet_mundane.png"
+    },
+    "amulet_runic": {
+      "textures": "textures/items/amulet_runic.png"
+    },
+    "amulet_runic_emergency": {
+      "textures": "textures/items/amulet_runic_emergency.png"
+    },
+    "amulet_vis": {
+      "textures": "textures/items/amulet_vis.png"
+    },
+    "amulet_vis_stone": {
+      "textures": "textures/items/amulet_vis_stone.png"
+    },
+    "banner": {
+      "textures": "textures/items/banner.png"
+    },
+    "banner_cultist": {
+      "textures": "textures/items/banner_cultist.png"
+    },
+    "banner_stand": {
+      "textures": "textures/items/banner_stand.png"
+    },
+    "banner_symbol": {
+      "textures": "textures/items/banner_symbol.png"
+    },
+    "bath_salts": {
+      "textures": "textures/items/bath_salts.png"
+    },
+    "bone_bow": {
+      "textures": "textures/items/bone_bow.png"
+    },
+    "bone_bow_0": {
+      "textures": "textures/items/bone_bow_0.png"
+    },
+    "bone_bow_1": {
+      "textures": "textures/items/bone_bow_1.png"
+    },
+    "bone_bow_2": {
+      "textures": "textures/items/bone_bow_2.png"
+    },
+    "bottle_taint": {
+      "textures": "textures/items/bottle_taint.png"
+    },
+    "brain": {
+      "textures": "textures/items/brain.png"
+    },
+    "brass_gear": {
+      "textures": "textures/items/brass_gear.png"
+    },
+    "brass_plate": {
+      "textures": "textures/items/brass_plate.png"
+    },
+    "bucket_death": {
+      "textures": "textures/items/bucket_death.png"
+    },
+    "bucket_pure": {
+      "textures": "textures/items/bucket_pure.png"
+    },
+    "chunk_beef": {
+      "textures": "textures/items/chunk_beef.png"
+    },
+    "chunk_chicken": {
+      "textures": "textures/items/chunk_chicken.png"
+    },
+    "chunk_fish": {
+      "textures": "textures/items/chunk_fish.png"
+    },
+    "chunk_mutton": {
+      "textures": "textures/items/chunk_mutton.png"
+    },
+    "chunk_pork": {
+      "textures": "textures/items/chunk_pork.png"
+    },
+    "chunk_rabbit": {
+      "textures": "textures/items/chunk_rabbit.png"
+    },
+    "cloth_boots": {
+      "textures": "textures/items/cloth_boots.png"
+    },
+    "cloth_boots_over": {
+      "textures": "textures/items/cloth_boots_over.png"
+    },
+    "cloth_chest": {
+      "textures": "textures/items/cloth_chest.png"
+    },
+    "cloth_chest_over": {
+      "textures": "textures/items/cloth_chest_over.png"
+    },
+    "cloth_legs": {
+      "textures": "textures/items/cloth_legs.png"
+    },
+    "cloth_legs_over": {
+      "textures": "textures/items/cloth_legs_over.png"
+    },
+    "cluster_cinnabar": {
+      "textures": "textures/items/cluster_cinnabar.png"
+    },
+    "cluster_copper": {
+      "textures": "textures/items/cluster_copper.png"
+    },
+    "cluster_gold": {
+      "textures": "textures/items/cluster_gold.png"
+    },
+    "cluster_iron": {
+      "textures": "textures/items/cluster_iron.png"
+    },
+    "cluster_lead": {
+      "textures": "textures/items/cluster_lead.png"
+    },
+    "cluster_silver": {
+      "textures": "textures/items/cluster_silver.png"
+    },
+    "cluster_tin": {
+      "textures": "textures/items/cluster_tin.png"
+    },
+    "coin": {
+      "textures": "textures/items/coin.png"
+    },
+    "creative_caster": {
+      "textures": "textures/items/creative_caster.png"
+    },
+    "creative_node": {
+      "textures": "textures/items/creative_node.png"
+    },
+    "creative_obelisk": {
+      "textures": "textures/items/creative_obelisk.png"
+    },
+    "crimson_blade": {
+      "textures": "textures/items/crimson_blade.png"
+    },
+    "crimson_boots": {
+      "textures": "textures/items/crimson_boots.png"
+    },
+    "crimson_plate_chest": {
+      "textures": "textures/items/crimson_plate_chest.png"
+    },
+    "crimson_plate_helm": {
+      "textures": "textures/items/crimson_plate_helm.png"
+    },
+    "crimson_plate_legs": {
+      "textures": "textures/items/crimson_plate_legs.png"
+    },
+    "crimson_praetor_chest": {
+      "textures": "textures/items/crimson_praetor_chest.png"
+    },
+    "crimson_praetor_helm": {
+      "textures": "textures/items/crimson_praetor_helm.png"
+    },
+    "crimson_praetor_legs": {
+      "textures": "textures/items/crimson_praetor_legs.png"
+    },
+    "crimson_rites": {
+      "textures": "textures/items/crimson_rites.png"
+    },
+    "crimson_robe_chest": {
+      "textures": "textures/items/crimson_robe_chest.png"
+    },
+    "crimson_robe_helm": {
+      "textures": "textures/items/crimson_robe_helm.png"
+    },
+    "crimson_robe_legs": {
+      "textures": "textures/items/crimson_robe_legs.png"
+    },
+    "crystal_essence": {
+      "textures": "textures/items/crystal_essence.png"
+    },
+    "crystal_planter": {
+      "textures": "textures/items/crystal_planter.png"
+    },
+    "discovery": {
+      "textures": "textures/items/discovery.png"
+    },
+    "discovery_overlay": {
+      "textures": "textures/items/discovery_overlay.png"
+    },
+    "eldritch_eye": {
+      "textures": "textures/items/eldritch_eye.png"
+    },
+    "elemental_axe": {
+      "textures": "textures/items/elemental_axe.png"
+    },
+    "elemental_hoe": {
+      "textures": "textures/items/elemental_hoe.png"
+    },
+    "elemental_pick": {
+      "textures": "textures/items/elemental_pick.png"
+    },
+    "elemental_shovel": {
+      "textures": "textures/items/elemental_shovel.png"
+    },
+    "elemental_sword": {
+      "textures": "textures/items/elemental_sword.png"
+    },
+    "fabric": {
+      "textures": "textures/items/fabric.png"
+    },
+    "filter": {
+      "textures": "textures/items/filter.png"
+    },
+    "flux_sponge": {
+      "textures": "textures/items/flux_sponge.png"
+    },
+    "focus_pouch": {
+      "textures": "textures/items/focus_pouch.png"
+    },
+    "fortress_chest": {
+      "textures": "textures/items/fortress_chest.png"
+    },
+    "fortress_helm": {
+      "textures": "textures/items/fortress_helm.png"
+    },
+    "fortress_legs": {
+      "textures": "textures/items/fortress_legs.png"
+    },
+    "girdle_fancy": {
+      "textures": "textures/items/girdle_fancy.png"
+    },
+    "girdle_hover": {
+      "textures": "textures/items/girdle_hover.png"
+    },
+    "girdle_mundane": {
+      "textures": "textures/items/girdle_mundane.png"
+    },
+    "girdle_runic": {
+      "textures": "textures/items/girdle_runic.png"
+    },
+    "girdle_runic_kinetic": {
+      "textures": "textures/items/girdle_runic_kinetic.png"
+    },
+    "goggles_revealing": {
+      "textures": "textures/items/goggles_revealing.png"
+    },
+    "golem": {
+      "textures": "textures/items/golem.png"
+    },
+    "golem_bell": {
+      "textures": "textures/items/golem_bell.png"
+    },
+    "hand_mirror": {
+      "textures": "textures/items/hand_mirror.png"
+    },
+    "ingot_brass": {
+      "textures": "textures/items/ingot_brass.png"
+    },
+    "ingot_thaumium": {
+      "textures": "textures/items/ingot_thaumium.png"
+    },
+    "ingot_void": {
+      "textures": "textures/items/ingot_void.png"
+    },
+    "iron_plate": {
+      "textures": "textures/items/iron_plate.png"
+    },
+    "jar_brace": {
+      "textures": "textures/items/jar_brace.png"
+    },
+    "knowledge_fragment": {
+      "textures": "textures/items/knowledge_fragment.png"
+    },
+    "label": {
+      "textures": "textures/items/label.png"
+    },
+    "label_overlay": {
+      "textures": "textures/items/label_overlay.png"
+    },
+    "loot_bag_common": {
+      "textures": "textures/items/loot_bag_common.png"
+    },
+    "loot_bag_rare": {
+      "textures": "textures/items/loot_bag_rare.png"
+    },
+    "loot_bag_uncommon": {
+      "textures": "textures/items/loot_bag_uncommon.png"
+    },
+    "mind_biothaumic": {
+      "textures": "textures/items/mind_biothaumic.png"
+    },
+    "mind_clockwork": {
+      "textures": "textures/items/mind_clockwork.png"
+    },
+    "mirrored_glass": {
+      "textures": "textures/items/mirrored_glass.png"
+    },
+    "module_aggression": {
+      "textures": "textures/items/module_aggression.png"
+    },
+    "module_vision": {
+      "textures": "textures/items/module_vision.png"
+    },
+    "morphic_resonator": {
+      "textures": "textures/items/morphic_resonator.png"
+    },
+    "nugget_brass": {
+      "textures": "textures/items/nugget_brass.png"
+    },
+    "nugget_copper": {
+      "textures": "textures/items/nugget_copper.png"
+    },
+    "nugget_iron": {
+      "textures": "textures/items/nugget_iron.png"
+    },
+    "nugget_lead": {
+      "textures": "textures/items/nugget_lead.png"
+    },
+    "nugget_quicksilver": {
+      "textures": "textures/items/nugget_quicksilver.png"
+    },
+    "nugget_silver": {
+      "textures": "textures/items/nugget_silver.png"
+    },
+    "nugget_thaumium": {
+      "textures": "textures/items/nugget_thaumium.png"
+    },
+    "nugget_tin": {
+      "textures": "textures/items/nugget_tin.png"
+    },
+    "nugget_void": {
+      "textures": "textures/items/nugget_void.png"
+    },
+    "phial": {
+      "textures": "textures/items/phial.png"
+    },
+    "phial_overlay": {
+      "textures": "textures/items/phial_overlay.png"
+    },
+    "primal_arrow_air": {
+      "textures": "textures/items/primal_arrow_air.png"
+    },
+    "primal_arrow_earth": {
+      "textures": "textures/items/primal_arrow_earth.png"
+    },
+    "primal_arrow_entropy": {
+      "textures": "textures/items/primal_arrow_entropy.png"
+    },
+    "primal_arrow_fire": {
+      "textures": "textures/items/primal_arrow_fire.png"
+    },
+    "primal_arrow_order": {
+      "textures": "textures/items/primal_arrow_order.png"
+    },
+    "primal_arrow_water": {
+      "textures": "textures/items/primal_arrow_water.png"
+    },
+    "primal_charm": {
+      "textures": "textures/items/primal_charm.png"
+    },
+    "primal_crusher": {
+      "textures": "textures/items/primal_crusher.png"
+    },
+    "primordial_pearl": {
+      "textures": "textures/items/primordial_pearl.png"
+    },
+    "quicksilver": {
+      "textures": "textures/items/quicksilver.png"
+    },
+    "researchnotes": {
+      "textures": "textures/items/researchnotes.png"
+    },
+    "researchnotes_overlay": {
+      "textures": "textures/items/researchnotes_overlay.png"
+    },
+    "resonator": {
+      "textures": "textures/items/resonator.png"
+    },
+    "ring_apprentice": {
+      "textures": "textures/items/ring_apprentice.png"
+    },
+    "ring_fancy": {
+      "textures": "textures/items/ring_fancy.png"
+    },
+    "ring_mundane": {
+      "textures": "textures/items/ring_mundane.png"
+    },
+    "ring_protection": {
+      "textures": "textures/items/ring_protection.png"
+    },
+    "ring_runic": {
+      "textures": "textures/items/ring_runic.png"
+    },
+    "ring_runic_charge": {
+      "textures": "textures/items/ring_runic_charge.png"
+    },
+    "ring_runic_regen": {
+      "textures": "textures/items/ring_runic_regen.png"
+    },
+    "ring_verdant": {
+      "textures": "textures/items/ring_verdant.png"
+    },
+    "runed_tablet": {
+      "textures": "textures/items/runed_tablet.png"
+    },
+    "salis_mundus": {
+      "textures": "textures/items/salis_mundus.png"
+    },
+    "sanity_checker": {
+      "textures": "textures/items/sanity_checker.png"
+    },
+    "sanity_soap": {
+      "textures": "textures/items/sanity_soap.png"
+    },
+    "scribing_tools": {
+      "textures": "textures/items/scribing_tools.png"
+    },
+    "shard": {
+      "textures": "textures/items/shard.png"
+    },
+    "shard_balanced": {
+      "textures": "textures/items/shard_balanced.png"
+    },
+    "sinister_stone": {
+      "textures": "textures/items/sinister_stone.png"
+    },
+    "sinister_stone_active": {
+      "textures": "textures/items/sinister_stone_active.png"
+    },
+    "taint_slime": {
+      "textures": "textures/items/taint_slime.png"
+    },
+    "taint_tendril": {
+      "textures": "textures/items/taint_tendril.png"
+    },
+    "tallow": {
+      "textures": "textures/items/tallow.png"
+    },
+    "thaumium_axe": {
+      "textures": "textures/items/thaumium_axe.png"
+    },
+    "thaumium_boots": {
+      "textures": "textures/items/thaumium_boots.png"
+    },
+    "thaumium_chest": {
+      "textures": "textures/items/thaumium_chest.png"
+    },
+    "thaumium_gear": {
+      "textures": "textures/items/thaumium_gear.png"
+    },
+    "thaumium_helm": {
+      "textures": "textures/items/thaumium_helm.png"
+    },
+    "thaumium_hoe": {
+      "textures": "textures/items/thaumium_hoe.png"
+    },
+    "thaumium_legs": {
+      "textures": "textures/items/thaumium_legs.png"
+    },
+    "thaumium_pick": {
+      "textures": "textures/items/thaumium_pick.png"
+    },
+    "thaumium_plate": {
+      "textures": "textures/items/thaumium_plate.png"
+    },
+    "thaumium_shovel": {
+      "textures": "textures/items/thaumium_shovel.png"
+    },
+    "thaumium_sword": {
+      "textures": "textures/items/thaumium_sword.png"
+    },
+    "thaumometer": {
+      "textures": "textures/items/thaumometer.png"
+    },
+    "thaumonomicon": {
+      "textures": "textures/items/thaumonomicon.png"
+    },
+    "thaumonomicon_cheat": {
+      "textures": "textures/items/thaumonomicon_cheat.png"
+    },
+    "thaumostatic_harness": {
+      "textures": "textures/items/thaumostatic_harness.png"
+    },
+    "traveller_boots": {
+      "textures": "textures/items/traveller_boots.png"
+    },
+    "tripletreat": {
+      "textures": "textures/items/tripletreat.png"
+    },
+    "tube_buffer": {
+      "textures": "textures/items/tube_buffer.png"
+    },
+    "tube_filter": {
+      "textures": "textures/items/tube_filter.png"
+    },
+    "tube_normal": {
+      "textures": "textures/items/tube_normal.png"
+    },
+    "tube_oneway": {
+      "textures": "textures/items/tube_oneway.png"
+    },
+    "tube_restrict": {
+      "textures": "textures/items/tube_restrict.png"
+    },
+    "tube_valve": {
+      "textures": "textures/items/tube_valve.png"
+    },
+    "turret_advanced": {
+      "textures": "textures/items/turret_advanced.png"
+    },
+    "turret_basic": {
+      "textures": "textures/items/turret_basic.png"
+    },
+    "turret_focus": {
+      "textures": "textures/items/turret_focus.png"
+    },
+    "turret_magnet": {
+      "textures": "textures/items/turret_magnet.png"
+    },
+    "void_axe": {
+      "textures": "textures/items/void_axe.png"
+    },
+    "void_boots": {
+      "textures": "textures/items/void_boots.png"
+    },
+    "void_chest": {
+      "textures": "textures/items/void_chest.png"
+    },
+    "void_gear": {
+      "textures": "textures/items/void_gear.png"
+    },
+    "void_helm": {
+      "textures": "textures/items/void_helm.png"
+    },
+    "void_hoe": {
+      "textures": "textures/items/void_hoe.png"
+    },
+    "void_legs": {
+      "textures": "textures/items/void_legs.png"
+    },
+    "void_pick": {
+      "textures": "textures/items/void_pick.png"
+    },
+    "void_plate": {
+      "textures": "textures/items/void_plate.png"
+    },
+    "void_robe_chest": {
+      "textures": "textures/items/void_robe_chest.png"
+    },
+    "void_robe_chest_over": {
+      "textures": "textures/items/void_robe_chest_over.png"
+    },
+    "void_robe_helm": {
+      "textures": "textures/items/void_robe_helm.png"
+    },
+    "void_robe_legs": {
+      "textures": "textures/items/void_robe_legs.png"
+    },
+    "void_robe_legs_over": {
+      "textures": "textures/items/void_robe_legs_over.png"
+    },
+    "void_seed": {
+      "textures": "textures/items/void_seed.png"
+    },
+    "void_shovel": {
+      "textures": "textures/items/void_shovel.png"
+    },
+    "void_sword": {
+      "textures": "textures/items/void_sword.png"
+    },
+    "wispy_essence": {
+      "textures": "textures/items/wispy_essence.png"
+    },
+    "seal_blank": {
+      "textures": "textures/items/seals/seal_blank.png"
+    },
+    "seal_breaker": {
+      "textures": "textures/items/seals/seal_breaker.png"
+    },
+    "seal_butcher": {
+      "textures": "textures/items/seals/seal_butcher.png"
+    },
+    "seal_empty": {
+      "textures": "textures/items/seals/seal_empty.png"
+    },
+    "seal_empty_advanced": {
+      "textures": "textures/items/seals/seal_empty_advanced.png"
+    },
+    "seal_fill": {
+      "textures": "textures/items/seals/seal_fill.png"
+    },
+    "seal_fill_advanced": {
+      "textures": "textures/items/seals/seal_fill_advanced.png"
+    },
+    "seal_guard": {
+      "textures": "textures/items/seals/seal_guard.png"
+    },
+    "seal_guard_advanced": {
+      "textures": "textures/items/seals/seal_guard_advanced.png"
+    },
+    "seal_harvest": {
+      "textures": "textures/items/seals/seal_harvest.png"
+    },
+    "seal_lumber": {
+      "textures": "textures/items/seals/seal_lumber.png"
+    },
+    "seal_pickup": {
+      "textures": "textures/items/seals/seal_pickup.png"
+    },
+    "seal_pickup_advanced": {
+      "textures": "textures/items/seals/seal_pickup_advanced.png"
+    },
+    "seal_provider": {
+      "textures": "textures/items/seals/seal_provider.png"
+    },
+    "seal_use": {
+      "textures": "textures/items/seals/seal_use.png"
+    },
+    "cap_brass": {
+      "textures": "textures/items/wand/cap_brass.png"
+    },
+    "cap_brass_mat": {
+      "textures": "textures/items/wand/cap_brass_mat.png"
+    },
+    "cap_gold": {
+      "textures": "textures/items/wand/cap_gold.png"
+    },
+    "cap_gold_mat": {
+      "textures": "textures/items/wand/cap_gold_mat.png"
+    },
+    "cap_iron": {
+      "textures": "textures/items/wand/cap_iron.png"
+    },
+    "cap_iron_mat": {
+      "textures": "textures/items/wand/cap_iron_mat.png"
+    },
+    "cap_thaumium": {
+      "textures": "textures/items/wand/cap_thaumium.png"
+    },
+    "cap_thaumium_inert": {
+      "textures": "textures/items/wand/cap_thaumium_inert.png"
+    },
+    "cap_thaumium_mat": {
+      "textures": "textures/items/wand/cap_thaumium_mat.png"
+    },
+    "cap_void": {
+      "textures": "textures/items/wand/cap_void.png"
+    },
+    "cap_void_inert": {
+      "textures": "textures/items/wand/cap_void_inert.png"
+    },
+    "cap_void_mat": {
+      "textures": "textures/items/wand/cap_void_mat.png"
+    },
+    "focus": {
+      "textures": "textures/items/wand/focus.png"
+    },
+    "focus_builder": {
+      "textures": "textures/items/wand/focus_builder.png"
+    },
+    "focus_excavation": {
+      "textures": "textures/items/wand/focus_excavation.png"
+    },
+    "focus_fire": {
+      "textures": "textures/items/wand/focus_fire.png"
+    },
+    "focus_frost": {
+      "textures": "textures/items/wand/focus_frost.png"
+    },
+    "focus_grapple": {
+      "textures": "textures/items/wand/focus_grapple.png"
+    },
+    "focus_hellbat": {
+      "textures": "textures/items/wand/focus_hellbat.png"
+    },
+    "focus_hellbat_orn": {
+      "textures": "textures/items/wand/focus_hellbat_orn.png"
+    },
+    "focus_pech": {
+      "textures": "textures/items/wand/focus_pech.png"
+    },
+    "focus_portablehole": {
+      "textures": "textures/items/wand/focus_portablehole.png"
+    },
+    "focus_primal": {
+      "textures": "textures/items/wand/focus_primal.png"
+    },
+    "focus_shard": {
+      "textures": "textures/items/wand/focus_shard.png"
+    },
+    "focus_shock": {
+      "textures": "textures/items/wand/focus_shock.png"
+    },
+    "focus_trade": {
+      "textures": "textures/items/wand/focus_trade.png"
+    },
+    "focus_warding": {
+      "textures": "textures/items/wand/focus_warding.png"
+    },
+    "rod_blaze": {
+      "textures": "textures/items/wand/rod_blaze.png"
+    },
+    "rod_blaze_mat": {
+      "textures": "textures/items/wand/rod_blaze_mat.png"
+    },
+    "rod_bone": {
+      "textures": "textures/items/wand/rod_bone.png"
+    },
+    "rod_bone_mat": {
+      "textures": "textures/items/wand/rod_bone_mat.png"
+    },
+    "rod_greatwood": {
+      "textures": "textures/items/wand/rod_greatwood.png"
+    },
+    "rod_greatwood_mat": {
+      "textures": "textures/items/wand/rod_greatwood_mat.png"
+    },
+    "rod_ice": {
+      "textures": "textures/items/wand/rod_ice.png"
+    },
+    "rod_ice_mat": {
+      "textures": "textures/items/wand/rod_ice_mat.png"
+    },
+    "rod_obsidian": {
+      "textures": "textures/items/wand/rod_obsidian.png"
+    },
+    "rod_obsidian_mat": {
+      "textures": "textures/items/wand/rod_obsidian_mat.png"
+    },
+    "rod_primal_mat": {
+      "textures": "textures/items/wand/rod_primal_mat.png"
+    },
+    "rod_quartz": {
+      "textures": "textures/items/wand/rod_quartz.png"
+    },
+    "rod_quartz_mat": {
+      "textures": "textures/items/wand/rod_quartz_mat.png"
+    },
+    "rod_reed": {
+      "textures": "textures/items/wand/rod_reed.png"
+    },
+    "rod_reed_mat": {
+      "textures": "textures/items/wand/rod_reed_mat.png"
+    },
+    "rod_silverwood": {
+      "textures": "textures/items/wand/rod_silverwood.png"
+    },
+    "rod_silverwood_mat": {
+      "textures": "textures/items/wand/rod_silverwood_mat.png"
+    },
+    "rod_wood_mat": {
+      "textures": "textures/items/wand/rod_wood_mat.png"
+    },
+    "staff_rod_blaze": {
+      "textures": "textures/items/wand/staff_rod_blaze.png"
+    },
+    "staff_rod_bone": {
+      "textures": "textures/items/wand/staff_rod_bone.png"
+    },
+    "staff_rod_greatwood": {
+      "textures": "textures/items/wand/staff_rod_greatwood.png"
+    },
+    "staff_rod_ice": {
+      "textures": "textures/items/wand/staff_rod_ice.png"
+    },
+    "staff_rod_obsidian": {
+      "textures": "textures/items/wand/staff_rod_obsidian.png"
+    },
+    "staff_rod_primal": {
+      "textures": "textures/items/wand/staff_rod_primal.png"
+    },
+    "staff_rod_quartz": {
+      "textures": "textures/items/wand/staff_rod_quartz.png"
+    },
+    "staff_rod_reed": {
+      "textures": "textures/items/wand/staff_rod_reed.png"
+    },
+    "staff_rod_silverwood": {
+      "textures": "textures/items/wand/staff_rod_silverwood.png"
+    }
+  }
+}

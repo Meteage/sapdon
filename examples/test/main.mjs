@@ -7,6 +7,9 @@ import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
 import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
 import { BlockWire } from "./lib/wire.js";
 import { NativeEntityData } from "../../src/core/entity/data/NativeEntityData.js";
+import { EntityComponent } from "../../src/core/entity/componets/EntityComponet.js";
+import { FollowMobBehavior } from "../../src/core/entity/behavior/follow_mod.js";
+import { Navigation } from "../../src/core/entity/navigation/walk.js";
 
 
 
@@ -48,31 +51,10 @@ const block = BlockAPI.createBasicBlock("sapdon:test_block", "construction", [
 	"compass_block_north"
 ]);
 
-ItemAPI.createChestArmor("sapdon:chest", "custom_chestplate", "textures/models/armor/custom_main");
+ItemAPI.createChestplateArmor("sapdon:chest", "custom_chestplate", "textures/models/armor/custom_main");
 
-/*
-ItemAPI.createItem("sapdon:chest", "equipment", "custom_chestplate", { group: "itemGroup.name.chestplate" }).addComponent(
-	ItemComponent.combineComponents(
-		ItemComponent.setDisplayName("My Custom Armor"),
-		ItemComponent.setMaxStackSize(1),
-		ItemComponent.setWearable(5, "slot.armor.chest")
-	)
-);
-
-
-ItemAPI.createAttachable("sapdon:chest", "textures/models/armor/custom_main", "armor")
-	.addMaterial("enchanted", "armor_enchanted")
-	.addTexture("enchanted", "textures/misc/enchanted_actor_glint")
-	.addGeometry("default", "geometry.player.armor.chestplate")
-	.addRenderController("controller.render.armor")
-	.setScript("parent_setup", "v.chest_layer_visible = 0.0;");
-
-*/	
 RecipeAPI.registerSimpleFurnace("sapdon:test_furnace","sapdon:test_item", "sapdon:test_food");
 
 
 
 const wire = new BlockWire("sapdon:wire", "construction", [{ stateTag: 0, textures: ["wire"] }]);
-
-
-EntityAPI.createNativeEntity("sapdon:test_entity","minecraft:slime");

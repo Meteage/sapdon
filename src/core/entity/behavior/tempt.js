@@ -1,4 +1,4 @@
-export class EntityBehaviorTempt {
+export class TemptBehavior {
     /**
      * 创建 minecraft:behavior.tempt 组件。
      * @param {number} priority 行为的优先级
@@ -128,8 +128,8 @@ export class EntityBehaviorTempt {
      * @returns {Object} minecraft:behavior.tempt 组件的 JSON 对象
      */
     toJSON() {
-      return {
-        "minecraft:behavior.tempt": {
+      return new Map().set(
+        "minecraft:behavior.tempt", {
           priority: this.priority,
           can_get_scared: this.can_get_scared,
           can_tempt_vertically: this.can_tempt_vertically,
@@ -140,6 +140,6 @@ export class EntityBehaviorTempt {
           tempt_sound: this.tempt_sound,
           within_radius: this.within_radius,
         },
-      };
+      );
     }
   }
