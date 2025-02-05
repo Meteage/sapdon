@@ -29,5 +29,15 @@
       "south": "wire",
       "north": "wire"
     }
+  },
+  "sapdon:ore_cinnabar": {
+    "textures": {
+      "up": "ore_cinnabar",
+      "down": "ore_cinnabar",
+      "east": "ore_cinnabar",
+      "west": "ore_cinnabar",
+      "south": "ore_cinnabar",
+      "north": "ore_cinnabar"
+    }
   }
 }

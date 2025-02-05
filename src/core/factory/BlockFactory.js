@@ -1,6 +1,7 @@
 import { BasicBlock } from "../block/BasicBlock.js";
 import { Block } from "../block/block.js";
 import { GeometryBlock } from "../block/GeometryBlock.js";
+import { OreBlock } from "../block/OreBlock.js";
 import { RotatableBlock } from "../block/RotatableBlock.js";
 import { GRegistry } from "../registry.js";
 
@@ -17,6 +18,17 @@ const registerBlock = (block) => {
     const block_name = block.identifier.replace(":", "_");
     GRegistry.register(block_name, "behavior", "blocks/", block);
 };
+
+const registerFeature = (feature)=>{
+    const feature_name = feature.identifier.split(":")[feature.identifier.split(":").length - 1];
+    GRegistry.register(feature_name,"behavior","features/",feature);
+};
+
+const registerFeatureRule = (feature_rule)=>{
+    const feature_rule_name = feature_rule.identifier.split(":")[feature_rule.identifier.split(":").length - 1];
+    GRegistry.register(feature_rule_name,"behavior","feature_rules/",feature_rule);
+};
+
 export const BlockAPI = {
     /**
      * 创建一个基础方块。
@@ -109,5 +121,12 @@ export const BlockAPI = {
         const block = new GeometryBlock(identifier, category, geometry, material_instances, options);
         registerBlock(block); // 调用注册方法
         return block;
+    },
+    createOreBlock(identifier, category, textures_arr, options = {}){
+        const ore_block = new OreBlock(identifier, category, textures_arr, options)
+        registerBlock(ore_block.block); // 调用注册方法
+        registerFeature(ore_block.feature); // 调用注册方法
+        registerFeatureRule(ore_block.feature_rules); // 调用注册方法
+        return ore_block;
     }
 };

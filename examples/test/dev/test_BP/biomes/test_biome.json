@@ -1,0 +1,48 @@
+{
+  "format_version": "1.13.0",
+  "minecraft:biome": {
+    "description": {
+      "identifier": "test_biome"
+    },
+    "components": {
+      "minecraft:climate": {
+        "downfall": 0.7,
+        "snow_accumulation": [
+          0.6,
+          0.9
+        ],
+        "temperature": 15
+      },
+      "minecraft:overworld_height": {
+        "noise_params": [
+          0.6,
+          0.9
+        ]
+      },
+      "minecraft:surface_parameters": {
+        "sea_floor_depth": 7,
+        "sea_floor_material": "minecraft:blue_ice",
+        "foundation_material": "minecraft:cobblestone",
+        "mid_material": "minecraft:minecraft:concrete",
+        "top_material": "minecraft:glass",
+        "sea_material": "minecraft:water"
+      },
+      "minecraft:overworld_generation_rules": {
+        "generate_for_climates": [
+          [
+            "medium",
+            100
+          ],
+          [
+            "warm",
+            100
+          ],
+          [
+            "cold",
+            100
+          ]
+        ]
+      }
+    }
+  }
+}

@@ -4,6 +4,33 @@
   "padding": 8,
   "num_mip_levels": 4,
   "texture_data": {
+    "animatedglow": {
+      "textures": "textures/blocks/animatedglow"
+    },
+    "arcane_workbench_side": {
+      "textures": "textures/blocks/arcane_workbench_side"
+    },
+    "arcane_workbench_top": {
+      "textures": "textures/blocks/arcane_workbench_top"
+    },
+    "base_wood_grain": {
+      "textures": "textures/blocks/base_wood_grain"
+    },
+    "castleBlock_darkBrickBloody_0": {
+      "textures": "textures/blocks/castleBlock_darkBrickBloody_0"
+    },
+    "castleBlock_darkSlab_0": {
+      "textures": "textures/blocks/castleBlock_darkSlab_0"
+    },
+    "castleBlock_purpleBrick_0": {
+      "textures": "textures/blocks/castleBlock_purpleBrick_0"
+    },
+    "castleBlock_purpleSlab_0": {
+      "textures": "textures/blocks/castleBlock_purpleSlab_0"
+    },
+    "churchAltar": {
+      "textures": "textures/blocks/churchAltar"
+    },
     "compass_block_down": {
       "textures": "textures/blocks/compass_block_down"
     },
@@ -22,8 +49,17 @@
     "compass_block_west": {
       "textures": "textures/blocks/compass_block_west"
     },
+    "cursedEarth_0": {
+      "textures": "textures/blocks/cursedEarth_0"
+    },
     "custom_chestplate": {
       "textures": "textures/blocks/custom_chestplate"
+    },
+    "garlicTorchStrong_0": {
+      "textures": "textures/blocks/garlicTorchStrong_0"
+    },
+    "garlicTorchWeak_0": {
+      "textures": "textures/blocks/garlicTorchWeak_0"
     },
     "garlic_stage_0": {
       "textures": "textures/blocks/garlic_stage_0"
@@ -37,11 +73,62 @@
     "garlic_stage_3": {
       "textures": "textures/blocks/garlic_stage_3"
     },
+    "jar_bottom": {
+      "textures": "textures/blocks/jar_bottom"
+    },
+    "jar_brine": {
+      "textures": "textures/blocks/jar_brine"
+    },
+    "jar_side": {
+      "textures": "textures/blocks/jar_side"
+    },
+    "jar_side_void": {
+      "textures": "textures/blocks/jar_side_void"
+    },
+    "jar_top": {
+      "textures": "textures/blocks/jar_top"
+    },
+    "jar_top_void": {
+      "textures": "textures/blocks/jar_top_void"
+    },
+    "ore_cinnabar": {
+      "textures": "textures/blocks/ore_cinnabar"
+    },
+    "test_block": {
+      "textures": "textures/blocks/test_block"
+    },
     "test_log_oak": {
       "textures": "textures/blocks/test_log_oak"
     },
     "test_log_top": {
       "textures": "textures/blocks/test_log_top"
+    },
+    "vampireOrchid_0": {
+      "textures": "textures/blocks/vampireOrchid_0"
+    },
+    "wheat_stage_0": {
+      "textures": "textures/blocks/wheat_stage_0"
+    },
+    "wheat_stage_1": {
+      "textures": "textures/blocks/wheat_stage_1"
+    },
+    "wheat_stage_2": {
+      "textures": "textures/blocks/wheat_stage_2"
+    },
+    "wheat_stage_3": {
+      "textures": "textures/blocks/wheat_stage_3"
+    },
+    "wheat_stage_4": {
+      "textures": "textures/blocks/wheat_stage_4"
+    },
+    "wheat_stage_5": {
+      "textures": "textures/blocks/wheat_stage_5"
+    },
+    "wheat_stage_6": {
+      "textures": "textures/blocks/wheat_stage_6"
+    },
+    "wheat_stage_7": {
+      "textures": "textures/blocks/wheat_stage_7"
     },
     "wire": {
       "textures": "textures/blocks/wire"

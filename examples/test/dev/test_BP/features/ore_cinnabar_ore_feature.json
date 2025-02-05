@@ -1,0 +1,17 @@
+{
+  "format_version": "1.17.0",
+  "minecraft:ore_feature": {
+    "description": {
+      "identifier": "sapdon:ore_cinnabar_ore_feature"
+    },
+    "count": 6,
+    "replace_rules": [
+      {
+        "places_block": "sapdon:ore_cinnabar",
+        "may_replace": [
+          "minecraft:stone"
+        ]
+      }
+    ]
+  }
+}
