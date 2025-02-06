@@ -21,7 +21,7 @@ function readPackageJson(dir) {
         try {
             const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
             return {
-                name: packageJson.name || path.basename(dir),
+                name: path.basename(dir),
                 description: packageJson.description || "A new sapdon project",
                 author: packageJson.author || "Sapdon",
                 version: packageJson.version || "1.0.0"
@@ -38,7 +38,7 @@ function readPackageJson(dir) {
 // 额外添加的init方法
 program.command("init").description("Initialize a project base NodeJS project").action(() => {
     const currentDir = process.cwd();
-    const packageJsonData = readPackageJson(currentDir);
+    const packageJsonData = JSON.parse(fs.readFileSync(currentDir, 'utf-8'));
 
     if (!packageJsonData) {
         console.error("当前目录没有package.json文件，无法初始化项目。请使用create命令创建项目。");
@@ -83,8 +83,7 @@ program.command("init").description("Initialize a project base NodeJS project").
             default: "1.19.50"
         }
     ]).then((answers) => {
-        delete packageJsonData.scripts;
-        _initProject(currentDir, {...packageJsonData, ...answers});
+        _initProject(currentDir, {...readPackageJson(currentDir), ...answers});
         console.log("请使用命令sapdon config配置框架build.config文件。");
     });
 });
