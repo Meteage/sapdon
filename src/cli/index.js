@@ -7,7 +7,9 @@ import {initProject} from './init.js';
 import {buildProject} from './build.js';
 import {readFile} from "./utils.js";
 import fs from "fs";
+import {fileURLToPath} from "url";
 
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 process.removeAllListeners('warning');
