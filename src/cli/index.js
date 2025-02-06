@@ -38,7 +38,7 @@ function readPackageJson(dir) {
 // 额外添加的init方法
 program.command("init").description("Initialize a project base NodeJS project").action(() => {
     const currentDir = process.cwd();
-    const packageJsonData = JSON.parse(fs.readFileSync(currentDir, 'utf-8'));
+    const packageJsonData = JSON.parse(fs.readFileSync(path.join(currentDir, 'package.json'), 'utf-8'));
 
     if (!packageJsonData) {
         console.error("当前目录没有package.json文件，无法初始化项目。请使用create命令创建项目。");
