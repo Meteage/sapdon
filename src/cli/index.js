@@ -83,6 +83,7 @@ program.command("init").description("Initialize a project base NodeJS project").
             default: "1.19.50"
         }
     ]).then((answers) => {
+        delete packageJsonData.scripts;
         _initProject(currentDir, {...packageJsonData, ...answers});
         console.log("请使用命令sapdon config配置框架build.config文件。");
     });
