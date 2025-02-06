@@ -23,7 +23,25 @@ export const initProject = (projectPath, data) => {
     //模版目录
     const templateDir = path.join(__dirname, "../templates/test_sapdon");
     copyFolder(templateDir, projectPath);
-    
+
+    //生成模组介绍文件
+    saveFile(path.join(projectPath, "mod.info"), JSON.stringify(data, null, 2));
+}
+
+export const _initProject = (projectPath, data) => {
+    //检查项目目录是否存在
+    //如果不存在则创建项目目录
+    //从模板下载项目文件
+    //根据用户输入的项目信息生成项目配置文件
+    //根据用户选择是否生成脚本文件，生成脚本文件
+    if(!checkPath(path.join(projectPath, "mod.info"))) {
+        console.log("项目已存在...");
+        return;
+    }
+    //模版目录
+    const templateDir = path.join(__dirname, "../templates/test_sapdon");
+    copyFolder(templateDir, projectPath);
+
     //生成模组介绍文件
     saveFile(path.join(projectPath, "mod.info"), JSON.stringify(data, null, 2));
 }

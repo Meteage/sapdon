@@ -3,7 +3,7 @@ import {program} from 'commander';
 import inquirer from 'inquirer';
 import path from 'path';
 
-import {initProject} from './init.js';
+import {_initProject, initProject} from './init.js';
 import {buildProject} from './build.js';
 import {readFile} from "./utils.js";
 import fs from "fs";
@@ -83,11 +83,7 @@ program.command("init").description("Initialize a project base NodeJS project").
             default: "1.19.50"
         }
     ]).then((answers) => {
-        const projectPath = currentDir;
-        console.log('项目路径:', projectPath);
-        initProject(projectPath, {...packageJsonData, ...answers});
-        // 其他初始化操作
-        console.log("项目初始化完成。");
+        _initProject(currentDir, answers);
         console.log("请使用命令sapdon config配置框架build.config文件。");
     });
 });
