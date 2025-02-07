@@ -79,6 +79,15 @@ export class Block extends BasicBlock {
 
         return material_instances;
     }
+
+    addVariantComponent(variantIndex, componentMap) {
+        if (variantIndex < 0 || variantIndex >= this.variantDatas.length) {
+            throw new Error('variantIndex 必须在 0 到 variantDatas.length-1 之间');
+        }
+        const condition = `q.block_state('sapdon:block_variant_tag') == ${variantIndex}`;
+        this.addPermutation(condition, componentMap);
+        return this;
+    }
 }
 
 /*

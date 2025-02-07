@@ -111,9 +111,12 @@ export const buildProject = (projectPath,projectName) => {
     const terrain_texture_json_path = path.join(buildResDirPath,"textures/terrain_texture.json")
     generateBlockTextureJson(terrain_texture_dir,terrain_texture_json_path,projectName);
 
-    //动态加载用户modjs文件
-    loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath,projectName);
-    
+    //只有当buildMode为development时才加载用户modjs文件
+    if(buildConfig.defaultConfig.buildMode === "development"){
+         //动态加载用户modjs文件
+        loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath,projectName);
+    }
+   
     //延迟1s
     setTimeout(()=>{
         //将编译好的文件夹拷贝至mc

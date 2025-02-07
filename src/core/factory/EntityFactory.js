@@ -1,5 +1,6 @@
 import { BasicEntity } from "../entity/BasicEntity.js";
 import { ClientEntity } from "../entity/ClientEntity.js";
+import { Entity } from "../entity/Entity.js";
 import { NativeEntity } from "../entity/NativeEntity.js";
 import { Projectile } from "../entity/Projectile.js";
 import { GRegistry } from "../registry.js";
@@ -45,7 +46,7 @@ export const EntityAPI = {
      * @param {Object} behData - 实体的行为数据。
      * @param {Object} resData - 实体的资源数据。
      * @param {Object} options - 额外选项。
-     * @returns {Object} 包含行为数据和资源数据的对象。
+     * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
     createEntity: function (identifier, texture, behData, resData, options = {}) {
         if (!identifier || !texture) {
@@ -65,7 +66,7 @@ export const EntityAPI = {
      * @param {string} identifier - 投射物的唯一标识符。
      * @param {string} texture - 投射物的纹理。
      * @param {Object} options - 额外选项。
-     * @returns {Object} 包含行为数据和资源数据的对象。
+     * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
     createProjectile: function (identifier, texture, options = {}) {
         if (!identifier || !texture) {
