@@ -2,6 +2,8 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { saveFile } from "./utils.js";
 import { GRegistry } from "../core/registry.js";
+import { generateBlockTextureJson, generateItemTextureJson} from "./tools/textureSet.js";
+import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js";
 
 /**
  * 处理 blocks.json 数据
@@ -49,13 +51,30 @@ export const loadAndExecuteMod = async (modPath, buildPath,projectName) => {
         // 动态加载 JavaScript 文件
         await import(fileUrl);
 
+        const buildBehDirPath = path.join(buildPath,`${projectName}_BP/`);
+        const buildResDirPath = path.join(buildPath,`${projectName}_RP/`);
+
         // 初始化 blocks.json 数据
         const blocksJsonPath = path.join(buildPath, `${projectName}_RP`,"blocks.json");
         const blocks = {"format_version": "1.20.20"};
 
+        //生成item_texture.json
+        const item_texture_dir = path.join(buildResDirPath,"textures/items");
+        const item_texture_json_path = path.join(buildResDirPath,"textures/item_texture.json")
+        generateItemTextureJson(item_texture_dir,item_texture_json_path,projectName,ItemTextureManager.getItemTextures());
+
+         //生成terrain_texture.json
+        const terrain_texture_dir = path.join(buildResDirPath,"textures/blocks")
+        const terrain_texture_json_path = path.join(buildResDirPath,"textures/terrain_texture.json")
+        generateBlockTextureJson(terrain_texture_dir,terrain_texture_json_path,projectName,terrainTextureManager.getTerrainTextures());
+
+        //生成flipbook_textures.json
+        const flipbook_textures_path = path.join(buildResDirPath,"textures/flipbook_textures.json")
+        saveFile(flipbook_textures_path,JSON.stringify(FlipbookTextures.flipbook_textures,null,2));
+
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList();
-        console.log("dataList:", dataList);
+        //console.log("dataList:", dataList);
 
         // 遍历数据并保存到相应的目录
         dataList.forEach(({ name, root, path: dataPath, data }) => {

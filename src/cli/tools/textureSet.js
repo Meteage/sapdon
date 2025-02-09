@@ -59,10 +59,15 @@ const generateJsonFile = async (outputPath, jsonData, successMessage) => {
  * @param {string} outputPath - 输出的 JSON 文件路径
  * @param {string} projectName - 项目名称
  */
-export async function generateBlockTextureJson(itemTexturesPath, outputPath, projectName) {
+export async function generateBlockTextureJson(itemTexturesPath, outputPath, projectName, userTerrainTextures) {
   try {
     // 递归遍历目录，获取所有 PNG 文件的路径
     const itemTexturesSet = await traverseDirectory(itemTexturesPath, itemTexturesPath,"textures/blocks/");
+    
+    // 合并用户自定义的texture_data
+    if(userTerrainTextures){
+      Object.assign(itemTexturesSet,userTerrainTextures);
+    }
 
     // 生成 JSON 数据
     const jsonData = {
@@ -85,10 +90,15 @@ export async function generateBlockTextureJson(itemTexturesPath, outputPath, pro
  * @param {string} itemTexturesPath - 包含 PNG 文件的根目录
  * @param {string} outputPath - 输出的 JSON 文件路径
  */
-export async function generateItemTextureJson(itemTexturesPath, outputPath,projectName) {
+export async function generateItemTextureJson(itemTexturesPath, outputPath,projectName,userItemTextures) {
   try {
     // 递归遍历目录，获取所有 PNG 文件的路径
     const itemTexturesSet = await traverseDirectory(itemTexturesPath, itemTexturesPath, "textures/items/");
+
+    // 合并用户自定义的texture_data
+    if(userItemTextures){
+      Object.assign(itemTexturesSet,userItemTextures);
+    }
 
     // 生成 JSON 数据
     const jsonData = {
