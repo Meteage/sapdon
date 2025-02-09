@@ -9,8 +9,6 @@ import {
     AddonManifestMetadata
 } from '../core/addon/manifest.js';
 
-import { generateItemTextureJson, generateBlockTextureJson } from './tools/textureSet.js';
-
 import { fileURLToPath } from 'url';
 
 // 获取当前文件的目录路径
@@ -45,27 +43,6 @@ export const buildProject = (projectPath,projectName) => {
     const modInfo = JSON.parse(readFile(modInfoPath));
     const min_engine_version = versionStringToArray(modInfo.min_engine_version);
 
-    const behManifest = generateBehManifest(
-        modInfo.name,
-        modInfo.description,
-        modInfo.version,
-        {
-            min_engine_version:min_engine_version,
-        },
-        buildConfig.defaultConfig.dependencies,
-        buildConfig.defaultConfig.scriptEntry
-    );
-
-    const resManifest = generateResManifest(
-        modInfo.name,
-        modInfo.description,
-        modInfo.version,
-        {
-            min_engine_version:min_engine_version,
-        },
-        []
-    );
-
     const buildDirPath = path.join(projectPath,buildConfig.defaultConfig.buildDir);
 
     const buildBehDirPath = path.join(buildDirPath,`${projectName}_BP/`);
@@ -74,6 +51,27 @@ export const buildProject = (projectPath,projectName) => {
     //判断manifest.json是否已经生成过了，生成过了就不用生成
     const manifestPath = path.join(buildBehDirPath,"manifest.json");
     if(checkPath(manifestPath)){
+        const behManifest = generateBehManifest(
+            modInfo.name,
+            modInfo.description,
+            modInfo.version,
+            {
+                min_engine_version:min_engine_version,
+            },
+            buildConfig.defaultConfig.dependencies,
+            buildConfig.defaultConfig.scriptEntry
+        );
+    
+        const resManifest = generateResManifest(
+            modInfo.name,
+            modInfo.description,
+            modInfo.version,
+            {
+                min_engine_version:min_engine_version,
+            },
+            []
+        );
+        
        //BP
         saveFile(path.join(buildBehDirPath,"manifest.json"),behManifest);
         //RP
@@ -101,19 +99,14 @@ export const buildProject = (projectPath,projectName) => {
         copyFolder(sourcePath,scriptPath);
     });
 
-    //生成item_texture.json
-    const item_texture_dir = path.join(buildResDirPath,"textures/items");
-    const item_texture_json_path = path.join(buildResDirPath,"textures/item_texture.json")
-    generateItemTextureJson(item_texture_dir,item_texture_json_path,projectName);
-
-    //生成terrain_texture.json
-    const terrain_texture_dir = path.join(buildResDirPath,"textures/blocks")
-    const terrain_texture_json_path = path.join(buildResDirPath,"textures/terrain_texture.json")
-    generateBlockTextureJson(terrain_texture_dir,terrain_texture_json_path,projectName);
-
-    //动态加载用户modjs文件
-    loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath,projectName);
     
+
+    //只有当buildMode为development时才加载用户modjs文件
+    if(buildConfig.defaultConfig.buildMode === "development"){
+         //动态加载用户modjs文件
+        loadAndExecuteMod(path.join(projectPath,buildConfig.defaultConfig.buildEntry),buildDirPath,projectName);
+    }
+   
     //延迟1s
     setTimeout(()=>{
         //将编译好的文件夹拷贝至mc

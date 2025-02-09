@@ -58,6 +58,7 @@ export class Item {
         for (const [key, value] of componentMap.entries()) {
             this.components.set(key, value);
         }
+        return this;
     }
 
     /**
@@ -69,6 +70,7 @@ export class Item {
             throw new Error("key is required and must be a string");
         }
         this.components.delete(key);
+        return this;
     }
 
     /**

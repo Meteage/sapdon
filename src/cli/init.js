@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 // 获取当前文件的目录
 const __dirname = path.dirname(__filename);
 
-console.log('当前文件目录:', __dirname);
+
 
 export const initProject = (projectPath, data) => {
     //检查项目目录是否存在
