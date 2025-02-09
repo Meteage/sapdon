@@ -3,7 +3,7 @@ import {program} from 'commander';
 import inquirer from 'inquirer';
 import path from 'path';
 
-import {_initProject, initProject} from './init.js';
+import {initNPMProject, initProject,readPackageJson} from './init.js';
 import {buildProject} from './build.js';
 import {readFile} from "./utils.js";
 import fs from "fs";
@@ -14,34 +14,21 @@ const __dirname = path.dirname(__filename);
 
 process.removeAllListeners('warning');
 
-// 读取package.json文件并提取信息
-function readPackageJson(dir) {
-    const packageJsonPath = path.join(dir, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
-        try {
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-            return {
-                name: path.basename(dir),
-                description: packageJson.description || "A new sapdon project",
-                author: packageJson.author || "Sapdon",
-                version: packageJson.version || "1.0.0"
-            };
-        } catch (error) {
-            console.error("读取package.json文件时出错:", error);
-            return null;
-        }
-    } else {
-        return null;
-    }
-}
-
 // 额外添加的init方法
-program.command("init").description("Initialize a project base NodeJS project").action(() => {
+program.command("init").description("初始化一个基于NodeJS的项目").action(() => {
     const currentDir = process.cwd();
-    const packageJsonData = JSON.parse(fs.readFileSync(path.join(currentDir, 'package.json'), 'utf-8'));
+    const packageJsonPath = path.join(currentDir, 'package.json');
+    let packageJsonData;
+    if (!fs.existsSync(packageJsonPath)) {
+        console.error("没有找到package.json文件，请使改用create命令进行创建。");
+        return;
+    }
 
-    if (!packageJsonData) {
-        console.error("当前目录没有package.json文件，无法初始化项目。请使用create命令创建项目。");
+    try {
+        packageJsonData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    } catch (error) {
+        console.error("读取package.json文件时出错:", error);
+        console.log("请使改用create命令进行创建。")
         return;
     }
 
@@ -54,39 +41,25 @@ program.command("init").description("Initialize a project base NodeJS project").
     };
 
     try {
-        fs.writeFileSync(path.join(currentDir, 'package.json'), JSON.stringify(packageJsonData, null, 2), 'utf-8');
-        console.log("package.json文件已更新。");
+        fs.writeFileSync(packageJsonPath, JSON.stringify(packageJsonData, null, 2), 'utf-8');
     } catch (error) {
         console.error("写入package.json文件时出错:", error);
         return;
     }
 
-    // 更新package-lock.json文件
-    const packageLockJsonPath = path.join(currentDir, 'package-lock.json');
-    if (fs.existsSync(packageLockJsonPath)) {
-        try {
-            const packageLockJsonData = JSON.parse(fs.readFileSync(packageLockJsonPath, 'utf-8'));
-            packageLockJsonData.scripts = packageJsonData.scripts;
-            fs.writeFileSync(packageLockJsonPath, JSON.stringify(packageLockJsonData, null, 2), 'utf-8');
-            console.log("package-lock.json文件已更新。");
-        } catch (error) {
-            console.error("写入package-lock.json文件时出错:", error);
-        }
-    } else {
-        console.log("未找到package-lock.json文件，跳过更新。");
-    }
     inquirer.prompt([
         {
             type: "input",
             name: "min_engine_version",
-            message: "Minimum Engine Version:",
+            message: "最低引擎版本:",
             default: "1.19.50"
         }
     ]).then((answers) => {
-        _initProject(currentDir, {...readPackageJson(currentDir), ...answers});
-        console.log("请使用命令sapdon config配置框架build.config文件。");
-    });
+        initNPMProject(currentDir, {...readPackageJson(currentDir), ...answers});
+        console.log("请使用命令sapdon config配置框架的build.config文件。");
+    })
 });
+
 program.command("create <project-name>").description("Create a new project").action((projectName) => {
     inquirer.prompt([
         {
@@ -141,29 +114,37 @@ program.command("pack").description("Pack the current project").action(() => {
 
 // 配置build.config文件的命令
 program.command("config").description("Configure build.config file").action(() => {
-    const buildConfigData = JSON.parse(readFile(path.join(__dirname, "./build.config")));
+    const buildConfigPath = path.join(__dirname, "./build.config");
+    let buildConfigData;
+
+    try {
+        buildConfigData = JSON.parse(readFile(buildConfigPath));
+    } catch (error) {
+        console.error("读取build.config文件时出错:", error);
+        return;
+    }
 
     inquirer.prompt([
         {
             type: "input",
             name: "mojangPath",
             message: "Mojang Path (must end with LocalState/games/com.mojang/):",
-            default: "./"
+            default: buildConfigData.mojangPath || "./"
         },
         {
             type: "input",
             name: "mojangBetaPath",
             message: "Mojang Beta Path (must end with LocalState/games/com.mojang/):",
-            default: "./"
+            default: buildConfigData.mojangBetaPath || "./"
         }
     ]).then((answers) => {
-        const buildConfigPath = path.join(__dirname, "./build.config");
         try {
             fs.writeFileSync(buildConfigPath, JSON.stringify({...buildConfigData, ...answers}, null, 2), 'utf-8');
             console.log("build.config文件已更新。");
         } catch (error) {
             console.error("写入build.config文件时出错:", error);
         }
-    });
+    })
 });
+
 program.parse(program.argv);
