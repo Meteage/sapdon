@@ -1,4 +1,12 @@
 export class BlockComponent {
+ /**
+  * 
+  * @param {Array} custom_components 
+  * @returns 
+  */
+  static setCustomComponents(custom_components){
+    return new Map().set("minecraft:custom_components",[...custom_components])
+  }
   /**
  * 创建一个用于 Minecraft 方块的变换对象，并返回一个 Map。
  * @param {number[]} [translation=[0, 0, 0]] - 平移向量 [x, y, z]。

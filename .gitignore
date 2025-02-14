@@ -2,3 +2,4 @@ node_modules/
 biocraft/
 /.idea/
 examples/thaumcraft
+examples/test/build.config

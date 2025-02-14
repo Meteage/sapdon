@@ -1,4 +1,8 @@
 import {Direction, world } from "@minecraft/server"
+import { CustomComponentRegister } from "./custom_components/cropComponent";
+
+
+CustomComponentRegister();
 
 const wireBlock = [];
 
@@ -93,3 +97,5 @@ world.afterEvents.itemUseOn.subscribe((event) => {
     }
     world.sendMessage("blockId:"+event.block.typeId);
 })
+
+

@@ -31,21 +31,13 @@ EntityAPI.createProjectile("sapdon:test_projectile", "textures/items/masterball"
 
 ItemAPI.createFood("sapdon:test_food", "items", "masterball");
 
-BlockAPI.createBlock(
-	"sapdon:block",
-	"construction",
-	[
-		{ stateTag: 1, textures: ["garlic_stage_0"] },
-		{ stateTag: 2, textures: ["garlic_stage_1"] },
-		{ stateTag: 3, textures: ["garlic_stage_2"] },
-		{ stateTag: 4, textures: ["garlic_stage_3"] }
-	],
-	{
-		ambient_occlusion: true,
-		face_dimming: true,
-		render_method: "alpha_test"
-	}
-).addComponent(BlockComponent.setGeometry("geometry.crop"));
+BlockAPI.createCropBlock("sapdon:test_crop", "construction", [
+	{ stateTag: 1, textures: ["garlic_stage_0"] },
+	{ stateTag: 2, textures: ["garlic_stage_1"] },
+	{ stateTag: 3, textures: ["garlic_stage_2"] },
+	{ stateTag: 4, textures: ["garlic_stage_3"] }]
+);
+
 
 const block = BlockAPI.createBasicBlock("sapdon:test_block", "construction", [
 	"compass_block_up",
