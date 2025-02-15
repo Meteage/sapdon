@@ -57,3 +57,16 @@
 1.重写AddonClientEntityDescription类及其AddonAttachableDescription类以更方便地使用 [2024,1,18,22,14]
 2.修改ClientEntity类以更方便使用 [2024,1,21,22,45]
 3.修复GRegister的一些bug
+
+
+大版本 2
+对JsonUI进行了大幅度支持
+
+更新
+1.添加了UISystem类用于管理ui文件
+2.添加了UIElenment类用于创建基础UI元素
+3.添加了Control,DataBinding,Factory,Input,Layout,Sprite属性库
+4.添加了Panel类，用以创建面板元素
+5.添加了Image类，用以创建图片元素
+6.添加了ServerFormSystem类，为脚本调用UI做准备
+7.添加了SerVerUISystem类，用以提供自定义UI调用注册 [2025,2,15,16,40]

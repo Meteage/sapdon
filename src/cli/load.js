@@ -5,6 +5,9 @@ import { GRegistry } from "../core/registry.js";
 import { generateBlockTextureJson, generateItemTextureJson} from "./tools/textureSet.js";
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js";
 
+import { ServerUISystem } from "../core/ui/registry/ServerUISystem.js";
+import { updateServerFormSystem } from "../core/ui/systems/server_form.js";
+
 /**
  * 处理 blocks.json 数据
  * @param {Object} data blocks.json 数据
@@ -72,6 +75,11 @@ export const loadAndExecuteMod = async (modPath, buildPath,projectName) => {
         const flipbook_textures_path = path.join(buildResDirPath,"textures/flipbook_textures.json")
         saveFile(flipbook_textures_path,JSON.stringify(FlipbookTextures.flipbook_textures,null,2));
 
+        //ui server_form
+
+        const ServerFromSystem = updateServerFormSystem(ServerUISystem.getAllUISystem());
+        console.log("sui:",ServerUISystem.getAllUISystem())
+        GRegistry.register(ServerFromSystem.name,"resource",ServerFromSystem.path,ServerFromSystem);
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList();
         //console.log("dataList:", dataList);
