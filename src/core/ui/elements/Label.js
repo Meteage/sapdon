@@ -1,20 +1,32 @@
+
 import { Control } from "../Properties/Control.js";
 import { DataBinding } from "../Properties/DataBinding.js";
 import { Factory } from "../Properties/Factory.js";
 
 import { Layout } from "../Properties/Layout.js";
+import { Text } from "../Properties/Text.js";
 import { UIElement } from "./UIElement.js";
 
-export class Panel extends UIElement{
+export class Label extends UIElement{
     constructor(id,template){
-        super(id,"panel",template);
+        super(id,"label",template);
+        this.text = new Text();
         this.control = new Control();
         this.layout = new Layout();
         this.dataBinding = new DataBinding();
         this.factory = new Factory();
     }
     serialize(){
-        //序列化
+        //合并属性
+
+        // 复制Text的属性
+        for (const key in this.text) {
+            if (this.text.hasOwnProperty(key)) {
+                this.properties.set(key, this.text[key]);
+            }
+        }
+
+        
 
         // 复制Layout的属性
         for (const key in this.layout) {

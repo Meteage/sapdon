@@ -26,12 +26,7 @@ export class Image extends UIElement{
             }
         }
 
-        // 复制Control的属性
-        for (const key in this.control) {
-            if (this.control.hasOwnProperty(key)) {
-                this.properties.set(key, this.control[key]);
-            }
-        }
+        
 
         // 复制Layout的属性
         for (const key in this.layout) {
@@ -51,6 +46,13 @@ export class Image extends UIElement{
          for (const key in this.factory) {
             if (this.factory.hasOwnProperty(key)) {
                 this.properties.set(key, this.factory[key]);
+            }
+        }
+
+        // 复制Control的属性
+        for (const key in this.control) {
+            if (this.control.hasOwnProperty(key)) {
+                this.properties.set(key, this.control[key]);
             }
         }
 

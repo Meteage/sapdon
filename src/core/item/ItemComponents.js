@@ -1,5 +1,19 @@
 export class ItemComponent {
-    
+  static setBlockPlacer(block,replace_block_item, use_on){
+    return new Map().set("minecraft:block_placer",{
+      block:block,
+      replace_block_item: replace_block_item,
+      use_on:use_on
+    })
+  }
+    /**
+  * 
+  * @param {Array} custom_components 
+  * @returns 
+  */
+  static setCustomComponents(custom_components){
+    return new Map().set("minecraft:custom_components",[...custom_components])
+  }
   /**
    * 设置物品的可投掷组件。
    * @param {Boolean} doSwingAnimation - 是否使用挥动动画。

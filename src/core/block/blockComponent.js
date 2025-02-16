@@ -1,4 +1,10 @@
 export class BlockComponent {
+ static setTick(interval_range,looping){
+  return new Map().set("minecraft:tick",{
+    interval_range:interval_range,
+    looping:looping
+  })
+ }
  /**
   * 
   * @param {Array} custom_components 

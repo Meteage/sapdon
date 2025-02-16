@@ -11,18 +11,32 @@ export class UISystem {
     }
   
     addElement(element) {
-        this.elements.set(element.id, element.serialize()[element.id]);
+        this.elements.set(element.id, element);
         return this;
+    }
+
+    getElement(element_name){
+        return this.elements.get(element_name);
     }
 
 
     addAnimation(name,value){
         this.animations.set(name,value);
     }
+
+    getAnimation(animation_name){
+        return this.animations.get(animation_name);
+    }
   
     toJson() {
-        const ui = Object.fromEntries(this.elements);
-        ui.namespace = this.namespace;
+        const ui = {namespace:this.namespace};
+        //序列化
+        this.elements.forEach((value,key)=>{
+            console.log("elements key:",key)
+            console.log("elements value:",value);
+            ui[key] = value.serialize()[value.id]
+        })
+        console.log("ui:",ui)
         return ui;
     }
 }
