@@ -1,0 +1,34 @@
+import { Panel } from "./Panel.js";
+
+export class StackPanel extends Panel{
+    constructor(id, template){
+        super(id, template);
+        this.type = "stack_panel";
+        this.orientation = "vertical";
+        this.stackNum = 0;
+    }
+
+    addStack(size,content,debug = false){
+        const stack = new Panel(`stack${this.stackNum}`);
+        stack.layout.setSize(size)
+        stack.control.addControl(content)
+        if (debug ) stack.enableDebug();
+
+        this.control.addControl(stack.serialize())
+        this.stackNum++;
+    }
+    /**
+     * Possible values:
+        vertical
+        horizontal
+     * @param {*} orientation 
+     */
+    setOrientation(orientation){
+        this.orientation = orientation;
+    }
+    serialize(){
+        this.properties.set("type", "stack_panel")
+        this.properties.set("orientation",this.orientation);
+        return super.serialize();
+    }
+}

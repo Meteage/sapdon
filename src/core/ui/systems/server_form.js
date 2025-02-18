@@ -79,7 +79,7 @@ user_custom_ui_list.forEach(({form_name,ui_system}) => {
   //加入 root
   custom_form_root.control.addControl(
     new UIElement("custom_ui_"+form_name,undefined,"custom_ui_template")
-    .addVariable("main_content",ui_system.id)
+    .addVariable("main_content",ui_system.name)
     .addVariable("binding_text",form_name).serialize()
   )
 });

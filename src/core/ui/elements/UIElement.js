@@ -27,14 +27,32 @@
     screen - elements that are called by the game directly, usually root panel elements
  */
 
+import { Control } from "../Properties/Control.js";
+
+
+
 // 基础元素类
 export class UIElement {
-    constructor(id, type, template) {
+    constructor(name, type, template) {
         this.type = type;
-        this.id = template ? `${id}@${template}` : id;
+        this.id = template ? `${name}@${template}` : name;
+        this.name = name;
+        this.control = new Control();
         this.properties = new Map().set("type",type);
         this.variables = new Map();
         this.modifications = [];
+    }
+
+    enableDebug(){
+        this.control.addControl({
+            "debug_board": {
+                "type": "image",
+                "texture": "textures/ui/focus_border_white",
+                "nineslice_size": 1,
+                "size": [ "100%", "100%" ]
+            }
+        })
+        return this;
     }
 
     addVariable(name,value){
