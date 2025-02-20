@@ -1,36 +1,31 @@
-
 import { Control } from "../Properties/Control.js";
 import { DataBinding } from "../Properties/DataBinding.js";
 import { Factory } from "../Properties/Factory.js";
 
 import { Layout } from "../Properties/Layout.js";
-import { Sprite } from "../Properties/Sprite.js";
 import { UIElement } from "./UIElement.js";
 
-export class Image extends UIElement{
+export class CollectionPanel extends UIElement{
     constructor(id,template){
-        super(id,"image",template);
-        this.sprite = new Sprite();
+        super(id,"collection_panel",template);
         this.control = new Control();
         this.layout = new Layout();
         this.dataBinding = new DataBinding();
         this.factory = new Factory();
     }
-    setSprite(sprite){
-        this.sprite = sprite;
+    setCollectionName(collection_name){
+        this.addProp("collection_name",collection_name);
         return this;
     }
+
+    setLayout(layout){
+        if(!(layout instanceof Layout)) new Error("参数需要Layout类")
+        this.layout = layout;
+        return this;
+    }
+
     serialize(){
-        //合并属性
-
-        // 复制Sprite的属性
-        for (const key in this.sprite) {
-            if (this.sprite.hasOwnProperty(key)) {
-                this.properties.set(key, this.sprite[key]);
-            }
-        }
-
-        
+        //序列化
 
         // 复制Layout的属性
         for (const key in this.layout) {

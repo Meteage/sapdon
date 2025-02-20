@@ -5,8 +5,7 @@ import { GRegistry } from "../core/registry.js";
 import { generateBlockTextureJson, generateItemTextureJson} from "./tools/textureSet.js";
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js";
 
-import { ServerUISystem } from "../core/ui/registry/ServerUISystem.js";
-import { ServerFromSystem, updateServerFormSystem } from "../core/ui/systems/server_form.js";
+import { UISystemRegistry } from "../core/ui/registry/UISystemRegistry.js";
 
 /**
  * 处理 blocks.json 数据
@@ -75,9 +74,14 @@ export const loadAndExecuteMod = async (modPath, buildPath,projectName) => {
         const flipbook_textures_path = path.join(buildResDirPath,"textures/flipbook_textures.json")
         saveFile(flipbook_textures_path,JSON.stringify(FlipbookTextures.flipbook_textures,null,2));
 
-        //ui server_form
+        //_ui_defs.json
+        const ui_def = UISystemRegistry.getUIdefList();
+        saveFile(path.join(buildResDirPath,"ui/_ui_defs.json"),JSON.stringify({"ui_defs": ui_def},null,2));
         
-        GRegistry.register(ServerFromSystem.name,"resource",ServerFromSystem.path,ServerFromSystem);
+        UISystemRegistry.getUISystemList().forEach((ui_system)=>{
+            saveFile(path.join(buildResDirPath,ui_system.path,`${ui_system.name}.json`),JSON.stringify(ui_system.toJson(),null,2))
+        })
+        
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList();
         //console.log("dataList:", dataList);

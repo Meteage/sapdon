@@ -1,7 +1,7 @@
 /**
  * Grid 类
  * 
- * 该类表示一个网格控件，用于管理网格布局及其相关属性。
+ * 该类表示一个网格控件属性，用于管理网格布局及其相关属性。
  * 
  * 属性：
  * - grid_dimensions: Vector [columns, rows] - 网格的列数和行数
@@ -13,7 +13,7 @@
  * - precached_grid_item_count: int - 预缓存的网格项目数量
  */
 
-export class Grid {
+export class GridProp {
     constructor() {
         /*
         this.grid_dimensions = null;

@@ -1,13 +1,17 @@
+import { UISystemRegistry } from "../registry/UISystemRegistry.js";
+
 // UI 文件核心类
 export class UISystem {
 
-    constructor(identity, path) {
-      this.identity = identity;
-      this.namespace = identity.split(':')[0];
-      this.name = identity.split(':')[1];
+    constructor(identifier, path) {
+      this.identifier = identifier;
+      this.namespace = identifier.replace(":", "_");
+      this.name = identifier.split(':')[1];
       this.path = path;
       this.elements = new Map();
       this.animations = new Map();
+
+      UISystemRegistry.registerUISystem(this);
     }
   
     addElement(element) {
@@ -32,7 +36,7 @@ export class UISystem {
         const ui = {namespace:this.namespace};
         //序列化
         this.elements.forEach((value,key)=>{
-            console.log("elements key:",key)
+            //console.log("elements key:",key)
             console.log("elements value:",value);
             ui[key] = value.serialize()[value.id]
         })

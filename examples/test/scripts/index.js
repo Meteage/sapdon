@@ -1,8 +1,9 @@
 import {Direction, world } from "@minecraft/server"
-import { CustomComponentRegister } from "./custom_components/cropComponent";
+import { registerCustomBlockComponent, registerCustomItemComponent } from "./custom_components/registry.js";
 
-
-CustomComponentRegister();
+//自定义组件的注册
+registerCustomBlockComponent();
+registerCustomItemComponent();
 
 const wireBlock = [];
 

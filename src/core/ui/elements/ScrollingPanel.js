@@ -20,7 +20,6 @@ export class ScrollingPanel  extends UIElement{
     serialize(){
         //合并属性
 
-
         // 复制Input的属性
         for (const key in this.input) {
             if (this.input.hasOwnProperty(key)) {
@@ -34,8 +33,6 @@ export class ScrollingPanel  extends UIElement{
                 this.properties.set(key, this.scrollView[key]);
             }
         }
-
-        
 
         // 复制Layout的属性
         for (const key in this.layout) {

@@ -15,6 +15,7 @@ import { BiomeComponent } from "../../src/core/biome/biomeComponent.js";
 import { FeatureAPI } from "../../src/core/factory/FeatureFactory.js";
 import { BiomeFilter } from "../../src/core/feature_rule/condition/BiomeFilter.js";
 import { CoordinateDistribution } from "../../src/core/feature_rule/distribution/CoordinateDistribution.js";
+import { Guidebook } from "../../src/core/ui/systems/guidebook.js";
 
 
 
@@ -110,3 +111,31 @@ feature_rules.distribution.setIterations(10)
 
 
 BlockAPI.createOreBlock("sapdon:ore_cinnabar","construction",["ore_cinnabar"]);
+
+
+
+//通用指导手册
+const guidebook = new Guidebook("sapdon:guidebook","ui/")
+	  //第一页内容
+	  guidebook.addPage("page_index1",
+		new Image("page_left_content1")
+		.setSprite(
+			new Sprite().setTexture("textures/items/diamond_sword")
+		),
+		new Label("right_content1")
+		.setText(new Text().setColor([0,0,0]).setText("这是第一页右边的内容"))
+	  )
+	  //第一页内容
+	  guidebook.addPage("page_index2",
+		new Label("right_content2")
+		.setLayout(
+			new Layout().setSize([100,32])
+		)
+		.setText(
+			new Text().setColor([0,0,0]).setText("这是第二页左边的内容")
+		),
+		new Image("page_left_content2")
+		.setSprite(
+			new Sprite().setTexture("textures/items/diamond")
+		)
+	  )

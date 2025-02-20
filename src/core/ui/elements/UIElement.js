@@ -54,6 +54,29 @@ export class UIElement {
         })
         return this;
     }
+    
+    setControl(control){
+        this.control = control;
+        return this;
+    }
+
+    addControl(control){
+        console.log("control:  ", control)
+        if(control instanceof UIElement) {
+            this.control.addControl(control.serialize());
+        }
+        else{
+            this.control.addControl(control);
+        }
+        return this;
+    }
+
+    addControls(controls){
+        for(let i in controls){
+            this.addControl(controls[i]);
+        }
+        return this;
+    }
 
     addVariable(name,value){
         this.variables.set(`$${name}`,value);

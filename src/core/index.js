@@ -11,7 +11,7 @@ import { Image } from "./ui/elements/Image.js";
 import { Label } from "./ui/elements/Label.js";
 import { Panel } from "./ui/elements/Panel.js";
 import { UIElement } from "./ui/elements/UIElement.js";
-import { ServerUISystem } from "./ui/registry/ServerUISystem.js";
+import { ServerFormSystem, ServerUISystem } from "./ui/systems/server_form.js";
 import { UISystem } from "./ui/systems/UISystem.js";
 
 export {
@@ -29,6 +29,7 @@ export {
     UISystem,
     DataBindingObject,
     ServerUISystem,
+    ServerFormSystem,
     ItemTextureManager,
     terrainTextureManager,
     FlipbookTextures,

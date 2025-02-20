@@ -13,6 +13,13 @@ export class Panel extends UIElement{
         this.dataBinding = new DataBinding();
         this.factory = new Factory();
     }
+
+    setLayout(layout){
+        if(!(layout instanceof Layout)) new Error("参数需要Layout类")
+        this.layout = layout;
+        return this;
+    }
+
     serialize(){
         //序列化
 

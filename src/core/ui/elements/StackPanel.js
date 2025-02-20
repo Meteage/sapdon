@@ -16,6 +16,7 @@ export class StackPanel extends Panel{
 
         this.control.addControl(stack.serialize())
         this.stackNum++;
+        return this;
     }
     /**
      * Possible values:
@@ -25,7 +26,9 @@ export class StackPanel extends Panel{
      */
     setOrientation(orientation){
         this.orientation = orientation;
+        return this;
     }
+    
     serialize(){
         this.properties.set("type", "stack_panel")
         this.properties.set("orientation",this.orientation);
