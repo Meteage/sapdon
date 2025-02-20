@@ -3,3 +3,4 @@ biocraft/
 /.idea/
 examples/thaumcraft
 examples/test/build.config
+src/cli/build.config
