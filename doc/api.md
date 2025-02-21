@@ -10,7 +10,7 @@
 创建一个新的物品实例。
 
 #### 参数
-- `identifier` (string): 物品的唯一标识符。
+- `identifier` (string): 物品的唯一标识符。由命名空间与名字组成，例如"hello_sapdon:my_item"
 - `category` (string): 物品所属的菜单栏分类，可选值包括："construction", "nature", "equipment", "items", 和 "none"。
 - `texture` (string): 物品的纹理。
 - `options` (Object): 可选参数配置对象。默认为空对象。
