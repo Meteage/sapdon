@@ -5,6 +5,7 @@
       "identifier": "sapdon:test_projectile",
       "is_spawnable": true,
       "is_summonable": true,
+      "properties": {},
       "runtime_identifier": "minecraft:snowball"
     },
     "components": {

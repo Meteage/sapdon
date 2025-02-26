@@ -1,0 +1,31 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "mob_chest:chest_entity",
+      "textures": {
+        "default": "textures/blocks/entity/normal"
+      },
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "geometry": {
+        "default": "geometry.mob_chest"
+      },
+      "animations": {
+        "default": "animation.mob_chest.default",
+        "open": "animation.mob_chest.open",
+        "close": "animation.mob_chest.close",
+        "interact_controller": "controller.animation.mob_chest.interact"
+      },
+      "scripts": {
+        "animate": [
+          "interact_controller"
+        ]
+      },
+      "render_controllers": [
+        "controller.render.cow"
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "format_version": "1.20.20",
+  "mob_chest:chest": {
+    "textures": {
+      "up": "normal",
+      "down": "normal",
+      "east": "normal",
+      "west": "normal",
+      "south": "normal",
+      "north": "normal"
+    }
+  }
+}

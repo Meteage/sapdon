@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "guidebook_RP",
+    "description": "通用指导手册",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "eb2cf275-03c8-4fc5-95dc-a369e4dcc2e5",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "1f769715-49a4-440b-a33d-08dedb861460",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}

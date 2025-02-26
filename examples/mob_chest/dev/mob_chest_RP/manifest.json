@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "mob_chest_RP",
+    "description": "生物箱子",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "ffeecb25-9baa-4ca7-bd5e-deecb1d2a0da",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "8b5bf1fe-4fd3-4f4d-ad4a-ed356ad5e044",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:block": {
+    "description": {
+      "identifier": "mob_chest:chest",
+      "traits": {},
+      "states": {
+        "sapdon:block_variant_tag": {
+          "values": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      "menu_category": {
+        "category": "construction",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:geometry": {
+        "identifier": "geometry.mob_chest"
+      },
+      "minecraft:material_instances": {
+        "*": {
+          "texture": "nomal"
+        }
+      },
+      "minecraft:custom_components": [
+        "sapdon:block_with_entity"
+      ]
+    },
+    "permutations": [
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 0",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "up": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "down": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "north": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "south": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "east": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 1",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "none",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 1",
+        "components": {
+          "minecraft:geometry": {
+            "identifier": "geometry.empty"
+          }
+        }
+      }
+    ]
+  }
+}

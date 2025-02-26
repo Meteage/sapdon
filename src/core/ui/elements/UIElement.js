@@ -61,7 +61,7 @@ export class UIElement {
     }
 
     addControl(control){
-        console.log("control:  ", control)
+        //console.log("control:  ", control)
         if(control instanceof UIElement) {
             this.control.addControl(control.serialize());
         }

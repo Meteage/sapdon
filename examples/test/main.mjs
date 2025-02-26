@@ -16,6 +16,11 @@ import { FeatureAPI } from "../../src/core/factory/FeatureFactory.js";
 import { BiomeFilter } from "../../src/core/feature_rule/condition/BiomeFilter.js";
 import { CoordinateDistribution } from "../../src/core/feature_rule/distribution/CoordinateDistribution.js";
 import { Guidebook } from "../../src/core/ui/systems/guidebook.js";
+import { Image, Label, Panel } from "../../src/core/index.js";
+import { StackPanel } from "../../src/core/ui/elements/StackPanel.js";
+import { Text } from "../../src/core/ui/Properties/Text.js";
+import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
+import { Layout } from "../../src/core/ui/Properties/Layout.js";
 
 
 
@@ -112,10 +117,21 @@ feature_rules.distribution.setIterations(10)
 
 BlockAPI.createOreBlock("sapdon:ore_cinnabar","construction",["ore_cinnabar"]);
 
-
+ItemAPI.createItem("sapdon:test_book","items","masterball")
+.addComponent(ItemComponent.setCustomComponents(["test:test_book"]))
 
 //通用指导手册
 const guidebook = new Guidebook("sapdon:guidebook","ui/")
+	  //章节目录
+	  guidebook.addPage("page_index0",new Panel("none"),
+	  	new StackPanel("directory")
+		//标题
+		.addStack(["100",32],
+			new Label("tiltle").setText(
+				new Text().setText("通用手册").setColor([0,0,0])
+			)
+		)
+	)
 	  //第一页内容
 	  guidebook.addPage("page_index1",
 		new Image("page_left_content1")

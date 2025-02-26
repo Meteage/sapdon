@@ -1,3 +1,4 @@
+import { Layout } from "../Properties/Layout.js";
 import { Panel } from "./Panel.js";
 
 export class StackPanel extends Panel{
@@ -6,15 +7,17 @@ export class StackPanel extends Panel{
         this.type = "stack_panel";
         this.orientation = "vertical";
         this.stackNum = 0;
+        
+        //init
+        this.setLayout(new Layout().setSize(["100%","100%"]));
     }
 
     addStack(size,content,debug = false){
-        const stack = new Panel(`stack${this.stackNum}`);
-        stack.layout.setSize(size)
-        stack.control.addControl(content)
+        const stack = new Panel(`stack${this.stackNum}`)
+        .setLayout(new Layout().setSize(size))
+        .addControl(content);
         if (debug ) stack.enableDebug();
-
-        this.control.addControl(stack.serialize())
+        this.addControl(stack)
         this.stackNum++;
         return this;
     }

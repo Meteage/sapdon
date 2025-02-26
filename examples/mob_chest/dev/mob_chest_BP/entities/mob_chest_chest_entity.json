@@ -1,0 +1,154 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "mob_chest:chest_entity",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "properties": {
+        "mob_chest:chest_state": {
+          "type": "enum",
+          "values": [
+            "default",
+            "open",
+            "close"
+          ],
+          "default": "default",
+          "client_sync": true
+        }
+      }
+    },
+    "components": {
+      "minecraft:interact": {
+        "interactions": [
+          {
+            "on_interact": {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "enum_property",
+                    "subject": "self",
+                    "operator": "not",
+                    "domain": "mob_chest:chest_state",
+                    "value": "open"
+                  }
+                ]
+              },
+              "event": "mob_chest:chest_open"
+            },
+            "particle_on_start": {
+              "particle_type": "food"
+            },
+            "interact_text": "action.interact.feed"
+          }
+        ]
+      },
+      "minecraft:is_chested": {},
+      "minecraft:inventory": {
+        "inventory_size": 27,
+        "container_type": "minecart_chest"
+      },
+      "minecraft:knockback_resistance": {
+        "value": 1
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:push_through": {
+        "value": 1
+      },
+      "minecraft:damage_sensor": {
+        "triggers": [
+          {
+            "deals_damage": false,
+            "cause": "all"
+          }
+        ]
+      },
+      "minecraft:persistent": {},
+      "minecraft:block_sensor": {
+        "sensor_radius": 1,
+        "on_break": [
+          {
+            "block_list": [
+              "mob_chest:chest"
+            ],
+            "on_block_broken": "despawn_event"
+          }
+        ]
+      }
+    },
+    "component_groups": {
+      "close_check": {
+        "minecraft:entity_sensor": {
+          "relative_range": false,
+          "subsensors": [
+            {
+              "range": [
+                2,
+                2
+              ],
+              "event_filters": {
+                "all_of": [
+                  {
+                    "test": "is_riding",
+                    "subject": "self",
+                    "operator": "equals",
+                    "value": false
+                  },
+                  {
+                    "test": "has_component",
+                    "subject": "self",
+                    "operator": "not",
+                    "value": "minecraft:behavior.look_at_player"
+                  }
+                ]
+              },
+              "event": "minecraft:on_not_riding_player"
+            }
+          ]
+        }
+      },
+      "item_despawn": {
+        "minecraft:despawn": {},
+        "minecraft:instant_despawn": {
+          "remove_child_entities": false
+        },
+        "minecraft:transformation": {
+          "drop_inventory": true,
+          "into": "minecraft:air"
+        }
+      }
+    },
+    "events": {
+      "mob_chest:chest_open": {
+        "add": {
+          "component_groups": [
+            "close_check"
+          ]
+        },
+        "set_property": {
+          "mob_chest:chest_state": "open"
+        }
+      },
+      "mob_chest:chest_close": {
+        "remove": {
+          "component_groups": [
+            "close_check"
+          ]
+        },
+        "set_property": {
+          "mob_chest:chest_state": "close"
+        }
+      },
+      "despawn_event": {
+        "add": {
+          "component_groups": [
+            "item_despawn"
+          ]
+        }
+      }
+    }
+  }
+}

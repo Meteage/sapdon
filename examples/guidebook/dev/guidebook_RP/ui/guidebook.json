@@ -1,0 +1,581 @@
+{
+  "namespace": "sapdon_guidebook",
+  "form_button_template@common.button": {
+    "type": "button",
+    "bindings": [
+      {
+        "binding_type": "collection_details",
+        "binding_collection_name": "form_buttons"
+      },
+      {
+        "binding_type": "collection",
+        "binding_collection_name": "form_buttons",
+        "binding_name": "#form_button_text"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "($binding_button_text = #form_button_text)",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "default": {
+          "type": "image",
+          "texture": "$default_texture"
+        }
+      },
+      {
+        "hover": {
+          "type": "image",
+          "texture": "$hover_texture"
+        }
+      },
+      {
+        "pressed": {
+          "type": "image",
+          "texture": "$pressed_texture"
+        }
+      }
+    ],
+    "$default_texture|default": "",
+    "$hover_texture|default": "",
+    "$pressed_texture|default": "",
+    "$binding_button_text|default": ""
+  },
+  "form_button_factory": {
+    "type": "collection_panel",
+    "collection_name": "form_buttons",
+    "bindings": [
+      {
+        "binding_name": "#form_button_length",
+        "binding_name_override": "#collection_length"
+      }
+    ],
+    "factory": {
+      "name": "buttons",
+      "control_name": "$button_control"
+    },
+    "controls": [
+      {
+        "debug_board": {
+          "type": "image",
+          "texture": "textures/ui/focus_border_white",
+          "nineslice_size": 1,
+          "size": [
+            "100%",
+            "100%"
+          ]
+        }
+      }
+    ]
+  },
+  "page_template": {
+    "type": "stack_panel",
+    "orientation": "horizontal",
+    "size": [
+      "90%",
+      "90%"
+    ],
+    "bindings": [
+      {
+        "binding_type": "view",
+        "source_property_name": "($binding_text = #form_text)",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "stack0": {
+          "type": "panel",
+          "size": [
+            "50%",
+            "100%"
+          ],
+          "controls": [
+            {
+              "page_left@$page_left_content": {}
+            }
+          ]
+        }
+      },
+      {
+        "stack1": {
+          "type": "panel",
+          "size": [
+            "50%",
+            "100%"
+          ],
+          "controls": [
+            {
+              "page_right@$page_right_content": {}
+            }
+          ]
+        }
+      }
+    ],
+    "$page_left_content | default": "",
+    "$page_right_content | default": ""
+  },
+  "guidebook_root_panel": {
+    "type": "panel",
+    "size": [
+      320,
+      207
+    ],
+    "controls": [
+      {
+        "book_background@book.book_background": {}
+      },
+      {
+        "book_page_stack_panel": {
+          "type": "stack_panel",
+          "orientation": "horizontal",
+          "size": [
+            320,
+            207
+          ],
+          "controls": [
+            {
+              "stack0": {
+                "type": "panel",
+                "size": "$page_size",
+                "controls": [
+                  {
+                    "book_left_panel": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "page_crease_image@book.page_crease_left_image": {
+                            "size": [
+                              "100% - 40px",
+                              "100% - 14px"
+                            ],
+                            "offset": [
+                              0,
+                              -2
+                            ]
+                          }
+                        },
+                        {
+                          "page_edge_image@book.page_edge_left_image": {
+                            "size": [
+                              "100% - 7px",
+                              "100% - 16px"
+                            ],
+                            "offset": [
+                              7,
+                              -1
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack1": {
+                "type": "panel",
+                "size": "$page_size",
+                "controls": [
+                  {
+                    "book_right_panel": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "page_crease_image@book.page_crease_right_image": {
+                            "size": [
+                              "100% - 40px",
+                              "100% - 14px"
+                            ],
+                            "offset": [
+                              0,
+                              -2
+                            ]
+                          }
+                        },
+                        {
+                          "page_edge_image@book.page_edge_right_image": {
+                            "size": [
+                              "100% - 7px",
+                              "100% - 16px"
+                            ],
+                            "offset": [
+                              -7,
+                              -1
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "$page_size": [
+            160,
+            207
+          ]
+        }
+      },
+      {
+        "page_content_root": {
+          "type": "panel",
+          "size": [
+            "90%",
+            "90%"
+          ],
+          "layer": 5,
+          "controls": [
+            {
+              "label_text_panel": {
+                "type": "panel",
+                "size": [
+                  32,
+                  8
+                ],
+                "anchor_from": "bottom_middle",
+                "anchor_to": "bottom_middle",
+                "controls": [
+                  {
+                    "page_content": {
+                      "type": "label",
+                      "text": "#form_text",
+                      "color": [
+                        0,
+                        0,
+                        0
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "page_index_0@page_template": {
+                "$binding_text": "page_index0",
+                "$page_left_content": "none",
+                "$page_right_content": "directory"
+              }
+            },
+            {
+              "page_index_1@page_template": {
+                "$binding_text": "page_index1",
+                "$page_left_content": "page_left_content1",
+                "$page_right_content": "right_content1"
+              }
+            },
+            {
+              "page_index_2@page_template": {
+                "$binding_text": "page_index2",
+                "$page_left_content": "right_content2",
+                "$page_right_content": "page_left_content2"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "close_button": {
+          "type": "button",
+          "size": [
+            14,
+            14
+          ],
+          "anchor_from": "top_right",
+          "anchor_to": "top_right",
+          "button_mappings": [
+            {
+              "ignored": false,
+              "from_button_id": "button.menu_select",
+              "to_button_id": "button.menu_exit",
+              "mapping_type": "pressed",
+              "scope": null,
+              "input_mode_condition": null,
+              "ignore_input_scope": false,
+              "consume_event": false,
+              "handle_select": false,
+              "handle_deselect": false,
+              "button_up_right_of_first_refusal": false
+            }
+          ],
+          "controls": [
+            {
+              "default@book.close_button_default": {}
+            },
+            {
+              "hover@book.close_button_hover": {}
+            },
+            {
+              "pressed@book.close_button_pressed": {}
+            }
+          ]
+        }
+      },
+      {
+        "prev_button_panel": {
+          "type": "panel",
+          "size": [
+            24,
+            24
+          ],
+          "offset": [
+            7,
+            -9
+          ],
+          "anchor_from": "bottom_left",
+          "anchor_to": "bottom_left",
+          "layer": 5,
+          "controls": [
+            {
+              "prev_button@form_button_factory": {
+                "$binding_button_text": "test1",
+                "$button_control": "sapdon_guidebook.form_button_template",
+                "$pressed_button_name": "button.form_button_click",
+                "$default_texture": "textures/ui/book_pageleft_default",
+                "$hover_texture": "textures/ui/book_pageleft_hover",
+                "$pressed_texture": "textures/ui/book_pageleft_pressed"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "next_button_panel": {
+          "type": "panel",
+          "size": [
+            24,
+            24
+          ],
+          "offset": [
+            -7,
+            -9
+          ],
+          "anchor_from": "bottom_right",
+          "anchor_to": "bottom_right",
+          "layer": 5,
+          "controls": [
+            {
+              "next_button@form_button_factory": {
+                "$binding_button_text": "test2",
+                "$button_control": "sapdon_guidebook.form_button_template",
+                "$pressed_button_name": "button.form_button_click",
+                "$default_texture": "textures/ui/book_pageright_default",
+                "$hover_texture": "textures/ui/book_pageright_hover",
+                "$pressed_texture": "textures/ui/book_pageright_pressed"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "none": {
+    "type": "panel"
+  },
+  "directory": {
+    "type": "stack_panel",
+    "orientation": "vertical",
+    "size": [
+      "100%",
+      "100%"
+    ],
+    "controls": [
+      {
+        "stack0": {
+          "type": "panel",
+          "size": [
+            "100%",
+            "10%"
+          ],
+          "controls": [
+            {
+              "book_name@how_to_play_common.header": {
+                "$text": "通用手册"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "stack1": {
+          "type": "panel",
+          "size": [
+            "100%",
+            "10%"
+          ],
+          "controls": [
+            {
+              "title_content": {
+                "type": "label",
+                "color": [
+                  0,
+                  0,
+                  0
+                ],
+                "text": "目录"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "stack2": {
+          "type": "panel",
+          "size": [
+            "100%",
+            "20%"
+          ],
+          "controls": [
+            {
+              "item0": {
+                "type": "stack_panel",
+                "orientation": "horizontal",
+                "size": [
+                  "100%",
+                  "100%"
+                ],
+                "controls": [
+                  {
+                    "stack0": {
+                      "type": "panel",
+                      "size": [
+                        "20%",
+                        "100%"
+                      ],
+                      "controls": [
+                        {
+                          "icon0": {
+                            "type": "image",
+                            "texture": "textures/items/diamond"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "stack1": {
+                      "type": "panel",
+                      "size": [
+                        "80%",
+                        "100%"
+                      ],
+                      "controls": [
+                        {
+                          "label0": {
+                            "type": "label",
+                            "color": [
+                              0,
+                              0,
+                              0
+                            ],
+                            "text": "介绍"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "stack3": {
+          "type": "panel",
+          "size": [
+            "100%",
+            "20%"
+          ],
+          "controls": [
+            {
+              "item1": {
+                "type": "stack_panel",
+                "orientation": "horizontal",
+                "size": [
+                  "100%",
+                  "100%"
+                ],
+                "controls": [
+                  {
+                    "stack0": {
+                      "type": "panel",
+                      "size": [
+                        "20%",
+                        "100%"
+                      ],
+                      "controls": [
+                        {
+                          "icon1": {
+                            "type": "image",
+                            "texture": "textures/items/apple"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "stack1": {
+                      "type": "panel",
+                      "size": [
+                        "80%",
+                        "100%"
+                      ],
+                      "controls": [
+                        {
+                          "label1": {
+                            "type": "label",
+                            "color": [
+                              0,
+                              0,
+                              0
+                            ],
+                            "text": "使用方法"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "page_left_content1": {
+    "type": "image",
+    "texture": "textures/items/diamond_sword"
+  },
+  "right_content1": {
+    "type": "label",
+    "color": [
+      0,
+      0,
+      0
+    ],
+    "text": "这是第一页右边的内容"
+  },
+  "right_content2": {
+    "type": "label",
+    "color": [
+      0,
+      0,
+      0
+    ],
+    "text": "这是第二页左边的内容",
+    "size": [
+      100,
+      32
+    ]
+  },
+  "page_left_content2": {
+    "type": "image",
+    "texture": "textures/items/diamond"
+  }
+}

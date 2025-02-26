@@ -28,9 +28,37 @@ export class BasicEntity {
         this.runtime_identifier = options.runtime_identifier;
 
         // 初始化 components、component_groups 和 events，确保 data 中的值为对象
+        this.properties = new Map(Object.entries(data.description?data.description.properties|| {} :{}));
         this.components = new Map(Object.entries(data.components || {}));
         this.component_groups = new Map(Object.entries(data.component_groups || {}));
         this.events = new Map(Object.entries(data.events || {}));
+    }
+    /**
+     * 添加属性到实体
+     * @param {string} name 属性名称
+     * @param {Object} value 属性值
+     * @returns 
+     */
+    addProperty(name, value) {
+        this.properties.set(name, value);
+        return this;
+    }
+    /**
+     * 移除属性
+     * @param {string} name 属性名称
+     * @returns 
+     */
+    removeProperty(name) {
+        this.properties.delete(name);
+        return this;
+    }
+    /**
+     * 移除所有属性
+     * @returns 
+     */
+    clearProperties() {
+        this.properties.clear();
+        return this;
     }
 
     /**
@@ -156,6 +184,7 @@ export class BasicEntity {
                     this.identifier,
                     this.is_spawnable,
                     this.is_summonable,
+                    Object.fromEntries(this.properties),
                     this.runtime_identifier
                 ),
                 Object.fromEntries(this.components), // 将 Map 转换为普通对象

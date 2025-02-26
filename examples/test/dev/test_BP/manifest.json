@@ -8,7 +8,7 @@
       0,
       0
     ],
-    "uuid": "234e9998-18db-470a-8b23-5ecedf8830b4",
+    "uuid": "c84c6522-a64c-42d9-b123-5f6d7941f895",
     "min_engine_version": [
       1,
       19,
@@ -19,7 +19,7 @@
     {
       "description": "行为模块",
       "type": "data",
-      "uuid": "7209631b-f36e-4ef0-aad9-c792ea6f9e44",
+      "uuid": "921cbb9b-406c-474f-80e7-6d0ec2241a06",
       "version": [
         1,
         0,
@@ -29,7 +29,7 @@
     {
       "description": "脚本模块",
       "type": "script",
-      "uuid": "958a2948-56b0-4d6d-ac48-e44b0b847b27",
+      "uuid": "76325dc8-8b82-4014-8053-a6fb5deb5193",
       "version": [
         1,
         0,
@@ -40,8 +40,12 @@
   ],
   "dependencies": [
     {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.3.0"
+  },
+    {
       "module_name": "@minecraft/server",
-      "version": "1.16.0"
+      "version": "1.17.0"
     }
   ],
   "metadata": {

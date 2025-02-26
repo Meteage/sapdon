@@ -1,0 +1,23 @@
+{
+  "texture_name": "atlas.terrain",
+  "resource_pack_name": "mob_chest",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "double_normal": {
+      "textures": "textures/blocks/entity/double_normal"
+    },
+    "none": {
+      "textures": "textures/blocks/entity/none"
+    },
+    "normal": {
+      "textures": "textures/blocks/entity/normal"
+    },
+    "test_log_oak": {
+      "textures": "textures/blocks/test_log_oak"
+    },
+    "test_log_top": {
+      "textures": "textures/blocks/test_log_top"
+    }
+  }
+}
