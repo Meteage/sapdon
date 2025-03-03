@@ -4,4 +4,8 @@ biocraft/
 examples/thaumcraft
 examples/test/build.config
 src/cli/build.config
-loa/
+
+package-lock.json
+.tmp
+
+development_*
