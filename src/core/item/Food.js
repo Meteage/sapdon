@@ -1,5 +1,5 @@
 import { ItemComponent } from "./ItemComponents.js";
-import { Item } from "./item.js";
+import { Item } from "./Item.js";
 
 export class Food extends Item {
     /**
