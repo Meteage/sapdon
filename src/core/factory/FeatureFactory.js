@@ -1,6 +1,6 @@
 import { OreFeature } from "../feature/OreFeature.js";
 import { FeatureRule } from "../feature_rule/FeatureRule.js";
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 
 const registerFeature = (feature)=>{
     const feature_name = feature.identifier.split(":")[feature.identifier.split(":").length - 1];

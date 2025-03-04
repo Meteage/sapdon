@@ -2,7 +2,7 @@ import { Chestplate } from "../item/armor.js";
 import { Attachable } from "../item/Attachable.js";
 import { Food } from "../item/Food.js";
 import { Item } from "../item/Item.js";
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 
 const registerItem = (itemData, attachableData) => {
     // 如果 itemData 存在且不为空，则注册

@@ -4,7 +4,7 @@ import { CropBlock } from "../block/cropBlock.js";
 import { GeometryBlock } from "../block/GeometryBlock.js";
 import { OreBlock } from "../block/OreBlock.js";
 import { RotatableBlock } from "../block/RotatableBlock.js";
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 
 
 /**

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import downlaod from "download";
 import { randomUUID } from "crypto";
+import { fileURLToPath } from "node:url"
 
 export const generateUUID = () => {
 	return randomUUID();
@@ -21,7 +22,7 @@ export function copyFileSync(src, dest) {
 }
 
 //检查路径
-export const checkPath = filePath => {
+export const pathNotExist = filePath => {
 	return !fs.existsSync(filePath);
 };
 
@@ -80,3 +81,9 @@ export const copyFolder = (sourcePath, destinationPath) => {
 		}
 	});
 };
+
+export function dirname(importMeta) {
+    const __filename = fileURLToPath(importMeta.url)
+    const __dirname = path.dirname(__filename)
+    return __dirname
+}
