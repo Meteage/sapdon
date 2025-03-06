@@ -1,7 +1,0 @@
-{
-    "name":"mod名字",
-    "authors":["作者1","作者2"],
-    "version":"0.0.1",
-    "min_engine_version":"1.19.50",
-    "description":"mod介绍",
-}

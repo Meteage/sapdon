@@ -1,7 +1,7 @@
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { pathNotExist, copyFolder, saveFile, readFile } from './utils.js';
+import { checkPath, copyFolder, saveFile, readFile } from './utils.js';
 import fs from "fs";
 
 // 获取当前文件的路径
@@ -9,24 +9,20 @@ const __filename = fileURLToPath(import.meta.url);
 // 获取当前文件的目录
 const __dirname = path.dirname(__filename);
 
-const templateMapping = {
-    js: 'test_sapdon',
-    ts: 'ts_sapdon'
-}
+
 
 export const initProject = (projectPath, data) => {
-    console.log(1, data)
     //检查项目目录是否存在
     //如果不存在则创建项目目录
     //从模板下载项目文件
     //根据用户输入的项目信息生成项目配置文件
     //根据用户选择是否生成脚本文件，生成脚本文件
-    if(!pathNotExist(projectPath)) {
+    if(!checkPath(projectPath)) {
         console.log("项目名称已存在，创建项目目录失败");
         return;
     }
     //模版目录
-    const templateDir = path.join(__dirname, `../templates/${templateMapping[data.language || 'js']}`);
+    const templateDir = path.join(__dirname, "../templates/test_sapdon");
     copyFolder(templateDir, projectPath);
 
     //生成模组介绍文件
@@ -39,7 +35,7 @@ export const initNPMProject = (projectPath, data) => {
     //从模板下载项目文件
     //根据用户输入的项目信息生成项目配置文件
     //根据用户选择是否生成脚本文件，生成脚本文件
-    if(!pathNotExist(path.join(projectPath, "mod.info"))||!pathNotExist(path.join(projectPath, "main.mjs"))||!pathNotExist(path.join(projectPath, "scripts"))||!pathNotExist(path.join(projectPath, "build.config"))) {
+    if(!checkPath(path.join(projectPath, "mod.info"))||!checkPath(path.join(projectPath, "main.mjs"))||!checkPath(path.join(projectPath, "scripts"))||!checkPath(path.join(projectPath, "build.config"))) {
         console.log("项目已存在...");
         return;
     }

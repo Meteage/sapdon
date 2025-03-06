@@ -1,5 +1,5 @@
 import { Biome } from "../biome/Biome.js"
-import { GRegistry } from "../GRegistry.js";
+import { GRegistry } from "../registry.js";
 
 const registerBiome = (biome) => {
     const biome_name = biome.identifier.split(":")[biome.identifier.split(":").length - 1];
