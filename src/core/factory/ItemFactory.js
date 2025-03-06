@@ -1,13 +1,8 @@
 import { Chestplate } from "../item/armor.js";
 import { Attachable } from "../item/Attachable.js";
 import { Food } from "../item/Food.js";
-<<<<<<< HEAD
 import { Item } from "../item/Item.js";
 import { GRegistry } from "../GRegistry.js";
-=======
-import { Item } from "../item/item.js";
-import { GRegistry } from "../registry.js";
->>>>>>> parent of 9784e36 (Merge pull request #4 from OneFeiFan/main)
 
 const registerItem = (itemData, attachableData) => {
     // 如果 itemData 存在且不为空，则注册
