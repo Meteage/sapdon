@@ -290,7 +290,6 @@ const generateResManifest = (name, description, version, options = {}, dependenc
         generateUUID(),
         options
     )
-
     const module = new AddonManifestModule(
         "资源模块",
         "resources",

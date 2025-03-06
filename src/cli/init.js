@@ -17,7 +17,6 @@ const templateMapping = {
 
 export const initProject = (projectPath, data) => {
     console.log(1, data)
-    console.log(1, data)
     //检查项目目录是否存在
     //如果不存在则创建项目目录
     //从模板下载项目文件
