@@ -1,4 +1,4 @@
-import { Chestplate } from "../item/armor.js";
+import { Boot, Chestplate, Helmet, Leggings } from "../item/armor.js";
 import { Attachable } from "../item/Attachable.js";
 import { Food } from "../item/Food.js";
 import { Item } from "../item/Item.js";
@@ -90,6 +90,21 @@ export const ItemAPI = {
     },
     createChestplateArmor: function (identifier, item_texture, texture_path, options = {}) {
         const item = new Chestplate(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createHelmetArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Helmet(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createBootArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Boot(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createLeggingsArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Leggings(identifier, item_texture, texture_path, options);
         registerItem(item.item, item.attachable);
         return item;
     },
