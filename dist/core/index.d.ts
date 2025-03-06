@@ -1,4 +1,5 @@
 export * from "./factory/ItemExtra.js";
+export * from "../cli/index.js";
 import { ItemAPI } from "./factory/ItemFactory.js";
 import { BlockAPI } from "./factory/BlockFactory.js";
 import { FeatureAPI } from "./factory/FeatureFactory.js";
@@ -17,4 +18,6 @@ import { ServerFormSystem } from "./ui/systems/server_form.js";
 import { ItemTextureManager } from "./texture.js";
 import { terrainTextureManager } from "./texture.js";
 import { FlipbookTextures } from "./texture.js";
-export { ItemAPI, BlockAPI, FeatureAPI, EntityAPI, RecipeAPI, BlockComponent, ItemComponent, Image, Panel, Label, UIElement, UISystem, DataBindingObject, ServerUISystem, ServerFormSystem, ItemTextureManager, terrainTextureManager, FlipbookTextures };
+import { GRegistry } from "./GRegistry.js";
+import { UISystemRegistry } from "./ui/registry/UISystemRegistry.js";
+export { ItemAPI, BlockAPI, FeatureAPI, EntityAPI, RecipeAPI, BlockComponent, ItemComponent, Image, Panel, Label, UIElement, UISystem, DataBindingObject, ServerUISystem, ServerFormSystem, ItemTextureManager, terrainTextureManager, FlipbookTextures, GRegistry, UISystemRegistry };

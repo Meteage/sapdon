@@ -4,7 +4,12 @@
         "declaration": true,
         "outDir": "dist",
         "module": "NodeNext",
-        "moduleResolution": "nodenext"
+        "moduleResolution": "nodenext",
+        "types": [
+            "@minecraft/server",
+            "@minecraft/server-ui",
+            "node"
+        ]
     },
     "include": [
         "./src/**/*.js",
@@ -12,6 +17,5 @@
     ],
     "exclude": [
         "./src/templates/**/*",
-        "./cli/**/*",
     ]
 }

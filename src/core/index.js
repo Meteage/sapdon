@@ -4,6 +4,7 @@ import { EntityAPI } from "./factory/EntityFactory.js"
 import { FeatureAPI } from "./factory/FeatureFactory.js"
 import { ItemAPI } from "./factory/ItemFactory.js"
 import { RecipeAPI } from "./factory/RecipeFactory.js"
+import { GRegistry } from "./GRegistry.js"
 import { ItemComponent } from "./item/ItemComponents.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "./texture.js"
 import { DataBindingObject } from "./ui/DataBindingObject.js"
@@ -11,6 +12,7 @@ import { Image } from "./ui/elements/Image.js"
 import { Label } from "./ui/elements/Label.js"
 import { Panel } from "./ui/elements/Panel.js"
 import { UIElement } from "./ui/elements/UIElement.js"
+import { UISystemRegistry } from "./ui/registry/UISystemRegistry.js"
 import { ServerFormSystem, ServerUISystem } from "./ui/systems/server_form.js"
 import { UISystem } from "./ui/systems/UISystem.js"
 
@@ -33,6 +35,9 @@ export {
     ItemTextureManager,
     terrainTextureManager,
     FlipbookTextures,
+    GRegistry,
+    UISystemRegistry,
 }
 
 export * from './factory/ItemExtra.js'
+export * from '../cli/index.js'
