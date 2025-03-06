@@ -5,6 +5,7 @@ import { FeatureRule } from "../feature_rule/FeatureRule.js";
 import { BasicBlock } from "./BasicBlock.js";
 
 export class OreBlock{
+    
     constructor(identifier, category, textures_arr, options = {}){
         this.block = new BasicBlock(identifier, category, textures_arr, options);
         this.feature = new OreFeature(`${identifier}_ore_feature`,6,[

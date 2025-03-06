@@ -5,7 +5,7 @@ import { NativeEntity } from "../entity/NativeEntity.js";
 import { Projectile } from "../entity/Projectile.js";
 import { GRegistry } from "../registry.js";
 
-const registerEntity = (behData, resData) => {
+export const registerEntity = (behData, resData) => {
     // 如果 behData 存在且不为空，则注册行为数据
     if (behData && Object.keys(behData).length > 0) {
         GRegistry.register(behData.identifier.replace(":", "_"), "behavior", "entities/", behData);

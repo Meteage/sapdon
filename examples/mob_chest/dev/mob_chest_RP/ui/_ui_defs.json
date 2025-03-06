@@ -1,5 +1,3 @@
 {
-  "ui_defs": [
-    "ui/server_form.json"
-  ]
+  "ui_defs": []
 }

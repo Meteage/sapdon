@@ -4,7 +4,7 @@
     "description": {
       "identifier": "mob_chest:chest_entity",
       "textures": {
-        "default": "textures/blocks/entity/normal"
+        "default": "texture/blocks/normal"
       },
       "materials": {
         "default": "entity_alphatest"
@@ -12,6 +12,10 @@
       "geometry": {
         "default": "geometry.mob_chest"
       },
+      "render_controllers": [
+        "controller.render.cow",
+        "controller.render.cow"
+      ],
       "animations": {
         "default": "animation.mob_chest.default",
         "open": "animation.mob_chest.open",
@@ -22,10 +26,7 @@
         "animate": [
           "interact_controller"
         ]
-      },
-      "render_controllers": [
-        "controller.render.cow"
-      ]
+      }
     }
   }
 }

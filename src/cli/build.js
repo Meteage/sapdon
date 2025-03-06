@@ -155,10 +155,10 @@ const generateBehManifest = (name, description, version, options = {},dependenci
         ["@sapdon"],
         "MIT",
         {
-            "sapdon":["1.0.0"]
+            "sapdon":["2.0.1"]
         },
         "addon",
-        "https://github.com/junjun260/sapdon"
+        "https://github.com/Meteage/sapdon"
     );
     
     const manifest = new AddonManifest(
@@ -192,10 +192,10 @@ const generateResManifest = (name, description, version,options = {},dependencie
         ["@sapdon"],
         "MIT",
         {
-            "sapdon":["1.0.0"]
+            "sapdon":["2.0.1"]
         },
         "addon",
-        "https://github.com/junjun260/sapdon"
+        "https://github.com/Meteage/sapdon"
     );
 
     const manifest = new AddonManifest(
