@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import downlaod from "download";
 import { randomUUID } from "crypto";
 import { fileURLToPath } from "node:url";
 export const generateUUID = () => {

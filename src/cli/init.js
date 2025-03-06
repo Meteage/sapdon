@@ -1,7 +1,7 @@
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { pathNotExist, copyFolder, saveFile, readFile } from './utils.js'
+import { pathNotExist, copyFolder, saveFile } from './utils.js'
 import fs from "fs"
 import cp from "child_process"
 
@@ -27,7 +27,7 @@ export const initProject = (projectPath, data) => {
         return
     }
     //模版目录
-    const templateDir = path.join(__dirname, `../templates/${templateMapping[data.language || 'js']}`)
+    const templateDir = path.join(__dirname, `../../src/templates/${templateMapping[data.language || 'js']}`)
     copyFolder(templateDir, projectPath)
 
     //生成模组介绍文件

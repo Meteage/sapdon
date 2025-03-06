@@ -11,11 +11,12 @@ import ts from '@rollup/plugin-typescript';
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths';
 import json from '@rollup/plugin-json';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { syncDevFilesClient } from './sync-files.js';
 // 获取当前文件的目录路径
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 //读取配置文件
-const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")));
+// const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
 //脚本打包器
 export const scriptBundler = {
     __projectPath: path.join(__dirname, '../../'),
@@ -41,8 +42,10 @@ export const scriptBundler = {
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
                 ],
-                external(id) {
-                    return id.endsWith('GRegistry.js') || id.endsWith('UISystemRegistry.js');
+                external(name) {
+                    return name.includes('rollup')
+                        || name.includes('typescript')
+                        || name.includes('sapdon');
                 }
             });
             await bundle.write({
@@ -69,6 +72,14 @@ async function bundleScripts(projectPath, scriptPath, element) {
     scriptBundler.__projectPath = projectPath;
     scriptBundler[elementType](sourcePath, scriptPath);
 }
+function preload(filePath) {
+    fs.appendFileSync(filePath, `
+        ;(async () => {
+            const { startDevServer, GRegistry, UISystemRegistry } = await import('sapdon')
+            startDevServer(GRegistry, UISystemRegistry)
+        })();
+    `);
+}
 async function runScript(src) {
     if (src.endsWith('.ts')) {
         const randomName = crypto.randomUUID() + '.js';
@@ -76,10 +87,12 @@ async function runScript(src) {
         const sourceFileName = src.replace(sourceDir, '');
         const targetFilePath = path.join(sourceDir, randomName);
         await scriptBundler.ts(sourceDir, sourceDir, randomName, sourceFileName);
+        preload(targetFilePath);
         await import('file://' + targetFilePath);
         fs.rmSync(targetFilePath, { force: true });
         return;
     }
+    preload(src);
     await import(src);
 }
 //构建项目
@@ -154,13 +167,14 @@ export const buildProject = async (projectPath, projectName) => {
         //动态加载用户modjs文件
         await generateAddonClient(absoluteModPath, buildDirPath, projectName);
     }
+    syncDevFilesClient(projectPath, projectName);
     //延迟1s
-    setTimeout(() => {
-        //将编译好的文件夹拷贝至mc
-        //console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`))
-        copyFolder(buildBehDirPath, path.join(pathConfig.mojangPath, "development_behavior_packs/", `${projectName}_BP/`));
-        copyFolder(buildResDirPath, path.join(pathConfig.mojangPath, "development_resource_packs/", `${projectName}_RP/`));
-    }, 1000);
+    // setTimeout(() => {
+    //     //将编译好的文件夹拷贝至mc
+    // console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`))
+    //     // copyFolder(buildBehDirPath, path.join(pathConfig.mojangPath, "development_behavior_packs/", `${projectName}_BP/`))
+    //     // copyFolder(buildResDirPath, path.join(pathConfig.mojangPath, "development_resource_packs/", `${projectName}_RP/`))
+    // }, 1000)
 };
 function versionStringToArray(versionString) {
     // 使用 split 方法将字符串按 '.' 分割成数组

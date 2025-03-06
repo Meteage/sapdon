@@ -1,4 +1,8 @@
-import { port } from './server.js'
+import { devServerConfig } from './config.js'
+
+const {
+    port
+} = devServerConfig
 
 export async function cliRequest(path, ...params) {
     try {

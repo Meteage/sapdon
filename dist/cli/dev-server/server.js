@@ -1,11 +1,15 @@
 import http from 'http';
-import { generateAddon } from './load.js';
-import { syncDevFilesServer } from './sync-files.js';
-export const port = 49037;
+import { devServerConfig } from './config.js';
+const { port } = devServerConfig;
 const cliServerHandlers = new Map();
+let listening = false;
+export function isListening() {
+    return listening;
+}
 // server
 export function bootstrap() {
-    return http.createServer(async (req, res) => {
+    listening = true;
+    const svr = http.createServer(async (req, res) => {
         const handler = cliServerHandlers.get(req.url.slice(1));
         if (handler) {
             try {
@@ -13,7 +17,7 @@ export function bootstrap() {
                 let buf = Buffer.alloc(0);
                 req.on('data', chunk => buf = Buffer.concat([buf, chunk]));
                 req.on('end', () => resolve(JSON.parse(buf)));
-                await handler(...promise);
+                await handler(...await promise);
             }
             catch (error) {
                 console.error(error);
@@ -29,15 +33,11 @@ export function bootstrap() {
             res.end();
         }
     }).listen(port);
+    svr.on('error', () => listening = false);
+    return svr;
 }
 export const server = {
-    startDevServer,
     handle(url, handler) {
         cliServerHandlers.set(url, handler);
     }
 };
-export function startDevServer() {
-    bootstrap();
-    server.handle('write-addon', generateAddon);
-    server.handle('sync-files', syncDevFilesServer);
-}

@@ -1,14 +1,8 @@
 import path from "path"
 import { saveFile } from "./utils.js"
-import { GRegistry } from "../core/GRegistry.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
-
-import { UISystemRegistry } from "../core/ui/registry/UISystemRegistry.js"
-import { scriptBundler } from "./build.js"
-import fs from "fs"
-import { server } from "./server.js"
-import { client } from "./client.js"
+import { client } from './dev-server/client.js'
 
 /**
  * 处理 blocks.json 数据
@@ -49,9 +43,9 @@ export const generateAddonClient = async (modPath, buildPath, projectName) => {
  * 加载并执行模组文件
  * @param {string} modPath 模组文件路径
  * @param {string} buildPath 构建目录路径
- * @param {(guard: ScriptGuard) => void} [onEntry] 构建开始的回调函数
+ * @param {string} projectName 项目名
  */
-export const generateAddon = async (modPath, buildPath, projectName) => {
+export const generateAddon = (GRegistry, UISystemRegistry) => async (modPath, buildPath, projectName) => {
     try {
         const buildBehDirPath = path.join(buildPath, `${projectName}_BP`)
         const buildResDirPath = path.join(buildPath, `${projectName}_RP`)
@@ -85,7 +79,7 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
 
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList()
-        // console.log("dataList:", dataList)
+        // console.log(1, dataList)
         // 遍历数据并保存到相应的目录
         dataList.forEach(({ name, root, path: dataPath, data }) => {
             // 处理 blocks.json 数据
@@ -115,5 +109,3 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
         console.error(err.stack) // 打印堆栈跟踪以便调试
     }
 }
-
-server.handle('write-addon', generateAddon)

@@ -2,6 +2,7 @@
 import {program} from 'commander'
 import inquirer from 'inquirer'
 import path from 'path'
+import os from 'os'
 
 import {initNPMProject, initProject,readPackageJson} from './init.js'
 import {buildProject} from './build.js'
@@ -14,7 +15,7 @@ const __dirname = path.dirname(__filename)
 
 process.removeAllListeners('warning')
 
-export function start() {
+function start() {
     
     // 额外添加的init方法
     program.command("init").description("初始化一个基于NodeJS的项目").action(() => {
@@ -137,13 +138,13 @@ export function start() {
                 type: "input",
                 name: "mojangPath",
                 message: "Mojang Path (must end with LocalState/games/com.mojang/):",
-                default: buildConfigData.mojangPath || "./"
+                default: path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
             },
             {
                 type: "input",
                 name: "mojangBetaPath",
                 message: "Mojang Beta Path (must end with LocalState/games/com.mojang/):",
-                default: buildConfigData.mojangBetaPath || "./"
+                default: path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
             }
         ]).then((answers) => {
             try {
