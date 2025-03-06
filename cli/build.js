@@ -1,13 +1,13 @@
 import path from 'path'
 import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder } from "./utils.js"
-import { generateMod } from './load.js'
+import { generateAddon } from './load.js'
 
 import {
     AddonManifestHeader,
     AddonManifestModule,
     AddonManifest,
     AddonManifestMetadata
-} from '../core/addon/manifest.js'
+} from '../src/core/addon/manifest.js'
 
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -26,22 +26,19 @@ const __dirname = path.dirname(__filename)
 
 //读取配置文件
 const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
-const tmpDir = path.join(__dirname, '../../.tmp')
-
-if (pathNotExist(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true })
-}
 
 //脚本打包器
 export const scriptBundler = {
-    js(source, target) {
+    __projectPath: path.join(__dirname, '../../'),
+
+    js: (source, target) => {
         copyFolder(source, target)
     },
 
     //ts先通过rollup处理后再复制
-    async ts(source, target, tname='index.js', sname='index.ts') {
+    ts: async (source, target, tname='index.js', sname='index.ts') => {
         // console.log(source, target, tname)
-        const tmpFile = path.join(tmpDir, `sapdon-${crypto.randomUUID()}.js`)
+        const tmpFile = path.join(scriptBundler.__projectPath, '.tmp', `sapdon-${crypto.randomUUID()}.js`)
         try {
             const bundle = await rollup({
                 input: path.join(source, sname),
@@ -51,7 +48,7 @@ export const scriptBundler = {
                         preferBuiltins: true
                     }),
                     ts({
-                        tsconfig: path.join(__dirname, '../../tsconfig.json'),
+                        tsconfig: path.join(scriptBundler.__projectPath, 'tsconfig.json'),
                     }),
                     commonjs(),
                     json(),
@@ -84,6 +81,7 @@ async function bundleScripts(projectPath, scriptPath, element) {
     const sourcePath = path.join(projectPath, element.path)
     const elementType = element.type || 'js'
 
+    scriptBundler.__projectPath = projectPath
     scriptBundler[elementType](sourcePath, scriptPath)
 }
 
@@ -176,7 +174,7 @@ export const buildProject = async (projectPath, projectName) => {
     //只有当buildMode为development时才加载用户modjs文件
     if (buildConfig.defaultConfig.buildMode === "development") {
         //动态加载用户modjs文件
-        await generateMod(path.join(projectPath, buildConfig.defaultConfig.buildEntry), buildDirPath, projectName)
+        await generateAddon(path.join(projectPath, buildConfig.defaultConfig.buildEntry), buildDirPath, projectName)
     }
 
     //延迟1s

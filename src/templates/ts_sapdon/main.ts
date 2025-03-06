@@ -1,5 +1,4 @@
-import { ItemCategory } from '@core/factory/ItemExtra.js'
-import { ItemAPI, ItemComponent } from '@core/index.js'
+import { ItemCategory, ItemAPI, ItemComponent } from 'sapdon'
 
 ItemAPI.createItem('test:stick', ItemCategory.Items, 'stick')
     .addComponent(ItemComponent.combineComponents(

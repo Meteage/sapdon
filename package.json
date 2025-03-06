@@ -1,11 +1,13 @@
 {
     "name": "sapdon",
     "version": "2.0.2",
-    "main": "src/core/index.js",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "scripts": {
-        "sapdon": "node src/cli/index.js",
-        "create": "node src/cli/index.js create",
-        "build": "node src/cli/index.js build"
+        "sapdon": "node cli/index.js",
+        "create": "node cli/index.js create",
+        "build": "node cli/index.js build",
+        "build-types": "tsc"
     },
     "keywords": [
         "bedrock",
@@ -16,7 +18,7 @@
     "license": "ISC",
     "type": "module",
     "bin": {
-        "sapdon": "src/cli/index.js"
+        "sapdon": "cli/index.js"
     },
     "description": "Sapdon is a Node.js toolkit designed for building Bedrock Edition Minecraft addon packs.",
     "dependencies": {
@@ -41,5 +43,10 @@
         "tsconfig-paths": "^4.2.0",
         "tslib": "^2.8.1",
         "typescript": "^5.7.3"
-    }
+    },
+    "files": [
+        "dist/**/*",
+        "cli/**/*",
+        "doc/**/*"
+    ]
 }

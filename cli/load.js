@@ -1,10 +1,10 @@
 import path from "path"
 import { saveFile } from "./utils.js"
-import { GRegistry } from "../core/GRegistry.js"
+import { GRegistry } from "../src/core/GRegistry.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
-import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
+import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../src/core/texture.js"
 
-import { UISystemRegistry } from "../core/ui/registry/UISystemRegistry.js"
+import { UISystemRegistry } from "../src/core/ui/registry/UISystemRegistry.js"
 import { scriptBundler } from "./build.js"
 import fs from "fs"
 
@@ -41,9 +41,11 @@ export const processBlocksData = (data) => {
 async function runScript(src) {
     if (src.endsWith('.ts')) {
         const randomName = crypto.randomUUID() + '.js'
-        const targetFilePath = path.join(path.dirname(src), randomName)
+        const sourceDir = path.dirname(src)
+        const sourceFileName = src.replace(sourceDir, '')
+        const targetFilePath = path.join(sourceDir, randomName)
 
-        await scriptBundler.ts(src, path.dirname(src), randomName, '')
+        await scriptBundler.ts(sourceDir, path.dirname(src), randomName, sourceFileName)
         await import('file://' + targetFilePath)
         fs.rmSync(targetFilePath, { force: true })
         return
@@ -58,7 +60,7 @@ async function runScript(src) {
  * @param {string} buildPath 构建目录路径
  * @param {(guard: ScriptGuard) => void} [onEntry] 构建开始的回调函数
  */
-export const generateMod = async (modPath, buildPath, projectName) => {
+export const generateAddon = async (modPath, buildPath, projectName) => {
     try {
         // 将 modPath 解析为绝对路径
         const absoluteModPath = path.resolve(modPath)

@@ -1,0 +1,17 @@
+{
+    "name": "sapdon",
+    "version": "1.0.0",
+    "main": "main.mjs",
+    "keywords": [
+        "bedrock",
+        "addon"
+    ],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "devDependencies": {
+        "sapdon": "^2.0.2",
+        "@minecraft/server": "^1.17.0",
+        "@minecraft/server-ui": "^1.3.0"
+    }
+}
