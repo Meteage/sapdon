@@ -77,6 +77,7 @@ export const generateAddon = (GRegistry, UISystemRegistry) => async (modPath, bu
             saveFile(resDir(ui_system.path, `${ui_system.name}.json`), JSON.stringify(ui_system.toJson(), null, 2))
         })
 
+
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList()
         // console.log(1, dataList)

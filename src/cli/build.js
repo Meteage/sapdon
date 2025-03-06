@@ -141,7 +141,6 @@ export const buildProject = async (projectPath, projectName) => {
     const min_engine_version = versionStringToArray(modInfo.min_engine_version)
 
     const buildDirPath = path.join(projectPath, buildConfig.defaultConfig.buildDir)
-
     const buildBehDirPath = path.join(buildDirPath, `${projectName}_BP/`)
     const buildResDirPath = path.join(buildDirPath, `${projectName}_RP/`)
     //生成manifest.json文件
@@ -291,6 +290,7 @@ const generateResManifest = (name, description, version, options = {}, dependenc
         generateUUID(),
         options
     )
+
     const module = new AddonManifestModule(
         "资源模块",
         "resources",
