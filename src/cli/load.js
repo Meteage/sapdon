@@ -1,12 +1,8 @@
 import path from "path"
 import { saveFile } from "./utils.js"
-import { GRegistry } from "../core/GRegistry.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
-
-import { UISystemRegistry } from "../core/ui/registry/UISystemRegistry.js"
-import { scriptBundler } from "./build.js"
-import fs from "fs"
+import { client } from './dev-server/client.js'
 
 /**
  * 处理 blocks.json 数据
@@ -38,38 +34,19 @@ export const processBlocksData = (data) => {
     return blocks
 }
 
-async function runScript(src) {
-    if (src.endsWith('.ts')) {
-        const randomName = crypto.randomUUID() + '.js'
-        const targetFilePath = path.join(path.dirname(src), randomName)
-
-        await scriptBundler.ts(src, path.dirname(src), randomName, '')
-        await import('file://' + targetFilePath)
-        fs.rmSync(targetFilePath, { force: true })
-        return
-    }
-
-    await import(src)
+export const generateAddonClient = async (modPath, buildPath, projectName) => {
+    client.writeAddon(modPath, buildPath, projectName)
 }
 
 /**
+ * Server
  * 加载并执行模组文件
  * @param {string} modPath 模组文件路径
  * @param {string} buildPath 构建目录路径
- * @param {(guard: ScriptGuard) => void} [onEntry] 构建开始的回调函数
+ * @param {string} projectName 项目名
  */
-export const generateMod = async (modPath, buildPath, projectName) => {
+export const generateAddon = (GRegistry, UISystemRegistry) => async (modPath, buildPath, projectName) => {
     try {
-        // 将 modPath 解析为绝对路径
-        const absoluteModPath = path.resolve(modPath)
-
-        // 将路径转换为 file:// URL
-        // const fileUrl = pathToFileURL(absoluteModPath).href
-
-        // 动态加载 JavaScript 文件
-        // await import(fileUrl)
-        await runScript(absoluteModPath)
-
         const buildBehDirPath = path.join(buildPath, `${projectName}_BP`)
         const buildResDirPath = path.join(buildPath, `${projectName}_RP`)
         const resDir = name => path.join(buildResDirPath, name)

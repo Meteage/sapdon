@@ -1,6 +1,6 @@
 import path from 'path'
 import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder } from "./utils.js"
-import { generateMod } from './load.js'
+import { generateAddonClient } from './load.js'
 
 import {
     AddonManifestHeader,
@@ -18,6 +18,7 @@ import ts from '@rollup/plugin-typescript'
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths'
 import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { syncDevFilesClient } from './sync-files.js'
 
 
 // 获取当前文件的目录路径
@@ -25,23 +26,20 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 //读取配置文件
-const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
-const tmpDir = path.join(__dirname, '../../.tmp')
-
-if (pathNotExist(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true })
-}
+// const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
 
 //脚本打包器
 export const scriptBundler = {
-    js(source, target) {
+    __projectPath: path.join(__dirname, '../../'),
+
+    js: (source, target) => {
         copyFolder(source, target)
     },
 
     //ts先通过rollup处理后再复制
-    async ts(source, target, tname='index.js', sname='index.ts') {
+    ts: async (source, target, tname='index.js', sname='index.ts') => {
         // console.log(source, target, tname)
-        const tmpFile = path.join(tmpDir, `sapdon-${crypto.randomUUID()}.js`)
+        const tmpFile = path.join(scriptBundler.__projectPath, '.tmp', `sapdon-${crypto.randomUUID()}.js`)
         try {
             const bundle = await rollup({
                 input: path.join(source, sname),
@@ -51,14 +49,16 @@ export const scriptBundler = {
                         preferBuiltins: true
                     }),
                     ts({
-                        tsconfig: path.join(__dirname, '../../tsconfig.json'),
+                        tsconfig: path.join(scriptBundler.__projectPath, 'tsconfig.json'),
                     }),
                     commonjs(),
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
                 ],
-                external(id) {
-                    return id.endsWith('GRegistry.js') || id.endsWith('UISystemRegistry.js')
+                external(name) {
+                    return name.includes('rollup')
+                        || name.includes('typescript')
+                        || name.includes('sapdon')
                 }
             })
     
@@ -84,7 +84,35 @@ async function bundleScripts(projectPath, scriptPath, element) {
     const sourcePath = path.join(projectPath, element.path)
     const elementType = element.type || 'js'
 
+    scriptBundler.__projectPath = projectPath
     scriptBundler[elementType](sourcePath, scriptPath)
+}
+
+function preload(filePath) {
+    fs.appendFileSync(filePath, `
+        ;(async () => {
+            const { startDevServer, GRegistry, UISystemRegistry } = await import('sapdon')
+            startDevServer(GRegistry, UISystemRegistry)
+        })();
+    `)
+}
+
+async function runScript(src) {
+    if (src.endsWith('.ts')) {
+        const randomName = crypto.randomUUID() + '.js'
+        const sourceDir = path.dirname(src)
+        const sourceFileName = src.replace(sourceDir, '')
+        const targetFilePath = path.join(sourceDir, randomName)
+
+        await scriptBundler.ts(sourceDir, sourceDir, randomName, sourceFileName)
+        preload(targetFilePath)
+        await import('file://' + targetFilePath)
+        fs.rmSync(targetFilePath, { force: true })
+        return
+    }
+
+    preload(src)
+    await import(src)
 }
 
 //构建项目
@@ -113,7 +141,6 @@ export const buildProject = async (projectPath, projectName) => {
     const min_engine_version = versionStringToArray(modInfo.min_engine_version)
 
     const buildDirPath = path.join(projectPath, buildConfig.defaultConfig.buildDir)
-
     const buildBehDirPath = path.join(buildDirPath, `${projectName}_BP/`)
     const buildResDirPath = path.join(buildDirPath, `${projectName}_RP/`)
     //生成manifest.json文件
@@ -171,21 +198,31 @@ export const buildProject = async (projectPath, projectName) => {
         await bundleScripts(projectPath, scriptPath, element)
     }
 
+    // 将 modPath 解析为绝对路径
+    const absoluteModPath = path.join(projectPath, buildConfig.defaultConfig.buildEntry)
+
+    // 将路径转换为 file:// URL
+    // const fileUrl = pathToFileURL(absoluteModPath).href
+
+    // 动态加载 JavaScript 文件
+    // await import(fileUrl)
+    await runScript(absoluteModPath)
 
 
     //只有当buildMode为development时才加载用户modjs文件
     if (buildConfig.defaultConfig.buildMode === "development") {
         //动态加载用户modjs文件
-        await generateMod(path.join(projectPath, buildConfig.defaultConfig.buildEntry), buildDirPath, projectName)
+        await generateAddonClient(absoluteModPath, buildDirPath, projectName)
     }
 
+    syncDevFilesClient(projectPath, projectName)
     //延迟1s
-    setTimeout(() => {
-        //将编译好的文件夹拷贝至mc
-        //console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`))
-        copyFolder(buildBehDirPath, path.join(pathConfig.mojangPath, "development_behavior_packs/", `${projectName}_BP/`))
-        copyFolder(buildResDirPath, path.join(pathConfig.mojangPath, "development_resource_packs/", `${projectName}_RP/`))
-    }, 1000)
+    // setTimeout(() => {
+    //     //将编译好的文件夹拷贝至mc
+        // console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`))
+    //     // copyFolder(buildBehDirPath, path.join(pathConfig.mojangPath, "development_behavior_packs/", `${projectName}_BP/`))
+    //     // copyFolder(buildResDirPath, path.join(pathConfig.mojangPath, "development_resource_packs/", `${projectName}_RP/`))
+    // }, 1000)
 
 }
 

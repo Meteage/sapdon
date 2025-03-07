@@ -1,4 +1,4 @@
-import { GridProp } from "../Properties/gridProp.js";
+import { GridProp } from "../Properties/GridProp.js";
 import { CollectionPanel } from "./CollectionPanel.js";
 
 export class Grid extends CollectionPanel{
