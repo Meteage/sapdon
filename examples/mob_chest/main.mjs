@@ -3,7 +3,7 @@ import { TileBlock } from "../../src/core/block/TileBlock.js";
 import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
 
 
-const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["texture/blocks/normal"],{});
+const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
       mob_chest.setGeometry("geometry.mob_chest");
       mob_chest.block.addComponent(
         BlockComponent.setMaterialInstances({

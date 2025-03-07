@@ -4,7 +4,7 @@
     "description": {
       "identifier": "mob_chest:chest_entity",
       "textures": {
-        "default": "texture/blocks/normal"
+        "default": "textures/blocks/entity/normal"
       },
       "materials": {
         "default": "entity_alphatest"

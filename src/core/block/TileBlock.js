@@ -4,6 +4,18 @@ import { BlockComponent } from "./blockComponent.js";
 
 
 const TileBehData = {
+    component_groups:{
+        "item_despawn":{
+            "minecraft:despawn": {},
+                "minecraft:instant_despawn": {
+                    "remove_child_entities": false
+                },
+                "minecraft:transformation": {
+                    "drop_inventory": true,
+                    "into": "minecraft:air"
+                }
+        }
+    },
     components:{
         "minecraft:inventory": {
 				"inventory_size": 27,
@@ -32,6 +44,15 @@ const TileBehData = {
             ]
         },
         "minecraft:persistent": {}
+    },
+    events:{
+        "despawn_event":{
+            "add": {
+                    "component_groups": [
+                        "item_despawn"
+                    ]
+                }
+        }
     }
 };
 
@@ -66,6 +87,17 @@ export class TileBlock {
         );
 
         //设置生物
+        this.entity.entity.addComponent(new Map().set("minecraft:block_sensor",{
+            "sensor_radius": 1,
+            "on_break": [
+                {
+                    "block_list": [
+                        identifier
+                    ],
+                    "on_block_broken": "despawn_event"
+                }
+            ]
+        }))
         this.entity.client_entity.addMaterial("default","entity_alphatest")
         .addGeometry("default","geometry.cube")
         .addRenderController("controller.render.cow")

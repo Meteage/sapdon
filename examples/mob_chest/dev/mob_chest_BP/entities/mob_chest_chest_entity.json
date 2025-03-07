@@ -41,9 +41,39 @@
           }
         ]
       },
-      "minecraft:persistent": {}
+      "minecraft:persistent": {},
+      "minecraft:block_sensor": {
+        "sensor_radius": 1,
+        "on_break": [
+          {
+            "block_list": [
+              "mob_chest:chest"
+            ],
+            "on_block_broken": "despawn_event"
+          }
+        ]
+      }
     },
-    "component_groups": {},
-    "events": {}
+    "component_groups": {
+      "item_despawn": {
+        "minecraft:despawn": {},
+        "minecraft:instant_despawn": {
+          "remove_child_entities": false
+        },
+        "minecraft:transformation": {
+          "drop_inventory": true,
+          "into": "minecraft:air"
+        }
+      }
+    },
+    "events": {
+      "despawn_event": {
+        "add": {
+          "component_groups": [
+            "item_despawn"
+          ]
+        }
+      }
+    }
   }
 }

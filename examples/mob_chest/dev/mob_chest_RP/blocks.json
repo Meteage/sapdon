@@ -2,12 +2,12 @@
   "format_version": "1.20.20",
   "mob_chest:chest": {
     "textures": {
-      "up": "texture/blocks/normal",
-      "down": "texture/blocks/normal",
-      "east": "texture/blocks/normal",
-      "west": "texture/blocks/normal",
-      "south": "texture/blocks/normal",
-      "north": "texture/blocks/normal"
+      "up": "textures/blocks/entity/normal",
+      "down": "textures/blocks/entity/normal",
+      "east": "textures/blocks/entity/normal",
+      "west": "textures/blocks/entity/normal",
+      "south": "textures/blocks/entity/normal",
+      "north": "textures/blocks/entity/normal"
     }
   }
 }
