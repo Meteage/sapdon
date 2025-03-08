@@ -1,6 +1,9 @@
 import { BlockComponent } from "../../src/core/block/blockComponent.js";
 import { TileBlock } from "../../src/core/block/TileBlock.js";
 import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
+import { UIElement, UISystem } from "../../src/core/index.js";
+import { Modifications } from "../../src/core/ui/elements/UIElement.js";
+import { UISystemRegistry } from "../../src/core/ui/registry/UISystemRegistry.js";
 
 
 const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
@@ -29,3 +32,23 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
             "default": "default",
             "client_sync": true
         })
+
+//熔炉界面及实现
+const small_chest_screen = new UIElement("small_chest_screen",undefined,"common.inventory_screen_common");
+      small_chest_screen.addVariable("new_container_title|default","$container_title")
+      small_chest_screen.addModification({
+        array_name: "variables",
+        operation:Modifications.OPERATION.INSERT_BACK,
+        value:[
+          {
+            requires: `($new_container_title = 'sapdon_furnace')`,
+            $root_panel: "cooking_pot.cooking_pot_panel",
+            $screen_content: "cooking_pot.cooking_pot_panel"
+          }
+        ]
+    })
+
+UISystemRegistry.addOuterUIdefs(["ui/cooking_pot.json"])
+
+const furnaceUISystem = new UISystem("chest:chest_screen","ui/");
+      furnaceUISystem.addElement(small_chest_screen)

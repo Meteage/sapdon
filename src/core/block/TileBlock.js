@@ -18,9 +18,13 @@ const TileBehData = {
     },
     components:{
         "minecraft:inventory": {
-				"inventory_size": 27,
-				"container_type": "minecart_chest"
-		},
+                "inventory_size": 27,
+                "can_be_siphoned_from": true,
+                "container_type": "minecart_chest"
+        },
+        "minecraft:nameable": {
+                "allow_name_tag_renaming": false
+        },
         // Knockback resistance is needed to make it not be Knocked off by an entity.
         "minecraft:knockback_resistance": {
             "value": 1
@@ -33,6 +37,25 @@ const TileBehData = {
         // Sets the distance through which the entity can push through.
         "minecraft:push_through": {
             "value": 1
+        },
+        "minecraft:custom_hit_test": {
+            "hitboxes": [
+                {
+                "width": 0.81,
+                "height": 0.92,
+                "pivot": [
+                    0,
+                    0.5,
+                    0
+                ]
+                }
+            ]
+        },
+        
+        //可以被活塞推动，但是不会被实体推动
+        "minecraft:pushable": {
+            "is_pushable": false,
+            "is_pushable_by_piston": true
         },
         // Makes it invincible.
         "minecraft:damage_sensor": {

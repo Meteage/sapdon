@@ -5,7 +5,7 @@ export class UISystem {
 
     constructor(identifier, path) {
       this.identifier = identifier;
-      this.namespace = identifier.replace(":", "_");
+      this.namespace = identifier.split(':')[0];
       this.name = identifier.split(':')[1];
       this.path = path;
       this.elements = new Map();

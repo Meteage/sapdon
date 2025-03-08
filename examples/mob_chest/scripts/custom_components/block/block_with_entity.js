@@ -30,6 +30,9 @@ export const BlockWithEntityComponent = {
        switch(block_typeId){
            case "mob_chest:chest":
                const block_entity = dimension.getEntitiesAtBlockLocation(block.center())[0];
+
+               //设置名字
+               block_entity.nameTag = "sapdon_furnace"
                //获取属性
                const chest_state = block_entity.getProperty("mob_chest:chest_state");
                world.sendMessage("chest_state:"+chest_state);

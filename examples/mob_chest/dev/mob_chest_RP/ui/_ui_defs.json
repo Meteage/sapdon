@@ -1,3 +1,7 @@
 {
-  "ui_defs": []
+  "ui_defs": [
+    "ui/cooking_pot.json",
+    "ui/server_form.json",
+    "ui/chest_screen.json"
+  ]
 }

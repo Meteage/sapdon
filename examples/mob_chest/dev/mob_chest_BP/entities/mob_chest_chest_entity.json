@@ -21,7 +21,11 @@
     "components": {
       "minecraft:inventory": {
         "inventory_size": 27,
+        "can_be_siphoned_from": true,
         "container_type": "minecart_chest"
+      },
+      "minecraft:nameable": {
+        "allow_name_tag_renaming": false
       },
       "minecraft:knockback_resistance": {
         "value": 1
@@ -32,6 +36,19 @@
       },
       "minecraft:push_through": {
         "value": 1
+      },
+      "minecraft:custom_hit_test": {
+        "hitboxes": [
+          {
+            "width": 0.81,
+            "height": 0.92,
+            "pivot": [
+              0,
+              0.5,
+              0
+            ]
+          }
+        ]
       },
       "minecraft:damage_sensor": {
         "triggers": [
