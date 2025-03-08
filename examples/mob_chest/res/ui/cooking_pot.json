@@ -315,7 +315,7 @@
                                     30,
                                     30
                                 ],
-                                "enabled": false
+                                "enabled": true
                             }
                         }
                     ]
@@ -342,7 +342,7 @@
                                     10,
                                     10
                                 ],
-                                "enabled": false
+                                "enabled": true
                             }
                         }
                     ]
@@ -363,7 +363,6 @@
         "anchor_to": "top_left",
         "anchor_from": "top_left",
         "controls": [
-            //标题
             {
                 "cooking_pot_label@cooking_pot.cooking_pot_label": {
                     "offset": [
@@ -372,7 +371,6 @@
                     ]
                 }
             },
-            //main
             {
                 "cooking_pot_grid@cooking_pot.cooking_pot_grid": {
                     "offset": [
@@ -381,8 +379,6 @@
                     ]
                 }
             },
-
-            //图片
             {
                 "cooking_pot_part1@cooking_pot.cooking_pot_part1": {
                     "offset": [
@@ -2861,20 +2857,7 @@
     "cooking_pot_panel": {
         "type": "panel",
         "controls": [
-            {
-                "container_gamepad_helpers@common.container_gamepad_helpers": {}
-            },
-            {
-                "flying_item_renderer@common.flying_item_renderer": {
-                    "layer": 14
-                }
-            },
-            {
-                "selected_item_details_factory@common.selected_item_details_factory": {}
-            },
-            {
-                "item_lock_notification_factory@common.item_lock_notification_factory": {}
-            },
+            
             {
                 "root_panel@common.root_panel": {
                     "layer": 1,
@@ -2894,7 +2877,7 @@
                                     {
                                         "cooking_time_label@cooking_pot.cooking_time_label": {
                                             "offset": [
-                                                80,
+                                                300,
                                                 30
                                             ]
                                         }
@@ -2903,7 +2886,7 @@
                                     {
                                         "cooking_pot_name@cooking_pot.cooking_pot_name": {}
                                     },
-                                    //inventory
+                                    //背包栏
                                     {
                                         "inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label": {}
                                     },

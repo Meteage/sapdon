@@ -1,0 +1,200 @@
+{
+  "namespace": "sapdon_furnace",
+  "container_root_panel": {
+    "type": "panel",
+    "size": [
+      180,
+      180
+    ],
+    "controls": [
+      {
+        "common_panel@common.common_panel": {}
+      },
+      {
+        "inventory_selected_icon_button@common.inventory_selected_icon_button": {}
+      },
+      {
+        "container_panel": {
+          "type": "stack_panel",
+          "orientation": "vertical",
+          "size": [
+            "100%",
+            "100%"
+          ],
+          "layer": 2,
+          "controls": [
+            {
+              "stack0": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "10%"
+                ],
+                "controls": [
+                  {
+                    "title": {
+                      "type": "label",
+                      "text": "自定义熔炉",
+                      "color": [
+                        0,
+                        0,
+                        0
+                      ],
+                      "layer": 12
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack1": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "40%"
+                ],
+                "controls": [
+                  {
+                    "grids": {
+                      "type": "grid",
+                      "collection_name": "container_items",
+                      "grid_dimensions": [
+                        1,
+                        5
+                      ],
+                      "grid_item_template": "chest.chest_grid_item",
+                      "controls": [
+                        {
+                          "grid_item_0": {
+                            "type": "panel",
+                            "grid_position": [
+                              0,
+                              0
+                            ],
+                            "controls": [
+                              {
+                                "grid_item@chest.chest_grid_item": {
+                                  "offset": [
+                                    -36,
+                                    18
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_1": {
+                            "type": "panel",
+                            "grid_position": [
+                              0,
+                              1
+                            ],
+                            "controls": [
+                              {
+                                "grid_item@chest.chest_grid_item": {
+                                  "offset": [
+                                    -36,
+                                    18
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_2": {
+                            "type": "panel",
+                            "grid_position": [
+                              0,
+                              2
+                            ],
+                            "controls": [
+                              {
+                                "grid_item@chest.chest_grid_item": {
+                                  "offset": [
+                                    -36,
+                                    18
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_3": {
+                            "type": "panel",
+                            "grid_position": [
+                              0,
+                              3
+                            ],
+                            "controls": [
+                              {
+                                "grid_item@chest.chest_grid_item": {
+                                  "offset": [
+                                    0,
+                                    -18
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_4": {
+                            "type": "panel",
+                            "grid_position": [
+                              0,
+                              4
+                            ],
+                            "controls": [
+                              {
+                                "grid_item@chest.chest_grid_item": {
+                                  "offset": [
+                                    36,
+                                    -36
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack2": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "50%"
+                ],
+                "controls": [
+                  {
+                    "inventory_panel": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label": {}
+                        },
+                        {
+                          "hotbar_grid@common.hotbar_grid_template": {}
+                        },
+                        {
+                          "inventory_take_progress_icon_button@common.inventory_take_progress_icon_button": {}
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

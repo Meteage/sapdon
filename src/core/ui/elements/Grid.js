@@ -1,13 +1,23 @@
 import { GridProp } from "../Properties/gridProp.js";
 import { CollectionPanel } from "./CollectionPanel.js";
+import { Panel } from "./Panel.js";
 
 export class Grid extends CollectionPanel{
     constructor(id, template){
         super(id,template);
-        this.grid = GridProp();
+        this.gridNum = 0;
+        this.grid = new GridProp();
     }
     setGridProp(grid_prop){
         this.grid = grid_prop;
+        return this;
+    }
+    addGridItem(grid_position,content){
+        const grid_item = new Panel(`grid_item_${this.gridNum}`);
+        grid_item.addProp("grid_position",grid_position)
+        grid_item.addControl(content);
+        this.addControl(grid_item);
+        this.gridNum++;
         return this;
     }
     serialize(){
@@ -18,6 +28,8 @@ export class Grid extends CollectionPanel{
                 this.properties.set(key, this.grid[key]);
             }
         }
+        //类型修正
+        this.properties.set("type", "grid")
 
         return super.serialize();
     }

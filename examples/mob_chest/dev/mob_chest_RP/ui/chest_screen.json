@@ -8,8 +8,8 @@
         "value": [
           {
             "requires": "($new_container_title = 'sapdon_furnace')",
-            "$root_panel": "cooking_pot.cooking_pot_panel",
-            "$screen_content": "cooking_pot.cooking_pot_panel"
+            "$root_panel": "sapdon_furnace.container_root_panel",
+            "$screen_content": "sapdon_furnace.container_root_panel"
           }
         ]
       }
