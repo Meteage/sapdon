@@ -1,7 +1,7 @@
 import { BlockComponent } from "../../src/core/block/blockComponent.js";
 import { TileBlock } from "../../src/core/block/TileBlock.js";
 import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
-import { Grid, Image, Label, Panel, StackPanel, UIElement, UISystem } from "../../src/core/index.js";
+import { EntityAPI, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem } from "../../src/core/index.js";
 import { Modifications } from "../../src/core/ui/elements/UIElement.js";
 import { Control } from "../../src/core/ui/Properties/Control.js";
 import { GridProp } from "../../src/core/ui/Properties/gridProp.js";
@@ -59,3 +59,26 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
         [0,0,0,0,0]
       ])
 
+
+
+BlockAPI.createBlock("sapdon:falling_block","construction",[
+  {stateTag:0,textures:["normal"]},
+  {stateTag:1,textures:["normal"]}
+])
+//正常变体
+.addVariantComponent(0,
+  BlockComponent.combineComponents(
+      BlockComponent.setGeometry("geometry.mob_chest"),
+      BlockComponent.setCustomComponents(["sapdon:heavy_block"]),
+      BlockComponent.setTick([0,0],true),
+      BlockComponent.setMaterialInstances({
+          "*": {
+                      "texture":"normal",
+                      "render_method": "alpha_test"
+          }
+      })
+  )
+)
+
+const falling_block_entity = EntityAPI.createProjectile("sapdon:falling_block_entity","textures/blocks/entity/normal");
+      falling_block_entity.resource.addGeometry("default","geometry.mob_chest")

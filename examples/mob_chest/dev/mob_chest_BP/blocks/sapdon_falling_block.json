@@ -1,0 +1,104 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:block": {
+    "description": {
+      "identifier": "sapdon:falling_block",
+      "traits": {},
+      "states": {
+        "sapdon:block_variant_tag": {
+          "values": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      "menu_category": {
+        "category": "construction",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {},
+    "permutations": [
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 0",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "up": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "down": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "north": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "south": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            },
+            "east": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 1",
+        "components": {
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "normal",
+              "ambient_occlusion": true,
+              "face_dimming": true,
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      },
+      {
+        "condition": "q.block_state('sapdon:block_variant_tag') == 0",
+        "components": {
+          "minecraft:geometry": {
+            "identifier": "geometry.mob_chest"
+          },
+          "minecraft:custom_components": [
+            "sapdon:heavy_block"
+          ],
+          "minecraft:tick": {
+            "interval_range": [
+              0,
+              0
+            ],
+            "looping": true
+          },
+          "minecraft:material_instances": {
+            "*": {
+              "texture": "normal",
+              "render_method": "alpha_test"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

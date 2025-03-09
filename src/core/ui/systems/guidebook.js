@@ -16,48 +16,6 @@ import { UISystem } from "./UISystem.js";
 
 
 
-//表单按钮模板
-const form_button_template = new Button("form_button_template","common.button");
-      form_button_template.addVariable("default_texture|default","")
-      form_button_template.addVariable("hover_texture|default","")
-      form_button_template.addVariable("pressed_texture|default","")
-      form_button_template.addVariable("binding_button_text|default","")
-      form_button_template.dataBinding.addDataBinding(
-        new DataBindingObject().setBindingType("collection_details")
-        .setBindingCollectionName("form_buttons")
-      )
-      form_button_template.dataBinding.addDataBinding(
-        new DataBindingObject().setBindingType("collection")
-        .setBindingCollectionName("form_buttons")
-        .setBindingName("#form_button_text")
-      )
-      form_button_template.dataBinding.addDataBinding(
-        new DataBindingObject().setBindingType("view")
-        .setSourcePropertyName("($binding_button_text = #form_button_text)")
-        .setTargetPropertyName("#visible")
-      )
-      
-      form_button_template.addControls([
-        new Image("default").setSprite(
-            new Sprite().setTexture("$default_texture")
-        ),
-        new Image("hover").setSprite(
-            new Sprite().setTexture("$hover_texture")
-        ),
-        new Image("pressed").setSprite(
-            new Sprite().setTexture("$pressed_texture")
-        )
-      ])
-
-//f
-const form_button_panel = new Panel("form_button_factory").enableDebug()
-      form_button_panel.addProp("type","collection_panel")
-      form_button_panel.factory.setName("buttons").setControlName("$button_control");
-      form_button_panel.addProp("collection_name","form_buttons")
-      form_button_panel.dataBinding.addDataBinding(
-        new DataBindingObject().setBindingName("#form_button_length")
-        .setBindingNameOverride("#collection_length")
-      )
 
 const page_template = new StackPanel("page_template").setOrientation("horizontal")
       .addVariable("page_left_content | default","")
@@ -133,8 +91,7 @@ export class Guidebook {
     }
 
     #addTemplate(){
-        this.addElement(form_button_template);
-        this.addElement(form_button_panel)
+       
         this.addElement(page_template)
 
         //
@@ -215,19 +172,6 @@ export class Guidebook {
                 .addVariable("page_left_content",left_control_name)
                 .addVariable("page_right_content",right_control_name)
               })
-              /*
-              new UIElement("page_1",undefined,"page_template")
-              .addVariable("binding_text","page_index1")
-              .addVariable("page_left_content","page_left_content")
-              .addVariable("page_right_content","page_right_content"),
-              new UIElement("page_2",undefined,"page_template")
-              .addVariable("binding_text","page_index2")
-              .addVariable("page_left_content","page_left_content")
-              .addVariable("page_right_content","page_right_content"),
-              new UIElement("page_3",undefined,"page_template")
-              .addVariable("binding_text","page_index3")
-              .addVariable("page_left_content","page_left_content")
-              .addVariable("page_right_content","page_right_content")*/
   
           ])
           ,
@@ -250,7 +194,7 @@ export class Guidebook {
               new UIElement("pressed",undefined,"book.close_button_pressed"),
           ]),
           //添加下一页按钮
-          new Panel("prev_button_panel").enableDebug()
+          new Panel("prev_button_panel")
           .setControl(
               new Control().setLayer(5)
           )
@@ -261,16 +205,14 @@ export class Guidebook {
               .setAnchorTo("bottom_left")
           )
           .addControl(
-              new UIElement("prev_button",undefined,"form_button_factory")
+              new UIElement("prev_button",undefined,"server_form.sapdon_form_button_factory")
               .addVariable("binding_button_text","test1")
-              .addVariable("button_control",`${this.system.namespace}.form_button_template`)
-              .addVariable("pressed_button_name", "button.form_button_click")
               .addVariable("default_texture","textures/ui/book_pageleft_default")
               .addVariable("hover_texture","textures/ui/book_pageleft_hover")
               .addVariable("pressed_texture","textures/ui/book_pageleft_pressed")
           )
           ,
-          new Panel("next_button_panel").enableDebug()
+          new Panel("next_button_panel")
           .setControl(
               new Control().setLayer(5)
           )
@@ -281,10 +223,8 @@ export class Guidebook {
               .setAnchorTo("bottom_right")
           )
           .addControl(
-              new UIElement("next_button",undefined,"form_button_factory")
+              new UIElement("next_button",undefined,"server_form.sapdon_form_button_factory")
               .addVariable("binding_button_text","test2")
-              .addVariable("button_control","sapdon_guidebook.form_button_template")
-              .addVariable("pressed_button_name", "button.form_button_click")
               .addVariable("default_texture","textures/ui/book_pageright_default")
               .addVariable("hover_texture","textures/ui/book_pageright_hover")
               .addVariable("pressed_texture","textures/ui/book_pageright_pressed")

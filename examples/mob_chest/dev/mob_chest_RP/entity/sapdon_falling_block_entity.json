@@ -1,0 +1,28 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sapdon:falling_block_entity",
+      "materials": {
+        "default": "snowball"
+      },
+      "textures": {
+        "default": "textures/blocks/entity/normal"
+      },
+      "geometry": {
+        "default": "geometry.mob_chest"
+      },
+      "render_controllers": [
+        "controller.render.item_sprite"
+      ],
+      "animations": {
+        "flying": "animation.actor.billboard"
+      },
+      "scripts": {
+        "animate": [
+          "flying"
+        ]
+      }
+    }
+  }
+}

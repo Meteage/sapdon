@@ -64,3 +64,5 @@ const guidebook = new Guidebook("sapdon:guidebook","ui/")
             new Sprite().setTexture("textures/items/diamond")
         )
       )
+
+const apple = new Panel()

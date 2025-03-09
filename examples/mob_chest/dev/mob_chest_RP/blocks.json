@@ -9,5 +9,15 @@
       "south": "textures/blocks/entity/normal",
       "north": "textures/blocks/entity/normal"
     }
+  },
+  "sapdon:falling_block": {
+    "textures": {
+      "up": "normal",
+      "down": "normal",
+      "east": "normal",
+      "west": "normal",
+      "south": "normal",
+      "north": "normal"
+    }
   }
 }

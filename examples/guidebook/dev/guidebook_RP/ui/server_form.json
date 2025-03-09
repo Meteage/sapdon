@@ -1,5 +1,63 @@
 {
-  "namespace": "server_form_server_form",
+  "namespace": "server_form",
+  "sapdon_form_button_template@common.button": {
+    "type": "button",
+    "bindings": [
+      {
+        "binding_type": "collection_details",
+        "binding_collection_name": "form_buttons"
+      },
+      {
+        "binding_type": "collection",
+        "binding_collection_name": "form_buttons",
+        "binding_name": "#form_button_text"
+      },
+      {
+        "binding_type": "view",
+        "source_property_name": "($binding_button_text = #form_button_text)",
+        "target_property_name": "#visible"
+      }
+    ],
+    "controls": [
+      {
+        "default": {
+          "type": "image",
+          "texture": "$default_texture"
+        }
+      },
+      {
+        "hover": {
+          "type": "image",
+          "texture": "$hover_texture"
+        }
+      },
+      {
+        "pressed": {
+          "type": "image",
+          "texture": "$pressed_texture"
+        }
+      }
+    ],
+    "$pressed_button_name": "button.form_button_click",
+    "$default_texture|default": "",
+    "$hover_texture|default": "",
+    "$pressed_texture|default": "",
+    "$binding_button_text|default": ""
+  },
+  "sapdon_form_button_factory": {
+    "type": "collection_panel",
+    "collection_name": "form_buttons",
+    "bindings": [
+      {
+        "binding_name": "#form_button_length",
+        "binding_name_override": "#collection_length"
+      }
+    ],
+    "factory": {
+      "name": "buttons",
+      "control_name": "sapdon_form_button_template"
+    }
+  },
   "custom_ui_template": {
     "type": "panel",
     "bindings": [
@@ -58,7 +116,7 @@
           "controls": [
             {
               "custom_ui_guidebook@custom_ui_template": {
-                "$main_content": "sapdon_guidebook.guidebook_root_panel",
+                "$main_content": "sapdon.guidebook_root_panel",
                 "$binding_text": "guidebook"
               }
             }
