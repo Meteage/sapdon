@@ -20,10 +20,16 @@ export function bootstrap() {
         const handler = cliServerHandlers.get(req.url.slice(1))
         if (handler) {
             try {
-                const { promise, resolve } = Promise.withResolvers()
+                const { promise, resolve, reject } = Promise.withResolvers()
                 let buf = Buffer.alloc(0)
                 req.on('data', chunk => buf = Buffer.concat([buf, chunk]))
-                req.on('end', () => resolve(JSON.parse(buf)))
+                req.on('end', () => {
+                    try {
+                        resolve(JSON.parse(buf))
+                    } catch (error) {
+                        reject(error)
+                    }
+                })
                 await handler(...await promise)
             } catch (error) {
                 console.error(error)
@@ -37,7 +43,7 @@ export function bootstrap() {
             res.writeHead(404)
             res.end()
         }
-    }).listen(port)
+    }).listen(port, () => console.log(`Dev Server listening on port ${port}`))
 
     svr.on('error', () => listening = false)
 

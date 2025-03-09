@@ -1,5 +1,4 @@
 export * from "./factory/ItemExtra.js";
-export * from "../cli/index.js";
 import { ItemAPI } from "./factory/ItemFactory.js";
 import { BlockAPI } from "./factory/BlockFactory.js";
 import { FeatureAPI } from "./factory/FeatureFactory.js";

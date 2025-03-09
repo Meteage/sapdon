@@ -11,12 +11,10 @@ export async function cliRequest(path, ...params) {
         });
     }
     catch (error) {
+        console.error(error);
         console.error('尝试在构建脚本中使用 server.startDevServer() 启动开发服务器');
     }
 }
-async function writeAddon(modPath, buildPath, projectName) {
+export async function writeAddon(modPath, buildPath, projectName) {
     await cliRequest('write-addon', modPath, buildPath, projectName);
 }
-export const client = {
-    writeAddon
-};

@@ -2,7 +2,7 @@ import path from "path";
 import { saveFile } from "./utils.js";
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js";
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js";
-import { client } from './dev-server/client.js';
+import { writeAddon } from './dev-server/client.js';
 /**
  * 处理 blocks.json 数据
  * @param {Object} data blocks.json 数据
@@ -30,7 +30,7 @@ export const processBlocksData = (data) => {
     return blocks;
 };
 export const generateAddonClient = async (modPath, buildPath, projectName) => {
-    client.writeAddon(modPath, buildPath, projectName);
+    writeAddon(modPath, buildPath, projectName);
 };
 /**
  * Server
@@ -66,7 +66,7 @@ export const generateAddon = (GRegistry, UISystemRegistry) => async (modPath, bu
         });
         // 从全局注册表中获取数据
         const dataList = GRegistry.getDataList();
-        // console.log(1, dataList)
+        // console.log("dataList:", dataList)
         // 遍历数据并保存到相应的目录
         dataList.forEach(({ name, root, path: dataPath, data }) => {
             // 处理 blocks.json 数据

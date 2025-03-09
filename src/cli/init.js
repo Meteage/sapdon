@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { pathNotExist, copyFolder, saveFile } from './utils.js'
 import fs from "fs"
 import cp from "child_process"
+import os from "os"
 
 // 获取当前文件的路径
 const __filename = fileURLToPath(import.meta.url)
@@ -13,6 +14,16 @@ const __dirname = path.dirname(__filename)
 const templateMapping = {
     js: 'test_sapdon',
     ts: 'ts_sapdon'
+}
+
+export function initMojangPath(projectPath) {
+    const mojangPath = path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
+    const betaPath = path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
+    const buildConfigPath = path.join(projectPath, './build.config')
+    const buildConfig = JSON.parse(fs.readFileSync(buildConfigPath))
+    buildConfig.mojangPath = mojangPath
+    buildConfig.betaPath = betaPath
+    saveFile(buildConfigPath, JSON.stringify(buildConfig, null, 2))
 }
 
 export const initProject = (projectPath, data) => {

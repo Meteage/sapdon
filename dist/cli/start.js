@@ -3,11 +3,12 @@ import { program } from 'commander';
 import inquirer from 'inquirer';
 import path from 'path';
 import os from 'os';
-import { initNPMProject, initProject, readPackageJson } from './init.js';
-import { buildProject } from './build.js';
+import { initMojangPath, initNPMProject, initProject, readPackageJson } from './init.js';
+import { buildProject, projectCanBuild } from './build.js';
 import { readFile } from "./utils.js";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import { writeLib } from './dev-server/sync-files.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 process.removeAllListeners('warning');
@@ -97,18 +98,25 @@ function start() {
             const projectPath = path.join(process.cwd(), projectName);
             console.log('项目路径:', projectPath);
             initProject(projectPath, answers);
+            initMojangPath(projectPath);
+            writeLib(projectPath);
         });
     });
     program.command("build <project-name>").description("Build the project").action((projectName) => {
         console.log("Building the project...");
         const projectPath = path.join(process.cwd(), projectName);
-        buildProject(projectPath, path.basename(projectName));
+        if (projectCanBuild(projectPath, projectName)) {
+            buildProject(projectPath, path.basename(projectName));
+        }
     });
     // pack 命令
     program.command("pack").description("Pack the current project").action(() => {
         console.log("Packing the current project...");
         const projectPath = process.cwd();
-        buildProject(projectPath, path.basename(projectPath));
+        const projectName = path.basename(projectPath);
+        if (projectCanBuild(projectPath, projectName)) {
+            buildProject(projectPath, path.basename(projectName));
+        }
     });
     // 配置build.config文件的命令
     program.command("config").description("Configure build.config file").action(() => {
