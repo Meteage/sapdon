@@ -17,4 +17,3 @@ import { ServerFormSystem, ServerUISystem } from "./ui/systems/server_form.js";
 import { UISystem } from "./ui/systems/UISystem.js";
 export { ItemAPI, BlockAPI, FeatureAPI, EntityAPI, RecipeAPI, BlockComponent, ItemComponent, Image, Panel, Label, UIElement, UISystem, DataBindingObject, ServerUISystem, ServerFormSystem, ItemTextureManager, terrainTextureManager, FlipbookTextures, GRegistry, UISystemRegistry, };
 export * from './factory/ItemExtra.js';
-export * from '../cli/index.js';

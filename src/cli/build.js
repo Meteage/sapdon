@@ -1,5 +1,5 @@
 import path from 'path'
-import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder } from "./utils.js"
+import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder, asyncImport } from "./utils.js"
 import { generateAddonClient } from './load.js'
 
 import {
@@ -18,7 +18,9 @@ import ts from '@rollup/plugin-typescript'
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths'
 import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { syncDevFilesClient } from './sync-files.js'
+import { syncDevFilesClient } from './dev-server/sync-files.js'
+import { hmr } from './dev-server/hmr.js'
+import cp from 'child_process'
 
 
 // 获取当前文件的目录路径
@@ -27,6 +29,12 @@ const __dirname = path.dirname(__filename)
 
 //读取配置文件
 // const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
+
+const rollupIgnores = [
+    'rollup',
+    'typescript',
+    '@sapdon',
+]
 
 //脚本打包器
 export const scriptBundler = {
@@ -56,9 +64,12 @@ export const scriptBundler = {
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
                 ],
                 external(name) {
-                    return name.includes('rollup')
-                        || name.includes('typescript')
-                        || name.includes('sapdon')
+                    for (const candidate of rollupIgnores) {
+                        if (name.includes(candidate)) {
+                            return true
+                        }
+                    }
+                    return false
                 }
             })
     
@@ -91,10 +102,27 @@ async function bundleScripts(projectPath, scriptPath, element) {
 function preload(filePath) {
     fs.appendFileSync(filePath, `
         ;(async () => {
-            const { startDevServer, GRegistry, UISystemRegistry } = await import('sapdon')
+            const { startDevServer } = await import('@sapdon/cli')
+            const { GRegistry, UISystemRegistry } = await import('@sapdon/core')
             startDevServer(GRegistry, UISystemRegistry)
+            process.send('initialized')
         })();
     `)
+}
+
+async function runOnChild(targetFilePath) {
+    preload(targetFilePath)
+    const { promise, resolve } = Promise.withResolvers()
+    const child = cp.fork(targetFilePath, { stdio: 'inherit' })
+    child.once('message', message => {
+        if (message !== 'initialized') {
+            child.kill()
+        }
+
+        resolve()
+    })
+
+    await promise
 }
 
 async function runScript(src) {
@@ -105,31 +133,40 @@ async function runScript(src) {
         const targetFilePath = path.join(sourceDir, randomName)
 
         await scriptBundler.ts(sourceDir, sourceDir, randomName, sourceFileName)
-        preload(targetFilePath)
-        await import('file://' + targetFilePath)
+        await runOnChild(targetFilePath)
         fs.rmSync(targetFilePath, { force: true })
         return
     }
 
-    preload(src)
-    await import(src)
+    await runOnChild(src)
 }
 
-//构建项目
-export const buildProject = async (projectPath, projectName) => {
+export function projectCanBuild(projectPath, projectName) {
     console.log("开始构建项目")
     console.log("项目路径：" + projectPath)
     //检查项目是否存在
     if (pathNotExist(projectPath)) {
         console.log("项目不存在")
-        return
+        return false
     }
     //检查项目是否有build.config文件
     if (pathNotExist(path.join(projectPath, "build.config"))) {
         console.log("项目没有build.config文件")
-        return
+        return false
     }
 
+    return true
+}
+
+//构建项目
+/**
+ * `client`
+ * 
+ * 在使用前使用 `projectCanBuild` 确保项目可以构建
+ * @param {string} projectPath 
+ * @param {string} projectName 
+ */
+export const buildProject = async (projectPath, projectName) => {
     //读取build.config文件
     const buildConfigPath = path.join(projectPath, "build.config")
     const buildConfig = JSON.parse(readFile(buildConfigPath))
@@ -180,34 +217,21 @@ export const buildProject = async (projectPath, projectName) => {
     copyFileSync(packIconPath, path.join(buildBehDirPath, "pack_icon.png"))
     copyFileSync(packIconPath, path.join(buildResDirPath, "pack_icon.png"))
 
-    //复制文件夹
     const resources = buildConfig.resources
     resources.forEach(element => {
         const sourcePath = path.join(projectPath, element.path)
         copyFolder(sourcePath, buildResDirPath)
     })
 
-    //复制scripts文件夹
     const scripts = buildConfig.scripts
     const scriptPath = path.join(buildBehDirPath, "scripts/")
-    // scripts.forEach(element => {
-    //     const sourcePath = path.join(projectPath, element.path)
-    //     copyFolder(sourcePath, scriptPath)
-    // })
+
     for (const element of scripts) {
         await bundleScripts(projectPath, scriptPath, element)
     }
 
-    // 将 modPath 解析为绝对路径
     const absoluteModPath = path.join(projectPath, buildConfig.defaultConfig.buildEntry)
-
-    // 将路径转换为 file:// URL
-    // const fileUrl = pathToFileURL(absoluteModPath).href
-
-    // 动态加载 JavaScript 文件
-    // await import(fileUrl)
     await runScript(absoluteModPath)
-
 
     //只有当buildMode为development时才加载用户modjs文件
     if (buildConfig.defaultConfig.buildMode === "development") {
@@ -216,14 +240,10 @@ export const buildProject = async (projectPath, projectName) => {
     }
 
     syncDevFilesClient(projectPath, projectName)
-    //延迟1s
-    // setTimeout(() => {
-    //     //将编译好的文件夹拷贝至mc
-        // console.log(path.join(pathConfig.mojangPath,`development_behavior_packs/${projectName}_BP/`))
-    //     // copyFolder(buildBehDirPath, path.join(pathConfig.mojangPath, "development_behavior_packs/", `${projectName}_BP/`))
-    //     // copyFolder(buildResDirPath, path.join(pathConfig.mojangPath, "development_resource_packs/", `${projectName}_RP/`))
-    // }, 1000)
 
+    if (buildConfig.useHMR === true) {
+        hmr(projectPath, projectName)
+    }
 }
 
 function versionStringToArray(versionString) {

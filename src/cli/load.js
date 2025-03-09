@@ -2,7 +2,7 @@ import path from "path"
 import { saveFile } from "./utils.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
-import { client } from './dev-server/client.js'
+import { writeAddon } from './dev-server/client.js'
 
 /**
  * 处理 blocks.json 数据
@@ -35,7 +35,7 @@ export const processBlocksData = (data) => {
 }
 
 export const generateAddonClient = async (modPath, buildPath, projectName) => {
-    client.writeAddon(modPath, buildPath, projectName)
+    writeAddon(modPath, buildPath, projectName)
 }
 
 /**

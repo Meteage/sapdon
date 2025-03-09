@@ -5,6 +5,7 @@
  */
 export function copyFileSync(src: string, dest: string): void;
 export function dirname(importMeta: any): string;
+export function asyncImport(path: any): Promise<any>;
 export function generateUUID(): `${string}-${string}-${string}-${string}-${string}`;
 export function pathNotExist(filePath: any): boolean;
 export function readFile(filePath: any): string;

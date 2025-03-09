@@ -1,4 +1,3 @@
 export function startDevServer(GRegistry: any, UIRegistry: any): void;
+export { server };
 import { server } from "./server.js";
-import { client } from "./client.js";
-export { server, client };

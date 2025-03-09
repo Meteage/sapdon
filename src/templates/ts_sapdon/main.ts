@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent } from 'sapdon'
+import { ItemCategory, ItemAPI, ItemComponent } from '@sapdon/core'
 
 ItemAPI.createItem('test:stick', ItemCategory.Items, 'stick')
     .addComponent(ItemComponent.combineComponents(

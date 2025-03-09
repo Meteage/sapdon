@@ -40,4 +40,3 @@ export {
 }
 
 export * from './factory/ItemExtra.js'
-export * from '../cli/index.js'

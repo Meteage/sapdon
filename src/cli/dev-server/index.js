@@ -1,5 +1,4 @@
 import { generateAddon } from "../load.js"
-import { client } from "./client.js"
 import { bootstrap, isListening, server } from "./server.js"
 import { syncDevFilesServer } from "./sync-files.js"
 
@@ -12,5 +11,5 @@ export function startDevServer(GRegistry, UIRegistry) {
 }
 
 export {
-    server, client
+    server,
 }

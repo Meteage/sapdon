@@ -81,3 +81,9 @@ export function dirname(importMeta) {
     const __dirname = path.dirname(__filename);
     return __dirname;
 }
+export function asyncImport(path) {
+    if (!path.startsWith('.')) {
+        return import('file://' + path);
+    }
+    return import(path);
+}
