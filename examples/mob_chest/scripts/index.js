@@ -9,3 +9,4 @@ world.afterEvents.projectileHitBlock.subscribe((event)=>{
     const targetblock = event.getBlockHit().block.above();
     targetblock.setType("sapdon:falling_block");
 })
+

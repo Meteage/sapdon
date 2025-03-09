@@ -1,0 +1,150 @@
+{
+  "namespace": "test",
+  "root_panel": {
+    "type": "panel",
+    "size": [
+      100,
+      100
+    ],
+    "controls": [
+      {
+        "debug_board": {
+          "type": "image",
+          "texture": "textures/ui/focus_border_white",
+          "nineslice_size": 1,
+          "size": [
+            "100%",
+            "100%"
+          ]
+        }
+      },
+      {
+        "main": {
+          "type": "stack_panel",
+          "orientation": "vertical",
+          "size": [
+            "100%",
+            "100%"
+          ],
+          "controls": [
+            {
+              "stack0": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "10%"
+                ],
+                "controls": [
+                  {
+                    "title": {
+                      "type": "label",
+                      "text": "我的表单",
+                      "controls": [
+                        {
+                          "debug_board": {
+                            "type": "image",
+                            "texture": "textures/ui/focus_border_white",
+                            "nineslice_size": 1,
+                            "size": [
+                              "100%",
+                              "100%"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack1": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "70%"
+                ],
+                "controls": [
+                  {
+                    "title": {
+                      "type": "label",
+                      "text": "我的表单主体内容",
+                      "controls": [
+                        {
+                          "debug_board": {
+                            "type": "image",
+                            "texture": "textures/ui/focus_border_white",
+                            "nineslice_size": 1,
+                            "size": [
+                              "100%",
+                              "100%"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack2": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "20%"
+                ],
+                "controls": [
+                  {
+                    "buttons": {
+                      "type": "stack_panel",
+                      "orientation": "horizontal",
+                      "size": [
+                        "100%",
+                        "100%"
+                      ],
+                      "controls": [
+                        {
+                          "stack0": {
+                            "type": "panel",
+                            "size": [
+                              "50%",
+                              "100%"
+                            ],
+                            "controls": [
+                              {
+                                "b1@server_form.sapdon_form_button_factory": {
+                                  "$binding_button_text": "test1"
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "stack1": {
+                            "type": "panel",
+                            "size": [
+                              "50%",
+                              "100%"
+                            ],
+                            "controls": [
+                              {
+                                "b2@server_form.sapdon_form_button_factory": {
+                                  "$binding_button_text": "test2"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

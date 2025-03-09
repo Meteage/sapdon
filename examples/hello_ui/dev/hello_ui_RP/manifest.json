@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "hello_ui_RP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "11baf639-c8e7-4960-a9db-4fc4ad0ac6ce",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "d40140f9-6b16-4e1b-ba2a-c1a2575e3457",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "2.0.1"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/Meteage/sapdon"
+  }
+}
