@@ -1,7 +1,12 @@
-/.idea/
 node_modules/
-src/cli/build.config
 biocraft/
+/.idea/
 examples/thaumcraft
-workspace/
+examples/test/build.config
+src/cli/build.config
 
+package-lock.json
+.tmp
+
+development_*
+workspace/

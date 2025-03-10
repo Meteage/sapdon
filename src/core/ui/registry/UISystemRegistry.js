@@ -1,5 +1,3 @@
-import { UISystem } from "../systems/UISystem.js";
-
 export class UISystemRegistry {
   // 私有静态字段
   static #ui_system_map = new Map();
@@ -7,9 +5,6 @@ export class UISystemRegistry {
 
   // 注册 UISystem
   static registerUISystem(ui_system) {
-    if (!(ui_system instanceof UISystem)) {
-      throw new Error("参数必须是 UISystem 类的实例");
-    }
     const ui_system_path = ui_system.path + ui_system.name + ".json";
     this.#ui_system_map.set(ui_system_path, ui_system);
   }

@@ -4,9 +4,7 @@ import { CropBlock } from "../block/cropBlock.js";
 import { GeometryBlock } from "../block/GeometryBlock.js";
 import { OreBlock } from "../block/OreBlock.js";
 import { RotatableBlock } from "../block/RotatableBlock.js";
-import { TileBlock } from "../block/TileBlock.js";
-import { GRegistry } from "../registry.js";
-import { registerEntity } from "./EntityFactory.js";
+import { GRegistry } from "../GRegistry.js";
 
 
 /**
@@ -158,10 +156,4 @@ export const BlockAPI = {
         registerBlock(block); // 调用注册方法
         return block;
     },
-    createTileBlock: function (identifier, category, textures_arr, options = {}) {
-        const block = new TileBlock(identifier, category, textures_arr, options);
-        registerBlock(block.block); // 调用注册方法
-        registerEntity(block.entity.entity,block.entity.client_entity)
-        return block;
-    }
 };
