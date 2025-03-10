@@ -2,8 +2,61 @@ import { Modifications, UIElement } from "../elements/UIElement.js";
 import { DataBindingObject } from "../DataBindingObject.js";
 import { UISystem } from "./UISystem.js";
 import { Panel } from "../elements/Panel.js";
+import { Button } from "../elements/Button.js";
+import { Image } from "../elements/Image.js";
+import { Sprite } from "../Properties/Sprite.js";
 
 export const ServerFormSystem = new UISystem("server_form:server_form","ui/");
+
+
+//表单按钮模板
+const form_button_template = new Button("sapdon_form_button_template","common.button");
+      form_button_template.addVariable("pressed_button_name", "button.form_button_click")
+      form_button_template.addVariable("default_texture|default","textures/gui/newgui/buttons/borderless/light")
+      form_button_template.addVariable("hover_texture|default","textures/gui/newgui/buttons/borderless/lighthover")
+      form_button_template.addVariable("pressed_texture|default","textures/gui/newgui/buttons/borderless/lightpressed")
+      form_button_template.addVariable("binding_button_text|default","")
+      form_button_template.dataBinding.addDataBinding(
+        new DataBindingObject().setBindingType("collection_details")
+        .setBindingCollectionName("form_buttons")
+      )
+      form_button_template.dataBinding.addDataBinding(
+        new DataBindingObject().setBindingType("collection")
+        .setBindingCollectionName("form_buttons")
+        .setBindingName("#form_button_text")
+      )
+      form_button_template.dataBinding.addDataBinding(
+        new DataBindingObject().setBindingType("view")
+        .setSourcePropertyName("($binding_button_text = #form_button_text)")
+        .setTargetPropertyName("#visible")
+      )
+      
+      form_button_template.addControls([
+        new Image("default").setSprite(
+            new Sprite().setTexture("$default_texture")
+        ),
+        new Image("hover").setSprite(
+            new Sprite().setTexture("$hover_texture")
+        ),
+        new Image("pressed").setSprite(
+            new Sprite().setTexture("$pressed_texture")
+        )
+      ])
+
+
+//f
+export const form_button_panel = new Panel("sapdon_form_button_factory")
+      form_button_panel.addProp("type","collection_panel")
+      form_button_panel.factory.setName("buttons").setControlName("sapdon_form_button_template");
+      form_button_panel.addProp("collection_name","form_buttons")
+      form_button_panel.dataBinding.addDataBinding(
+        new DataBindingObject().setBindingName("#form_button_length")
+        .setBindingNameOverride("#collection_length")
+      )
+
+ServerFormSystem.addElement(form_button_template)
+ServerFormSystem.addElement(form_button_panel)
+
 
 export class ServerUISystem  {
   static #binding_map = new Map();

@@ -1,0 +1,64 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "hello_ui_BP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "dbe47d61-05d1-4993-8720-6e9cc7e4a857",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "行为模块",
+      "type": "data",
+      "uuid": "06cdc722-a7dc-4386-9681-b95639d34963",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "description": "脚本模块",
+      "type": "script",
+      "uuid": "d3fb6cb5-9032-4305-8345-eba903b489cd",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/index.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.3.0"
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.17.0"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "2.0.1"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/Meteage/sapdon"
+  }
+}

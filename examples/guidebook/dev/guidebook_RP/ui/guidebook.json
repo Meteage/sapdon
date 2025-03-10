@@ -1,75 +1,5 @@
 {
-  "namespace": "sapdon_guidebook",
-  "form_button_template@common.button": {
-    "type": "button",
-    "bindings": [
-      {
-        "binding_type": "collection_details",
-        "binding_collection_name": "form_buttons"
-      },
-      {
-        "binding_type": "collection",
-        "binding_collection_name": "form_buttons",
-        "binding_name": "#form_button_text"
-      },
-      {
-        "binding_type": "view",
-        "source_property_name": "($binding_button_text = #form_button_text)",
-        "target_property_name": "#visible"
-      }
-    ],
-    "controls": [
-      {
-        "default": {
-          "type": "image",
-          "texture": "$default_texture"
-        }
-      },
-      {
-        "hover": {
-          "type": "image",
-          "texture": "$hover_texture"
-        }
-      },
-      {
-        "pressed": {
-          "type": "image",
-          "texture": "$pressed_texture"
-        }
-      }
-    ],
-    "$default_texture|default": "",
-    "$hover_texture|default": "",
-    "$pressed_texture|default": "",
-    "$binding_button_text|default": ""
-  },
-  "form_button_factory": {
-    "type": "collection_panel",
-    "collection_name": "form_buttons",
-    "bindings": [
-      {
-        "binding_name": "#form_button_length",
-        "binding_name_override": "#collection_length"
-      }
-    ],
-    "factory": {
-      "name": "buttons",
-      "control_name": "$button_control"
-    },
-    "controls": [
-      {
-        "debug_board": {
-          "type": "image",
-          "texture": "textures/ui/focus_border_white",
-          "nineslice_size": 1,
-          "size": [
-            "100%",
-            "100%"
-          ]
-        }
-      }
-    ]
-  },
+  "namespace": "sapdon",
   "page_template": {
     "type": "stack_panel",
     "orientation": "horizontal",
@@ -331,10 +261,8 @@
           "layer": 5,
           "controls": [
             {
-              "prev_button@form_button_factory": {
+              "prev_button@server_form.sapdon_form_button_factory": {
                 "$binding_button_text": "test1",
-                "$button_control": "sapdon_guidebook.form_button_template",
-                "$pressed_button_name": "button.form_button_click",
                 "$default_texture": "textures/ui/book_pageleft_default",
                 "$hover_texture": "textures/ui/book_pageleft_hover",
                 "$pressed_texture": "textures/ui/book_pageleft_pressed"
@@ -359,10 +287,8 @@
           "layer": 5,
           "controls": [
             {
-              "next_button@form_button_factory": {
+              "next_button@server_form.sapdon_form_button_factory": {
                 "$binding_button_text": "test2",
-                "$button_control": "sapdon_guidebook.form_button_template",
-                "$pressed_button_name": "button.form_button_click",
                 "$default_texture": "textures/ui/book_pageright_default",
                 "$hover_texture": "textures/ui/book_pageright_hover",
                 "$pressed_texture": "textures/ui/book_pageright_pressed"

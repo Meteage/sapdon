@@ -8,7 +8,7 @@
       0,
       0
     ],
-    "uuid": "ffeecb25-9baa-4ca7-bd5e-deecb1d2a0da",
+    "uuid": "2685d920-810e-4e3a-ac85-e2f774263518",
     "min_engine_version": [
       1,
       19,
@@ -19,7 +19,7 @@
     {
       "description": "资源模块",
       "type": "resources",
-      "uuid": "8b5bf1fe-4fd3-4f4d-ad4a-ed356ad5e044",
+      "uuid": "2e18435c-8a2f-4590-a41b-65ba2d905e27",
       "version": [
         1,
         0,
@@ -35,10 +35,10 @@
     "license": "MIT",
     "generated_with": {
       "sapdon": [
-        "1.0.0"
+        "2.0.1"
       ]
     },
     "product_type": "addon",
-    "url": "https://github.com/junjun260/sapdon"
+    "url": "https://github.com/Meteage/sapdon"
   }
 }

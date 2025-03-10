@@ -1,0 +1,165 @@
+{
+  "namespace": "sapdon_furnace",
+  "sapdon_furnace_root": {
+    "type": "panel",
+    "size": [
+      200,
+      200
+    ],
+    "controls": [
+      {
+        "debug_board": {
+          "type": "image",
+          "texture": "textures/ui/focus_border_white",
+          "nineslice_size": 1,
+          "size": [
+            "100%",
+            "100%"
+          ]
+        }
+      },
+      {
+        "common_panel@common.common_panel": {}
+      },
+      {
+        "inventory_selected_icon_button@common.inventory_selected_icon_button": {}
+      },
+      {
+        "container_panel": {
+          "type": "stack_panel",
+          "orientation": "vertical",
+          "size": [
+            "100%",
+            "100%"
+          ],
+          "layer": 2,
+          "controls": [
+            {
+              "stack0": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "10%"
+                ],
+                "controls": [
+                  {
+                    "title": {
+                      "type": "label",
+                      "text": "标题",
+                      "color": [
+                        0,
+                        0,
+                        0
+                      ],
+                      "layer": 12
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack1": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "40%"
+                ],
+                "controls": [
+                  {
+                    "main": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "gird": {
+                            "type": "grid",
+                            "collection_name": "container_items",
+                            "grid_dimensions": [
+                              3,
+                              1
+                            ],
+                            "grid_item_template": "chest.chest_grid_item",
+                            "controls": [
+                              {
+                                "grid_item_0": {
+                                  "type": "panel",
+                                  "grid_position": [
+                                    0,
+                                    0
+                                  ],
+                                  "controls": [
+                                    {
+                                      "input@chest.chest_grid_item": {}
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "grid_item_1": {
+                                  "type": "panel",
+                                  "grid_position": [
+                                    1,
+                                    0
+                                  ],
+                                  "controls": [
+                                    {
+                                      "input@chest.chest_grid_item": {}
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "grid_item_2": {
+                                  "type": "panel",
+                                  "grid_position": [
+                                    2,
+                                    0
+                                  ],
+                                  "controls": [
+                                    {
+                                      "input@chest.chest_grid_item": {}
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack2": {
+                "type": "panel",
+                "size": [
+                  "100%",
+                  "50%"
+                ],
+                "controls": [
+                  {
+                    "inventory_panel": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label": {}
+                        },
+                        {
+                          "hotbar_grid@common.hotbar_grid_template": {}
+                        },
+                        {
+                          "inventory_take_progress_icon_button@common.inventory_take_progress_icon_button": {}
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

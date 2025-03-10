@@ -15,7 +15,7 @@
 #### 参数
 
 - `identifier` (string): 方块的唯一标识符，格式为"命名空间:名称" (例："my_mod:stone_block")。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"。
+- `category` (string): 在创造模式物品栏的分类，可选值： "construction", "nature", "equipment", "items", and "none"。
 - `textures_arr` (string[]): 6面纹理数组，顺序为 [上, 下, 东, 西, 南, 北]
 - `options` (Object): 可选参数，默认为空。
     - `group` (string): 分组名称，默认 "construction"。
@@ -34,10 +34,10 @@
 #### 参数
 
 - `identifier` (string): 方块的唯一标识符。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"
+- `category` (string): 在创造模式物品栏的分类，可选值： "construction", "nature", "equipment", "items", and "none"
 - `variantDatas` (Array): 变体数据数组，每个元素包含：
-    - `stateTag` (string): 状态标签 (例："color=red")
-    - `textures` (string[]): 对应状态的6面纹理
+    - `stateTag` (number): 状态标签 0-15 最大15
+    - `textures` (string[]): 对应状态的6面，纹理顺序为 [上, 下, 东, 西, 南, 北]
 - `options` (Object): 可选参数，默认为空。
     - `options.group` (string): 分组，默认为 "construction"。
     - `options.hide_in_command` (boolean): 是否在命令中隐藏，默认为 false。
@@ -58,7 +58,7 @@
 #### 参数
 
 - `identifier` (string): 矿物方块的唯一标识符。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"。
+- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "items", and "none"
 - `textures_arr` (string[]): 6面纹理数组，顺序为 [上, 下, 东, 西, 南, 北]。
 - `options` (Object): 可选参数，默认为空。
     - `options.group` (string): 分组，默认为 "construction"。
@@ -79,7 +79,7 @@
 #### 参数
 
 - `identifier` (string): 方块的唯一标识符。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"。
+- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment","items" and "none"。
 - `geometry` (string): 几何模型标识符 (例："geometry.custom_model")。
 - `material_instances` (Object): 材质实例配置。
     - 撰写文档者不晓得具体内容应该填啥
@@ -100,7 +100,7 @@
 #### 参数
 
 - `identifier` (string): 矿物方块的唯一标识符。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"。
+- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "items" and "none"。
 - `textures_arr` (string[]): 6面纹理数组，顺序为 [上, 下, 东, 西, 南, 北]。
 - `options` (Object): 可选参数，默认为空。
     - `options.group` (string): 分组，默认为 "construction"。
@@ -119,9 +119,9 @@
 #### 参数
 
 - `identifier` (string): 作物方块的唯一标识符。
-- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "none"。
+- `category` (string): 在创造模式物品栏的分类，可选值："construction", "nature", "equipment", "items" and "none"。
 - `variantDatas` (Array): 变体数据数组，每个元素包含：
-  - `stateTag` (string): 状态标签 (例："color=red")
+  - `stateTag` (number): 状态标签 0-15 最大15
   - `textures` (string[]): 对应状态的6面纹理
 - `options` (Object): 可选参数，默认为空。
     - `options.group` (string): 分组，默认为 "construction"。

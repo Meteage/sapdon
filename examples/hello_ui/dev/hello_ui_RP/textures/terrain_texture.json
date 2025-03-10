@@ -1,0 +1,17 @@
+{
+  "texture_name": "atlas.terrain",
+  "resource_pack_name": "hello_ui",
+  "padding": 8,
+  "num_mip_levels": 4,
+  "texture_data": {
+    "none": {
+      "textures": "textures/blocks/none"
+    },
+    "test_log_oak": {
+      "textures": "textures/blocks/test_log_oak"
+    },
+    "test_log_top": {
+      "textures": "textures/blocks/test_log_top"
+    }
+  }
+}

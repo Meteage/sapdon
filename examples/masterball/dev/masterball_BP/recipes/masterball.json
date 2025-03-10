@@ -1,0 +1,25 @@
+{
+  "format_version": "1.17.41",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "sapdon:masterball_recipe"
+    },
+    "tags": [
+      "crafting_table",
+      "altar"
+    ],
+    "key": {
+      "I": "minecraft:iron_ingot",
+      "A": "minecraft:amethyst_shard",
+      "D": "minecraft:diamond"
+    },
+    "pattern": [
+      "IAI",
+      "IDI",
+      "III"
+    ],
+    "result": {
+      "item": "sapdon:uncaught_masterball"
+    }
+  }
+}

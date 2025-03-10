@@ -1,172 +1,84 @@
-import { BlockAPI, BlockComponent, EntityAPI } from "../../src/core/index.js";
+import { BlockComponent } from "../../src/core/block/blockComponent.js";
+import { TileBlock } from "../../src/core/block/TileBlock.js";
+import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
+import { EntityAPI, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem } from "../../src/core/index.js";
+import { Modifications } from "../../src/core/ui/elements/UIElement.js";
+import { Control } from "../../src/core/ui/Properties/Control.js";
+import { GridProp } from "../../src/core/ui/Properties/gridProp.js";
+import { Layout } from "../../src/core/ui/Properties/Layout.js";
+import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
+import { Text } from "../../src/core/ui/Properties/Text.js";
+import { UISystemRegistry } from "../../src/core/ui/registry/UISystemRegistry.js";
+import { ChestUISystem } from "../../src/core/ui/systems/chest.js";
+import { ContainerUISystem } from "../../src/core/ui/systems/ContainerUISystem.js";
 
-//添加箱子方块
-BlockAPI.createBlock("mob_chest:chest","construction",[
-    {stateTag:0,textures:["normal"]},
-    {stateTag:1,textures:["none"]}
-])
-.addComponent(BlockComponent.setGeometry("geometry.mob_chest"))
-.addComponent(BlockComponent.setMaterialInstances({
-    "*":{
-        "texture":"nomal",
-    }
-}))
-//.addComponent(BlockComponent.setSelectionBoxCustom([-7,0,-7],[15,15,15]))
-.addComponent(BlockComponent.setCustomComponents(["sapdon:block_with_entity"]))
-.addVariantComponent(1,BlockComponent.setGeometry("geometry.empty"))
 
-//添加箱子实体
-const mob_chest = EntityAPI.createEntity("mob_chest:chest_entity", "textures/blocks/entity/normal",{
-    component_groups:{
-        "close_check":{
-            "minecraft:entity_sensor": {
-  "relative_range": false,
-  "subsensors": [
-    {
-      "range": [
-        2,
-        2
-      ],
-      "event_filters": {
-        "all_of": [
-          {
-            "test": "is_riding",
-            "subject": "self",
-            "operator": "equals",
-            "value": false
-          },
-          {
-            "test": "has_component",
-            "subject": "self",
-            "operator": "not",
-            "value": "minecraft:behavior.look_at_player"
+const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
+      mob_chest.setGeometry("geometry.mob_chest");
+      mob_chest.block.addComponent(
+        BlockComponent.setMaterialInstances({
+          "*":{
+            "texture":"normal",
+            "render_method": "alpha_test"
           }
-        ]
-      },
-      "event": "minecraft:on_not_riding_player"
-    }
-  ]
-}
-        },
-        "item_despawn":{
-            "minecraft:despawn": {},
-                "minecraft:instant_despawn": {
-                    "remove_child_entities": false
-                },
-                "minecraft:transformation": {
-                    "drop_inventory": true,
-                    "into": "minecraft:air"
-                }
-        }
-    },
-    components:{
-        "minecraft:interact": {
-        "interactions": [
-            {
-            "on_interact": {
-                "filters": {
-                "all_of": [
-                    {
-                        "test": "enum_property",
-                        "subject": "self",
-                        "operator": "not",
-                        "domain": "mob_chest:chest_state",
-                        "value": "open"
-                    }
-                ]
-                },
-                "event": "mob_chest:chest_open"
-            },
-            "particle_on_start": {
-                "particle_type": "food"
-            },
-            "interact_text": "action.interact.feed"
-            }]
-        },
-        "minecraft:is_chested": {},
-        "minecraft:inventory": {
-				"inventory_size": 27,
-				"container_type": "minecart_chest"
-		},
-        // Knockback resistance is needed to make it not be Knocked off by an entity.
-        "minecraft:knockback_resistance": {
-            "value": 1
-        },
-        // Tells if the entity can be pushed or not.
-        "minecraft:pushable": {
-            "is_pushable": false,
-            "is_pushable_by_piston": true
-        },
-        // Sets the distance through which the entity can push through.
-        "minecraft:push_through": {
-            "value": 1
-        },
-        // Makes it invincible.
-        "minecraft:damage_sensor": {
-            "triggers": [
-                {
-                    "deals_damage": false,
-                    "cause": "all"
-                }
-            ]
-        },
-        "minecraft:persistent": {},
-        "minecraft:block_sensor": {
-            "sensor_radius": 1,
-            "on_break": [
-                {
-                    "block_list": [
-                        "mob_chest:chest"
-                    ],
-                    "on_block_broken": "despawn_event"
-                }
-            ]
-        }
-    },
-    events:{
-        "mob_chest:chest_open":{
-            "add": {
-                "component_groups": [
-                    "close_check"
-                ]
-            },
-            "set_property": {
-                "mob_chest:chest_state": "open"
-            }
-        },
-        "mob_chest:chest_close":{
-            "remove": {
-                "component_groups": [
-                    "close_check"
-                ]
-            },
-            "set_property": {
-                "mob_chest:chest_state": "close"
-            }
-        },
-        "despawn_event":{
-            "add": {
-                    "component_groups": [
-                        "item_despawn"
-                    ]
-                }
-        }
-    }
-},{})
+        })
+      )
+      mob_chest.entity.client_entity
+        .addMaterial("default","entity_alphatest")
+        .addGeometry("default","geometry.mob_chest")
+        .addAnimation("default","animation.mob_chest.default")
+        .addAnimation("open","animation.mob_chest.open")
+        .addAnimation("close","animation.mob_chest.close")
+        .addAnimation("interact_controller","controller.animation.mob_chest.interact")
+        .setScript("animate",["interact_controller"])
+        .addRenderController("controller.render.cow")
 
-mob_chest.resource
-.addMaterial("default","entity_alphatest")
-.addGeometry("default","geometry.mob_chest")
-.addAnimation("default","animation.mob_chest.default")
-.addAnimation("open","animation.mob_chest.open")
-.addAnimation("close","animation.mob_chest.close")
-.addAnimation("interact_controller","controller.animation.mob_chest.interact")
-.setScript("animate",["interact_controller"])
-.addRenderController("controller.render.cow")
+        mob_chest.entity.entity.addProperty("mob_chest:chest_state",{
+            "type": "enum",
+            "values": ["default", "open", "close"],
+            "default": "default",
+            "client_sync": true
+        })
 
-mob_chest.behavior.addProperty("mob_chest:chest_state",{
-    "type": "enum",
-    "values": ["default", "open", "close"],
-    "default": "default",
-    "client_sync": true
-})
+
+const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui/");
+      sapdon_furnace.setTitle("自定义熔炉");
+      sapdon_furnace.setSize([180, 180]) //设置界面大小
+      /*
+      sapdon_furnace.setGridDimension([1,5]); //设置槽的行列数 1列，3行
+      sapdon_furnace.addGridItem([0,0],[-18,18]) // 定位槽[0,0] 1列1行槽 [0,0]不偏移
+      sapdon_furnace.addGridItem([0,1],[-18,18]) // 定位槽[0,1] 1列2行槽 [0,0]不偏移
+      sapdon_furnace.addGridItem([0,2],[-18,18]) // 定位槽[0,2] 1列3行槽 [0,0]不偏移
+      sapdon_furnace.addGridItem([0,3],[18,-18]) // 定位槽[0,3] 1列4行槽 [20,20]偏移
+      sapdon_furnace.addGridItem([0,4],[18*3,-18*2]) // 定位槽[0,3] 1列4行槽 [20,20]偏移*/
+      sapdon_furnace.setItemMatrix(5,[
+        [0,0,0,0,0],
+        [1,0,0,0,0],
+        [2,0,4,0,5],
+        [3,0,0,0,0],
+        [0,0,0,0,0]
+      ])
+
+
+
+BlockAPI.createBlock("sapdon:falling_block","construction",[
+  {stateTag:0,textures:["normal"]},
+  {stateTag:1,textures:["normal"]}
+])
+//正常变体
+.addVariantComponent(0,
+  BlockComponent.combineComponents(
+      BlockComponent.setGeometry("geometry.mob_chest"),
+      BlockComponent.setCustomComponents(["sapdon:heavy_block"]),
+      BlockComponent.setTick([0,0],true),
+      BlockComponent.setMaterialInstances({
+          "*": {
+                      "texture":"normal",
+                      "render_method": "alpha_test"
+          }
+      })
+  )
+)
+
+const falling_block_entity = EntityAPI.createProjectile("sapdon:falling_block_entity","textures/blocks/entity/normal");
+      falling_block_entity.resource.addGeometry("default","geometry.mob_chest")

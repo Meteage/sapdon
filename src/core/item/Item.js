@@ -25,7 +25,7 @@ export class Item {
         }
 
         const { 
-            group, 
+            group,
             hide_in_command = false,
             max_stack_size = 64,
         } = options;
