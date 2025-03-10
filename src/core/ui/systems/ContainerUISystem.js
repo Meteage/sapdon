@@ -42,14 +42,32 @@ export class ContainerUISystem {
    * @param {number[]} grid_position - 网格项的位置 [行, 列] 用于定位实体的背包槽。
    * @param {number[]} offset - 网格项的偏移量 [x, y]。
    * @param {Object} [options] - 可选参数，用于配置网格项。
+   * @param {boolean} [options.enable=true] - 是否启用该网格项，默认为 true。
+   * @param {number[]} [options.size] - 网格项的大小 [宽度, 高度]。
+   * @param {UIElement[]} [options.background_images] - 网格项的背景图片控件。
    * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
    */
   addGridItem(grid_position, offset, options) {
+
     const gridItem = new UIElement("grid_item",undefined, "chest.chest_grid_item");
     gridItem.addProp("offset",offset);
+    gridItem.addProp("enable",options.enable)
+    gridItem.addProp("size",options.size)
+    gridItem.addVariable("background_images|default",options.background_images)
+
     this.grids.addGridItem(grid_position, gridItem);
     this.#updateSystem();
     return this;
+  }
+
+  addInputGrid(grid_position,offset,options){
+    this.addGridItem(grid_position,offset,options);
+  }
+
+  addOutputGrid(grid_position,offset,options){
+    //设置
+    options.enable = false;
+    this.addGridItem(grid_position,offset,options);
   }
 
   /**
