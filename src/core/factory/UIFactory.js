@@ -1,4 +1,4 @@
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 import { Image } from "../ui/elements/Image.js";
 import { Label } from "../ui/elements/Label.js";
 import { Panel } from "../ui/elements/Panel.js";

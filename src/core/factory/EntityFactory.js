@@ -3,7 +3,7 @@ import { ClientEntity } from "../entity/ClientEntity.js";
 import { Entity } from "../entity/Entity.js";
 import { NativeEntity } from "../entity/NativeEntity.js";
 import { Projectile } from "../entity/Projectile.js";
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 
 export const registerEntity = (behData, resData) => {
     // 如果 behData 存在且不为空，则注册行为数据

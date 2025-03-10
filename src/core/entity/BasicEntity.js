@@ -64,14 +64,14 @@ export class BasicEntity {
     /**
      * 添加事件到实体
      * @param {string} name - 事件名称
-     * @param {Object} event - 事件
+     * @param {Map} eventMap - 事件的键值对 Map
      * @returns {BasicEntity} - 返回当前实例以支持链式调用
      */
-    addEvent(name, event) {
-        if (!(event instanceof Object)) {
-            throw new Error("eventMap must be an Object.");
+    addEvent(name, eventMap) {
+        if (!(eventMap instanceof Map)) {
+            throw new Error("eventMap must be an instance of Map.");
         }
-        this.events.set(name, event);
+        this.events.set(name, eventMap);
         return this;
     }
 

@@ -3,7 +3,7 @@ import { RecipeTags } from "../addon/recipe/data.js";
 import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
 import { AddonRecipeShaped_1_20 } from "../addon/recipe/recipeShaped.js";
 import { AddonRecipeShapeless_1_17 } from "../addon/recipe/recipeShapeless.js";
-import { GRegistry } from "../registry.js";
+import { GRegistry } from "../GRegistry.js";
 
 class RecipeRegistry  {
 	/**

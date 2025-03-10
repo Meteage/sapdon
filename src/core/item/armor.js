@@ -12,8 +12,7 @@ export class Armor {
         // 创建物品
         this.item = new Item(identifier, category, item_texture, options);
         // 创建附加物
-        this.attachable = new Attachable(identifier);
-
+        this.attachable = new Attachable(identifier)
         // 配置附加物
         this.attachable
             .addTexture("default", texture_path) // 添加默认纹理
@@ -46,6 +45,7 @@ export class Chestplate extends Armor {
         // 自定义胸甲物品
         this.item.addComponent(
             ItemComponent.combineComponents(
+                ItemComponent.setDisplayName("我的自定义胸甲"), // 设置显示名称
                 ItemComponent.setMaxStackSize(1), // 设置最大堆叠数量
                 ItemComponent.setWearable(5, "slot.armor.chest") // 设置为可穿戴，并指定装备槽
             )
@@ -67,6 +67,7 @@ export class Boot extends Armor {
         // 自定义靴子物品
         this.item.addComponent(
             ItemComponent.combineComponents(
+                ItemComponent.setDisplayName("我的自定义靴子"), // 设置显示名称
                 ItemComponent.setMaxStackSize(1), // 设置最大堆叠数量
                 ItemComponent.setWearable(4, "slot.armor.feet") // 设置为可穿戴，并指定装备槽
             )
@@ -88,6 +89,7 @@ export class Leggings extends Armor {
         // 自定义裤子物品
         this.item.addComponent(
             ItemComponent.combineComponents(
+                ItemComponent.setDisplayName("我的自定义裤子"), // 设置显示名称
                 ItemComponent.setMaxStackSize(1), // 设置最大堆叠数量
                 ItemComponent.setWearable(6, "slot.armor.legs") // 设置为可穿戴，并指定装备槽
             )
@@ -109,6 +111,7 @@ export class Helmet extends Armor {
         // 自定义头盔物品
         this.item.addComponent(
             ItemComponent.combineComponents(
+                ItemComponent.setDisplayName("我的自定义头盔"), // 设置显示名称
                 ItemComponent.setMaxStackSize(1), // 设置最大堆叠数量
                 ItemComponent.setWearable(3, "slot.armor.head") // 设置为可穿戴，并指定装备槽
             )

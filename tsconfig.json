@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "declaration": true,
+        "outDir": "dist",
+        "module": "NodeNext",
+        "moduleResolution": "nodenext",
+        "types": [
+            "@minecraft/server",
+            "@minecraft/server-ui",
+            "node"
+        ]
+    },
+    "include": [
+        "./src/**/*.js",
+        "./src/**/*.ts"
+    ],
+    "exclude": [
+        "./src/templates/**/*",
+    ]
+}
