@@ -6,9 +6,9 @@ export class ScrollingPanel extends UIElement {
     dataBinding: DataBinding;
     factory: Factory;
 }
-import { UIElement } from "./UIElement.js";
-import { Input } from "../Properties/Input.js";
-import { ScrollView } from "../Properties/ScrollView.js";
-import { Layout } from "../Properties/Layout.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
+import { UIElement } from "./uiElement.js";
+import { Input } from "../properties/input.js";
+import { ScrollView } from "../properties/scrollView.js";
+import { Layout } from "../properties/layout.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";

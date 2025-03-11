@@ -25,7 +25,7 @@
     custom - is paired with another property renderer which renders hardcoded JSON UI elements
     screen - elements that are called by the game directly, usually root panel elements
  */
-import { Control } from "../Properties/Control.js";
+import { Control } from "../properties/control.js";
 // 基础元素类
 export class UIElement {
     constructor(name, type, template) {

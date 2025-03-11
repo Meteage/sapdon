@@ -1,11 +1,11 @@
 
-import { Control } from "../Properties/Control.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
-import { Input } from "../Properties/Input.js";
-import { Layout } from "../Properties/Layout.js";
-import { ScrollView } from "../Properties/ScrollView.js";
-import { UIElement } from "./UIElement.js";
+import { Control } from "../properties/control.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";
+import { Input } from "../properties/input.js";
+import { Layout } from "../properties/layout.js";
+import { ScrollView } from "../properties/scrollView.js";
+import { UIElement } from "./uiElement.js";
 
 export class ScrollingPanel  extends UIElement{
     constructor(id,template){

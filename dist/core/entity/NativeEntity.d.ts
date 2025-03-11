@@ -4,5 +4,5 @@ export class NativeEntity {
     entity: BasicEntity;
     client_entity: ClientEntity;
 }
-import { BasicEntity } from "./BasicEntity.js";
-import { ClientEntity } from "./ClientEntity.js";
+import { BasicEntity } from "./basicEntity.js";
+import { ClientEntity } from "./clientEntity.js";

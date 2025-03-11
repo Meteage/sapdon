@@ -1,8 +1,8 @@
-import { OreFeature } from "../feature/OreFeature.js";
-import { BiomeFilter } from "../feature_rule/condition/BiomeFilter.js";
-import { CoordinateDistribution } from "../feature_rule/distribution/CoordinateDistribution.js";
-import { FeatureRule } from "../feature_rule/FeatureRule.js";
-import { BasicBlock } from "./BasicBlock.js";
+import { OreFeature } from "../feature/oreFeature.js";
+import { BiomeFilter } from "../feature-rule/condition/biomeFilter.js";
+import { CoordinateDistribution } from "../feature-rule/distribution/coordinateDistribution.js";
+import { FeatureRule } from "../feature-rule/featureRule.js";
+import { BasicBlock } from "./basicBlock.js";
 
 export class OreBlock{
     

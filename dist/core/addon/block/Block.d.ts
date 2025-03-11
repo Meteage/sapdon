@@ -38,4 +38,4 @@ export class AddonBlockDescription {
     states: map;
     menu_category: AddonMenuCategory;
 }
-import { AddonMenuCategory } from "../menu_category.js";
+import { AddonMenuCategory } from "../menuCategory.js";

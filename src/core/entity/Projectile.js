@@ -1,4 +1,4 @@
-import { NativeEntity } from "./NativeEntity.js";
+import { NativeEntity } from "./nativeEntity.js";
 
 export class Projectile extends NativeEntity{
     constructor(identifier, texture_path, options = {}) {

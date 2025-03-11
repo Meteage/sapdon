@@ -1,3 +1,4 @@
+export function registerEntity(behData: any, resData: any): void;
 export namespace EntityAPI {
     function createNativeEntity(identifier: string, proto_id: string, options?: any): {
         behavior: BasicEntity;
@@ -12,5 +13,5 @@ export namespace EntityAPI {
         resource: ClientEntity;
     };
 }
-import { BasicEntity } from "../entity/BasicEntity.js";
-import { ClientEntity } from "../entity/ClientEntity.js";
+import { BasicEntity } from "../entity/basicEntity.js";
+import { ClientEntity } from "../entity/clientEntity.js";

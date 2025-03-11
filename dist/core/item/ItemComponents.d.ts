@@ -1,4 +1,12 @@
 export class ItemComponent {
+    /**
+     * 物品的耐久度组件
+     * @param {number} max_durability 最大耐久
+     * @param {number} damage_chance_min 损坏最小几率
+     * @param {number} damage_chance_max 损坏最大几率
+     * @returns {ItemComponent}
+     */
+    static setDurability(max_durability: number, damage_chance_min?: number, damage_chance_max?: number): ItemComponent;
     static setBlockPlacer(block: any, replace_block_item: any, use_on: any): Map<any, any>;
     /**
   *

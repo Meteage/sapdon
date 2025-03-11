@@ -27,7 +27,7 @@ export class GridProp {
     /**
      * 设置网格的列数和行数。
      * @param {number[]} dimensions - 格式为 [columns, rows]
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setGridDimensions(dimensions) {
         this.grid_dimensions = dimensions;
@@ -36,7 +36,7 @@ export class GridProp {
     /**
      * 设置网格生成的最大项目数。
      * @param {number} maxItems - 最大项目数
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setMaximumGridItems(maxItems) {
         this.maximum_grid_items = maxItems;
@@ -45,7 +45,7 @@ export class GridProp {
     /**
      * 设置网格尺寸的绑定名称。
      * @param {string} binding - 绑定名称
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setGridDimensionBinding(binding) {
         this.grid_dimension_binding = binding;
@@ -54,7 +54,7 @@ export class GridProp {
     /**
      * 设置网格重新缩放方向。
      * @param {string} type - 可能值：vertical, horizontal, none（默认值：none）
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setGridRescalingType(type = 'none') {
         this.grid_rescaling_type = type;
@@ -63,7 +63,7 @@ export class GridProp {
     /**
      * 设置网格填充方向。
      * @param {string} direction - 可能值：vertical, horizontal, none（默认值：none）
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setGridFillDirection(direction = 'none') {
         this.grid_fill_direction = direction;
@@ -72,7 +72,7 @@ export class GridProp {
     /**
      * 设置处理集合的子元素名称。
      * @param {string} template - 元素名称（例如："common.container_item"）
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setGridItemTemplate(template) {
         this.grid_item_template = template;
@@ -81,7 +81,7 @@ export class GridProp {
     /**
      * 设置预缓存的网格项目数量。
      * @param {number} count - 预缓存数量
-     * @returns {Grid} 返回当前实例以支持链式调用
+     * @returns {GridProp} 返回当前实例以支持链式调用
      */
     setPrecachedGridItemCount(count) {
         this.precached_grid_item_count = count;

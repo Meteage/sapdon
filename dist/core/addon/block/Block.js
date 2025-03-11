@@ -1,4 +1,4 @@
-import { AddonMenuCategory } from "../menu_category.js";
+import { AddonMenuCategory } from "../menuCategory.js";
 export class AddonBlock {
     /**
      * Addon方块类

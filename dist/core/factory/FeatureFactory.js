@@ -1,6 +1,6 @@
-import { OreFeature } from "../feature/OreFeature.js";
-import { FeatureRule } from "../feature_rule/FeatureRule.js";
-import { GRegistry } from "../GRegistry.js";
+import { OreFeature } from "../feature/oreFeature.js";
+import { FeatureRule } from "../feature-rule/featureRule.js";
+import { GRegistry } from "../registry.js";
 const registerFeature = (feature) => {
     const feature_name = feature.identifier.split(":")[feature.identifier.split(":").length - 1];
     GRegistry.register(feature_name, "behavior", "features/", feature);

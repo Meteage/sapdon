@@ -26,9 +26,9 @@ export namespace BlockAPI {
         render_method: string;
     }): CropBlock;
 }
-import { BasicBlock } from "../block/BasicBlock.js";
+import { BasicBlock } from "../block/basicBlock.js";
 import { Block } from "../block/block.js";
-import { RotatableBlock } from "../block/RotatableBlock.js";
-import { GeometryBlock } from "../block/GeometryBlock.js";
-import { OreBlock } from "../block/OreBlock.js";
+import { RotatableBlock } from "../block/rotatableBlock.js";
+import { GeometryBlock } from "../block/geometryBlock.js";
+import { OreBlock } from "../block/oreBlock.js";
 import { CropBlock } from "../block/cropBlock.js";

@@ -1,12 +1,12 @@
-import { Grid } from "../elements/Grid.js";
-import { Label } from "../elements/Label.js";
-import { Panel } from "../elements/Panel.js";
-import { StackPanel } from "../elements/StackPanel.js";
-import { UIElement } from "../elements/UIElement.js";
-import { Control } from "../Properties/Control.js";
-import { GridProp } from "../Properties/gridProp.js";
-import { Layout } from "../Properties/Layout.js";
-import { Text } from "../Properties/Text.js";
+import { Grid } from "../elements/grid.js";
+import { Label } from "../elements/label.js";
+import { Panel } from "../elements/panel.js";
+import { StackPanel } from "../elements/stackPanel.js";
+import { UIElement } from "../elements/uiElement.js";
+import { Control } from "../properties/control.js";
+import { GridProp } from "../properties/gridProp.js";
+import { Layout } from "../properties/layout.js";
+import { Text } from "../properties/text.js";
 import { ChestUISystem } from "./chest.js";
 import { UISystem } from "./UISystem.js";
 

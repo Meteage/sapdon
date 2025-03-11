@@ -1,4 +1,4 @@
-import { AddonClientEntity, AddonClientEntityDefinition, AddonClientEntityDescription } from "../addon/entity/client_entity.js";
+import { AddonClientEntity, AddonClientEntityDefinition, AddonClientEntityDescription } from "../addon/entity/clientEntity.js";
 /**
  * ClientEntity 类，用于表示客户端实体。
  * 继承自 AddonClientEntityDescription，并扩展了实体的数据加载和 JSON 序列化功能。

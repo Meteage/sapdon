@@ -1,4 +1,4 @@
-import { EntityComponent } from "../componets/EntityComponet.js";
+import { EntityComponent } from "../componets/entityComponet.js";
 
 export class BasicBundle {
     //私有属性 存储组件

@@ -12,7 +12,7 @@ declare class RecipeRegistry {
     registerSimpleShapeless(identifier: any, output: any, ingredients: any): AddonRecipeShapeless_1_17;
     registerShapeless(identifier: any): AddonRecipeShapeless_1_17;
 }
-import { AddonRecipeFurnace_1_17 } from "../addon/recipe/recipeFurnace.js";
-import { AddonRecipeShaped_1_20 } from "../addon/recipe/recipeShaped.js";
-import { AddonRecipeShapeless_1_17 } from "../addon/recipe/recipeShapeless.js";
+import { AddonRecipeFurnace_1_17 } from "../addon/recipe/furnace.js";
+import { AddonRecipeShaped_1_20 } from "../addon/recipe/shaped.js";
+import { AddonRecipeShapeless_1_17 } from "../addon/recipe/shapeless.js";
 export {};

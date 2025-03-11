@@ -1,5 +1,5 @@
-import { Layout } from "../Properties/Layout.js";
-import { Panel } from "./Panel.js";
+import { Layout } from "../properties/layout.js";
+import { Panel } from "./panel.js";
 export class StackPanel extends Panel {
     constructor(id, template) {
         super(id, template);

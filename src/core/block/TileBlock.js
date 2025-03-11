@@ -1,5 +1,5 @@
-import { Entity } from "../entity/Entity.js";
-import { BasicBlock } from "./BasicBlock.js";
+import { Entity } from "../entity/entity.js";
+import { BasicBlock } from "./basicBlock.js";
 import { BlockComponent } from "./blockComponent.js";
 
 

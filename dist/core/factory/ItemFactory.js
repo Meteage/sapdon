@@ -1,8 +1,8 @@
-import { Chestplate } from "../item/armor.js";
-import { Attachable } from "../item/Attachable.js";
-import { Food } from "../item/Food.js";
-import { Item } from "../item/Item.js";
-import { GRegistry } from "../GRegistry.js";
+import { Boot, Chestplate, Helmet, Leggings } from "../item/armor.js";
+import { Attachable } from "../item/attachable.js";
+import { Food } from "../item/food.js";
+import { Item } from "../item/item.js";
+import { GRegistry } from "../registry.js";
 const registerItem = (itemData, attachableData) => {
     // 如果 itemData 存在且不为空，则注册
     if (itemData && Object.keys(itemData).length > 0) {
@@ -22,6 +22,7 @@ export const ItemAPI = {
      * @param {string} texture - 物品的纹理。
      * @param {Object} options - 额外选项。
      * @param {string} options.group - 物品的分组。
+     * @param {boolean} options.hight_resolution -是否是高分辨率
      * @param {boolean} options.hide_in_command - 是否在命令中隐藏物品。
      * @returns {Item} 创建的物品。
      */
@@ -30,7 +31,16 @@ export const ItemAPI = {
             throw new Error("必须提供 identifier、category 和 texture。");
         }
         const item = new Item(identifier, category, texture, options);
-        registerItem(item, {});
+        let attachable = {};
+        if (options.hide_in_command === true) {
+            attachable = new Attachable(identifier)
+                .addMaterial("default", "entity_alphatest")
+                .addMaterial("enchanted", "entity_alphatest_glint")
+                .addTexture("default", `textures/items/${texture}`)
+                .addTexture("enchanted", "textures/misc/enchanted_item_glint")
+                .addGeometry("default", "geometry.large_item");
+        }
+        registerItem(item, attachable);
         return item;
     },
     /**
@@ -81,6 +91,21 @@ export const ItemAPI = {
     },
     createChestplateArmor: function (identifier, item_texture, texture_path, options = {}) {
         const item = new Chestplate(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createHelmetArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Helmet(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createBootArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Boot(identifier, item_texture, texture_path, options);
+        registerItem(item.item, item.attachable);
+        return item;
+    },
+    createLeggingsArmor: function (identifier, item_texture, texture_path, options = {}) {
+        const item = new Leggings(identifier, item_texture, texture_path, options);
         registerItem(item.item, item.attachable);
         return item;
     },

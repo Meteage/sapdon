@@ -50,4 +50,4 @@ export class Modifications {
         REMOVE: "remove";
     }>;
 }
-import { Control } from "../Properties/Control.js";
+import { Control } from "../properties/control.js";

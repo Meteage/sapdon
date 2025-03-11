@@ -7,8 +7,8 @@ export class Label extends UIElement {
     setLayout(layout: any): this;
     setText(text: any): this;
 }
-import { UIElement } from "./UIElement.js";
-import { Text } from "../Properties/Text.js";
-import { Layout } from "../Properties/Layout.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
+import { UIElement } from "./uiElement.js";
+import { Text } from "../properties/text.js";
+import { Layout } from "../properties/layout.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";

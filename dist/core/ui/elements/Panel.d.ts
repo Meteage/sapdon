@@ -5,7 +5,7 @@ export class Panel extends UIElement {
     factory: Factory;
     setLayout(layout: any): this;
 }
-import { UIElement } from "./UIElement.js";
-import { Layout } from "../Properties/Layout.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
+import { UIElement } from "./uiElement.js";
+import { Layout } from "../properties/layout.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";

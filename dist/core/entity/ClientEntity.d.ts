@@ -17,4 +17,4 @@ export class ClientEntity extends AddonClientEntityDescription {
      */
     toJson(): any;
 }
-import { AddonClientEntityDescription } from "../addon/entity/client_entity.js";
+import { AddonClientEntityDescription } from "../addon/entity/clientEntity.js";

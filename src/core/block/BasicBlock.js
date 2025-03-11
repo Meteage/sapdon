@@ -1,5 +1,5 @@
-import { AddonBlock, AddonBlockDefinition, AddonBlockDescription } from "../addon/block/Block.js";
-import { AddonMenuCategory } from "../addon/menu_category.js";
+import { AddonBlock, AddonBlockDefinition, AddonBlockDescription } from "../addon/block/block.js";
+import { AddonMenuCategory } from "../addon/menuCategory.js";
 
 export class BasicBlock {
     /**

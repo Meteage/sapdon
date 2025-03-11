@@ -21,4 +21,4 @@ export class Food extends Item {
         saturationModifier: number;
     });
 }
-import { Item } from "./Item.js";
+import { Item } from "./item.js";

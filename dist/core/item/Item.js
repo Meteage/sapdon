@@ -1,6 +1,6 @@
-import { ItemComponent } from "./ItemComponents.js";
+import { ItemComponent } from "./itemComponents.js";
 import { AddonItem, AddonItemDefinition, AddonItemDescription } from "../addon/item/item.js";
-import { AddonMenuCategory } from "../addon/menu_category.js";
+import { AddonMenuCategory } from "../addon/menuCategory.js";
 export class Item {
     /**
      * 物品类

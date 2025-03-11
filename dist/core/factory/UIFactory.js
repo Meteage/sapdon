@@ -1,8 +1,8 @@
-import { GRegistry } from "../GRegistry.js";
-import { Image } from "../ui/elements/Image.js";
-import { Label } from "../ui/elements/Label.js";
-import { Panel } from "../ui/elements/Panel.js";
-import { UIElement } from "../ui/elements/UIElement.js";
+import { GRegistry } from "../registry.js";
+import { Image } from "../ui/elements/image.js";
+import { Label } from "../ui/elements/label.js";
+import { Panel } from "../ui/elements/panel.js";
+import { UIElement } from "../ui/elements/uiElement.js";
 import { UISystem } from "../ui/systems/UISystem.js";
 const registerUIsystem = (ui_system) => {
     GRegistry.register(ui_system.name, "behavior", ui_system.path, ui_system);

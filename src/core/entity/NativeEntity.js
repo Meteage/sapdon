@@ -1,6 +1,6 @@
-import { BasicEntity } from "./BasicEntity.js";
-import { ClientEntity } from "./ClientEntity.js";
-import { NativeEntityData } from "./data/NativeEntityData.js";
+import { BasicEntity } from "./basicEntity.js";
+import { ClientEntity } from "./clientEntity.js";
+import { NativeEntityData } from "./data/nativeEntityData.js";
 
 export class NativeEntity {
     constructor(identifier, proto_id, options = {}) {

@@ -1,4 +1,4 @@
-import { BasicBlock } from "./BasicBlock.js";
+import { BasicBlock } from "./basicBlock.js";
 import { BlockComponent } from "./blockComponent.js";
 export const RotationTypes = {
     CARDINAL: "cardinal", // 北、南、东、西

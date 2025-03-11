@@ -6,13 +6,13 @@
     pressed_control	string		Name of the child control that will be displayed only in the pressed state
     locked_control	string		Name of the child control that will be displayed only in the locked state
  */
-import { Control } from "../Properties/Control.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
-import { Input } from "../Properties/Input.js";
-import { Layout } from "../Properties/Layout.js";
-import { Sound } from "../Properties/Sound.js";
-import { UIElement } from "./UIElement.js";
+import { Control } from "../properties/control.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";
+import { Input } from "../properties/input.js";
+import { Layout } from "../properties/layout.js";
+import { Sound } from "../properties/sound.js";
+import { UIElement } from "./uiElement.js";
 export class Button extends UIElement {
     constructor(id, template) {
         super(id, "button", template);

@@ -1,5 +1,5 @@
-import { BasicEntity } from "./BasicEntity.js";
-import { ClientEntity } from "./ClientEntity.js";
+import { BasicEntity } from "./basicEntity.js";
+import { ClientEntity } from "./clientEntity.js";
 
 export class Entity {
     /**

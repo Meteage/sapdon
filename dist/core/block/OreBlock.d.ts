@@ -4,6 +4,6 @@ export class OreBlock {
     feature: OreFeature;
     feature_rules: FeatureRule;
 }
-import { BasicBlock } from "./BasicBlock.js";
-import { OreFeature } from "../feature/OreFeature.js";
-import { FeatureRule } from "../feature_rule/FeatureRule.js";
+import { BasicBlock } from "./basicBlock.js";
+import { OreFeature } from "../feature/oreFeature.js";
+import { FeatureRule } from "../feature-rule/featureRule.js";

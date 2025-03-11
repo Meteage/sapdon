@@ -24,4 +24,4 @@ export class RotatableBlock extends BasicBlock {
     });
     #private;
 }
-import { BasicBlock } from "./BasicBlock.js";
+import { BasicBlock } from "./basicBlock.js";

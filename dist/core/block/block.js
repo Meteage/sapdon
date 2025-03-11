@@ -1,10 +1,10 @@
-import { BasicBlock } from "./BasicBlock.js";
+import { BasicBlock } from "./basicBlock.js";
 import { BlockComponent } from "./blockComponent.js";
 export class Block extends BasicBlock {
     /**
      * 方块类
      * @param {string} identifier 方块的唯一标识符
-     * @param {string} category 方块的分类（如 "construction"）
+     * @param {string} category 方块的分类 "construction", "nature", "equipment", "items", and "none"
      * @param {Array} variantDatas 方块的变体数据，包含每个变体的状态标签和纹理
      * @param {Object} options 可选参数
      * @param {string} options.group 分组，默认为 "construction"

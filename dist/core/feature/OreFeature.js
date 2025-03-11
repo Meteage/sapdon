@@ -1,4 +1,4 @@
-import { AddonOreFeature, AddonOreFeatureDefinition, AddonOreFeatureDescription } from "../addon/feature/ore_feature.js";
+import { AddonOreFeature, AddonOreFeatureDefinition, AddonOreFeatureDescription } from "../addon/feature/oreFeature.js";
 export class OreFeature {
     constructor(identifier, count, replace_rules) {
         this.identifier = identifier;

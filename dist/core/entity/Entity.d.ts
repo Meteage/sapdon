@@ -10,6 +10,6 @@ export class Entity {
     constructor(identifier: any, texture: any, behData: any, resData: any, options?: any);
     identifier: any;
     entity: BasicEntity;
-    client_entity: import("../addon/entity/client_entity.js").AddonClientEntityDescription;
+    client_entity: import("../addon/entity/clientEntity.js").AddonClientEntityDescription;
 }
-import { BasicEntity } from "./BasicEntity.js";
+import { BasicEntity } from "./basicEntity.js";

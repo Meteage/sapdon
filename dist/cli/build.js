@@ -11,7 +11,7 @@ import ts from '@rollup/plugin-typescript';
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths';
 import json from '@rollup/plugin-json';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { syncDevFilesClient } from './dev-server/sync-files.js';
+import { syncDevFilesClient } from './dev-server/syncFiles.js';
 import { hmr } from './dev-server/hmr.js';
 import cp from 'child_process';
 // 获取当前文件的目录路径
@@ -93,7 +93,6 @@ function preload(filePath) {
     `);
 }
 async function runOnChild(targetFilePath) {
-    preload(targetFilePath);
     const { promise, resolve } = Promise.withResolvers();
     const child = cp.fork(targetFilePath, { stdio: 'inherit' });
     child.once('message', message => {
@@ -111,8 +110,13 @@ async function runScript(src) {
         const sourceFileName = src.replace(sourceDir, '');
         const targetFilePath = path.join(sourceDir, randomName);
         await scriptBundler.ts(sourceDir, sourceDir, randomName, sourceFileName);
-        await runOnChild(targetFilePath);
-        fs.rmSync(targetFilePath, { force: true });
+        preload(targetFilePath);
+        try {
+            await runOnChild(targetFilePath);
+        }
+        finally {
+            fs.rmSync(targetFilePath, { force: true });
+        }
         return;
     }
     await runOnChild(src);

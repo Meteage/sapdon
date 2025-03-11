@@ -11,4 +11,4 @@ export class StackPanel extends Panel {
      */
     setOrientation(orientation: any): this;
 }
-import { Panel } from "./Panel.js";
+import { Panel } from "./panel.js";

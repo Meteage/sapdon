@@ -6,8 +6,8 @@ export class Image extends UIElement {
     factory: Factory;
     setSprite(sprite: any): this;
 }
-import { UIElement } from "./UIElement.js";
-import { Sprite } from "../Properties/Sprite.js";
-import { Layout } from "../Properties/Layout.js";
-import { DataBinding } from "../Properties/DataBinding.js";
-import { Factory } from "../Properties/Factory.js";
+import { UIElement } from "./uiElement.js";
+import { Sprite } from "../properties/sprite.js";
+import { Layout } from "../properties/layout.js";
+import { DataBinding } from "../properties/dataBinding.js";
+import { Factory } from "../properties/factory.js";

@@ -1,3 +1,3 @@
 export class Projectile extends NativeEntity {
 }
-import { NativeEntity } from "./NativeEntity.js";
+import { NativeEntity } from "./nativeEntity.js";

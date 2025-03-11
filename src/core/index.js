@@ -1,22 +1,22 @@
 import { BlockComponent } from "./block/blockComponent.js"
-import { BlockAPI } from "./factory/BlockFactory.js"
-import { EntityAPI } from "./factory/EntityFactory.js"
-import { FeatureAPI } from "./factory/FeatureFactory.js"
-import { ItemAPI } from "./factory/ItemFactory.js"
-import { RecipeAPI } from "./factory/RecipeFactory.js"
-import { GRegistry } from "./GRegistry.js"
-import { ItemComponent } from "./item/ItemComponents.js"
+import { BlockAPI } from "./factory/blockFactory.js"
+import { EntityAPI } from "./factory/entityFactory.js"
+import { FeatureAPI } from "./factory/featureFactory.js"
+import { ItemAPI } from "./factory/itemFactory.js"
+import { RecipeAPI } from "./factory/recipeFactory.js"
+import { GRegistry } from "./registry.js"
+import { ItemComponent } from "./item/itemComponents.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "./texture.js"
-import { DataBindingObject } from "./ui/DataBindingObject.js"
-import { Grid } from "./ui/elements/Grid.js"
-import { Image } from "./ui/elements/Image.js"
-import { Label } from "./ui/elements/Label.js"
-import { Panel } from "./ui/elements/Panel.js"
-import { StackPanel } from "./ui/elements/StackPanel.js"
-import { UIElement } from "./ui/elements/UIElement.js"
-import { UISystemRegistry } from "./ui/registry/UISystemRegistry.js"
-import { ServerFormSystem, ServerUISystem } from "./ui/systems/server_form.js"
-import { UISystem } from "./ui/systems/UISystem.js"
+import { DataBindingObject } from "./ui/dataBindingObject.js"
+import { Grid } from "./ui/elements/grid.js"
+import { Image } from "./ui/elements/image.js"
+import { Label } from "./ui/elements/label.js"
+import { Panel } from "./ui/elements/panel.js"
+import { StackPanel } from "./ui/elements/stackPanel.js"
+import { UIElement } from "./ui/elements/uiElement.js"
+import { UISystemRegistry  } from "./ui/registry/uiSystemRegistry.js"
+import { ServerFormSystem, ServerUISystem } from "./ui/systems/serverForm.js"
+import { UISystem } from "./ui/systems/system.js"
 
 export {
     ItemAPI,
@@ -43,4 +43,4 @@ export {
     StackPanel
 }
 
-export * from './factory/ItemExtra.js'
+export * from './factory/itemExtra.js'

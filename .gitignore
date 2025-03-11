@@ -5,7 +5,7 @@ examples/thaumcraft
 examples/test/build.config
 src/cli/build.config
 
-package-lock.json
+*-lock.json
 .tmp
 
 development_*

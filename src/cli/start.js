@@ -9,7 +9,7 @@ import {buildProject, projectCanBuild} from './build.js'
 import {readFile} from "./utils.js"
 import fs from "fs"
 import {fileURLToPath} from "url"
-import { writeLib } from './dev-server/sync-files.js'
+import { writeLib } from './dev-server/syncFiles.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

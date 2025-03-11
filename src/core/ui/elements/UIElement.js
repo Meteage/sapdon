@@ -27,7 +27,7 @@
     screen - elements that are called by the game directly, usually root panel elements
  */
 
-import { Control } from "../Properties/Control.js";
+import { Control } from "../properties/control.js";
 
 
 

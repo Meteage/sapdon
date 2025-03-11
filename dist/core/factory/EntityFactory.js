@@ -1,10 +1,10 @@
-import { BasicEntity } from "../entity/BasicEntity.js";
-import { ClientEntity } from "../entity/ClientEntity.js";
-import { Entity } from "../entity/Entity.js";
-import { NativeEntity } from "../entity/NativeEntity.js";
-import { Projectile } from "../entity/Projectile.js";
-import { GRegistry } from "../GRegistry.js";
-const registerEntity = (behData, resData) => {
+import { BasicEntity } from "../entity/basicEntity.js";
+import { ClientEntity } from "../entity/clientEntity.js";
+import { Entity } from "../entity/entity.js";
+import { NativeEntity } from "../entity/nativeEntity.js";
+import { Projectile } from "../entity/projectile.js";
+import { GRegistry } from "../registry.js";
+export const registerEntity = (behData, resData) => {
     // 如果 behData 存在且不为空，则注册行为数据
     if (behData && Object.keys(behData).length > 0) {
         GRegistry.register(behData.identifier.replace(":", "_"), "behavior", "entities/", behData);

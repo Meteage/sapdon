@@ -1,4 +1,20 @@
 export class ItemComponent {
+    /**
+     * 物品的耐久度组件
+     * @param {number} max_durability 最大耐久
+     * @param {number} damage_chance_min 损坏最小几率
+     * @param {number} damage_chance_max 损坏最大几率
+     * @returns {ItemComponent}
+     */
+    static setDurability(max_durability, damage_chance_min = 0, damage_chance_max = 100) {
+        return new Map().set("minecraft:durability", {
+            "damage_chance": {
+                "min": damage_chance_min,
+                "max": damage_chance_max
+            },
+            "max_durability": max_durability
+        });
+    }
     static setBlockPlacer(block, replace_block_item, use_on) {
         return new Map().set("minecraft:block_placer", {
             block: block,
