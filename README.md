@@ -98,8 +98,8 @@ npm update sapdon
 {
   "dependencies": [
     {
-      "module_name": "@minecraft/server-gametest",
-      "version": "1.0.0"
+      "module_name": "@minecraft/server",
+      "version": "1.8.0"
     }
   ]
 }
