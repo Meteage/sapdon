@@ -1,26 +1,111 @@
-Sapdon框架是一个功能强大的JavaScript框架，专门设计用于开发基岩版的模组。该框架致力于统一开发形式和简化开发过程，使开发者能够更轻松地创建基岩版的模组。
 
-使用Sapdon框架，开发者能够充分利用JavaScript语言的灵活性和易用性，快速编写出高效且功能丰富的基岩版模组。框架提供了丰富的API和工具,帮助开发者处理模组的生命周期、实体的创建、方块的定义、物品的添加和食谱的制作等功能。
+# Sapdon 框架
 
-该框架的一个主要优势是其自动编译功能，它可以将开发者编写的代码自动转换为mcaddon包，使模组的发布和分享变得非常简便。开发者只需专注于编写模组的逻辑和功能，不需要手动处理繁琐的打包和转换过程。
+![Sapdon Logo](pack_icon.png)
 
-此外，Sapdon框架还提供了全面的文档和示例代码，帮助开发者快速上手并解决在开发过程中遇到的问题。同时，框架还积极维护更新，以确保与最新版本的基岩版游戏保持兼容性。
+Sapdon 是一个基于 JavaScript 开发的 Minecraft 基岩版模组开发框架。它通过提供丰富的 API 和自动化工具，帮助开发者简化传统开发流程，降低 JSON 配置复杂度，让您专注于模组逻辑实现。
 
-总而言之，Sapdon框架是一个强大而便捷的工具，为开发者提供了简化基岩版模组开发的解决方案。无论是初学者还是有经验的开发者，都可以通过使用这个框架，快速构建出令人印象深刻的基岩版模组。
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0-blue)](https://nodejs.org/)
+[![npm Version](https://img.shields.io/npm/v/sapdon)](https://www.npmjs.com/package/sapdon)
+[![QQ Group](https://img.shields.io/badge/QQ%E7%BE%A4-810904181-green)](https://qm.qq.com/q/2HrXHcKq9j)
 
-官方QQ群： 810904181  
+## ✨ 核心特性
 
-### sapdon cli 命令行工具
-功能：
-1.创建新项目 
-    sapdon create <project_name> 在当前目录下创建新项目文件夹，并初始化项目文件
+- **JavaScript 驱动开发** - 告别繁琐的 JSON 配置，使用现代 JS 语法编写模组
+- **模块化 API 设计** - 提供物品/方块/实体/配方等 30+ 核心 API 接口
+- **智能编译系统** - 一键生成标准 mcaddon 包文件
 
-2.编译项目 
-    sapdon build <project_name> 将指定项目编译为mcaddon包，并输出到指定目录
+## 🚀 快速入门
 
-### sadon core 核心模块
-提供API接口，方便其他模块调用
-采用注册方式
+### 环境准备
 
-### 新特性
-更适合npm的体质，可以读取nodejs的项目信息作为基础配置。
+1. 安装 [Node.js](https://nodejs.org/) (推荐 v16+)
+2. 安装 Visual Studio Code 或其他现代编辑器
+
+### 安装 CLI
+
+```bash
+npm install -g sapdon
+```
+
+### 创建新项目
+
+```bash
+sapdon create my-first-mod
+```
+
+根据提示输入项目信息：
+```text
+✔ Project Name: my-first-mod
+✔ Project Description: 我的第一个 Sapdon 模组
+✔ Author Name: YourName
+✔ Project Version: 1.0.0
+✔ Minimum Engine Version: 1.19.50
+```
+
+### 项目结构
+
+```
+my-first-mod/
+├── res/            # 资源文件（纹理/模型/音效）
+├── scripts/        # 游戏脚本
+├── build.config    # 构建配置
+├── main.mjs        # 主入口文件
+├── mod.info        # 模组元数据
+└── pack_icon.png   # 模组图标
+```
+
+## 📦 核心 API 示例
+
+### 创建一个基础物品
+1. 打开 `main.mjs` 文件。
+2. 写入以下内容以创建一个基础物品：
+   ```javascript
+   import { ItemAPI } from "../src/core";
+
+   ItemAPI.createItem("hello_sapdon:my_item", "items", "masterball");
+   ```
+   这段代码将创建一个名为 `my_item` 的物品，其命名空间为 `hello_sapdon`，类型为 `items`，并使用 `masterball` 作为图标。
+
+
+## 🛠 执行构建命令
+
+1. 在终端中输入以下命令以构建 `hello_sapdon` 项目：
+   ```bash
+   npm run build hello_sapdon
+   ```
+2. 构建完成后，您将在 `hello_sapdon` 文件夹下看到一个 `dev` 文件夹，其中包含构建好的 Addon 包。
+
+
+生成优化后的 mcaddon 包文件
+
+## 📚 学习资源
+
+- [官方文档](https://docs.sapdon.org)
+- [示例模组仓库](https://github.com/Meteage/sapdon/examples)
+
+
+## ❓ 常见问题
+
+### 如何更新框架版本？
+```bash
+npm update sapdon
+```
+
+### 如何添加依赖库？
+在 `build.config` 中添加：
+```json
+{
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server-gametest",
+      "version": "1.0.0"
+    }
+  ]
+}
+```
+
+## 🤝 社区支持
+
+- 官方 QQ 群：`810904181`
+

@@ -1,5 +1,5 @@
 {
-    "name": "sapdon-ts",
+    "name": "sapdon",
     "version": "3.0.0",
     "main": "dist/core/index.js",
     "types": "dist/core/index.d.ts",
