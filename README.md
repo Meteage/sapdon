@@ -31,12 +31,12 @@ npm install -g sapdon
 ### 创建新项目
 
 ```bash
-sapdon create my-first-mod
+sapdon create hello_sapdon
 ```
 
 根据提示输入项目信息：
 ```text
-✔ Project Name: my-first-mod
+✔ Project Name: hello_sapdon
 ✔ Project Description: 我的第一个 Sapdon 模组
 ✔ Author Name: YourName
 ✔ Project Version: 1.0.0
@@ -46,7 +46,7 @@ sapdon create my-first-mod
 ### 项目结构
 
 ```
-my-first-mod/
+hello_sapdon/
 ├── res/            # 资源文件（纹理/模型/音效）
 ├── scripts/        # 游戏脚本
 ├── build.config    # 构建配置
@@ -72,7 +72,7 @@ my-first-mod/
 
 1. 在终端中输入以下命令以构建 `hello_sapdon` 项目：
    ```bash
-   npm run build hello_sapdon
+   sapdon build hello_sapdon
    ```
 2. 构建完成后，您将在 `hello_sapdon` 文件夹下看到一个 `dev` 文件夹，其中包含构建好的 Addon 包。
 
