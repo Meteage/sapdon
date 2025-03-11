@@ -4,7 +4,7 @@ import { Panel } from "../elements/Panel.js";
 import { StackPanel } from "../elements/StackPanel.js";
 import { UIElement } from "../elements/UIElement.js";
 import { Control } from "../Properties/Control.js";
-import { GridProp } from "../Properties/gridProp.js";
+import { GridProp } from "../Properties/GridProp.js";
 import { Layout } from "../Properties/Layout.js";
 import { Text } from "../Properties/Text.js";
 import { ChestUISystem } from "./chest.js";
