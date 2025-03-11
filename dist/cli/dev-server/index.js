@@ -1,6 +1,6 @@
 import { generateAddon } from "../load.js";
 import { bootstrap, isListening, server } from "./server.js";
-import { syncDevFilesServer } from "./sync-files.js";
+import { syncDevFilesServer } from "./syncFiles.js";
 export function startDevServer(GRegistry, UIRegistry) {
     if (!isListening()) {
         bootstrap();

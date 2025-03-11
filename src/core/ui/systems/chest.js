@@ -1,4 +1,4 @@
-import { Modifications, UIElement } from "../elements/UIElement.js";
+import { Modifications, UIElement } from "../elements/uiElement.js";
 import { UISystem } from "./UISystem.js";
 
 const small_chest_screen = new UIElement("small_chest_screen",undefined,"common.inventory_screen_common");

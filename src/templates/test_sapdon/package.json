@@ -2,6 +2,9 @@
     "name": "sapdon",
     "version": "1.0.0",
     "main": "main.mjs",
+    "scripts": {
+        "build": "sapdon build ./"
+    },
     "keywords": [
         "bedrock",
         "addon"

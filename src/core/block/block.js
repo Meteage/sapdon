@@ -1,5 +1,5 @@
 
-import { BasicBlock } from "./BasicBlock.js";
+import { BasicBlock } from "./basicBlock.js";
 import { BlockComponent } from "./blockComponent.js";
 
 export class Block extends BasicBlock {

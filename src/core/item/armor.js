@@ -1,6 +1,6 @@
-import { Attachable } from "./Attachable.js";
-import { Item } from "./Item.js";
-import { ItemComponent } from "./ItemComponents.js";
+import { Attachable } from "./attachable.js";
+import { Item } from "./item.js";
+import { ItemComponent } from "./itemComponents.js";
 
 
 // 定义 Armor 基类

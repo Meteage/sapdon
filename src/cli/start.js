@@ -9,7 +9,7 @@ import {buildProject, projectCanBuild} from './build.js'
 import {readFile} from "./utils.js"
 import fs from "fs"
 import {fileURLToPath} from "url"
-import { writeLib } from './dev-server/sync-files.js'
+import { writeLib } from './dev-server/syncFiles.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -114,8 +114,8 @@ function start() {
     program.command("build <project-name>").description("Build the project").action((projectName) => {
         console.log("Building the project...")
         const projectPath = path.join(process.cwd(), projectName)
-        if (projectCanBuild(projectPath, projectName)) {
-            buildProject(projectPath, path.basename(projectName))
+        if (projectCanBuild(projectPath)) {
+            buildProject(projectPath, path.basename(projectPath))
         }
     })
 
@@ -123,9 +123,8 @@ function start() {
     program.command("pack").description("Pack the current project").action(() => {
         console.log("Packing the current project...")
         const projectPath = process.cwd()
-        const projectName = path.basename(projectPath)
-        if (projectCanBuild(projectPath, projectName)) {
-            buildProject(projectPath, path.basename(projectName))
+        if (projectCanBuild(projectPath)) {
+            buildProject(projectPath, path.basename(projectPath))
         }
     })
 
