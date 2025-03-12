@@ -1,8 +1,5 @@
 node_modules/
-biocraft/
 /.idea/
-examples/thaumcraft
-examples/test/build.config
 src/cli/build.config
 
 *-lock.json
