@@ -1,6 +1,6 @@
 {
     "name": "sapdon",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "main": "dist/core/index.js",
     "types": "dist/core/index.d.ts",
     "scripts": {

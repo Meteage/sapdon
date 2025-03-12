@@ -30,12 +30,18 @@ export class ContainerUISystem {
     this.root_panel_size = [200, 200];
     this.gridDimension = [3, 1];
 
+    this.output_grids = []; // 记录输出槽
+
     this.main_panel = new Panel("main_panel");
     this.grids = new Grid("grids");
 
     // 初始化
     this.#register();
     this.#updateSystem();
+  }
+
+  setInputGrid(output_arr){
+    this.output_grids = output_arr;
   }
 
   /**
@@ -138,6 +144,10 @@ export class ContainerUISystem {
     });
 
     offset_marix.forEach((v,i)=>{
+      if(this.output_grids.indexOf(v)){
+        this.addOutputGrid([0,i],v)
+        return 
+      }
       this.addGridItem([0,i],v)
     })
   }

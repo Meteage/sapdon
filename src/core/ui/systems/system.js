@@ -37,10 +37,10 @@ export class UISystem {
         //序列化
         this.elements.forEach((value,key)=>{
             //console.log("elements key:",key)
-            console.log("elements value:",value);
+            //console.log("elements value:",value);
             ui[key] = value.serialize()[value.id]
         })
-        console.log("ui:",ui)
+        //console.log("ui:",ui)
         return ui;
     }
 }
