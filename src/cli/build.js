@@ -56,10 +56,13 @@ export const scriptBundler = {
                     nodeResolve({
                         preferBuiltins: true
                     }),
+                    //@ts-ignore
                     ts({
                         tsconfig: path.join(scriptBundler.__projectPath, 'tsconfig.json'),
                     }),
+                    //@ts-ignore
                     commonjs(),
+                    //@ts-ignore
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
                 ],
@@ -105,7 +108,6 @@ function preload(filePath) {
             const { startDevServer } = await import('@sapdon/cli')
             const { GRegistry, UISystemRegistry } = await import('@sapdon/core')
             startDevServer(GRegistry, UISystemRegistry)
-            process.send('initialized')
         })();
     `)
 }

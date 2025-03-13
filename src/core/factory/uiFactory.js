@@ -3,7 +3,7 @@ import { Image } from "../ui/elements/image.js";
 import { Label } from "../ui/elements/label.js";
 import { Panel } from "../ui/elements/panel.js";
 import { UIElement } from "../ui/elements/uiElement.js";
-import { UISystem } from "../ui/systems/UISystem.js";
+import { UISystem } from "../ui/systems/system.js";
 
 
 

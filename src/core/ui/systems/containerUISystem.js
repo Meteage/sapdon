@@ -9,7 +9,7 @@ import { GridProp } from "../properties/gridProp.js";
 import { Layout } from "../properties/layout.js";
 import { Text } from "../properties/text.js";
 import { ChestUISystem } from "./chest.js";
-import { UISystem } from "./UISystem.js";
+import { UISystem } from "./system.js";
 
 /**
  * 自定义容器 UI 系统类，用于创建和管理容器界面。

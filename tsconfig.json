@@ -5,6 +5,7 @@
         "outDir": "dist",
         "module": "NodeNext",
         "moduleResolution": "nodenext",
+        "strict": true,
         "types": [
             "@minecraft/server",
             "@minecraft/server-ui",

@@ -12,7 +12,7 @@ import { Layout } from "../properties/layout.js";
 import { Sprite } from "../properties/sprite.js";
 import { Text } from "../properties/text.js";
 import { ServerUISystem } from "./serverForm.js";
-import { UISystem } from "./UISystem.js";
+import { UISystem } from "./system.js";
 
 
 

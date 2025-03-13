@@ -61,7 +61,7 @@ hello_sapdon/
 1. 打开 `main.mjs` 文件。
 2. 写入以下内容以创建一个基础物品：
    ```javascript
-   import { ItemAPI } from "../src/core";
+   import { ItemAPI } from "@sapdon/core";
 
    ItemAPI.createItem("hello_sapdon:my_item", "items", "masterball");
    ```
@@ -109,3 +109,5 @@ npm update sapdon
 
 - 官方 QQ 群：`810904181`
 
+## ts支持
+[quick start](./doc/sapdon-ts.md)

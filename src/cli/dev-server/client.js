@@ -1,4 +1,5 @@
 import { devServerConfig } from './config.js'
+import { ServerHandles } from './handles.js'
 
 const {
     port
@@ -20,5 +21,5 @@ export async function cliRequest(path, ...params) {
 }
 
 export async function writeAddon(modPath, buildPath, projectName) {
-    await cliRequest('write-addon', modPath, buildPath, projectName)
+    await cliRequest(ServerHandles.WRITE_ADDON, modPath, buildPath, projectName)
 }

@@ -1,6 +1,6 @@
 import { Modifications, UIElement } from "../elements/uiElement.js";
 import { DataBindingObject } from "../dataBindingObject.js";
-import { UISystem } from "./UISystem.js";
+import { UISystem } from "./system.js";
 import { Panel } from "../elements/panel.js";
 import { Button } from "../elements/button.js";
 import { Image } from "../elements/image.js";

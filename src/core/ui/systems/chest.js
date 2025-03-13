@@ -1,5 +1,5 @@
 import { Modifications, UIElement } from "../elements/uiElement.js";
-import { UISystem } from "./UISystem.js";
+import { UISystem } from "./system.js";
 
 const small_chest_screen = new UIElement("small_chest_screen",undefined,"common.inventory_screen_common");
       small_chest_screen.addVariable("new_container_title|default","$container_title")

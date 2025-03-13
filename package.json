@@ -1,13 +1,13 @@
 {
     "name": "sapdon",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "main": "dist/core/index.js",
     "types": "dist/core/index.d.ts",
     "scripts": {
         "sapdon": "node dist/cli/index.js",
         "create": "node dist/cli/index.js create",
         "build": "node dist/cli/index.js build",
-        "dist": "tsc"
+        "pub": "tsc && npm publish"
     },
     "keywords": [
         "bedrock",
