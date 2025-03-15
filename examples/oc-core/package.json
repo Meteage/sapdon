@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "main": "main.ts",
     "scripts": {
-        "build": "sapdon build ./",
-        "postinstall": "sapdon lib"
+        "build": "sapdon build ./"
     },
     "keywords": [
         "bedrock",
@@ -14,7 +13,7 @@
     "license": "ISC",
     "type": "module",
     "devDependencies": {
-        "@minecraft/server": "^1.17.0",
+        "@minecraft/server": "^1.17.0-beta.1.21.51-stable",
         "@minecraft/server-ui": "^1.3.0",
         "@rollup/plugin-commonjs": "^28.0.2",
         "@rollup/plugin-json": "^6.1.0",

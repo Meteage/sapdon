@@ -1,9 +1,0 @@
-{
-  "resource_pack_name": "digitCircuit",
-  "texture_name": "atlas.items",
-  "texture_data": {
-    "masterball": {
-      "textures": "textures/items/masterball"
-    }
-  }
-}

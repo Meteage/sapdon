@@ -1,13 +1,9 @@
 {
     "name": "sapdon",
     "version": "3.0.2",
-    "main": "dist/core/index.js",
-    "types": "dist/core/index.d.ts",
     "scripts": {
-        "sapdon": "node dist/cli/index.js",
-        "create": "node dist/cli/index.js create",
-        "build": "node dist/cli/index.js build",
-        "pub": "tsc && npm publish"
+        "build": "rollup -c",
+        "pub": "rollup -c && npm publish"
     },
     "keywords": [
         "bedrock",
@@ -22,15 +18,17 @@
     },
     "description": "Sapdon is a Node.js toolkit designed for building Bedrock Edition Minecraft addon packs.",
     "devDependencies": {
-        "@minecraft/server": "^1.17.0",
+        "@minecraft/server": "^2.0.0-beta.1.21.80-preview.20",
         "@minecraft/server-ui": "^1.3.0",
         "@rollup/plugin-commonjs": "^28.0.2",
         "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-node-resolve": "^16.0.0",
+        "@rollup/plugin-terser": "^0.4.4",
         "@rollup/plugin-typescript": "^12.1.2",
         "@types/lodash": "^4.17.16",
         "@types/node": "^22.13.8",
         "rollup": "^4.30.1",
+        "rollup-plugin-dts": "^6.1.1",
         "rollup-plugin-typescript-paths": "^1.5.0",
         "rollup-plugin-typescript2": "^0.36.0",
         "rollup-plugin-visualizer": "^5.14.0",

@@ -1,12 +1,11 @@
-import { Entity, Player } from '@minecraft/server'
+import { Entity, Player, system, world } from '@minecraft/server'
 import { Optional } from './optional.js'
-import { Actor } from './actor.js'
 
 export interface Component {
-    onTick(manager: ComponentManager, en: Optional<Player|Entity>): void
+    onTick(manager: ComponentManager, en: Optional<Entity>): void
     detach(manager: ComponentManager): void
     getManager(): ComponentManager
-    getEntity(): Optional<Player|Entity>
+    getEntity(): Optional<Entity>
 }
 
 export interface BasicComponent extends Component {
@@ -19,9 +18,9 @@ const REFLECT_ENTITY = Symbol('reflect-entity')
 
 export class CustomComponent implements Component {
     [REFLECT_MANAGER]?: ComponentManager
-    [REFLECT_ENTITY]: Optional<Player|Entity> = Optional.none()
+    [REFLECT_ENTITY]: Optional<Entity> = Optional.none()
 
-    onTick(manager: ComponentManager, en: Optional<Player|Entity>): void {}
+    onTick(manager: ComponentManager, en: Optional<Entity>): void {}
 
     detach(manager: ComponentManager) {
         const ctor = Object.getPrototypeOf(this).constructor
@@ -32,7 +31,7 @@ export class CustomComponent implements Component {
         return this[REFLECT_MANAGER] as ComponentManager
     }
 
-    getEntity(): Optional<Player|Entity> {
+    getEntity(): Optional<Entity> {
         return this[REFLECT_ENTITY]
     }
 }
@@ -132,15 +131,15 @@ export class ComponentManager {
         return this.#components.has(ctor)
     }
 
-    afterTick(fn: (en: Optional<Player|Entity>) => void) {
+    afterTick(fn: (en: Optional<Entity>) => void) {
         this.#nextTicks.push(fn)
     }
 
-    beforeTick(fn: (en: Optional<Player|Entity>) => void) {
+    beforeTick(fn: (en: Optional<Entity>) => void) {
         this.#prependTicks.unshift(fn)
     }
 
-    handleTicks(en: Player|Entity) {
+    handleTicks(en: Entity) {
         for (const prependTick of this.#prependTicks) {
             this.profiler(() => prependTick.call(null, Optional.some(en)))
             // prependTick.call(null, Optional.some(en))
@@ -238,25 +237,40 @@ export function RequireComponents(...params: RequireComponentsParam[]) {
     
 }
 
-export namespace ecs {
+export namespace oc {
     const table = new Map<string, ComponentManager>()
 
-    export async function addEntity(entity: Player | Entity) {
+    export function addEntity(entityId: string) {
         const manager = new ComponentManager()
-        table.set(entity.id, manager)
+        table.set(entityId, manager)
         return manager
     }
 
-    export function removeEntity(entity: Player | Entity) {
-        const uid = entity.id
+    export function removeEntity(entityId: string) {
+        const uid = entityId
         const manager = table.get(uid)
         manager?.clear()
         table.delete(uid)
     }
 
-    export function getManager(entity: Player | Entity) {
-        return table.get(entity.id) ?? addEntity(entity)
+    export function getManager(entityId: string) {
+        return table.get(entityId) ?? addEntity(entityId)
     }
 
+    export function tick() {
+        for (const [ id, manager ] of table.entries()) {
+            const entity = world.getEntity(id)
+            if (entity) {
+                manager.handleTicks(entity)
+            }
+        }
+    }
 
+    export function start() {
+        system.runInterval(tick)
+    }
+
+    export function toPlayer(entity: Entity): Optional<Player> {
+        return Optional.some(world.getAllPlayers().find(p => p.id === entity.id) as Player)
+    }
 }

@@ -10,7 +10,7 @@ ts版本拥有更好的类型提示，更严格的类型检查，也可以直接
 比如我们需要注册一个物品，可能你会想去找它在哪，但在ts版本中，你只需要 `@sapdon/core` 就可以了
 
 ```ts
-import { ItemAPI } from '@sapdon/core.js'
+import { ItemAPI } from '@sapdon/core'
 ```
 
 如果你需要更高级的功能，比如你需要一个ts打包器，或者添加命令行的功能，你可以使用 `@sapdon/cli`
@@ -26,3 +26,37 @@ startDevServer(GRegistry, UISystemRegistry)
 ```
 如果需要从js迁移到ts，删除 `startDevServer` 那行即可（不删也没事）
 
+
+## OC (Object - Component)
+sapdon通过 `@sapdon/oc` 为sapi提供了一些高级功能, 比如:
+- 实体组件系统
+- 组件间通信
+
+传统的书写方式是通过事件和tick回调来实现功能, 而OC提供了更适合游戏的组件化开发方式
+
+```ts
+import { world, system } from '@minecraft/server'
+import { oc, CustomComponent } from '@sapdon/oc'
+
+world.afterEvents.worldInitialize.subscribe(oc.start)
+
+class MyComponent extends CustomComponent {
+    onTick() {
+        world.sendMessage('tick')
+    }
+}
+```
+
+是的, 我们得到了一个MyComponent, 它每刻都会给玩家发送 'tick'
+但是如果你进入游戏, 会发现它毫无作用, 没错! 因为我们还没有把它到绑定在实体身上!
+
+```ts
+const manager = oc.addEntity(id)
+manager.attachComponent(new MyComponent())
+```
+
+这样就可以了, 我们已经把MyComponent绑定到了entityId为id的实体身上
+
+你也可以动态增删改查组件! 这很方便!
+
+如果你想看它到底是怎么回事,可以从 `examples/oc-core` 开始了解

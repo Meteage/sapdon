@@ -1,23 +1,16 @@
-import { Player, Entity } from '@minecraft/server'
+import type { Entity } from '@minecraft/server'
 import { Component, ComponentCtor, ComponentManager } from './core.js'
-import { Optional } from './optional.js'
 
 export type ComponentDescriptor = string | ComponentCtor
 
 export class Actor {
 
-    readonly isPlayer: boolean = false
-
     constructor(
-        readonly target: Player | Entity,
+        readonly target: Entity,
         readonly manager: ComponentManager,
-    ) {
-        this.isPlayer = target.isValid()
-            ? target.typeId === 'minecraft:player'
-            : false
-    }
+    ) {}
 
-    static from(target: Player | Entity, manager: ComponentManager) {
+    static from(target: Entity, manager: ComponentManager) {
         return new Actor(target, manager)
     }
 
@@ -39,14 +32,14 @@ export class Actor {
         return this.manager.getComponents(...ctors)
     }
 
-    getComponent(...descs: ComponentDescriptor[]) {
+    getComponent<T extends readonly ComponentDescriptor[] | []>(...descs: T): { -readonly [K in keyof T]: Component } {
         return descs.map(desc => {
             if (typeof desc === 'string') {
                 return this.target.getComponent(desc)
             }
 
             return this.manager.getComponentUnsafe(desc)
-        })
+        }) as { -readonly [K in keyof T]: Component }
     }
 
     addComponent(...components: Component[]) {

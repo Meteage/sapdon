@@ -128,6 +128,11 @@ function start() {
         }
     })
 
+    program.command('lib').description('Generate lib files for development server.').action(() => {
+        const projectPath = process.cwd()
+        writeLib(projectPath)
+    })
+
     // 配置build.config文件的命令
     program.command("config").description("Configure build.config file").action(() => {
         const buildConfigPath = path.join(__dirname, "./build.config")

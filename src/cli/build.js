@@ -33,7 +33,9 @@ const __dirname = path.dirname(__filename)
 const rollupIgnores = [
     'rollup',
     'typescript',
-    '@sapdon',
+    '@sapdon/core',
+    '@sapdon/cli',
+    '@minecraft',
 ]
 
 //脚本打包器
