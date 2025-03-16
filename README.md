@@ -57,7 +57,7 @@ hello_sapdon/
 
 ## 📦 核心 API 示例
 
-### 创建一个基础物品
+### ![alt text](00380435.png)创建一个基础物品
 1. 打开 `main.mjs` 文件。
 2. 写入以下内容以创建一个基础物品：
    ```javascript
@@ -81,8 +81,9 @@ hello_sapdon/
 
 ## 📚 学习资源
 
-- [官方文档](https://docs.sapdon.org)
-- [示例模组仓库](https://github.com/Meteage/sapdon/examples)
+- [官方文档] (./doc/)
+- [入门教程] (./doc/hello_sapdon)
+- [示例模组仓库] (./examples/)
 
 
 ## ❓ 常见问题
