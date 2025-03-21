@@ -20,8 +20,9 @@ export class NativeEntity {
 
             // 创建行为实体和客户端实体
             this.identifier = identifier;
-            this.entity = new BasicEntity(identifier, options, behData);
-            this.client_entity = new ClientEntity(identifier, resData);
+            this.behavior = new BasicEntity(identifier, options, behData);
+            this.resource = new ClientEntity(identifier, resData);
+            
         } catch (error) {
             console.error(`Failed to create NativeEntity ${identifier}:`, error);
             throw error; // 抛出错误，避免继续执行

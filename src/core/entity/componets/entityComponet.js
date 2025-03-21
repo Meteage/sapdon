@@ -1,4 +1,14 @@
 export class EntityComponent {
+  
+  static setDamageSensor(deals_damage){
+    return new Map().set("minecraft:damage_sensor",{
+				"triggers": {
+					"deals_damage": deals_damage
+				}
+			}
+    );
+  }
+
   static setMovement(speed){
     return new Map().set("minecraft:movement", {
       "value": speed

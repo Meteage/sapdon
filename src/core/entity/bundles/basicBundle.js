@@ -41,11 +41,3 @@ export class BasicBundle {
 }
 
 
-//移动捆绑包
-export const BasicMovementBundle = new BasicBundle();
-
-MovementBundle.addComponents([
-  //speed
-  EntityComponent.setMovement(0.2),
-  EntityComponent.setMovementBasic()
-])

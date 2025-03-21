@@ -32,10 +32,10 @@ export const EntityAPI = {
         }
 
         const nativeEntity = new NativeEntity(identifier, proto_id, options);
-        registerEntity(nativeEntity.entity, nativeEntity.client_entity);
+        registerEntity(nativeEntity.behavior, nativeEntity.resource);
         return {
-            behavior: nativeEntity.entity,
-            resource: nativeEntity.client_entity,
+            behavior: nativeEntity.behavior,
+            resource: nativeEntity.resource,
         };
     },
 
@@ -54,10 +54,10 @@ export const EntityAPI = {
         }
 
         const entity = new Entity(identifier, texture, behData, resData, options);
-        registerEntity(entity.entity, entity.client_entity);
+        registerEntity(entity.behavior, entity.resource);
         return {
-            behavior: entity.entity,
-            resource: entity.client_entity,
+            behavior: entity.behavior,
+            resource: entity.resource,
         };
     },
 
@@ -74,10 +74,10 @@ export const EntityAPI = {
         }
 
         const entity = new Projectile(identifier, texture, options);
-        registerEntity(entity.entity, entity.client_entity);
+        registerEntity(entity.behavior, entity.resource);
         return {
-            behavior: entity.entity,
-            resource: entity.client_entity,
+            behavior: entity.behavior,
+            resource: entity.resource,
         };
     },
 };
