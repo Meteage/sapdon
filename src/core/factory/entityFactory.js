@@ -1,5 +1,6 @@
 import { BasicEntity } from "../entity/basicEntity.js";
 import { ClientEntity } from "../entity/clientEntity.js";
+import { DummyEntity } from "../entity/dummyEntity.js";
 import { Entity } from "../entity/entity.js";
 import { NativeEntity } from "../entity/nativeEntity.js";
 import { Projectile } from "../entity/projectile.js";
@@ -61,6 +62,7 @@ export const EntityAPI = {
         };
     },
 
+
     /**
      * 创建一个投射物实体。
      * @param {string} identifier - 投射物的唯一标识符。
@@ -74,6 +76,28 @@ export const EntityAPI = {
         }
 
         const entity = new Projectile(identifier, texture, options);
+        registerEntity(entity.behavior, entity.resource);
+        return {
+            behavior: entity.behavior,
+            resource: entity.resource,
+        };
+    },
+
+    /**
+     * 创建一个虚拟实体。
+     * @param {string} identifier - 实体的唯一标识符。
+     * @param {string} texture - 实体的纹理。
+     * @param {Object} options - 额外选项。
+     * @param {Object} behData - 实体的行为数据。
+     * @param {Object} resData - 实体的资源数据。
+     * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
+     */
+    createDummyEntity: function (identifier, texture, options = {}, behData, resData) {
+        if (!identifier || !texture) {
+            throw new Error("必须提供 identifier 和 texture。");
+        }
+
+        const entity = new DummyEntity(identifier, texture, options);
         registerEntity(entity.behavior, entity.resource);
         return {
             behavior: entity.behavior,
