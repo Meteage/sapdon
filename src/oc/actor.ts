@@ -1,17 +1,20 @@
 import type { Entity } from '@minecraft/server'
-import { Component, ComponentCtor, ComponentManager } from './core.js'
+import { Component, ComponentCtor, ComponentManager, oc } from './core.js'
 
 export type ComponentDescriptor = string | ComponentCtor
 
 export class Actor {
 
+    readonly manager: ComponentManager
+
     constructor(
         readonly target: Entity,
-        readonly manager: ComponentManager,
-    ) {}
+    ) {
+        this.manager = oc.getManager(target.id)
+    }
 
-    static from(target: Entity, manager: ComponentManager) {
-        return new Actor(target, manager)
+    static from(target: Entity) {
+        return new Actor(target)
     }
 
     /**

@@ -1,0 +1,1 @@
+export type ConstructorOf<T, Arg extends unknown[] = []> = new (...args: Arg) => T

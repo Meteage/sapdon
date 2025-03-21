@@ -5,7 +5,7 @@ const {
     port
 } = devServerConfig
 
-type ServerHandler = (...args: Transferable[]) => void
+type ServerHandler = (...args: (Uint8Array & string)[]) => void | Promise<void>
 type HandlerInterceptor = (handler: ServerHandler) => ServerHandler
 
 class DevelopmentServer {

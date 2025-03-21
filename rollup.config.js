@@ -65,14 +65,14 @@ export default [
         input: './src/cli/start.js',
         output: {
             file: './dist/cli/start.js',
-            format: 'esm'
+            format: 'esm',
         },
         plugins: [
             paths(),
             ts(),
             commonjs(),
             json(),
-            terser(),
+            // terser(),
         ],
     },
     {

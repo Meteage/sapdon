@@ -1,13 +1,7 @@
 import { readFileSync } from "fs"
-import { cliRequest } from "./client.js"
 import { copyFolder, dirname } from "../utils.js"
 import path from "path"
 import fs from 'fs'
-import { ServerHandles } from "./handles.js"
-
-export async function syncDevFilesClient(projectPath, projectName) {
-    await cliRequest(ServerHandles.WRITE_GAME_DEV, projectPath, projectName)
-}
 
 export async function syncDevFilesServer(projectPath, projectName) {
     const buildConfig = JSON.parse(readFileSync(path.join(projectPath, "build.config")))

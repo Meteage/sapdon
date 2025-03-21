@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry } from '@sapdon/core'
 
 ItemAPI.createItem('test:stick', ItemCategory.Items, 'stick')
     .addComponent(ItemComponent.combineComponents(
@@ -6,3 +6,6 @@ ItemAPI.createItem('test:stick', ItemCategory.Items, 'stick')
         ItemComponent.setThrowable(true),
         ItemComponent.setIcon('stick'),
     ))
+
+// 提交所有注册
+registry.submit()

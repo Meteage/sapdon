@@ -1,6 +1,6 @@
 import path from 'path'
 import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder, asyncImport } from "./utils.js"
-import { generateAddonClient } from './load.js'
+import { generateAddon } from './load.js'
 
 import {
     AddonManifestHeader,
@@ -18,9 +18,12 @@ import ts from '@rollup/plugin-typescript'
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths'
 import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { syncDevFilesClient } from './dev-server/syncFiles.js'
+import { syncDevFilesServer } from './dev-server/syncFiles.js'
 import { hmr } from './dev-server/hmr.js'
 import cp from 'child_process'
+import { server, startDevServer } from './dev-server/index.js'
+import { GRegistryServer } from '../core/registry.js'
+import { UISystemRegistryServer } from '../core/ui/registry/uiSystemRegistry.js'
 
 
 // 获取当前文件的目录路径
@@ -104,41 +107,24 @@ async function bundleScripts(projectPath, scriptPath, element) {
     scriptBundler[elementType](sourcePath, scriptPath)
 }
 
-function preload(filePath) {
-    fs.appendFileSync(filePath, `
-        ;(async () => {
-            const { startDevServer } = await import('@sapdon/cli')
-            const { GRegistry, UISystemRegistry } = await import('@sapdon/core')
-            startDevServer(GRegistry, UISystemRegistry)
-        })();
-    `)
-}
-
 async function runOnChild(targetFilePath) {
     const { promise, resolve } = Promise.withResolvers()
-    const child = cp.fork(targetFilePath, { stdio: 'inherit' })
-    child.once('message', message => {
-        if (message !== 'initialized') {
-            child.kill()
-        }
-
-        resolve()
-    })
-
-    await promise
+    cp.fork(targetFilePath, { stdio: 'inherit' }).on('exit', resolve)
+    return promise
 }
 
 async function runScript(src) {
     if (src.endsWith('.ts')) {
-        const randomName = crypto.randomUUID() + '.js'
+        const randomName = '.' + crypto.randomUUID() + '.js'
         const sourceDir = path.dirname(src)
         const sourceFileName = src.replace(sourceDir, '')
-        const targetFilePath = path.join(sourceDir, randomName)
+        const targetFilePath = path.join(sourceDir, '.tmp', randomName)
 
-        await scriptBundler.ts(sourceDir, sourceDir, randomName, sourceFileName)
-        preload(targetFilePath)
+        await scriptBundler.ts(sourceDir, sourceDir + '/.tmp', randomName, sourceFileName)
         try {
             await runOnChild(targetFilePath)
+        } catch (e) {
+            console.error(e)
         } finally {
             fs.rmSync(targetFilePath, { force: true })
         }
@@ -148,7 +134,7 @@ async function runScript(src) {
     await runOnChild(src)
 }
 
-export function projectCanBuild(projectPath, projectName) {
+export function projectCanBuild(projectPath) {
     console.log("开始构建项目")
     console.log("项目路径：" + projectPath)
     //检查项目是否存在
@@ -167,7 +153,7 @@ export function projectCanBuild(projectPath, projectName) {
 
 //构建项目
 /**
- * `client`
+ * `server`
  * 
  * 在使用前使用 `projectCanBuild` 确保项目可以构建
  * @param {string} projectPath 
@@ -177,8 +163,6 @@ export const buildProject = async (projectPath, projectName) => {
     //读取build.config文件
     const buildConfigPath = path.join(projectPath, "build.config")
     const buildConfig = JSON.parse(readFile(buildConfigPath))
-    //console.log(buildConfig)
-
     //读取mod.info文件
     const modInfoPath = path.join(projectPath, "mod.info")
     const modInfo = JSON.parse(readFile(modInfoPath))
@@ -187,48 +171,69 @@ export const buildProject = async (projectPath, projectName) => {
     const buildDirPath = path.join(projectPath, buildConfig.defaultConfig.buildDir)
     const buildBehDirPath = path.join(buildDirPath, `${projectName}_BP/`)
     const buildResDirPath = path.join(buildDirPath, `${projectName}_RP/`)
-    //生成manifest.json文件
-    //判断manifest.json是否已经生成过了，生成过了就不用生成
-    const manifestPath = path.join(buildBehDirPath, "manifest.json")
-    if (pathNotExist(manifestPath)) {
-        const behManifest = generateBehManifest(
-            modInfo.name,
-            modInfo.description,
-            modInfo.version,
-            {
-                min_engine_version: min_engine_version,
-            },
-            buildConfig.defaultConfig.dependencies,
-            buildConfig.defaultConfig.scriptEntry
-        )
 
-        const resManifest = generateResManifest(
-            modInfo.name,
-            modInfo.description,
-            modInfo.version,
-            {
-                min_engine_version: min_engine_version,
-            },
-            []
-        )
+    const absoluteModPath = path.join(projectPath, buildConfig.defaultConfig.buildEntry)
 
-        //BP
-        saveFile(path.join(buildBehDirPath, "manifest.json"), behManifest)
-        //RP
-        saveFile(path.join(buildResDirPath, "manifest.json"), resManifest)
+    if (!server.isListening()) {
+        //生成manifest.json文件
+        //判断manifest.json是否已经生成过了，生成过了就不用生成
+        const manifestPath = path.join(buildBehDirPath, "manifest.json")
+        if (pathNotExist(manifestPath)) {
+            const behManifest = generateBehManifest(
+                modInfo.name,
+                modInfo.description,
+                modInfo.version,
+                {
+                    min_engine_version: min_engine_version,
+                },
+                buildConfig.defaultConfig.dependencies,
+                buildConfig.defaultConfig.scriptEntry
+            )
+
+            const resManifest = generateResManifest(
+                modInfo.name,
+                modInfo.description,
+                modInfo.version,
+                {
+                    min_engine_version: min_engine_version,
+                },
+                []
+            )
+
+            //BP
+            saveFile(path.join(buildBehDirPath, "manifest.json"), behManifest)
+            //RP
+            saveFile(path.join(buildResDirPath, "manifest.json"), resManifest)
+        }
+
+        //复制pack_icon.png
+        const packIconPath = path.join(projectPath, "pack_icon.png")
+
+        copyFileSync(packIconPath, path.join(buildBehDirPath, "pack_icon.png"))
+        copyFileSync(packIconPath, path.join(buildResDirPath, "pack_icon.png"))
+
+        const resources = buildConfig.resources
+        resources.forEach(element => {
+            const sourcePath = path.join(projectPath, element.path)
+            copyFolder(sourcePath, buildResDirPath)
+        })
+
+        // 在客户端启动前启动服务器
+        startDevServer()
+        GRegistryServer.start()
+        UISystemRegistryServer.start()
+        server.handle('sumbit', () => {
+            //只有当buildMode为development时才加载用户modjs文件
+            if (buildConfig.defaultConfig.buildMode === "development") {
+                //动态加载用户modjs文件
+                generateAddon(absoluteModPath, buildDirPath, projectName)
+            }
+        })
+
+        if (buildConfig.defaultConfig.useHMR === true) {
+            hmr(projectPath, projectName)
+        }
     }
-
-    //复制pack_icon.png
-    const packIconPath = path.join(projectPath, "pack_icon.png")
-
-    copyFileSync(packIconPath, path.join(buildBehDirPath, "pack_icon.png"))
-    copyFileSync(packIconPath, path.join(buildResDirPath, "pack_icon.png"))
-
-    const resources = buildConfig.resources
-    resources.forEach(element => {
-        const sourcePath = path.join(projectPath, element.path)
-        copyFolder(sourcePath, buildResDirPath)
-    })
 
     const scripts = buildConfig.scripts
     const scriptPath = path.join(buildBehDirPath, "scripts/")
@@ -237,20 +242,8 @@ export const buildProject = async (projectPath, projectName) => {
         await bundleScripts(projectPath, scriptPath, element)
     }
 
-    const absoluteModPath = path.join(projectPath, buildConfig.defaultConfig.buildEntry)
     await runScript(absoluteModPath)
-
-    //只有当buildMode为development时才加载用户modjs文件
-    if (buildConfig.defaultConfig.buildMode === "development") {
-        //动态加载用户modjs文件
-        await generateAddonClient(absoluteModPath, buildDirPath, projectName)
-    }
-
-    syncDevFilesClient(projectPath, projectName)
-
-    if (buildConfig.useHMR === true) {
-        hmr(projectPath, projectName)
-    }
+    await syncDevFilesServer(projectPath, projectName)
 }
 
 function versionStringToArray(versionString) {

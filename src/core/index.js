@@ -4,7 +4,7 @@ import { EntityAPI } from "./factory/entityFactory.js"
 import { FeatureAPI } from "./factory/featureFactory.js"
 import { ItemAPI } from "./factory/itemFactory.js"
 import { RecipeAPI } from "./factory/recipeFactory.js"
-import { GRegistry } from "./registry.js"
+import { GRegistry, registry } from "./registry.js"
 import { ItemComponent } from "./item/itemComponents.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "./texture.js"
 import { DataBindingObject } from "./ui/dataBindingObject.js"
@@ -44,3 +44,5 @@ export {
 }
 
 export * from './factory/itemExtra.js'
+export * from '../utils/index.js'
+export { registry } from './registry.js'

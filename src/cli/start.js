@@ -10,6 +10,7 @@ import {readFile} from "./utils.js"
 import fs from "fs"
 import {fileURLToPath} from "url"
 import { writeLib } from './dev-server/syncFiles.js'
+import { initResourceDir } from './res/server.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -131,6 +132,11 @@ function start() {
     program.command('lib').description('Generate lib files for development server.').action(() => {
         const projectPath = process.cwd()
         writeLib(projectPath)
+    })
+
+    program.command('res').description('Generate resource hints.').action(() => {
+        // initResouceClient()
+        initResourceDir()
     })
 
     // 配置build.config文件的命令

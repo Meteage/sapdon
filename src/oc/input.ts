@@ -1,7 +1,7 @@
-import { ButtonState, Entity, InputButton, world } from "@minecraft/server"
-import { BaseComponent, ComponentManager } from "./core.js"
+import { ButtonState, Entity, InputButton, world } from '@minecraft/server'
+import { BaseComponent, ComponentManager } from './core.js'
 import { oc } from './core.js'
-import { Optional } from "./optional.js";
+import { Optional } from './optional.js'
 
 export enum InputChangeState {
     Press,

@@ -99,7 +99,7 @@ class DoubleJumpComponent extends BaseComponent {
             )
 
             // 在执行完成后, 禁用 `JumpCounterComponent` 避免继续计数
-            // 这里使用 `afterTick()` 方法避免在 `onTick()` 方法中修改组件状态导致后续组件无法正常工作
+            // 这里使用 `afterTick()` 方法避免在 `onTick()` 方法中修改组件数据导致后续组件无法正常工作
             manager.afterTick(() => {
                 this.jumpCounter.use(counter => counter.enabled = false)
             })

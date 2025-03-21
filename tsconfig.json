@@ -6,6 +6,7 @@
         "module": "NodeNext",
         "moduleResolution": "nodenext",
         "strict": true,
+        "resolveJsonModule": true,
         "types": [
             "@minecraft/server",
             "@minecraft/server-ui",
