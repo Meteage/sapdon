@@ -2,6 +2,7 @@ import fs from "fs"
 import path from "path"
 import { randomUUID } from "crypto"
 import { fileURLToPath } from "node:url"
+import { globalObject } from "./init.js"
 
 export const generateUUID = () => {
 	return randomUUID()
@@ -12,6 +13,7 @@ export const generateUUID = () => {
  * @param {string} src 源文件路径
  * @param {string} dest 目标文件路径
  */
+//@ts-ignore
 export function copyFileSync(src, dest) {
 	try {
 		fs.copyFileSync(src, dest)
@@ -21,11 +23,13 @@ export function copyFileSync(src, dest) {
 }
 
 //检查路径
+//@ts-ignore
 export const pathNotExist = filePath => {
 	return !fs.existsSync(filePath)
 }
 
 //读取文件
+//@ts-ignore
 export const readFile = filePath => {
 	try {
 		return fs.readFileSync(filePath, "utf8")
@@ -40,6 +44,7 @@ export const readFile = filePath => {
  * @param {string} filePath 绝对路径
  * @param {string} data 数据
  */
+//@ts-ignore
 export const saveFile = (filePath, data) => {
 	// 确保目录存在
 	fs.mkdirSync(path.dirname(filePath), { recursive: true })
@@ -52,6 +57,7 @@ export const saveFile = (filePath, data) => {
 	})
 }
 
+//@ts-ignore
 export const copyFolder = (sourcePath, destinationPath) => {
 	// 确保目录存在
 	fs.mkdirSync(path.dirname(destinationPath), { recursive: true })
@@ -81,16 +87,56 @@ export const copyFolder = (sourcePath, destinationPath) => {
 	})
 }
 
+//@ts-ignore
 export function dirname(importMeta) {
     const __filename = fileURLToPath(importMeta.url)
     const __dirname = path.dirname(__filename)
     return __dirname
 }
 
+//@ts-ignore
 export function asyncImport(path) {
     if (!path.startsWith('.')) {
         return import('file://' + path)
     }
 
     return import(path)
+}
+
+interface PathElement {
+    path: string
+}
+
+interface ScriptElement extends PathElement {
+    type: 'js' | 'ts'
+}
+
+interface BuildDependency {
+    module_name: string
+    version: string
+}
+
+export interface BuildConfig {
+    defaultConfig: {
+        useHMR: boolean
+        buildMode: "development"
+        buildEntry: string
+        scriptEntry: string
+        buildDir: string
+        dependencies: BuildDependency[]
+    }
+    libraries: PathElement[]
+    resources: PathElement[]
+    scripts: ScriptElement[]
+}
+
+export function getBuildConfig(): BuildConfig {
+    const pwd = (globalObject as any).projectPath ?? process.cwd()
+    const configFile = path.join(pwd, 'build.config')
+
+    if (!fs.existsSync(configFile)) {
+        throw new Error('未找到项目配置文件，请先初始化项目')
+    }
+
+    return JSON.parse(fs.readFileSync(configFile) as any)
 }

@@ -86,3 +86,5 @@ export const readPackageJson = (dir) => {
         return null
     }
 }
+
+export const globalObject = {}
