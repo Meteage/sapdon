@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-import {program} from 'commander'
+import { program } from 'commander'
 import inquirer from 'inquirer'
 import path from 'path'
 import os from 'os'
-
-import {initMojangPath, initNPMProject, initProject,readPackageJson} from './init.js'
-import {buildProject, projectCanBuild} from './build.js'
-import {readFile} from "./utils.js"
+import { globalObject, initMojangPath, initNPMProject, initProject, readPackageJson } from './init.js'
+import { buildProject, projectCanBuild } from './build.js'
+import { readFile } from "./utils.js"
 import fs from "fs"
-import {fileURLToPath} from "url"
+import { fileURLToPath } from "url"
 import { writeLib } from './dev-server/syncFiles.js'
 import { initResourceDir } from './res/server.js'
 
@@ -17,8 +16,7 @@ const __dirname = path.dirname(__filename)
 
 process.removeAllListeners('warning')
 
-function start() {
-    
+async function start() {
     // 额外添加的init方法
     program.command("init").description("初始化一个基于NodeJS的项目").action(() => {
         const currentDir = process.cwd()
@@ -60,7 +58,7 @@ function start() {
                 default: "1.19.50"
             }
         ]).then((answers) => {
-            initNPMProject(currentDir, {...readPackageJson(currentDir), ...answers})
+            initNPMProject(currentDir, { ...readPackageJson(currentDir), ...answers })
             console.log("请使用命令sapdon config配置框架的build.config文件。")
         })
     })
@@ -115,6 +113,7 @@ function start() {
     program.command("build <project-name>").description("Build the project").action((projectName) => {
         console.log("Building the project...")
         const projectPath = path.join(process.cwd(), projectName)
+        globalObject.projectPath = projectPath
         if (projectCanBuild(projectPath)) {
             buildProject(projectPath, path.basename(projectPath))
         }
@@ -166,7 +165,7 @@ function start() {
             }
         ]).then((answers) => {
             try {
-                fs.writeFileSync(buildConfigPath, JSON.stringify({...buildConfigData, ...answers}, null, 2), 'utf-8')
+                fs.writeFileSync(buildConfigPath, JSON.stringify({ ...buildConfigData, ...answers }, null, 2), 'utf-8')
                 console.log("build.config文件已更新。")
             } catch (error) {
                 console.error("写入build.config文件时出错:", error)

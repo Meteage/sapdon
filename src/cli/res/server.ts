@@ -124,7 +124,7 @@ export function watchResourceDir() {
     }
     fs.watch(path.join(cwd, 'res'), { recursive: true }, debounce((a, b) => {
         cp.execSync('sapdon res')
-    }, 1000))
+    }, 3000))
 }
 
 export function initResourceDir() {

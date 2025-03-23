@@ -13,6 +13,8 @@ export class GRegistry {
      * @param {string} data 实例 必须包含 toJson 方法
      */
     static register(name: string, root: string, path: string, data: string) {
+        data = data === 'string' ? data = JSON.parse(data)
+            : ((data as any)?.toJson?.() ?? data)
         cliRequest('register', { name, root, path, data })
     }
 }
@@ -28,9 +30,7 @@ export class GRegistryServer {
 
     static start() {
         server.handle('register', (data: any) => {
-            const { name, root, path, data: d } = data
-            const dataObj = JSON.parse(d)
-            GRegistryServer.dataList.push({ name, root, path, data: dataObj })
+            GRegistryServer.dataList.push(data)
         })
     }
 }

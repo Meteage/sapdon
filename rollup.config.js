@@ -38,7 +38,7 @@ export default [
             ts(),
             commonjs(),
             json(),
-            terser(),
+            // terser(),
         ]
     },
     {

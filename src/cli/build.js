@@ -230,9 +230,7 @@ export const buildProject = async (projectPath, projectName) => {
             }
         })
 
-        if (buildConfig.defaultConfig.useHMR === true) {
-            hmr(projectPath, projectName)
-        }
+        hmr(projectPath, projectName)
     }
 
     const scripts = buildConfig.scripts

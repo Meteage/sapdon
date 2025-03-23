@@ -18,11 +18,10 @@ import { ItemAPI } from '@sapdon/core'
 ## 从js迁移到ts
 js 的 `main.mjs` 包含了一些预定义的代码：
 ```js
-import { startDevServer } from '@sapdon/cli'
-import { GRegistry, UISystemRegistry } from '@sapdon/core'
+import { registry } from '@sapdon/core'
 
-// 开启开发服务器, 不开启开发服务器无法使用文件同步和热更新
-startDevServer(GRegistry, UISystemRegistry)
+// 进行注册后需进行一次提交, 通知开发服务器更新文件
+registry.setup()
 ```
 如果需要从js迁移到ts，删除 `startDevServer` 那行即可（不删也没事）
 
@@ -60,3 +59,6 @@ manager.attachComponent(new MyComponent())
 你也可以动态增删改查组件! 这很方便!
 
 如果你想看它到底是怎么回事,可以从 `examples/oc-core` 开始了解
+
+## [Object - Component](./oc/index.md)
+关于 `@sapdon/oc` 的一切
