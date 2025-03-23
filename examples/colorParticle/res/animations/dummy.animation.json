@@ -1,0 +1,15 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.color_particle.loop": {
+			"loop": true,
+			"particle_effects": {
+				"0.0": {
+					"effect": "color_particle",
+					"locator": "locator",
+					"pre_effect_script": "variable.lifetime = q.property('sapdon:float_lifetime');variable.color_r = q.property('sapdon:float_color_red');variable.color_g = q.property('sapdon:float_color_green');variable.color_b = q.property('sapdon:float_color_blue');"
+				}
+			}
+		}
+	}
+}
