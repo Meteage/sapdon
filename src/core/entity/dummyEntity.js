@@ -18,7 +18,7 @@ export class DummyEntity extends Entity{
         //资源设置
         this.resource.addMaterial("default", "entity_alphatest")//添加默认材质
         this.resource.addTexture("default", "textures/entity/none")//添加默认纹理
-        this.resource.addGeometry("default","geometry.cube")//设置默认几何体
+        this.resource.addGeometry("default","geometry.dummy")//设置默认几何体
         this.resource.addRenderController("controller.render.cow")//添加渲染控制器
     }
 }
