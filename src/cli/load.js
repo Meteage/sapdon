@@ -72,7 +72,7 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
 
         UISystemRegistryServer.getUISystemList().forEach((ui_system) => {
             if (ui_system.path) {
-                saveFile(resDir(ui_system.path, `${ui_system.name}.json`), JSON.stringify(ui_system.toJson(), null, 2))
+                saveFile(resDir(ui_system.path, `${ui_system.name}.json`), JSON.stringify(ui_system, null, 2))
             }
         })
 

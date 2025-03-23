@@ -5,7 +5,7 @@ import path from 'path'
 import os from 'os'
 import { globalObject, initMojangPath, initNPMProject, initProject, readPackageJson } from './init.js'
 import { buildProject, projectCanBuild } from './build.js'
-import { readFile } from "./utils.js"
+import { getBuildConfig, readFile } from "./utils.js"
 import fs from "fs"
 import { fileURLToPath } from "url"
 import { writeLib } from './dev-server/syncFiles.js'
@@ -114,6 +114,7 @@ async function start() {
         console.log("Building the project...")
         const projectPath = path.join(process.cwd(), projectName)
         globalObject.projectPath = projectPath
+        initResourceDir()
         if (projectCanBuild(projectPath)) {
             buildProject(projectPath, path.basename(projectPath))
         }
@@ -134,8 +135,7 @@ async function start() {
     })
 
     program.command('res').description('Generate resource hints.').action(() => {
-        // initResouceClient()
-        initResourceDir()
+        initResourceDir()  
     })
 
     // 配置build.config文件的命令

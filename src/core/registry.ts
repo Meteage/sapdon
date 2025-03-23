@@ -1,5 +1,6 @@
 import { cliRequest } from "../cli/dev-server/client.js"
 import { server } from "../cli/dev-server/server.js"
+import { UISystemRegistry } from "./ui/registry/uiSystemRegistry.js"
 
 export class RemoteLogger {
     static log(...info: any[]) {
@@ -7,10 +8,12 @@ export class RemoteLogger {
     }
 }
 
+const clientRegistryData: any[] = []
+
 /**
  * Client
  */
-export class GRegistry extends RemoteLogger {
+export class GRegistry {
     /**
      * 生成注册器
      * @param {string} name 文件名字
@@ -19,11 +22,13 @@ export class GRegistry extends RemoteLogger {
      * @param {string} data 实例 必须包含 toJson 方法
      */
     static register(name: string, root: string, path: string, data: string) {
-        //@ts-ignore
-        // RemoteLogger.log(name, data.toJson().description)
         data = data === 'string' ? data = JSON.parse(data)
             : ((data as any)?.toJson?.() ?? data)
-        cliRequest('register', { name, root, path, data })
+        clientRegistryData.push({ name, root, path, data })
+    }
+
+    static submit() {
+        cliRequest('submitGregistry', clientRegistryData)
     }
 }
 
@@ -36,9 +41,11 @@ export class GRegistryServer {
         return [...GRegistryServer.dataList]
     }
 
-    static start() {
-        server.handle('register', (data: any) => {
-            GRegistryServer.dataList.push(data)
+    static startServer() {
+        server.handle('submitGregistry', (data: any) => {
+            //@ts-ignore
+            // console.log(data.map(item => item.data.description))
+            this.dataList = data
         })
 
         server.handle('log', (...info) => {
@@ -49,7 +56,9 @@ export class GRegistryServer {
 
 export namespace registry {
     export function sumbit() {
-        cliRequest('sumbit', {})
+        GRegistry.submit()
+        UISystemRegistry.submit()
+        cliRequest('submit', {})
     }
 
     export function log(...info: any[]) {

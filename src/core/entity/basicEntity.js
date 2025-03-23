@@ -1,5 +1,4 @@
 import { AddonEntity, AddonEntityDefinition, AddonEntityDescription } from "../addon/entity/entity.js";
-import { RemoteLogger } from "../registry.js";
 
 export class BasicEntity {
     /**
@@ -29,10 +28,10 @@ export class BasicEntity {
         this.runtime_identifier = options.runtime_identifier;
 
         // 初始化 components、component_groups 和 events，确保 data 中的值为对象
-        this.properties = new Map(Object.entries(data.description?data.description.properties|| {} :{}));
-        this.components = new Map(Object.entries(data.components || {}));
-        this.component_groups = new Map(Object.entries(data.component_groups || {}));
-        this.events = new Map(Object.entries(data.events || {}));
+        this.properties = data?.description?.properties ?? {};
+        this.components = new Map(Object.entries(data.components ?? {}));
+        this.component_groups = new Map(Object.entries(data.component_groups ?? {}));
+        this.events = new Map(Object.entries(data.events ?? {}));
     }
     /**
      * 添加属性到实体
@@ -41,7 +40,7 @@ export class BasicEntity {
      * @returns 
      */
     addProperty(name, value) {
-        this.properties.set(name, value);
+        this.properties[name] = value;
         return this;
     }
     /**
@@ -50,7 +49,7 @@ export class BasicEntity {
      * @returns 
      */
     removeProperty(name) {
-        this.properties.delete(name);
+        delete this.properties[name];
         return this;
     }
     /**
@@ -58,7 +57,7 @@ export class BasicEntity {
      * @returns 
      */
     clearProperties() {
-        this.properties.clear();
+        this.properties = {};
         return this;
     }
 
@@ -178,7 +177,6 @@ export class BasicEntity {
      * @returns {Object} - 返回 JSON 格式的实体数据
      */
     toJson() {
-        RemoteLogger.log(this.properties.size(), Object.fromEntries(this.properties))
         return new AddonEntity(
             "1.16.0",
             new AddonEntityDefinition(
@@ -186,7 +184,7 @@ export class BasicEntity {
                     this.identifier,
                     this.is_spawnable,
                     this.is_summonable,
-                    Object.fromEntries(this.properties),
+                    this.properties,
                     this.runtime_identifier
                 ),
                 Object.fromEntries(this.components), // 将 Map 转换为普通对象

@@ -220,9 +220,9 @@ export const buildProject = async (projectPath, projectName) => {
 
         // 在客户端启动前启动服务器
         startDevServer()
-        GRegistryServer.start()
-        UISystemRegistryServer.start()
-        server.handle('sumbit', () => {
+        GRegistryServer.startServer()
+        UISystemRegistryServer.startServer()
+        server.handle('submit', () => {
             //只有当buildMode为development时才加载用户modjs文件
             if (buildConfig.defaultConfig.buildMode === "development") {
                 //动态加载用户modjs文件
