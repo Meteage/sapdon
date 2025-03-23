@@ -1,7 +1,8 @@
 import { cliRequest } from "../../../cli/dev-server/client.js"
 import { server } from "../../../cli/dev-server/server.js"
+import { RemoteLogger } from "../../registry.js"
 
-export class UISystemRegistry {
+export class UISystemRegistry extends RemoteLogger {
     // 注册 UISystem
     static registerUISystem(ui_system) {
         const ui_system_path = ui_system.path + ui_system.name + ".json"

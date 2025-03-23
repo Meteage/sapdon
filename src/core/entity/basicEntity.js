@@ -1,4 +1,5 @@
 import { AddonEntity, AddonEntityDefinition, AddonEntityDescription } from "../addon/entity/entity.js";
+import { RemoteLogger } from "../registry.js";
 
 export class BasicEntity {
     /**
@@ -177,6 +178,7 @@ export class BasicEntity {
      * @returns {Object} - 返回 JSON 格式的实体数据
      */
     toJson() {
+        RemoteLogger.log(this.properties.size(), Object.fromEntries(this.properties))
         return new AddonEntity(
             "1.16.0",
             new AddonEntityDefinition(
