@@ -44,6 +44,18 @@ export class AddonClientEntityDescription {
     }
 
     /**
+     * 注册粒子效果
+     * @param {string} name 组件名称
+     * @param {Object} component 组件数据
+     * @returns {AddonClientEntityDescription} 返回当前实例以支持链式调用
+    */
+    addParticleEffect(name, particle) {
+        if (this.particle_effects == undefined) this.particle_effects = {};
+        this.particle_effects[name] = particle;
+        return this;
+    }
+
+    /**
      * 添加材质
      * @param {string} name 材质名称
      * @param {string} material 材质路径
