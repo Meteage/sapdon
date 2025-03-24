@@ -1,9 +1,12 @@
+import { Serializer } from "@utils"
+
 export class AddonFeatureRule {
     constructor(format_version,denifition){
         this.format_version = format_version;
         this.denifition = denifition;
     }
-    toJson(){
+    @Serializer
+    toObject(){
         return {
             format_version: this.format_version,
             ["minecraft:feature_rules"]: this.denifition

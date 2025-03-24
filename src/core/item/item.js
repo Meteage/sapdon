@@ -1,6 +1,7 @@
 import { ItemComponent } from "./itemComponents.js";
 import { AddonItem, AddonItemDefinition, AddonItemDescription } from "../addon/item/item.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
+import { Serializer, serialize } from "@utils"
 
 export class Item {
     /**
@@ -77,7 +78,8 @@ export class Item {
      * 将物品转换为 JSON 格式
      * @returns {Object} JSON 格式的物品对象
      */
-    toJson() {
+    @Serializer
+    toObject() {
         const item = new AddonItem(
             "1.21.40", // 格式版本
             new AddonItemDefinition(
@@ -92,6 +94,6 @@ export class Item {
                 Object.fromEntries(this.components) // 将 Map 转换为普通对象
             )
         );
-        return item.toJson();
+        return serialize(item);
     }
 }

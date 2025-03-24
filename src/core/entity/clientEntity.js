@@ -1,4 +1,5 @@
 import { AddonClientEntity, AddonClientEntityDefinition, AddonClientEntityDescription } from "../addon/entity/clientEntity.js";
+import { Serializer, serialize } from "@utils"
 
 /**
  * ClientEntity 类，用于表示客户端实体。
@@ -31,11 +32,12 @@ export class ClientEntity extends AddonClientEntityDescription {
      * 
      * @returns {Object} - 表示实体的 JSON 对象。
      */
-    toJson() {
+    @Serializer
+    toObject() {
         // 创建一个 AddonClientEntity 实例，包含实体定义和版本信息
-        return new AddonClientEntity(
+        return serialize(new AddonClientEntity(
             "1.10.0", // 版本号
             new AddonClientEntityDefinition(this) // 实体定义
-        ).toJson(); // 调用 toJson 方法，返回 JSON 格式的数据
+        ))
     }
 }

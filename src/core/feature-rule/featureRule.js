@@ -1,6 +1,7 @@
 import { AddonFeatureRule, AddonFeatureRuleDecription, AddonFeatureRuleDenifition } from "../addon/featureRule.js";
 import { FeatureConditions } from "./condition/featureConditions.js";
 import { FeatureDistribution } from "./distribution/featureDistribution.js";
+import { Serializer, serialize } from "@utils"
 
 export class FeatureRule {
   constructor(identifier,places_feature) {
@@ -21,17 +22,18 @@ export class FeatureRule {
   setAxisDistribution(axis, config) {
     this.distribution.setAxisDistribution(axis, config);
   }
-  toJson(){
-    return new AddonFeatureRule(
+  @Serializer
+    toObject(){
+    return serialize(new AddonFeatureRule(
         "1.13.0",
         new AddonFeatureRuleDenifition(
             new AddonFeatureRuleDecription(
                 this.identifier,
                 this.places_feature
             ),
-            this.condition.toJson(),
-            this.distribution.toJson()
-        )
-    ).toJson()
+            serialize(this.condition),
+            serialize(this.distribution)
+        ))
+    )
   }
 }

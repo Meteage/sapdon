@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class RandomStrollBehavior {
     /**
      * 随机漫步行为
@@ -55,7 +57,8 @@ export class RandomStrollBehavior {
      * 将组件转换为 JSON 对象
      * @returns {Object} minecraft:behavior.random_stroll 组件的 JSON 对象
      */
-    toJSON() {
+    @Serializer
+    toObject() {
       return new Map().set("minecraft:behavior.random_stroll",
         {
           priority: this.priority,

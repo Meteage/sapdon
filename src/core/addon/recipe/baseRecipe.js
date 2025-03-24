@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class AddonRecipe {
 	constructor(format_version, recipe_type, definitions = {}) {
 		this.format_version = format_version;
@@ -19,7 +21,8 @@ export class AddonRecipe {
 		return this;
 	}
 
-	toJson() {
+	@Serializer
+    toObject() {
 		var json = { format_version: this.format_version };
 		json[this.recipe_type] = this.definitions;
 		return json;

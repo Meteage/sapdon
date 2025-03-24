@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class FollowParentBehavior {
     constructor(priority){
         this.priority = priority;
@@ -6,7 +8,8 @@ export class FollowParentBehavior {
     setSpeedMultiplier(speed_multiplier){
         this.speed_multiplier = speed_multiplier;
     }   
-    toJson(){
+    @Serializer
+    toObject(){
         return new Map().set("minecraft:behavior.follow_parent",{
             "priority": this.priority,
             "speed_multiplier": this.speed_multiplier

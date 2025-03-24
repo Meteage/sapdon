@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class TemptBehavior {
     /**
      * 创建 minecraft:behavior.tempt 组件。
@@ -127,7 +129,8 @@ export class TemptBehavior {
      * 将组件转换为 JSON 对象。
      * @returns {Object} minecraft:behavior.tempt 组件的 JSON 对象
      */
-    toJSON() {
+    @Serializer
+    toObject() {
       return new Map().set(
         "minecraft:behavior.tempt", {
           priority: this.priority,

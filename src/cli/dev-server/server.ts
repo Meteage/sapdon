@@ -1,5 +1,6 @@
 import http from 'http'
 import { devServerConfig } from './config.js'
+import { decode } from '@utils'
 
 const {
     port
@@ -28,7 +29,7 @@ class DevelopmentServer {
                     req.on('data', chunk => buf = Buffer.concat([buf, chunk]))
                     req.on('end', () => {
                         try {
-                            resolve(JSON.parse(buf as any))
+                            resolve(decode<Buffer, any>(buf as any))
                         } catch (error) {
                             reject(error)
                         }

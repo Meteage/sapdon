@@ -1,3 +1,4 @@
+import { serialize } from "@utils"
 import { cliRequest } from "../cli/dev-server/client.js"
 import { server } from "../cli/dev-server/server.js"
 import { UISystemRegistry } from "./ui/registry/uiSystemRegistry.js"
@@ -19,11 +20,12 @@ export class GRegistry {
      * @param {string} name 文件名字
      * @param {string} root 根目录，如 "behavior"、"resource" 等
      * @param {string} path 数据的路径，如 "blocks/"、"items/"、"recipes/" 等
-     * @param {string} data 实例 必须包含 toJson 方法
+     * @param {string | object} data 实例 必须包含 toJson 方法
      */
     static register(name: string, root: string, path: string, data: string) {
-        data = data === 'string' ? data = JSON.parse(data)
-            : ((data as any)?.toJson?.() ?? data)
+        data = data === 'string'
+            ? JSON.parse(data)
+            : serialize<object, object>(data as any)
         clientRegistryData.push({ name, root, path, data })
     }
 

@@ -1,4 +1,5 @@
 import { AddonMenuCategory } from "../menuCategory.js";
+import { Serializer } from "@utils"
 
 export class AddonBlock {
     /**
@@ -10,7 +11,8 @@ export class AddonBlock {
         this.format_version = format_version;
         this.definitions = definitions;
     }
-    toJson(){
+    @Serializer
+    toObject(){
         return {
             format_version:this.format_version,
             ["minecraft:block"]:this.definitions

@@ -11,7 +11,21 @@
             "@minecraft/server",
             "@minecraft/server-ui",
             "node"
-        ]
+        ],
+        "paths": {
+            "@core/*": [
+                "./src/core/*"
+            ],
+            "@oc/*": [
+                "./src/oc/*"
+            ],
+            "@cli/*": [
+                "./src/cli/*"
+            ],
+            "@utils": [
+                "./src/utils/index.js"
+            ]
+        }
     },
     "include": [
         "./src/**/*.js",

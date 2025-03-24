@@ -1,3 +1,5 @@
+import { serialize, Serializer } from "@utils"
+
 /**
  * 表示 Minecraft 插件中的渲染控制器组。
  * 该类用于管理一组渲染控制器，并提供添加、设置和转换为 JSON 的方法。
@@ -37,7 +39,7 @@ export class AddonRenderControllerGroup {
      * @param {AddonRenderController} render_controller - 要添加的渲染控制器。
      */
     addRenderController(render_controller) {
-        this.render_controllers.set(render_controller.name, render_controller.toJson());
+        this.render_controllers.set(render_controller.name, serialize(render_controller));
         return this; // 支持链式调用
     }
 
@@ -45,7 +47,8 @@ export class AddonRenderControllerGroup {
      * 将渲染控制器组转换为 JSON 对象。
      * @returns {Object} - 渲染控制器组的 JSON 表示。
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return {
             format_version: this.format_version,
             render_controllers: Object.fromEntries(this.render_controllers)
@@ -153,7 +156,8 @@ export class AddonRenderController {
      * 将渲染控制器转换为 JSON 对象。
      * @returns {Object} - 渲染控制器的 JSON 表示。
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return {
                 arrays: this.arrays,
                 geometry: this.geometry,
@@ -175,5 +179,6 @@ renderController.registerTexturesArray(["Texture.variant_1", "Texture.variant_2"
 
 renderControllerGroup.addRenderController(renderController);
 
-console.log(JSON.stringify(renderControllerGroup.toJson(), null, 4));
+console.log(JSON.stringify(renderControllerGroup.@Serializer
+    toObject(), null, 4));
 */

@@ -1,3 +1,4 @@
+import { Serializer, serialize } from "@utils";
 import { AddonBlock, AddonBlockDefinition, AddonBlockDescription } from "../addon/block/block.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
 
@@ -104,8 +105,9 @@ export class BasicBlock {
      * 将方块对象转换为 JSON 格式
      * @returns {Object} JSON 格式的方块对象
      */
-    toJson() {
-        const block = new AddonBlock(
+    @Serializer
+    toObject() {
+        return serialize(new AddonBlock(
             "1.21.50", // 格式版本
             new AddonBlockDefinition(
                 new AddonBlockDescription(
@@ -121,7 +123,6 @@ export class BasicBlock {
                 Object.fromEntries(this.components), // 将 Map 转换为普通对象
                 this.permutations
             )
-        );
-        return block.toJson();
+        ))
     }
 }

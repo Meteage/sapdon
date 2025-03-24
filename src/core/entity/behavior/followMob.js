@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class FollowMobBehavior {
     constructor(priority) {
         this.priority = priority;
@@ -26,7 +28,8 @@ export class FollowMobBehavior {
         return this; // 支持链式调用
     }
 
-    toJSON() {
+    @Serializer
+    toObject() {
         if (this.priority === null) {
             throw new Error("Priority must be set for FollowMobBehavior.");
         }

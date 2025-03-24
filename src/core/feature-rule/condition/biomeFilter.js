@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 /**
  * 表示生物群系过滤条件的类
  */
@@ -33,7 +35,8 @@ export class BiomeFilter {
      * 转换为 JSON 格式
      * @returns {Array<Object>} 返回生物群系过滤条件数组
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return this.filters;
     }
 }

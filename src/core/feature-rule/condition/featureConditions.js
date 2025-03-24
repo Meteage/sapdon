@@ -1,4 +1,5 @@
 import { BiomeFilter } from "./biomeFilter.js";
+import { Serializer, serialize } from "@utils"
 
 /**
  * 表示功能规则生成条件的类
@@ -27,7 +28,7 @@ export class FeatureConditions {
      * @returns {FeatureConditions} 返回自身以支持链式调用
      */
     setBiomeFilter(biomeFilter) {
-        this.conditions["minecraft:biome_filter"] = biomeFilter.toJson();
+        this.conditions["minecraft:biome_filter"] = serialize(biomeFilter)
         return this;
     }
 
@@ -35,7 +36,8 @@ export class FeatureConditions {
      * 转换为 JSON 格式
      * @returns {Object} 返回生成条件对象
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return this.conditions;
     }
 }

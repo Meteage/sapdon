@@ -1,9 +1,12 @@
+import { Serializer } from "@utils"
+
 export class AddonOreFeature {
     constructor(format_version,definition) {
         this.format_version = format_version;
         this.definition = definition;
     }
-    toJson(){
+    @Serializer
+    toObject(){
         return {
             format_version: this.format_version,
             ["minecraft:ore_feature"]: this.definition

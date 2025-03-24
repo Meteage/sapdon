@@ -1,10 +1,12 @@
+import { Serializer } from "@utils"
 
 export class AddonAnimationController {
     constructor(format_version,definition){
         this.format_version = format_version;
         this.definition = definition;
     }
-    toJson(){
+    @Serializer
+    toObject(){
         return {
             format_version: this.format_version,
             ["animation_controllers"]: this.definition
@@ -69,7 +71,8 @@ export class AddonAnimationStateMachine {
      * 将整个状态机转换为 JSON 兼容的对象。
      * @returns {object} - 包含格式版本的完整动画控制器定义。
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return {
             [`controller.animation.${this.namespace}.${this.name}`]:{
                 initial_state: this.initialState,

@@ -1,5 +1,5 @@
 import { AddonAttachable, AddonAttachableDefinition, AddonAttachableDescription } from "../addon/item/attachable.js";
-
+import { Serializer, serialize } from "@utils"
 
 export class Attachable extends AddonAttachableDescription{
     constructor(identifier){
@@ -10,12 +10,13 @@ export class Attachable extends AddonAttachableDescription{
         return this.identifier;
     }
     
-    toJson() {
+    @Serializer
+    toObject() {
         const entity = new AddonAttachable(
             "1.8.0",
             new AddonAttachableDefinition(this)
         );
-        return entity.toJson();
+        return serialize(entity);
     }
 }
 
@@ -29,6 +30,7 @@ const attachable = new Attachable("test")
       attachable.addRenderController("controller.render.armor")
       attachable.setScript("parent_setup","v.chest_layer_visible = 0.0;")
 
-      console.log(JSON.stringify(attachable.toJson(),null,2))
+      console.log(JSON.stringify(attachable.@Serializer
+    toObject(),null,2))
 debugger
 */

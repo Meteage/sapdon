@@ -1,3 +1,4 @@
+import { encode } from '@utils'
 import { devServerConfig } from './config.js'
 
 const {
@@ -11,7 +12,7 @@ export async function cliRequest(path, ...params) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(params)
+            body: encode(params)
         })
     } catch (error) {
         console.error(error)

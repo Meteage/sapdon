@@ -1,4 +1,5 @@
 import { UISystemRegistry } from "../registry/uiSystemRegistry.js";
+import { Serializer } from "@utils"
 
 // UI 文件核心类
 export class UISystem {
@@ -32,7 +33,8 @@ export class UISystem {
         return this.animations.get(animation_name);
     }
   
-    toJson() {
+    @Serializer
+    toObject() {
         const ui = {namespace:this.namespace};
         //序列化
         this.elements.forEach((value,key)=>{

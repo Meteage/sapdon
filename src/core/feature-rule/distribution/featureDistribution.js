@@ -1,4 +1,5 @@
 import { CoordinateDistribution } from "./coordinateDistribution.js";
+import { Serializer, serialize } from "@utils"
 
 /**
  * 表示功能规则分布配置的类
@@ -8,9 +9,9 @@ export class FeatureDistribution {
         this.distribution = {
             iterations: 10, // 默认值
             coordinate_eval_order: "zyx",
-            x: new CoordinateDistribution().toJson(),
-            y: new CoordinateDistribution().toJson(),
-            z: new CoordinateDistribution().toJson()
+            x: serialize(new CoordinateDistribution()),
+            y: serialize(new CoordinateDistribution()),
+            z: serialize(new CoordinateDistribution()),
         };
     }
 
@@ -31,7 +32,7 @@ export class FeatureDistribution {
      * @returns {FeatureDistribution} 返回自身以支持链式调用
      */
     setAxisDistribution(axis, config) {
-        this.distribution[axis] = config.toJson();
+        this.distribution[axis] = serialize(config);
         return this;
     }
 
@@ -39,7 +40,8 @@ export class FeatureDistribution {
      * 转换为 JSON 格式
      * @returns {Object} 返回分布规则对象
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return this.distribution;
     }
 }

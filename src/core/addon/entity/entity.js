@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 export class AddonEntity {
     /**
      * 实体类
@@ -13,7 +15,8 @@ export class AddonEntity {
      * 将对象转换为 JSON 格式
      * @returns {Object} JSON 对象
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return {
             format_version: this.format_version,
             ["minecraft:entity"]: this.definitions

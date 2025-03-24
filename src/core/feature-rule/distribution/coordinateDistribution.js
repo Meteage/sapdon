@@ -1,3 +1,5 @@
+import { Serializer } from "@utils"
+
 /**
  * 表示单个坐标轴（x/y/z）分布规则的类
  */
@@ -15,7 +17,8 @@ export class CoordinateDistribution {
      * 转换为 JSON 格式
      * @returns {Object} 返回坐标分布配置
      */
-    toJson() {
+    @Serializer
+    toObject() {
         return {
             distribution: this.distribution,
             extent: this.extent

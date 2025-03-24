@@ -1,4 +1,5 @@
 import { AddonBiome, AddonBiomeDefinition, AddonBiomeDescription } from "../addon/biome.js";
+import { Serializer, serialize } from "@utils"
 
 export class Biome{
     constructor(identifier){
@@ -18,13 +19,14 @@ export class Biome{
         }
         return this;
     }
-    toJson(){
-        return new AddonBiome(
+    
+    toObject(){
+        return serialize(new AddonBiome(
             "1.13.0",
             new AddonBiomeDefinition(
                 new AddonBiomeDescription(this.identifier),
                 Object.fromEntries(this.components)
             )
-        ).toJson()
+        ))
     }
 }

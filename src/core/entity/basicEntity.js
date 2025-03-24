@@ -1,4 +1,5 @@
 import { AddonEntity, AddonEntityDefinition, AddonEntityDescription } from "../addon/entity/entity.js";
+import { Serializer, serialize } from "@utils"
 
 export class BasicEntity {
     /**
@@ -176,8 +177,9 @@ export class BasicEntity {
      * 将实体转换为 JSON 格式
      * @returns {Object} - 返回 JSON 格式的实体数据
      */
-    toJson() {
-        return new AddonEntity(
+    @Serializer
+    toObject() {
+        return serialize(new AddonEntity(
             "1.16.0",
             new AddonEntityDefinition(
                 new AddonEntityDescription(
@@ -191,6 +193,6 @@ export class BasicEntity {
                 Object.fromEntries(this.component_groups), // 将 Map 转换为普通对象
                 Object.fromEntries(this.events) // 将 Map 转换为普通对象
             )
-        ).toJson();
+        ))
     }
 }

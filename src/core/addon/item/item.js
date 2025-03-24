@@ -1,3 +1,4 @@
+import { Serializer } from "@utils"
 //item json的结构对应的class
 
 export class AddonItem {
@@ -6,7 +7,8 @@ export class AddonItem {
         //键名为 ["minecfat:item"]
         this.definitions = definitions;
     }
-    toJson(){
+    @Serializer
+    toObject(){
         return {
             format_version:this.format_version,
             ["minecraft:item"]:this.definitions
