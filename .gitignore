@@ -9,3 +9,5 @@ development_*
 workspace/
 dist
 dev
+prod
+res.hint.ts

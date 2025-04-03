@@ -2,7 +2,6 @@ import fs from "fs"
 import path from "path"
 import { randomUUID } from "crypto"
 import { fileURLToPath } from "node:url"
-import { globalObject } from "./init.js"
 
 export const generateUUID = () => {
 	return randomUUID()
@@ -103,40 +102,6 @@ export function asyncImport(path) {
     return import(path)
 }
 
-interface PathElement {
-    path: string
-}
-
-interface ScriptElement extends PathElement {
-    type: 'js' | 'ts'
-}
-
-interface BuildDependency {
-    module_name: string
-    version: string
-}
-
-export interface BuildConfig {
-    defaultConfig: {
-        useHMR: boolean
-        buildMode: "development"
-        buildEntry: string
-        scriptEntry: string
-        buildDir: string
-        dependencies: BuildDependency[]
-    }
-    libraries: PathElement[]
-    resources: PathElement[]
-    scripts: ScriptElement[]
-}
-
-export function getBuildConfig(): BuildConfig {
-    const pwd = (globalObject as any).projectPath ?? process.cwd()
-    const configFile = path.join(pwd, 'build.config')
-
-    if (!fs.existsSync(configFile)) {
-        throw new Error('未找到项目配置文件，请先初始化项目')
-    }
-
-    return JSON.parse(fs.readFileSync(configFile) as any)
+export function parseJsonWithComments(jsonStr: string) {
+    return JSON.parse(String(jsonStr).replace(/\/\/.*|\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, "$1"))
 }

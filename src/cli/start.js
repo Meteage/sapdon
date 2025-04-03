@@ -2,14 +2,14 @@
 import { program } from 'commander'
 import inquirer from 'inquirer'
 import path from 'path'
-import os from 'os'
-import { globalObject, initMojangPath, initNPMProject, initProject, readPackageJson } from './init.js'
+import { globalObject, initNPMProject, initProject, readPackageJson } from './init.js'
 import { buildProject, projectCanBuild } from './build.js'
-import { getBuildConfig, readFile } from "./utils.js"
+import { readFile } from "./utils.js"
 import fs from "fs"
 import { fileURLToPath } from "url"
 import { writeLib } from './dev-server/syncFiles.js'
 import { initResourceDir } from './res/server.js'
+import { hmr } from './dev-server/hmr.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -105,7 +105,6 @@ async function start() {
             const projectPath = path.join(process.cwd(), projectName)
             console.log('项目路径:', projectPath)
             initProject(projectPath, answers)
-            initMojangPath(projectPath)
             writeLib(projectPath)
         })
     })
@@ -117,6 +116,7 @@ async function start() {
         initResourceDir()
         if (projectCanBuild(projectPath)) {
             buildProject(projectPath, path.basename(projectPath))
+            hmr(projectPath, projectName)
         }
     })
 
@@ -149,28 +149,6 @@ async function start() {
             console.error("读取build.config文件时出错:", error)
             return
         }
-
-        inquirer.prompt([
-            {
-                type: "input",
-                name: "mojangPath",
-                message: "Mojang Path (must end with LocalState/games/com.mojang/):",
-                default: path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
-            },
-            {
-                type: "input",
-                name: "mojangBetaPath",
-                message: "Mojang Beta Path (must end with LocalState/games/com.mojang/):",
-                default: path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
-            }
-        ]).then((answers) => {
-            try {
-                fs.writeFileSync(buildConfigPath, JSON.stringify({ ...buildConfigData, ...answers }, null, 2), 'utf-8')
-                console.log("build.config文件已更新。")
-            } catch (error) {
-                console.error("写入build.config文件时出错:", error)
-            }
-        })
     })
 
     program.parse(program.argv)

@@ -112,3 +112,10 @@ npm update sapdon
 
 ## ts支持
 [quick start](./doc/sapdon-ts.md)
+
+## 编译 Sapdon
+1. 安装依赖：`npm install`
+2. 编译：`npm run build`
+    1. 查看详细输出 `npm run build -- verbose`
+    2. 保存中间文件夹 `dist` `npm run build -- keep`
+    3. 你也可以组合两个参数 `npm run build -- keep verbose`

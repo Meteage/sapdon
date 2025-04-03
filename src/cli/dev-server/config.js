@@ -1,3 +1,3 @@
 export const devServerConfig = {
-    port: 49037
+    port: 49037,
 }

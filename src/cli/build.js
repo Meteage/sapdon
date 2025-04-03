@@ -1,5 +1,5 @@
 import path from 'path'
-import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder, asyncImport } from "./utils.js"
+import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder } from "./utils.js"
 import { generateAddon } from './load.js'
 
 import {
@@ -18,12 +18,15 @@ import ts from '@rollup/plugin-typescript'
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths'
 import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
+import terser from '@rollup/plugin-terser'
+
 import { syncDevFilesServer } from './dev-server/syncFiles.js'
-import { hmr } from './dev-server/hmr.js'
 import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
 import { GRegistryServer } from '../core/registry.js'
 import { UISystemRegistryServer } from '../core/ui/registry/uiSystemRegistry.js'
+import { getBuildConfig } from './meta/buildConfig.js'
+import { getBuildDirBp, getProjectPath } from './init.js'
 
 
 // 获取当前文件的目录路径
@@ -43,13 +46,11 @@ const rollupIgnores = [
 
 //脚本打包器
 export const scriptBundler = {
-    __projectPath: path.join(__dirname, '../../'),
-
-    js: async (source, target, tname='index.js', sname='index.js') => {
-        const tmpFile = path.join(scriptBundler.__projectPath, '.tmp', `sapdon-${crypto.randomUUID()}.js`)
+    js: async (source, target, sourcemap) => {
+        const buildConfig = getBuildConfig()
         try {
             const bundle = await rollup({
-                input: path.join(source, sname),
+                input: source,
                 plugins: [
                     nodeResolve({
                         preferBuiltins: true
@@ -59,6 +60,9 @@ export const scriptBundler = {
                     //@ts-ignore
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
+                    ...(buildConfig.buildOptions.buildMode === 'development' ? [] : [
+                        terser(),
+                    ]),
                 ],
                 external(name) {
                     for (const candidate of rollupIgnores) {
@@ -71,29 +75,24 @@ export const scriptBundler = {
             })
     
             await bundle.write({
-                file: tmpFile,
+                file: target,
                 format: 'esm',
+                sourcemap,
             })
     
             bundle.close()
-            fs.cpSync(tmpFile, path.join(target, tname))
         } catch (e) {
             console.error(e)
-        } finally {
-            fs.rmSync(tmpFile, {
-                recursive: true,
-                force: true
-            })
         }
     },
 
     //ts先通过rollup处理后再复制
-    ts: async (source, target, tname='index.js', sname='index.ts') => {
-        // console.log(source, target, tname)
-        const tmpFile = path.join(scriptBundler.__projectPath, '.tmp', `sapdon-${crypto.randomUUID()}.js`)
+    ts: async (source, target, sourcemap) => {
+        const projectPath = getProjectPath()
+        const buildConfig = getBuildConfig()
         try {
             const bundle = await rollup({
-                input: path.join(source, sname),
+                input: source,
                 plugins: [
                     paths(),
                     nodeResolve({
@@ -101,13 +100,16 @@ export const scriptBundler = {
                     }),
                     //@ts-ignore
                     ts({
-                        tsconfig: path.join(scriptBundler.__projectPath, 'tsconfig.json'),
+                        tsconfig: path.join(projectPath, 'tsconfig.json'),
                     }),
                     //@ts-ignore
                     commonjs(),
                     //@ts-ignore
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
+                    ...(buildConfig.buildOptions.buildMode === 'development' ? [] : [
+                        terser(),
+                    ]),
                 ],
                 external(name) {
                     for (const candidate of rollupIgnores) {
@@ -120,29 +122,35 @@ export const scriptBundler = {
             })
     
             await bundle.write({
-                file: tmpFile,
+                file: target,
                 format: 'esm',
+                sourcemap,
             })
     
             bundle.close()
-            fs.cpSync(tmpFile, path.join(target, tname))
         } catch (e) {
             console.error(e)
-        } finally {
-            fs.rmSync(tmpFile, {
-                recursive: true,
-                force: true
-            })
         }
-    }
+    },
+
+    any: async (a, b) => {
+        const buildConfig = getBuildConfig()
+        buildConfig.buildOptions.useJs
+            ? await scriptBundler.js(a, b)
+            : await scriptBundler.ts(a, b)
+    },
 }
 
-async function bundleScripts(projectPath, scriptPath, element) {
-    const sourcePath = path.join(projectPath, element.path)
-    const elementType = element.type || 'js'
-
-    scriptBundler.__projectPath = projectPath
-    scriptBundler[elementType](sourcePath, scriptPath)
+async function bundleScripts(useJs=false) {
+    const elementType = useJs ? 'js' : 'ts'
+    const projectPath = getProjectPath()
+    const buildConfig = getBuildConfig() 
+    const { scriptEntry, scriptOutput, buildMode } = buildConfig.buildOptions
+    scriptBundler[elementType](
+        path.join(projectPath, scriptEntry),
+        path.join(getBuildDirBp(), scriptOutput),
+        buildMode === 'development' ? true : false
+    )
 }
 
 async function runOnChild(targetFilePath) {
@@ -152,24 +160,18 @@ async function runOnChild(targetFilePath) {
 }
 
 async function runScript(src) {
-    if (src.endsWith('.ts')) {
-        const randomName = '.' + crypto.randomUUID() + '.js'
-        const sourceDir = path.dirname(src)
-        const sourceFileName = src.replace(sourceDir, '')
-        const targetFilePath = path.join(sourceDir, '.tmp', randomName)
+    const randomName = '.' + crypto.randomUUID() + '.js'
+    const targetFilePath = path.join(path.dirname(src), '.tmp', randomName)
 
-        await scriptBundler.ts(sourceDir, sourceDir + '/.tmp', randomName, sourceFileName)
-        try {
-            await runOnChild(targetFilePath)
-        } catch (e) {
-            console.error(e)
-        } finally {
-            fs.rmSync(targetFilePath, { force: true })
-        }
-        return
+    await scriptBundler.any(src, targetFilePath)
+    try {
+        await runOnChild(targetFilePath)
+    } catch (e) {
+        console.error(e)
+    } finally {
+        fs.rmSync(targetFilePath, { force: true })
     }
-
-    await runOnChild(src)
+    return
 }
 
 export function projectCanBuild(projectPath) {
@@ -199,18 +201,17 @@ export function projectCanBuild(projectPath) {
  */
 export const buildProject = async (projectPath, projectName) => {
     //读取build.config文件
-    const buildConfigPath = path.join(projectPath, "build.config")
-    const buildConfig = JSON.parse(readFile(buildConfigPath))
+    const buildConfig = getBuildConfig()
     //读取mod.info文件
     const modInfoPath = path.join(projectPath, "mod.info")
     const modInfo = JSON.parse(readFile(modInfoPath))
     const min_engine_version = versionStringToArray(modInfo.min_engine_version)
 
-    const buildDirPath = path.join(projectPath, buildConfig.defaultConfig.buildDir)
+    const buildDirPath = path.join(projectPath, buildConfig.buildOptions.buildDir)
     const buildBehDirPath = path.join(buildDirPath, `${projectName}_BP/`)
     const buildResDirPath = path.join(buildDirPath, `${projectName}_RP/`)
 
-    const absoluteModPath = path.join(projectPath, buildConfig.defaultConfig.buildEntry)
+    const absoluteModPath = path.join(projectPath, buildConfig.buildOptions.buildEntry)
 
     if (!server.isListening()) {
         //生成manifest.json文件
@@ -224,8 +225,8 @@ export const buildProject = async (projectPath, projectName) => {
                 {
                     min_engine_version: min_engine_version,
                 },
-                buildConfig.defaultConfig.dependencies,
-                buildConfig.defaultConfig.scriptEntry
+                buildConfig.buildOptions.dependencies,
+                buildConfig.buildOptions.scriptEntry
             )
 
             const resManifest = generateResManifest(
@@ -250,11 +251,10 @@ export const buildProject = async (projectPath, projectName) => {
         copyFileSync(packIconPath, path.join(buildBehDirPath, "pack_icon.png"))
         copyFileSync(packIconPath, path.join(buildResDirPath, "pack_icon.png"))
 
-        const resources = buildConfig.resources
-        resources.forEach(element => {
-            const sourcePath = path.join(projectPath, element.path)
-            copyFolder(sourcePath, buildResDirPath)
-        })
+        // 现在只有一个resource
+        const resource = buildConfig.buildOptions.resource
+        const sourcePath = path.join(projectPath, resource.path)
+        copyFolder(sourcePath, buildResDirPath)
 
         // 在客户端启动前启动服务器
         startDevServer()
@@ -262,23 +262,17 @@ export const buildProject = async (projectPath, projectName) => {
         UISystemRegistryServer.startServer()
         server.handle('submit', () => {
             //只有当buildMode为development时才加载用户modjs文件
-            if (buildConfig.defaultConfig.buildMode === "development") {
+            if (buildConfig.buildOptions.buildMode === "development") {
                 //动态加载用户modjs文件
                 generateAddon(absoluteModPath, buildDirPath, projectName)
             }
         })
-
-        hmr(projectPath, projectName)
     }
 
-    const scripts = buildConfig.scripts
-    const scriptPath = path.join(buildBehDirPath, "scripts/")
-
-    for (const element of scripts) {
-        await bundleScripts(projectPath, scriptPath, element)
-    }
-
+    // buildEntry (有可能生成ts或js文件, 所以需要先编译)
     await runScript(absoluteModPath)
+    // scriptEntry
+    await bundleScripts(buildConfig.buildOptions.useJs)
     await syncDevFilesServer(projectPath, projectName)
 }
 

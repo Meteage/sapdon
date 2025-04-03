@@ -1,5 +1,7 @@
 {
     "compilerOptions": {
+        "rootDir": "src",
+        "target": "ESNext",
         "allowJs": true,
         "declaration": false,
         "outDir": "dist",
@@ -23,8 +25,8 @@
             "@sapdon/cli/*": [
                 "./src/cli/*"
             ],
-            "@sapdon/utils": [
-                "./src/utils/index.js"
+            "@sapdon/utils/*": [
+                "./src/utils/*"
             ]
         }
     },

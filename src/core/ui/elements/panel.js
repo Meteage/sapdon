@@ -6,6 +6,11 @@ import { Layout } from "../properties/layout.js";
 import { UIElement } from "./uiElement.js";
 
 export class Panel extends UIElement{
+    /**
+     * 
+     * @param {*} id 
+     * @param {*} [template] 
+     */
     constructor(id,template){
         super(id,"panel",template);
         this.control = new Control();
