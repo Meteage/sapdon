@@ -1,4 +1,4 @@
-import { serialize } from "@utils"
+import { serialize } from "../utils/index.js"
 import { cliRequest } from "../cli/dev-server/client.js"
 import { server } from "../cli/dev-server/server.js"
 import { UISystemRegistry } from "./ui/registry/uiSystemRegistry.js"
@@ -57,7 +57,7 @@ export class GRegistryServer {
 }
 
 export namespace registry {
-    export function sumbit() {
+    export function submit() {
         GRegistry.submit()
         UISystemRegistry.submit()
         cliRequest('submit', {})

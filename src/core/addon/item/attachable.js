@@ -1,4 +1,4 @@
-import { Serializer } from "@utils"
+import { Serializer } from "../../../utils/index.js"
 export class AddonAttachable {
       /**
      * 可附着物类 继承客户端实体

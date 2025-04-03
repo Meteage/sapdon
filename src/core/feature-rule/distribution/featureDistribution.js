@@ -1,5 +1,5 @@
 import { CoordinateDistribution } from "./coordinateDistribution.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../../utils/index.js"
 
 /**
  * 表示功能规则分布配置的类

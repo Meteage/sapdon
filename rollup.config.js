@@ -4,7 +4,7 @@ import ts from '@rollup/plugin-typescript'
 import { typescriptPaths as paths } from 'rollup-plugin-typescript-paths'
 import json from '@rollup/plugin-json'
 import dts from 'rollup-plugin-dts'
-import terser from '@rollup/plugin-terser'
+// import terser from '@rollup/plugin-terser'
 
 export default [
     {
@@ -21,7 +21,7 @@ export default [
             ts(),
             commonjs(),
             json(),
-            terser(),
+            // terser(),
         ]
     },
     {
@@ -89,7 +89,7 @@ export default [
             ts(),
             commonjs(),
             json(),
-            terser(),
+            // terser(),
         ],
         external: [
             /\@minecraft/,

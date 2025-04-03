@@ -1,5 +1,5 @@
 import { BiomeFilter } from "./biomeFilter.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../../utils/index.js"
 
 /**
  * 表示功能规则生成条件的类

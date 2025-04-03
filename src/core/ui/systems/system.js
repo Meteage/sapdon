@@ -1,5 +1,5 @@
 import { UISystemRegistry } from "../registry/uiSystemRegistry.js";
-import { Serializer } from "@utils"
+import { Serializer } from "../../../utils/index.js"
 
 // UI 文件核心类
 export class UISystem {

@@ -1,5 +1,5 @@
 import { AddonEntity, AddonEntityDefinition, AddonEntityDescription } from "../addon/entity/entity.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 export class BasicEntity {
     /**

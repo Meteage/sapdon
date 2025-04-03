@@ -1,6 +1,6 @@
 import http from 'http'
 import { devServerConfig } from './config.js'
-import { decode } from '@utils'
+import { decode } from '../../utils/index.js'
 
 const {
     port

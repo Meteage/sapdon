@@ -1,4 +1,4 @@
-import { Serializer } from "@utils"
+import { Serializer } from "../../../utils/index.js"
 
 /**
  * 表示生物群系过滤条件的类

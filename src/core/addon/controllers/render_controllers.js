@@ -1,4 +1,4 @@
-import { serialize, Serializer } from "@utils"
+import { serialize, Serializer } from "../../../utils/index.js"
 
 /**
  * 表示 Minecraft 插件中的渲染控制器组。

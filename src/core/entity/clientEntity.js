@@ -1,5 +1,5 @@
 import { AddonClientEntity, AddonClientEntityDefinition, AddonClientEntityDescription } from "../addon/entity/clientEntity.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 /**
  * ClientEntity 类，用于表示客户端实体。

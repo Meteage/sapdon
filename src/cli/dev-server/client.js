@@ -1,4 +1,4 @@
-import { encode } from '@utils'
+import { encode } from '../../utils/index.js'
 import { devServerConfig } from './config.js'
 
 const {

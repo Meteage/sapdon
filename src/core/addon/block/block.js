@@ -1,5 +1,5 @@
 import { AddonMenuCategory } from "../menuCategory.js";
-import { Serializer } from "@utils"
+import { Serializer } from "../../../utils/index.js"
 
 export class AddonBlock {
     /**

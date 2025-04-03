@@ -1,4 +1,4 @@
-import { Serializer, serialize } from "@utils";
+import { Serializer, serialize } from "../../utils/index.js";
 import { AddonBlock, AddonBlockDefinition, AddonBlockDescription } from "../addon/block/block.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
 

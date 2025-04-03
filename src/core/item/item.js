@@ -1,7 +1,7 @@
 import { ItemComponent } from "./itemComponents.js";
 import { AddonItem, AddonItemDefinition, AddonItemDescription } from "../addon/item/item.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 export class Item {
     /**

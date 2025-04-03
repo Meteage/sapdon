@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const templateMapping = {
-    js: 'test_sapdon',
+    js: 'js_sapdon',
     ts: 'ts_sapdon'
 }
 
@@ -59,7 +59,7 @@ export const initNPMProject = (projectPath, data) => {
         return
     }
     //模版目录
-    const templateDir = path.join(__dirname, "../templates/test_sapdon")
+    const templateDir = path.join(__dirname, "../templates/js_sapdon")
     copyFolder(templateDir, projectPath)
 
     //生成模组介绍文件

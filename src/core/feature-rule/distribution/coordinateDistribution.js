@@ -1,4 +1,4 @@
-import { Serializer } from "@utils"
+import { Serializer } from "../../../utils/index.js"
 
 /**
  * 表示单个坐标轴（x/y/z）分布规则的类

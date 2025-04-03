@@ -1,4 +1,4 @@
-import { Serializer } from "@utils";
+import { Serializer } from "../../utils/index.js";
 
 export class AddonBiome {
     constructor(format_version,definition){

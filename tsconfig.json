@@ -7,22 +7,23 @@
         "moduleResolution": "nodenext",
         "strict": true,
         "resolveJsonModule": true,
+        "experimentalDecorators": true,
         "types": [
             "@minecraft/server",
             "@minecraft/server-ui",
             "node"
         ],
         "paths": {
-            "@core/*": [
+            "@sapdon/core/*": [
                 "./src/core/*"
             ],
-            "@oc/*": [
+            "@sapdon/oc/*": [
                 "./src/oc/*"
             ],
-            "@cli/*": [
+            "@sapdon/cli/*": [
                 "./src/cli/*"
             ],
-            "@utils": [
+            "@sapdon/utils": [
                 "./src/utils/index.js"
             ]
         }

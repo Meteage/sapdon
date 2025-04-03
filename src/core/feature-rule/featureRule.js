@@ -1,7 +1,7 @@
 import { AddonFeatureRule, AddonFeatureRuleDecription, AddonFeatureRuleDenifition } from "../addon/featureRule.js";
 import { FeatureConditions } from "./condition/featureConditions.js";
 import { FeatureDistribution } from "./distribution/featureDistribution.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 export class FeatureRule {
   constructor(identifier,places_feature) {

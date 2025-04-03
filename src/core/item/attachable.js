@@ -1,5 +1,5 @@
 import { AddonAttachable, AddonAttachableDefinition, AddonAttachableDescription } from "../addon/item/attachable.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 export class Attachable extends AddonAttachableDescription{
     constructor(identifier){

@@ -1,9 +1,10 @@
+import { ConstructorOf } from './type.js'
+import { isRawJSON } from './rawTypes.js'
 import {
-    ConstructorOf,
     getMetadata,
     getOrCreateMetadata,
-    isRawJSON
-} from "@utils"
+} from "./core.js"
+
 
 export interface ISerializer {
     (instance: any): object
@@ -67,17 +68,20 @@ export function Serializable(serializer: ISerializer = defaultSerializer) {
  * @param target 
  * @param ctx 
  */
-export function Serializer(target: CallableFunction, ctx: DecoratorContext) {
-    if (ctx.kind !== 'method') {
-        throw new Error('Serializer decorator can only be applied to methods')
-    }
+// export function Serializer(target: CallableFunction, ctx: DecoratorContext) {
+//     if (ctx.kind !== 'method') {
+//         throw new Error('Serializer decorator can only be applied to methods')
+//     }
 
-    const ctor = Reflect.getPrototypeOf(target)?.constructor as ConstructorOf<any>
-    if (!ctor) {
-        throw new Error('Cannot serialize an instance of an anonymous class')
-    }
+//     const ctor = Reflect.getPrototypeOf(target)?.constructor as ConstructorOf<any>
+//     if (!ctor) {
+//         throw new Error('Cannot serialize an instance of an anonymous class')
+//     }
 
-    serializerMapping.set(ctor, target as ISerializer)
+//     serializerMapping.set(ctor, target as ISerializer)
+// }
+export const Serializer: MethodDecorator = (target, prop, desc) => {
+    console.log(target)
 }
 
 export function serialize<R, T extends object>(inst: T): R {

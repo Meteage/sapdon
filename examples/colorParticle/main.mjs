@@ -32,4 +32,4 @@ dummy.resource.addParticleEffect("color_particle", "sapdon:color_particle");
 dummy.resource.setScript("animate",["particle_player"]);
 
 // 提交所有注册
-registry.sumbit();
+registry.submit();

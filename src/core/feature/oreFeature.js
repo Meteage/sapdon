@@ -1,5 +1,5 @@
 import { AddonOreFeature, AddonOreFeatureDefinition, AddonOreFeatureDescription } from "../addon/feature/oreFeature.js";
-import { Serializer, serialize } from "@utils"
+import { Serializer, serialize } from "../../utils/index.js"
 
 export class OreFeature {
     constructor(identifier,count,replace_rules){

@@ -45,8 +45,46 @@ const rollupIgnores = [
 export const scriptBundler = {
     __projectPath: path.join(__dirname, '../../'),
 
-    js: (source, target) => {
-        copyFolder(source, target)
+    js: async (source, target, tname='index.js', sname='index.js') => {
+        const tmpFile = path.join(scriptBundler.__projectPath, '.tmp', `sapdon-${crypto.randomUUID()}.js`)
+        try {
+            const bundle = await rollup({
+                input: path.join(source, sname),
+                plugins: [
+                    nodeResolve({
+                        preferBuiltins: true
+                    }),
+                    //@ts-ignore
+                    commonjs(),
+                    //@ts-ignore
+                    json(),
+                    // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
+                ],
+                external(name) {
+                    for (const candidate of rollupIgnores) {
+                        if (name.includes(candidate)) {
+                            return true
+                        }
+                    }
+                    return false
+                }
+            })
+    
+            await bundle.write({
+                file: tmpFile,
+                format: 'esm',
+            })
+    
+            bundle.close()
+            fs.cpSync(tmpFile, path.join(target, tname))
+        } catch (e) {
+            console.error(e)
+        } finally {
+            fs.rmSync(tmpFile, {
+                recursive: true,
+                force: true
+            })
+        }
     },
 
     //ts先通过rollup处理后再复制
