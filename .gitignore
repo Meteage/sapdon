@@ -3,4 +3,5 @@ node_modules/
 src/cli/build.config
 biocraft/
 examples/thaumcraft
+/dist
 /workspace
