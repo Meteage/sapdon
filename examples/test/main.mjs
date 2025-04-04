@@ -1,28 +1,30 @@
-import { BlockComponent } from "../../src/core/block/blockComponent.js";
-import { ItemComponent } from "../../src/core/item/ItemComponents.js";
-import { RecipeTags } from "../../src/core/addon/recipe/data.js";
-import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
-import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
-import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
-import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
-import { BlockWire } from "./lib/wire.js";
-import { NativeEntityData } from "../../src/core/entity/data/NativeEntityData.js";
-import { EntityComponent } from "../../src/core/entity/componets/EntityComponet.js";
-import { FollowMobBehavior } from "../../src/core/entity/behavior/follow_mod.js";
-import { Navigation } from "../../src/core/entity/navigation/walk.js";
-import { BiomeAPI } from "../../src/core/factory/BiomeFactory.js";
-import { BiomeComponent } from "../../src/core/biome/biomeComponent.js";
-import { FeatureAPI } from "../../src/core/factory/FeatureFactory.js";
-import { BiomeFilter } from "../../src/core/feature_rule/condition/BiomeFilter.js";
-import { CoordinateDistribution } from "../../src/core/feature_rule/distribution/CoordinateDistribution.js";
-import { Guidebook } from "../../src/core/ui/systems/guidebook.js";
-import { Image, Label, Panel } from "../../src/core/index.js";
-import { StackPanel } from "../../src/core/ui/elements/StackPanel.js";
-import { Text } from "../../src/core/ui/Properties/Text.js";
-import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
-import { Layout } from "../../src/core/ui/Properties/Layout.js";
-
-
+import {
+    BlockComponent,
+    ItemComponent,
+    RecipeTags,
+    BlockAPI,
+    ItemAPI,
+    RecipeAPI,
+    EntityAPI,
+    BlockWire,
+    NativeEntityData,
+    EntityComponent,
+    FollowMobBehavior,
+    Navigation,
+    BiomeAPI,
+    BiomeComponent,
+    FeatureAPI,
+    BiomeFilter,
+    CoordinateDistribution,
+    Guidebook,
+    Image,
+    Label,
+    Panel,
+    StackPanel,
+    Text,
+    Sprite,
+    Layout,
+} from "@sapdon/core"
 
 ItemAPI.createItem("sapdon:test_item", "items", "masterball").addComponent(
 	ItemComponent.combineComponents(

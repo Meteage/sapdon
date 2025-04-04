@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url'
 import { pathNotExist, copyFolder, saveFile } from './utils.js'
 import fs from "fs"
 import cp from "child_process"
-import os from "os"
+import { getBuildConfig } from './meta/buildConfig.js'
+import { cacheSync } from '@sapdon/utils/cache.js'
 
 // 获取当前文件的路径
 const __filename = fileURLToPath(import.meta.url)
@@ -14,16 +15,6 @@ const __dirname = path.dirname(__filename)
 const templateMapping = {
     js: 'js_sapdon',
     ts: 'ts_sapdon'
-}
-
-export function initMojangPath(projectPath) {
-    const mojangPath = path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
-    const betaPath = path.join(os.homedir(), "AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/")
-    const buildConfigPath = path.join(projectPath, './build.config')
-    const buildConfig = JSON.parse(fs.readFileSync(buildConfigPath))
-    buildConfig.mojangPath = mojangPath
-    buildConfig.betaPath = betaPath
-    saveFile(buildConfigPath, JSON.stringify(buildConfig, null, 2))
 }
 
 export const initProject = (projectPath, data) => {
@@ -88,3 +79,31 @@ export const readPackageJson = (dir) => {
 }
 
 export const globalObject = {}
+
+export function getProjectPath() {
+    const projectPath = globalObject.projectPath ?? process.cwd()
+    if (!fs.existsSync(path.join(projectPath, "build.config"))) {
+        throw new Error("无效的项目路径")
+    }
+
+    return projectPath
+}
+
+export function getProjectName() {
+    return cacheSync(
+        'projectName',
+        () => path.basename(getProjectPath())
+    )
+}
+
+export function getBuildDirBp() {
+    const { buildDir } = getBuildConfig().buildOptions
+    const name = getProjectName()
+    return path.join(getProjectPath(), buildDir, name + '_bp')
+}
+
+export function getBuildDirRp() {
+    const { buildDir } = getBuildConfig().buildOptions
+    const name = getProjectName()
+    return path.join(getProjectPath(), buildDir, name + '_rp')
+}

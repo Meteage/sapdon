@@ -1,13 +1,8 @@
-import { serialize } from "../utils/index.js"
+import { serialize } from "@sapdon/utils/index.js"
 import { cliRequest } from "../cli/dev-server/client.js"
 import { server } from "../cli/dev-server/server.js"
 import { UISystemRegistry } from "./ui/registry/uiSystemRegistry.js"
-
-export class RemoteLogger {
-    static log(...info: any[]) {
-        registry.log(...info)
-    }
-}
+import { handleRemoteLogger } from "@sapdon/cli/remoteLogger/server.js"
 
 const clientRegistryData: any[] = []
 
@@ -50,9 +45,7 @@ export class GRegistryServer {
             this.dataList = data
         })
 
-        server.handle('log', (...info) => {
-            console.log.apply(console, info)
-        })
+        server.handle('remote-logger', handleRemoteLogger)
     }
 }
 
@@ -61,9 +54,5 @@ export namespace registry {
         GRegistry.submit()
         UISystemRegistry.submit()
         cliRequest('submit', {})
-    }
-
-    export function log(...info: any[]) {
-        cliRequest('log', ...info)
     }
 }

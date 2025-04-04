@@ -3,7 +3,7 @@ import path from 'path'
 import { classStr } from './fileResource.js'
 import lodash from 'lodash'
 import cp from 'child_process'
-import { getBuildConfig } from '../utils.js'
+import { getBuildConfig } from '../meta/buildConfig.js'
 
 const debounce = lodash.debounce
 
@@ -130,8 +130,8 @@ export function watchResourceDir() {
 
 export function initResourceDir() {
     // js 项目无法使用资源目录短链接
-    const { defaultConfig } = getBuildConfig()
-    if (defaultConfig.buildEntry.endsWith('js')) {
+    const { buildOptions } = getBuildConfig()
+    if (buildOptions.buildEntry.endsWith('js')) {
         return
     }
 
@@ -146,5 +146,5 @@ export function initResourceDir() {
     }
 
     const resourceHint = generateResourceHint(resDir)
-    generateHintFile(resourceHint, path.join(cwd, 'res.ts'))
+    generateHintFile(resourceHint, path.join(cwd, 'res.hint.ts'))
 }

@@ -11,19 +11,28 @@ export interface ISerializer {
 }
 
 const rawTypes = [
-    'string', 'boolean', 'number', 'undefined'
+    'boolean', 'number'
+]
+
+const transferableTypes = [
+    'string', 'undefined'
 ]
 
 export function jsonEncoderReplacer(_: string, v: any) {
-    if (typeof v === null) {
+    const typeOf = typeof v
+    if (typeOf === null) {
         return null
     }
 
-    if (rawTypes.includes(typeof v)) {
+    if (transferableTypes.includes(typeOf)) {
+        return v
+    }
+
+    if (rawTypes.includes(typeOf)) {
         return JSON.rawJSON(v)
     }
 
-    if (typeof v === 'object') {
+    if (typeOf === 'object') {
         if (JSON.isRawJSON(v)) {
             return v
         }
@@ -36,7 +45,7 @@ export function jsonEncoderReplacer(_: string, v: any) {
         return v
     }
 
-    if (typeof v === 'bigint') {
+    if (typeOf === 'bigint') {
         return JSON.rawJSON(v.toString())
     }
 
@@ -80,8 +89,13 @@ export function Serializable(serializer: ISerializer = defaultSerializer) {
 
 //     serializerMapping.set(ctor, target as ISerializer)
 // }
-export const Serializer: MethodDecorator = (target, prop, desc) => {
-    console.log(target)
+export const Serializer: MethodDecorator = (target, prop) => {
+    const ctor = target.constructor as ConstructorOf<any>
+    if (!ctor) {
+        throw new Error('Cannot serialize an instance of an anonymous class')
+    }
+
+    serializerMapping.set(ctor, (target as any)[prop] as ISerializer)
 }
 
 export function serialize<R, T extends object>(inst: T): R {
@@ -92,10 +106,8 @@ export function serialize<R, T extends object>(inst: T): R {
 
     const serializer = <ISerializer> getMetadata(ctor)?.[serializerSymbol]
         ?? serializerMapping.get(ctor)
-        // 兼容旧版本， 未来会移除
-        ?? (inst as any).toJson?.bind?.(inst)
         ?? defaultSerializer
-    return serializer(inst) as R
+    return serializer.call(inst, inst) as R
 }
 
 export const jsonEncodeDecoder: EncodeDecoder<any, string> = {
