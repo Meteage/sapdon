@@ -1,0 +1,31 @@
+{
+  "format_version": "1.10.0",
+  "minecraft:client_entity": {
+    "description": {
+      "identifier": "sapdon:color_particle",
+      "textures": {
+        "default": "textures/entity/none"
+      },
+      "materials": {
+        "default": "entity_alphatest"
+      },
+      "geometry": {
+        "default": "geometry.dummy"
+      },
+      "render_controllers": [
+        "controller.render.cow"
+      ],
+      "animations": {
+        "particle_player": "animation.color_particle.loop"
+      },
+      "particle_effects": {
+        "color_particle": "sapdon:color_particle"
+      },
+      "scripts": {
+        "animate": [
+          "particle_player"
+        ]
+      }
+    }
+  }
+}

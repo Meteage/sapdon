@@ -68,7 +68,7 @@
                   {
                     "title": {
                       "type": "label",
-                      "text": "我的表单主体内容",
+                      "text": "我的表单主体内容test",
                       "controls": [
                         {
                           "debug_board": {

@@ -1,0 +1,60 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "colorParticle_BP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "d470e531-97b9-4c7e-9e09-3bee441c2256",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "行为模块",
+      "type": "data",
+      "uuid": "4f7ea18f-51d1-49be-b212-87cbc27666a7",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "description": "脚本模块",
+      "type": "script",
+      "uuid": "d8f73cff-e659-44be-a9fe-fab7e92d02ba",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/index.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.8.0"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}

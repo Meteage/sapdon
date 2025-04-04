@@ -1,0 +1,8 @@
+{
+  "identifier": "server_form:server_form",
+  "namespace": "server_form",
+  "name": "server_form",
+  "path": "ui/",
+  "elements": {},
+  "animations": {}
+}

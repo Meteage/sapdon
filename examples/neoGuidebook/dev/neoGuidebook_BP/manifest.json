@@ -1,0 +1,64 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "neoGuidebook_BP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "7e2a3817-d778-4a3c-908a-b8de09a5c6f4",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "行为模块",
+      "type": "data",
+      "uuid": "8184e272-ae68-4263-ad5c-20e87194376d",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "description": "脚本模块",
+      "type": "script",
+      "uuid": "cf4bb254-5434-4fbe-9754-16e687960447",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/index.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "1.3.0"
+    },
+    {
+      "module_name": "@minecraft/server",
+      "version": "1.17.0"
+    }
+  ],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "2.0.1"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/Meteage/sapdon"
+  }
+}

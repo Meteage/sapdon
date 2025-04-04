@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "neoGuidebook_RP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "353bb951-2436-4a0c-876b-14f79f56c6a4",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "1e197911-4487-4d6f-8cad-42f577c16235",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "2.0.1"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/Meteage/sapdon"
+  }
+}

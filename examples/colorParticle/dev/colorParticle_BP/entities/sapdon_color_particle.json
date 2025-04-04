@@ -1,0 +1,70 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "sapdon:color_particle",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "properties": {
+        "sapdon:float_color_red": {
+          "type": "float",
+          "range": [
+            0.001,
+            0.999
+          ],
+          "default": 0.999,
+          "client_sync": true
+        },
+        "sapdon:float_color_green": {
+          "type": "float",
+          "range": [
+            0.001,
+            0.999
+          ],
+          "default": 0.999,
+          "client_sync": true
+        },
+        "sapdon:float_color_blue": {
+          "type": "float",
+          "range": [
+            0.001,
+            0.999
+          ],
+          "default": 0.999,
+          "client_sync": true
+        },
+        "sapdon:float_lifetime": {
+          "type": "float",
+          "range": [
+            0.001,
+            99.999
+          ],
+          "default": 4.999,
+          "client_sync": true
+        }
+      }
+    },
+    "components": {
+      "minecraft:physics": {
+        "has_collision": false,
+        "has_gravity": false,
+        "push_towards_closest_space": false
+      },
+      "minecraft:pushable": {
+        "is_pushable": false,
+        "is_pushable_by_piston": false
+      },
+      "minecraft:collision_box": {
+        "width": 0.001,
+        "height": 0.001
+      },
+      "minecraft:damage_sensor": {
+        "triggers": {
+          "deals_damage": false
+        }
+      }
+    },
+    "component_groups": {},
+    "events": {}
+  }
+}

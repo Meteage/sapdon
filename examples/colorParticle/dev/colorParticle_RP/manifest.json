@@ -1,0 +1,44 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "colorParticle_RP",
+    "description": "A new sapdon project",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "uuid": "3979c21d-4da3-4bec-994a-2cdc1dee1eb4",
+    "min_engine_version": [
+      1,
+      19,
+      50
+    ]
+  },
+  "modules": [
+    {
+      "description": "资源模块",
+      "type": "resources",
+      "uuid": "14c46ed6-0f7a-4e7a-a7cd-12f9d14622a1",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "authors": [
+      "@sapdon"
+    ],
+    "license": "MIT",
+    "generated_with": {
+      "sapdon": [
+        "1.0.0"
+      ]
+    },
+    "product_type": "addon",
+    "url": "https://github.com/junjun260/sapdon"
+  }
+}

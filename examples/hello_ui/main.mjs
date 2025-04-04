@@ -21,7 +21,7 @@ const test_ui_root = new Panel("root_panel").enableDebug();
             .addStack(["100%","70%"],
                   //文本元素
                   new Label("title").enableDebug().setText(
-                        new Text().setText("我的表单主体内容")
+                        new Text().setText("我的表单主体内容test")
                   )
             )
             //添加新Stack 水平占比100% 垂直占比 20%
