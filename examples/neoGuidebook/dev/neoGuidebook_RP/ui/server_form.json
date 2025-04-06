@@ -116,7 +116,7 @@
           "controls": [
             {
               "custom_ui_neo_guidebook@custom_ui_template": {
-                "$main_content": "neo_guidebook.guidebook_root_panel",
+                "$main_content": "neo_guidebook.neoguidebook_root_panel",
                 "$binding_text": "neo_guidebook"
               }
             }

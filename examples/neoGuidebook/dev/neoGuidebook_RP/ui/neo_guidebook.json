@@ -4,8 +4,8 @@
     "type": "stack_panel",
     "orientation": "horizontal",
     "size": [
-      "90%",
-      "90%"
+      "100%",
+      "100%"
     ],
     "bindings": [
       {
@@ -47,7 +47,7 @@
     "$page_left_content | default": "",
     "$page_right_content | default": ""
   },
-  "guidebook_root_panel": {
+  "neoguidebook_root_panel": {
     "type": "panel",
     "size": [
       320,
@@ -55,7 +55,10 @@
     ],
     "controls": [
       {
-        "book_background@book.book_background": {}
+        "book_background": {
+          "type": "image",
+          "texture": "textures/ui/book_back"
+        }
       },
       {
         "book_page_stack_panel": {
@@ -152,43 +155,25 @@
         }
       },
       {
-        "page_content_root": {
+        "data_text_panel": {
           "type": "panel",
           "size": [
-            "90%",
-            "90%"
+            64,
+            64
           ],
+          "anchor_from": "top_middle",
+          "anchor_to": "top_middle",
           "layer": 5,
           "controls": [
             {
-              "label_text_panel": {
-                "type": "panel",
-                "size": [
-                  32,
-                  8
-                ],
-                "anchor_from": "bottom_middle",
-                "anchor_to": "bottom_middle",
-                "controls": [
-                  {
-                    "page_content": {
-                      "type": "label",
-                      "text": "#form_text",
-                      "color": [
-                        0,
-                        0,
-                        0
-                      ]
-                    }
-                  }
+              "data_content": {
+                "type": "label",
+                "text": "#form_text",
+                "color": [
+                  0,
+                  0,
+                  0
                 ]
-              }
-            },
-            {
-              "page_index_0@page_template": {
-                "$binding_text": "page_index0",
-                "$page_left_content": "book_intro_panel",
-                "$page_right_content": "book_chapter_panel"
               }
             }
           ]
@@ -248,7 +233,7 @@
           "controls": [
             {
               "prev_button@server_form.sapdon_form_button_factory": {
-                "$binding_button_text": "test1",
+                "$binding_button_text": "prev_button",
                 "$default_texture": "textures/ui/book_pageleft_default",
                 "$hover_texture": "textures/ui/book_pageleft_hover",
                 "$pressed_texture": "textures/ui/book_pageleft_pressed"
@@ -274,7 +259,7 @@
           "controls": [
             {
               "next_button@server_form.sapdon_form_button_factory": {
-                "$binding_button_text": "test2",
+                "$binding_button_text": "next_button",
                 "$default_texture": "textures/ui/book_pageright_default",
                 "$hover_texture": "textures/ui/book_pageright_hover",
                 "$pressed_texture": "textures/ui/book_pageright_pressed"
@@ -282,10 +267,57 @@
             }
           ]
         }
+      },
+      {
+        "home_button@server_form.sapdon_form_button_factory": {
+          "offset": [
+            0,
+            0
+          ],
+          "size": [
+            "8%",
+            "8%"
+          ],
+          "layer": 5,
+          "anchor_from": "bottom_middle",
+          "anchor_to": "bottom_middle",
+          "$binding_button_text": "home_button",
+          "$default_texture": "textures/gui/anvil-arrow-default",
+          "$hover_texture": "textures/gui/anvil-arrow-pressed"
+        }
+      },
+      {
+        "page_context_panel": {
+          "type": "panel",
+          "layer": 5,
+          "controls": [
+            {
+              "page_index_0@page_template": {
+                "$binding_text": "page_index0",
+                "$page_left_content": "page_index0book_intro_panel",
+                "$page_right_content": "page_index0book_chapter_panel"
+              }
+            },
+            {
+              "page_index_1@page_template": {
+                "$binding_text": "page_index1",
+                "$page_left_content": "page_index1conten1",
+                "$page_right_content": "page_index1none"
+              }
+            },
+            {
+              "page_index_2@page_template": {
+                "$binding_text": "page_index2",
+                "$page_left_content": "page_index2conten2",
+                "$page_right_content": "page_index2none"
+              }
+            }
+          ]
+        }
       }
     ]
   },
-  "book_intro_panel": {
+  "page_index0book_intro_panel": {
     "type": "stack_panel",
     "orientation": "vertical",
     "size": [
@@ -339,7 +371,7 @@
       }
     ]
   },
-  "book_chapter_panel": {
+  "page_index0book_chapter_panel": {
     "type": "stack_panel",
     "orientation": "vertical",
     "size": [
@@ -536,5 +568,43 @@
         }
       }
     ]
+  },
+  "page_index1conten1": {
+    "type": "panel",
+    "controls": [
+      {
+        "t1": {
+          "type": "label",
+          "text": "第一章节内容\n介绍\n1\n2",
+          "color": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    ]
+  },
+  "page_index1none": {
+    "type": "panel"
+  },
+  "page_index2conten2": {
+    "type": "panel",
+    "controls": [
+      {
+        "t1": {
+          "type": "label",
+          "text": "第二章节内容\n介绍\n1\n2",
+          "color": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    ]
+  },
+  "page_index2none": {
+    "type": "panel"
   }
 }

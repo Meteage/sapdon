@@ -1,15 +1,20 @@
-import { Image, ItemAPI, ItemComponent, Label, Panel, StackPanel, UIElement } from "../../src/core/index.js";
+import { Image, ItemAPI, ItemComponent, Label, Panel, ServerUISystem, StackPanel, UIElement } from "../../src/core/index.js";
 import { Control } from "../../src/core/ui/Properties/Control.js";
 import { Layout } from "../../src/core/ui/Properties/Layout.js";
 import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
 import { Text } from "../../src/core/ui/Properties/Text.js";
+import { UISystemRegistry } from "../../src/core/ui/registry/UISystemRegistry.js";
 import { Guidebook } from "../../src/core/ui/systems/guidebook.js";
+import { NeoGuidebook } from "../../src/core/ui/systems/NeoGuidebook.js";
 
 const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "apple");
 neoGuidebook.addComponent(ItemComponent.setCustomComponents(["sapdon:guibook"]));
 
+const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook","ui/");
+
+
 // 创建一个新的指南
-const neo_guidebook = new Guidebook("neo_guidebook:neo_guidebook", "ui/");
+//const neo_guidebook = new Guidebook("neo_guidebook:neo_guidebook", "ui/");
 
 //1
 //本书介绍页
@@ -64,4 +69,8 @@ book_chapter.addStack(["100%","90%"],
 )
 
 neo_guidebook.addPage("page_index0",book_intro,book_chapter);
+neo_guidebook.addPage("page_index1",new Panel("conten1").addControls([new Label("t1").setText(new Text().setText("第一章节内容\n介绍\n1\n2").setColor([0,0,0]))]),new Panel("none"));
+neo_guidebook.addPage("page_index2",new Panel("conten2").addControls([new Label("t1").setText(new Text().setText("第二章节内容\n介绍\n1\n2").setColor([0,0,0]))]),new Panel("none"));
+
+
 
