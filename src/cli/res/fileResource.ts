@@ -11,7 +11,7 @@ export class FileResource  {
      * 使用 FileResource.get(uri) 方法获取实例
      * @param origin 
      */
-    constructor(public origin: string) {
+    private constructor(public origin: string) {
         this.origin = origin
         FileResource.cache[origin] = this
     }

@@ -1,71 +1,70 @@
-import { Entity, Player, system, world } from '@minecraft/server'
 import { Optional } from './optional.js'
 
-export interface Component {
-    onTick(manager: ComponentManager, en: Optional<Entity>): void
-    detach(manager: ComponentManager): void
-    getManager(): ComponentManager
-    getEntity(): Optional<Entity>
+export interface Component<Actor> {
+    onTick(dt: number): void
+    detach(): void
+    getManager(): ComponentManager<Actor>
+    getEntity(): Optional<Actor>
 }
 
-export interface BasicComponent extends Component {
-    onAttach(manager: ComponentManager): boolean | void | Promise<boolean|void>
-    onDetach(manager: ComponentManager): void | Promise<void>
+export interface BasicComponent<Actor> extends Component<Actor> {
+    onAttach(manager: ComponentManager<Actor>): boolean | void | Promise<boolean|void>
+    onDetach(manager: ComponentManager<Actor>): void | Promise<void>
 }
 
 const REFLECT_MANAGER = Symbol('reflect-manager')
 const REFLECT_ENTITY = Symbol('reflect-entity')
 
-export class CustomComponent implements Component {
-    [REFLECT_MANAGER]?: ComponentManager
-    [REFLECT_ENTITY]: Optional<Entity> = Optional.none()
+export class CustomComponent<Actor> implements Component<Actor> {
+    [REFLECT_MANAGER]?: ComponentManager<Actor>
+    [REFLECT_ENTITY]: Optional<Actor> = Optional.none()
 
-    onTick(manager: ComponentManager, en: Optional<Entity>): void {}
+    onTick(dt: number): void {}
 
-    detach(manager: ComponentManager) {
+    detach() {
         const ctor = Object.getPrototypeOf(this).constructor
-        return manager.detachComponent(ctor)
+        return this.getManager().detachComponent(ctor)
     }
 
-    getManager(): ComponentManager {
-        return this[REFLECT_MANAGER] as ComponentManager
+    getManager(): ComponentManager<Actor> {
+        return this[REFLECT_MANAGER] as ComponentManager<Actor>
     }
 
-    getEntity(): Optional<Entity> {
-        return this[REFLECT_ENTITY]
+    getEntity(): Optional<Actor> {
+        return this[REFLECT_ENTITY] as Optional<Actor>
     }
 }
 
-export class BaseComponent extends CustomComponent implements BasicComponent {
-    onAttach(manager: ComponentManager): boolean | void | Promise<boolean|void> {}
-    onDetach(manager: ComponentManager): void | Promise<void> {}
+export class BaseComponent<Actor> extends CustomComponent<Actor> implements BasicComponent<Actor> {
+    onAttach(manager: ComponentManager<Actor>): boolean | void | Promise<boolean|void> {}
+    onDetach(manager: ComponentManager<Actor>): void | Promise<void> {}
 }
 
-export interface ComponentCtor<T extends Component | BasicComponent = Component> {
+export interface ComponentCtor<Actor, T extends Component<Actor> | BasicComponent<Actor> = Component<Actor>> {
     new(...args: any[]): T
 }
 
-export class ComponentManager {
+export class ComponentManager<Actor> {
     static profilerEnable = false
     static readonly global = new ComponentManager()
 
-    #components = new Map<ComponentCtor, Component>()
+    #components = new Map<ComponentCtor<Actor>, Component<Actor>>()
     #prependTicks: Function[] = []
     #nextTicks: Function[] = []
 
-    getComponentUnsafe(ctor: ComponentCtor) {
+    getComponentUnsafe(ctor: ComponentCtor<Actor>) {
         return this.#components.get(ctor)
     }
 
-    getComponent<T extends Component>(ctor: ComponentCtor<T>): Optional<T> {
+    getComponent<T extends Component<Actor>>(ctor: ComponentCtor<Actor, T>): Optional<T> {
         return Optional.some(this.#components.get(ctor)) as Optional<T>
     }
 
-    getComponents(...ctor: ComponentCtor[]): (Component|undefined)[] {
+    getComponents(...ctor: ComponentCtor<Actor>[]): (Component<Actor>|undefined)[] {
         return ctor.map(c => this.#components.get(c))
     }
 
-    async #attachComponent<T>(ctor: ComponentCtor, component: Component | BasicComponent, shouldRebuild=true): Promise<Optional<T>> {
+    async #attachComponent<T>(ctor: ComponentCtor<Actor>, component: Component<Actor> | BasicComponent<Actor>, shouldRebuild=true): Promise<Optional<T>> {
         let init = !this.#components.get(ctor)
 
         if (!init && shouldRebuild) {
@@ -88,8 +87,8 @@ export class ComponentManager {
         return Optional.some(component) as Optional<T>
     }
 
-    async attachComponent(...component: Component[]) {
-        const components: Optional<Component>[] = []
+    async attachComponent(...component: Component<Actor>[]) {
+        const components: Optional<Component<Actor>>[] = []
         for (const obj of component) {
             components.push(await this.#attachComponent(
                 Object.getPrototypeOf(obj).constructor,
@@ -100,7 +99,7 @@ export class ComponentManager {
         return components
     }
 
-    async getOrCreate<T extends Component>(ctor: ComponentCtor<T>, ...args: any[]): Promise<Optional<T>> {
+    async getOrCreate<T extends Component<Actor>>(ctor: ComponentCtor<Actor, T>, ...args: any[]): Promise<Optional<T>> {
         let component = this.#components.get(ctor) as T
 
         if (component) {
@@ -110,8 +109,8 @@ export class ComponentManager {
         return this.#attachComponent(ctor, new ctor(...args))
     }
 
-    async detachComponent(ctor: ComponentCtor) {
-        const component = this.#components.get(ctor) as BasicComponent
+    async detachComponent(ctor: ComponentCtor<Actor>) {
+        const component = this.#components.get(ctor) as BasicComponent<Actor>
         if (component && 'onDetach' in component) {
             await component.onDetach(this)
         }
@@ -127,19 +126,19 @@ export class ComponentManager {
         return this.#components.keys()
     }
 
-    has(ctor: ComponentCtor) {
+    has(ctor: ComponentCtor<Actor>) {
         return this.#components.has(ctor)
     }
 
-    afterTick(fn: (en: Optional<Entity>) => void) {
+    afterTick(fn: (en: Optional<Actor>) => void) {
         this.#nextTicks.push(fn)
     }
 
-    beforeTick(fn: (en: Optional<Entity>) => void) {
+    beforeTick(fn: (en: Optional<Actor>) => void) {
         this.#prependTicks.unshift(fn)
     }
 
-    handleTicks(en: Entity) {
+    handleTicks(en: Actor, dt: number) {
         for (const prependTick of this.#prependTicks) {
             this.profiler(() => prependTick.call(null, Optional.some(en)))
             // prependTick.call(null, Optional.some(en))
@@ -164,7 +163,7 @@ export class ComponentManager {
 
             if (onTick) {
                 this.profiler(
-                    () => onTick.call(component, this, Optional.some(en)),
+                    () => onTick.call(component, dt),
                     component
                 )
                 // onTick.call(component, this, Optional.some(en))
@@ -178,7 +177,7 @@ export class ComponentManager {
         this.#nextTicks.length = 0
     }
 
-    update<T extends Component>(ctor: ComponentCtor<T>, fn: (component: T) => void) {
+    update<T extends Component<Actor>>(ctor: ComponentCtor<Actor, T>, fn: (component: T) => void) {
         const component = this.#components.get(ctor)
 
         if (component) {
@@ -189,7 +188,7 @@ export class ComponentManager {
         return false
     }
 
-    profiler(fn: Function, component?: Component, name?: string) {
+    profiler(fn: Function, component?: Component<Actor>, name?: string) {
         if (!ComponentManager.profilerEnable) {
             return fn()
         }
@@ -206,16 +205,16 @@ export class ComponentManager {
     }
 }
 
-type RequireComponentsParam = ComponentCtor | [ComponentCtor, ...any[]]
+type RequireComponentsParam<Actor> = ComponentCtor<Actor> | [ComponentCtor<Actor>, ...any[]]
 const REQUIRED_COMPONENTS = Symbol('REQUIRED_COMPONENTS')
 
-export interface RequiredComponent extends BasicComponent {
-    getComponent<T extends Component>(ctor: ComponentCtor): T
+export interface RequiredComponent<Actor> extends BasicComponent<Actor> {
+    getComponent<T extends Component<Actor>>(ctor: ComponentCtor<Actor>): T
 }
 
-export function RequireComponents(...params: RequireComponentsParam[]) {
-    return class CRequiredComponent extends BaseComponent implements RequiredComponent {
-        [REQUIRED_COMPONENTS] = new Map<ComponentCtor, Component>()
+export function RequireComponents<Actor>(...params: RequireComponentsParam<Actor>[]) {
+    return class CRequiredComponent extends BaseComponent<Actor> implements RequiredComponent<Actor> {
+        [REQUIRED_COMPONENTS] = new Map<ComponentCtor<Actor>, Component<Actor>>()
         
         constructor() {
             super()
@@ -230,47 +229,9 @@ export function RequireComponents(...params: RequireComponentsParam[]) {
             }
         }
     
-        getComponent<T extends Component>(ctor: ComponentCtor): T {
+        getComponent<T extends Component<Actor>>(ctor: ComponentCtor<Actor>): T {
             return this[REQUIRED_COMPONENTS].get(ctor) as T
         }
     }
     
-}
-
-export namespace oc {
-    const table = new Map<string, ComponentManager>()
-
-    export function addEntity(entityId: string) {
-        const manager = new ComponentManager()
-        table.set(entityId, manager)
-        return manager
-    }
-
-    export function removeEntity(entityId: string) {
-        const uid = entityId
-        const manager = table.get(uid)
-        manager?.clear()
-        table.delete(uid)
-    }
-
-    export function getManager(entityId: string) {
-        return table.get(entityId) ?? addEntity(entityId)
-    }
-
-    export function tick() {
-        for (const [ id, manager ] of table.entries()) {
-            const entity = world.getEntity(id)
-            if (entity) {
-                manager.handleTicks(entity)
-            }
-        }
-    }
-
-    export function start() {
-        system.runInterval(tick)
-    }
-
-    export function toPlayer(entity: Entity): Optional<Player> {
-        return Optional.some(world.getAllPlayers().find(p => p.id === entity.id) as Player)
-    }
 }

@@ -1,3 +1,5 @@
+const isOptional = Symbol('isOptional')
+
 export class Optional<T = any> {
 
     static none<T>(): Optional<T> {
@@ -9,8 +11,10 @@ export class Optional<T = any> {
     }
 
     constructor(
-        private value: T
+        private value: T,
     ) {}
+
+    private [isOptional] = isOptional
 
     unwrap(): T {
         if (!this.isEmpty()) {
@@ -28,12 +32,13 @@ export class Optional<T = any> {
         return this.value ?? other
     }
 
-    use(fn: (v: T) => void, self?: any) {
+    use<R=any>(fn: (v: T) => R, self?: any): R extends Optional ? R : Optional<R> {
         if (!this.isEmpty()) {
-            fn.call(self, this.value)
-            return true
+            const result = fn.call(self, this.value)
+            //@ts-ignore
+            return result[isOptional] ? result : Optional.some(fn.call(self, this.value))
         }
 
-        return false
+        return Optional.none() as any
     }
 }

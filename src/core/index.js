@@ -23,7 +23,6 @@ export {
 export * from './factory/itemExtra.js'
 export * from '../utils/index.js'
 export { registry } from './registry.js'
-export * from './math/index.js'
 
 //ui export 
 export * from "./ui/export.js"
