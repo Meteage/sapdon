@@ -103,5 +103,5 @@ export function asyncImport(path) {
 }
 
 export function parseJsonWithComments(jsonStr: string) {
-    return JSON.parse(String(jsonStr).replace(/\/\/.*|\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, "$1"))
+    return JSON.parse(String(jsonStr).replace(/\/\/.*|\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/g, "$1"))
 }

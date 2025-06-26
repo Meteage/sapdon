@@ -1,7 +1,6 @@
 import { Level } from './level.js'
 import { ConstructorOf } from '../utils/type.js'
 
-
 export interface GameInstance<A=any> {
     onStart(conf: any): void
     shutdown(): void

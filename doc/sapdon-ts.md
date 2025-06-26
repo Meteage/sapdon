@@ -27,7 +27,7 @@ registry.setup()
 
 
 ## OC (Object - Component)
-sapdon通过 `@sapdon/oc` 为sapi提供了一些高级功能, 比如:
+sapdon通过 `@sapdon/runtime` 为sapi提供了一些高级功能, 比如:
 - 实体组件系统
 - 组件间通信
 
@@ -35,7 +35,7 @@ sapdon通过 `@sapdon/oc` 为sapi提供了一些高级功能, 比如:
 
 ```ts
 import { world, system } from '@minecraft/server'
-import { oc, CustomComponent } from '@sapdon/oc'
+import { oc, CustomComponent } from '@sapdon/runtime'
 
 world.afterEvents.worldInitialize.subscribe(oc.start)
 
@@ -61,4 +61,4 @@ manager.attachComponent(new MyComponent())
 如果你想看它到底是怎么回事,可以从 `examples/oc-core` 开始了解
 
 ## [Object - Component](./oc/index.md)
-关于 `@sapdon/oc` 的一切
+关于 `@sapdon/runtime` 的一切

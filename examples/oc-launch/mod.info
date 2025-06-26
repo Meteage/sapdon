@@ -1,7 +1,7 @@
 {
-  "name": "oc-core",
-  "description": "核心使用示例",
-  "author": "RGB",
+  "name": "oc-launch",
+  "description": "easy start up",
+  "author": "RGB39",
   "version": "1.0.0",
   "min_engine_version": "1.19.50",
   "language": "ts"

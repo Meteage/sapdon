@@ -33,6 +33,10 @@ export class CustomComponent<Actor> implements Component<Actor> {
     getEntity(): Optional<Actor> {
         return this[REFLECT_ENTITY] as Optional<Actor>
     }
+
+    lazyGet<T extends ComponentCtor<unknown>>(ctor: T) {
+        return lazyGet(this, ctor)
+    }
 }
 
 export class BaseComponent<Actor> extends CustomComponent<Actor> implements BasicComponent<Actor> {
@@ -64,11 +68,17 @@ export class ComponentManager<Actor> {
         return ctor.map(c => this.#components.get(c))
     }
 
-    async #attachComponent<T>(ctor: ComponentCtor<Actor>, component: Component<Actor> | BasicComponent<Actor>, shouldRebuild=true): Promise<Optional<T>> {
+    #attachComponent<T>(ctor: ComponentCtor<Actor>, component: Component<Actor> | BasicComponent<Actor>, shouldRebuild=true): Optional<T> {
+        //@ts-ignore
+        if (!component[REFLECT_MANAGER]) {
+            //@ts-ignore
+            component[REFLECT_MANAGER] = this
+        }
+
         let init = !this.#components.get(ctor)
 
         if (!init && shouldRebuild) {
-            await this.detachComponent(ctor) 
+            this.detachComponent(ctor) 
             init = true
         }
 
@@ -80,17 +90,17 @@ export class ComponentManager<Actor> {
         }
 
         if (init && 'onAttach' in component) {
-            await component.onAttach(this)   
+            component.onAttach(this)   
         }
 
         this.#components.set(ctor, component)
         return Optional.some(component) as Optional<T>
     }
 
-    async attachComponent(...component: Component<Actor>[]) {
+    attachComponent(...component: Component<Actor>[]) {
         const components: Optional<Component<Actor>>[] = []
         for (const obj of component) {
-            components.push(await this.#attachComponent(
+            components.push(this.#attachComponent(
                 Object.getPrototypeOf(obj).constructor,
                 obj
             ))
@@ -109,10 +119,10 @@ export class ComponentManager<Actor> {
         return this.#attachComponent(ctor, new ctor(...args))
     }
 
-    async detachComponent(ctor: ComponentCtor<Actor>) {
+    detachComponent(ctor: ComponentCtor<Actor>) {
         const component = this.#components.get(ctor) as BasicComponent<Actor>
         if (component && 'onDetach' in component) {
-            await component.onDetach(this)
+            component.onDetach(this)
         }
 
         return this.#components.delete(ctor)
@@ -148,15 +158,9 @@ export class ComponentManager<Actor> {
         for (const component of this.#components.values()) {
 
             //@ts-ignore
-            if (!component[REFLECT_ENTITY]) {
+            if (component[REFLECT_ENTITY].isEmpty()) {
                 //@ts-ignore
                 component[REFLECT_ENTITY] = Optional.some(en)
-            }
-
-            //@ts-ignore
-            if (!component[REFLECT_MANAGER]) {
-                //@ts-ignore
-                component[REFLECT_MANAGER] = this
             }
 
             const { onTick } = component
@@ -234,4 +238,34 @@ export function RequireComponents<Actor>(...params: RequireComponentsParam<Actor
         }
     }
     
+}
+
+/**
+ * 使用前请保证组件已存在
+ * @param manager 
+ * @param ctor 
+ * @returns 
+ */
+export function lazyGet<T extends ComponentCtor<unknown>>(component: Component<unknown>, ctor: T): InstanceType<T> {
+    let inst: any = null
+    return new Proxy(Object.prototype, {
+        get(_, p) {
+            if (inst) {
+                return inst[p]
+            }
+
+            inst = component.getManager().getComponentUnsafe(ctor as any)
+            return inst[p]
+        },
+        set(_, p, v) {
+            if (inst) {
+                inst[p] = v
+                return true
+            }
+
+            inst = component.getManager().getComponentUnsafe(ctor as any)
+            inst[p] = v
+            return true
+        }
+    }) as InstanceType<T>
 }

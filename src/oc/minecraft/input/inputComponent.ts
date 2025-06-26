@@ -1,32 +1,29 @@
 import { InputButton, ButtonState as MCButtonState, Entity, Player } from "@minecraft/server"
 import { PlayerInputComponent } from "../../input/base.js"
-import { Minecraft } from "../decorator.js"
-import { oc } from "../core.js"
+import { utils } from "../utils.js"
 import { Optional } from "../../../oc/optional.js"
 
-@Minecraft
 export class MinecraftPlayerInputComponent extends PlayerInputComponent<Entity> {
     private playerRef: Optional<Player> = Optional.none()
 
     onTick(): void {
-        if (!this.playerRef) {
-            this.getEntity().use(en => this.playerRef = oc.toPlayer(en))
+        if (this.playerRef.isEmpty()) {
+            this.getEntity().use(en => this.playerRef = utils.toPlayer(en))
+        } else {
+            this.syncAxisAndButtons()
         }
-
-        this.syncAxisAndButtons()
     }
 
     syncAxisAndButtons() {
-        this.playerRef.use(player => {
-            const inputInfo = player.inputInfo
-            const { x, y } = inputInfo.getMovementVector()
-            this.inputAxis('LStick', [ x, y ])
+        const player = this.playerRef.unwrap()
+        const inputInfo = player.inputInfo
+        const { x, y } = inputInfo.getMovementVector()
+        this.inputAxis('LStick', [ x, y ])
 
-            const JumpState = inputInfo.getButtonState(InputButton.Jump)
-            const SneakState = inputInfo.getButtonState(InputButton.Sneak)
+        const JumpState = inputInfo.getButtonState(InputButton.Jump)
+        const SneakState = inputInfo.getButtonState(InputButton.Sneak)
 
-            this.inputKey('Space', JumpState === MCButtonState.Pressed)
-            this.inputKey('LShift', SneakState === MCButtonState.Pressed)
-        })
+        this.inputKey('Space', JumpState === MCButtonState.Pressed)
+        this.inputKey('LShift', SneakState === MCButtonState.Pressed)
     }
 }

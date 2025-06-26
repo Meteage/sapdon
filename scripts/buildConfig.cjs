@@ -88,7 +88,7 @@ const ocConfig = {
         }),
         commonjs(),
         json(),
-        terser(),
+        // terser(),
     ]
 }
 

@@ -1,12 +1,12 @@
-import { readFileSync } from "fs"
 import { dirname } from "../utils.js"
 import path from "path"
 import fs from 'fs'
 import { getGamePath } from '../meta/versionType.js'
 import { getPackageJson } from "../meta/package.js"
+import { getBuildConfig } from "../meta/buildConfig.js"
 
 export async function syncDevFilesServer(projectPath, projectName) {
-    const buildConfig = JSON.parse(readFileSync(path.join(projectPath, "build.config")))
+    const buildConfig = getBuildConfig()
     const buildDir = path.join(projectPath, buildConfig.buildOptions.buildDir)
     const buildBehDirPath = path.join(buildDir, `${projectName}_BP`)
     const buildResDirPath = path.join(buildDir, `${projectName}_RP`)
@@ -22,7 +22,7 @@ export async function writeLib(projectPath) {
     const ocPath = path.join(rootDir, 'oc')
     const targetCorePath = path.join(projectModules, '@sapdon/core')
     const targetCliPath = path.join(projectModules, '@sapdon/cli')
-    const targetOcPath = path.join(projectModules, '@sapdon/oc')
+    const targetOcPath = path.join(projectModules, '@sapdon/runtime')
     const packageJson = getPackageJson()
 
     fs.cpSync(corePath, targetCorePath, { recursive: true, force: true })
@@ -40,7 +40,7 @@ export async function writeLib(projectPath) {
         version: packageJson.version,
     }))
     fs.writeFileSync(path.join(targetOcPath, 'package.json'), JSON.stringify({
-        name: '@sapdon/oc',
+        name: '@sapdon/runtime',
         main: 'index.js',
         version: packageJson.version,
     }))

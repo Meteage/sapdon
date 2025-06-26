@@ -3,6 +3,8 @@ import lodash from 'lodash'
 import { buildProject } from '../build.js'
 import { watchResourceDir } from '../res/server.js'
 import { getBuildConfig } from '../meta/buildConfig.js'
+import { syncDevFilesServer } from './syncFiles.js'
+import path from 'path'
 
 const debounce = lodash.debounce
 
@@ -14,10 +16,10 @@ export function hmr(projectPath, projectName) {
             if (!eventType || !filename) {
                 return
             }
-    
+
             if (
                 filename.startsWith('.') ||
-                filename.startsWith(buildDir)
+                filename.startsWith(path.join(buildDir, './'))
             ) {
                 return
             }
@@ -30,6 +32,7 @@ export function hmr(projectPath, projectName) {
             ) {
                 process.stdout.write(`File ${filename} changed, reloading...\r`)
                 await buildProject(projectPath, projectName)
+                await syncDevFilesServer(projectPath, projectName)
                 console.log(`Reloaded ${filename}`)
             }
         }), 1000)

@@ -1,10 +1,10 @@
-import { Entity, world, system, StartupEvent, Player } from "@minecraft/server"
-import { Minecraft, MinecraftMethod } from "./decorator.js"
+import { Entity, world, system, StartupEvent } from "@minecraft/server"
+import { Minecraft } from "./decorator.js"
 import { Level, Scheduler } from "../level.js"
 import { ComponentManager } from "../core.js"
-import { finalize, GameInstance, getGameInstance, getGameInstanceClass, initialize } from "../arch.js"
-import { Optional } from "../optional.js"
+import { GameInstance } from "../arch.js"
 
+@Minecraft
 export class MinecraftTickingScheduler implements Scheduler<string> {
 
     private _run: number = 0
@@ -56,6 +56,7 @@ export class MinecraftTickingScheduler implements Scheduler<string> {
 
 }
 
+@Minecraft
 export class MinecraftLevel extends Level<Entity> {
     readonly scheduler = new MinecraftTickingScheduler()
 
@@ -64,8 +65,7 @@ export class MinecraftLevel extends Level<Entity> {
     }
 }
 
-@Minecraft
-export class MinecraftGameInstance implements GameInstance {
+export abstract class MinecraftGameInstance implements GameInstance {
     level?: Level<Entity>
 
     setLevel(lvl: Level<Entity>): Level<Entity> {
@@ -78,55 +78,24 @@ export class MinecraftGameInstance implements GameInstance {
         return this.level as Level<Entity>
     }
 
+    /**
+     * 在 Startup 阶段完成时运行
+     * @param ev 
+     */
     onStart(ev: StartupEvent): void {
         this.setLevel(new MinecraftLevel())
+        system.runTimeout(() => this.afterStart(), 1)
     }
 
+    /**
+     * 在 shutdown 阶段运行
+     */
     shutdown(): void {
         this.level?.stop?.()
     }
-}
 
-export class oc {
-
-    @MinecraftMethod
-    static toPlayer(entity: Entity): Optional<Player> {
-        return Optional.some(world.getAllPlayers().find(p => p.id === entity.id) as Player)
-    }
-
-    @MinecraftMethod
-    static start() {
-        // @minecraft/server 2.0.0 and higher
-        if (system?.beforeEvents?.startup) {
-            system.beforeEvents.startup.subscribe(ev => {
-                const gameInstanceCls = getGameInstanceClass()
-                if (!gameInstanceCls) {
-                    throw new Error("No game instance class found")
-                }
-    
-                initialize(gameInstanceCls, ev)
-            })
-    
-            system.beforeEvents.shutdown.subscribe(ev => {
-                const gameInstance = getGameInstance()
-                if (gameInstance) {
-                    finalize(gameInstance)
-                }  
-            })
-        }
-
-        // @minecraft/server 1.18.0 and lower
-        if (world?.beforeEvents?.worldInitialize) {
-            world.beforeEvents.worldInitialize.subscribe(ev => {
-                const gameInstanceCls = getGameInstanceClass()
-                if (!gameInstanceCls) {
-                    throw new Error("No game instance class found")
-                }
-    
-                initialize(gameInstanceCls, ev)
-            })
-        }
-
-    }
-
+    /**
+     * 在 onStart 之后运行，用于绑定监听器等 (onStart时没有权限进行绑定)
+     */
+    afterStart(): void {}
 }

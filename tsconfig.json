@@ -19,7 +19,7 @@
             "@sapdon/core/*": [
                 "./src/core/*"
             ],
-            "@sapdon/oc/*": [
+            "@sapdon/runtime/*": [
                 "./src/oc/*"
             ],
             "@sapdon/cli/*": [

@@ -108,13 +108,14 @@ program.command("create <project-name>").description("Create a new project").act
     })
 })
 
-program.command("build <project-name>").description("Build the project").action((projectName) => {
+program.command("build <project-name>").description("Build the project").action((name) => {
     console.log("Building the project...")
-    const projectPath = path.join(process.cwd(), projectName)
+    const projectPath = path.join(process.cwd(), name)
+    const projectName = path.basename(projectPath)
     globalObject.projectPath = projectPath
     initResourceDir()
     if (projectCanBuild(projectPath)) {
-        buildProject(projectPath, path.basename(projectPath))
+        buildProject(projectPath, projectName)
         hmr(projectPath, projectName)
     }
 })

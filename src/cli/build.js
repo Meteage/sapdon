@@ -90,6 +90,12 @@ export const scriptBundler = {
     ts: async (source, target, sourcemap) => {
         const projectPath = getProjectPath()
         const buildConfig = getBuildConfig()
+        const targetOpt = {
+            file: target,
+            format: 'esm',
+            sourcemap,
+        }
+
         try {
             const bundle = await rollup({
                 input: source,
@@ -101,6 +107,7 @@ export const scriptBundler = {
                     //@ts-ignore
                     ts({
                         tsconfig: path.join(projectPath, 'tsconfig.json'),
+                        compilerOptions: { outDir: path.dirname(targetOpt.file) },
                     }),
                     //@ts-ignore
                     commonjs(),
@@ -120,12 +127,8 @@ export const scriptBundler = {
                     return false
                 }
             })
-    
-            await bundle.write({
-                file: target,
-                format: 'esm',
-                sourcemap,
-            })
+
+            await bundle.write(targetOpt)
     
             bundle.close()
         } catch (e) {
@@ -144,7 +147,7 @@ export const scriptBundler = {
 async function bundleScripts(useJs=false) {
     const elementType = useJs ? 'js' : 'ts'
     const projectPath = getProjectPath()
-    const buildConfig = getBuildConfig() 
+    const buildConfig = getBuildConfig()
     const { scriptEntry, scriptOutput, buildMode } = buildConfig.buildOptions
     scriptBundler[elementType](
         path.join(projectPath, scriptEntry),
@@ -226,7 +229,7 @@ export const buildProject = async (projectPath, projectName) => {
                     min_engine_version: min_engine_version,
                 },
                 buildConfig.buildOptions.dependencies,
-                buildConfig.buildOptions.scriptEntry
+                buildConfig.buildOptions.scriptOutput
             )
 
             const resManifest = generateResManifest(
