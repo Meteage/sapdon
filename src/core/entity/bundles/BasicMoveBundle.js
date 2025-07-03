@@ -1,3 +1,4 @@
+import { EntityComponent } from "../componets/entityComponet.js";
 import { BasicBundle } from "./basicBundle.js";
 
 //移动捆绑包

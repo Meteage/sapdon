@@ -2,6 +2,7 @@ import { Entity, Player, world } from '@minecraft/server'
 import { GameInstance, getGameInstance } from '../arch.js'
 import { utils } from './utils.js'
 import { ComponentCtor } from '../core.js'
+import { getMetadata, getOrCreateMetadata } from '../../utils/core.js'
 
 export function assertInMinecraft() {
     if (!world) {
@@ -24,13 +25,13 @@ export const MinecraftMain = (target: any) => {
     utils.start()
 
     //初始化组件，省去多余的初始化步骤
-    world.afterEvents.playerSpawn.subscribe(ev => getGameInstance()?.getLevel().getManager(ev.player.id).attachComponent(...dedup(playerSpawnComponents).map(c => Reflect.construct(c, []))))
+    world.afterEvents.playerSpawn.subscribe(ev => getGameInstance()?.getLevel().getManager(ev.player.id).attachComponent(...dedup(playerSpawnComponents).filter(c => getMetadata(c)?.spawnFilter?.(ev.player) ?? true).map(c => Reflect.construct(c, []))))
     world.afterEvents.entitySpawn.subscribe(ev => {
         if (ev.entity.typeId === 'minecraft:player') {
             return
         }
 
-        getGameInstance()?.getLevel().getManager(ev.entity.id).attachComponent(...dedup(entitySpawnComponents).map(c => Reflect.construct(c, [])))
+        getGameInstance()?.getLevel().getManager(ev.entity.id).attachComponent(...dedup(entitySpawnComponents).filter(c => getMetadata(c)?.spawnFilter?.(ev.entity) ?? true).map(c => Reflect.construct(c, [])))
     })
 }
 
@@ -52,4 +53,9 @@ export const EntitySpawned = (...deps: ComponentCtor<Player>[]) => (target: any)
 export const ActorSpawned = (...deps: ComponentCtor<Player>[]) => (target: any) => {
     playerSpawnComponents.push(...deps, target)
     entitySpawnComponents.push(...deps, target)
+}
+
+export const SpawnFilter = (filter: (entity: Entity) => boolean) => (target: any) => {
+    const metadata = getOrCreateMetadata(target)
+    metadata.spawnFilter = filter
 }

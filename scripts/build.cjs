@@ -41,15 +41,19 @@ async function build(type, execStr, taskName) {
 }
 
 async function startBuild() {
-    await build('cmd', 'tsc')
-    await build('cmd', 'tsc-alias')
-    await build('file', './scripts/buildTask.cjs', 'build production')
-    if (!args.includes('keep')) {
-        spinner.text = 'Cleaning up...'
-        fs.rmSync(path.join(__dirname, '../dist'), { recursive: true, force: true })
+    try {
+        await build('cmd', 'tsc')
+        await build('cmd', 'tsc-alias')
+        await build('file', './scripts/buildTask.cjs', 'build production')
+        if (!args.includes('keep')) {
+            spinner.text = 'Cleaning up...'
+            fs.rmSync(path.join(__dirname, '../dist'), { recursive: true, force: true })
+        }
+        spinner.stop()
+        console.log('\u001b[32mBuild successful!\u001b[0m')
+    } catch (error) {
+        spinner.fail(error)
     }
-    spinner.stop()
-    console.log('\u001b[32mBuild successful!\u001b[0m')
 }
 
 startBuild()

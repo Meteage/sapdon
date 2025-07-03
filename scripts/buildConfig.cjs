@@ -24,7 +24,7 @@ const startConfig = {
         }),
         commonjs(),
         json(),
-        // terser(),
+        terser(),
     ],
     external(name) {
         return deps.includes(name)
@@ -68,7 +68,7 @@ const coreConfig = {
         }),
         commonjs(),
         json(),
-        // terser(),
+        terser(),
     ]
 }
 
@@ -88,7 +88,7 @@ const ocConfig = {
         }),
         commonjs(),
         json(),
-        // terser(),
+        terser(),
     ]
 }
 

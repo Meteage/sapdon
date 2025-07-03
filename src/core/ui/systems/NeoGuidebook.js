@@ -1,18 +1,18 @@
-import { ButtonMapping } from "../ButtonMapping.js";
-import { DataBindingObject } from "../DataBindingObject.js";
-import { Button } from "../elements/Button.js";
-import { Image } from "../elements/Image.js";
-import { Label } from "../elements/Label.js";
-import { Panel } from "../elements/Panel.js";
-import { StackPanel } from "../elements/StackPanel.js";
-import { UIElement } from "../elements/UIElement.js";
-import { Control } from "../Properties/Control.js";
-import { Input } from "../Properties/Input.js";
-import { Layout } from "../Properties/Layout.js";
-import { Sprite } from "../Properties/Sprite.js";
-import { Text } from "../Properties/Text.js";
-import { ServerUISystem } from "./server_form.js";
-import { UISystem } from "./UISystem.js";
+import { ButtonMapping } from "../buttonMapping.js";
+import { DataBindingObject } from "../dataBindingObject.js";
+import { Button } from "../elements/button.js";
+import { Image } from "../elements/image.js";
+import { Label } from "../elements/label.js";
+import { Panel } from "../elements/panel.js";
+import { StackPanel } from "../elements/stackPanel.js";
+import { UIElement } from "../elements/uiElement.js";
+import { Control } from "../properties/control.js";
+import { Input } from "../properties/input.js";
+import { Layout } from "../properties/layout.js";
+import { Sprite } from "../properties/sprite.js";
+import { Text } from "../properties/text.js";
+import { ServerUISystem } from "./serverForm.js";
+import { UISystem } from "./system.js";
 
 
 const page_template = new StackPanel("page_template").setOrientation("horizontal")

@@ -1,5 +1,5 @@
-const { argv } = require('process')
 const rollup = require('rollup')
+
 const {
     startConfig,
     cliConfig,
@@ -26,8 +26,12 @@ const tasks = [
 
 async function runBuilds() {
     for (const task of tasks) {
-        const bundle = await rollup.rollup(task)
-        await bundle.write(task.output)
+        try {
+            const bundle = await rollup.rollup(task)
+            await bundle.write(task.output)
+        } catch (error) {
+            console.log(error)
+        }
     }
 }
 

@@ -18,14 +18,18 @@ export class GRegistry {
      * @param {string | object} data 实例 必须包含 toJson 方法
      */
     static register(name: string, root: string, path: string, data: string) {
-        data = data === 'string'
-            ? JSON.parse(data)
-            : serialize<object, object>(data as any)
         clientRegistryData.push({ name, root, path, data })
     }
 
     static submit() {
-        cliRequest('submitGregistry', clientRegistryData)
+        cliRequest('submitGregistry', clientRegistryData.map(item => {
+            const data = typeof item.data === 'string'
+                ? JSON.parse(item.data)
+                : serialize<object, object>(item.data as any)
+
+            item.data = data
+            return item
+        }))
     }
 }
 

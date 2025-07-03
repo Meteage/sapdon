@@ -118,7 +118,7 @@ export class AddonClientEntityDescription {
 
     /**
      * 添加渲染控制器
-     * @param {string} controller 渲染控制器路径
+     * @param {`controller.render.${string}`} controller 渲染控制器路径
      * @returns {AddonClientEntityDescription} 返回当前实例以支持链式调用
      */
     addRenderController(controller) {
@@ -156,7 +156,7 @@ export class AddonClientEntityDescription {
     /**
      * 设置脚本
      * @param {string} key 脚本键
-     * @param {string} value 脚本值
+     * @param {any} value 脚本值
      * @returns {AddonClientEntityDescription} 返回当前实例以支持链式调用
      */
     setScript(key, value) {

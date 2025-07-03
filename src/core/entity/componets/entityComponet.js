@@ -1,3 +1,5 @@
+import { RideableComponentDesc } from '../../type.js'
+
 export class EntityComponent {
   
   static setDamageSensor(deals_damage){
@@ -7,6 +9,39 @@ export class EntityComponent {
 				}
 			}
     );
+  }
+
+  /**
+   * @param {RideableComponentDesc} param0 
+   * @returns 
+   */
+  static setRideable({
+    controllingSeat = 1,
+    crouchingSkipInteract = true,
+    familyTypes = [ 'player' ],
+    interactText = 'drive',
+    onRiderEnterEvent,
+    onRiderExitEvent,
+    seatCount,
+    seats,
+    passengerMaxWidth,
+    pullInEntities,
+  }) {
+    return new Map([[
+        'minecraft:rideable',
+        {
+            "controlling_seat": controllingSeat,
+            "crouching_skip_interact": crouchingSkipInteract,
+            "family_types": familyTypes,
+            "interact_text": interactText,
+            "on_rider_enter_event": onRiderEnterEvent,
+            "on_rider_exit_event": onRiderExitEvent,
+            "seat_count": seatCount,
+            "seats": seats,
+            "passenger_max_width": passengerMaxWidth,
+            "pull_in_entities": pullInEntities,
+        }
+    ]])
   }
 
   static setMovement(speed){

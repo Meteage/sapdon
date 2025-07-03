@@ -1,26 +1,13 @@
-import { BlockComponent } from "./block/blockComponent.js"
-import { BlockAPI } from "./factory/blockFactory.js"
-import { EntityAPI } from "./factory/entityFactory.js"
-import { FeatureAPI } from "./factory/featureFactory.js"
-import { ItemAPI } from "./factory/itemFactory.js"
-import { RecipeAPI } from "./factory/recipeFactory.js"
-import { ItemComponent } from "./item/itemComponents.js"
-import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "./texture.js"
+export * from './addon/index.js'
+export * from './biome/index.js'
+export * from './block/index.js'
+export * from './entity/index.js'
+export * from './factory/index.js'
+export * from './feature/index.js'
+export * from './feature-rule/index.js'
+export * from './item/index.js'
+export * from './ui/index.js'
 
-export {
-    ItemAPI,
-    BlockAPI,
-    FeatureAPI,
-    EntityAPI,
-    RecipeAPI,
-    BlockComponent,
-    ItemComponent,
-    ItemTextureManager,
-    terrainTextureManager,
-    FlipbookTextures,
-}
-
-export * from './factory/itemExtra.js'
 export * from '../utils/index.js'
 export { registry } from './registry.js'
 

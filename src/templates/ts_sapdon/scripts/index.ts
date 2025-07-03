@@ -1,7 +1,9 @@
 import {
-    registerCustomBlockComponent,
-    registerCustomItemComponent
-} from './components/registry.js'
+    MinecraftMain,
+    MinecraftGameInstance,
+} from '@sapdon/runtime'
 
-registerCustomBlockComponent()
-registerCustomItemComponent()
+@MinecraftMain
+export class Main extends MinecraftGameInstance {
+    
+}

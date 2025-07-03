@@ -49,7 +49,7 @@ export const EntityAPI = {
      * @param {Object} options - 额外选项。
      * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
-    createEntity: function (identifier, texture, behData, resData, options = {}) {
+    createEntity: function (identifier, texture, behData = {}, resData = {}, options = {}) {
         if (!identifier || !texture) {
             throw new Error("必须提供 identifier 和 texture。");
         }
@@ -92,7 +92,7 @@ export const EntityAPI = {
      * @param {Object} resData - 实体的资源数据。
      * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
-    createDummyEntity: function (identifier, texture, options = {}, behData, resData) {
+    createDummyEntity: function (identifier, texture, options = {}, behData={}, resData={}) {
         if (!identifier || !texture) {
             throw new Error("必须提供 identifier 和 texture。");
         }

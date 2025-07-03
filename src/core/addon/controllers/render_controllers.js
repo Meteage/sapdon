@@ -1,3 +1,4 @@
+import { GRegistry } from "@sapdon/core/registry.js";
 import { serialize, Serializer } from "../../../utils/index.js"
 
 /**
@@ -5,6 +6,7 @@ import { serialize, Serializer } from "../../../utils/index.js"
  * 该类用于管理一组渲染控制器，并提供添加、设置和转换为 JSON 的方法。
  */
 export class AddonRenderControllerGroup {
+    static id = 0
     /**
      * 创建一个新的 AddonRenderControllerGroup 实例。
      * @param {string} format_version - 渲染控制器的格式版本。
@@ -22,6 +24,8 @@ export class AddonRenderControllerGroup {
          * @type {Map<string, AddonRenderController>}
          */
         this.render_controllers = render_controllers || new Map();
+
+        GRegistry.register('render' + AddonRenderControllerGroup.id++, 'resource', 'render_controllers/', this)
     }
 
     /**
@@ -70,7 +74,7 @@ export class AddonRenderController {
          * 渲染控制器的名称。
          * @type {string}
          */
-        this.name = `render_controller.${name}`;
+        this.name = `controller.render.${name}`;
 
         /**
          * 数组集合（例如纹理、几何体）。
@@ -88,18 +92,18 @@ export class AddonRenderController {
          * 用于渲染的材质列表。
          * @type {Array<string>}
          */
-        this.material = [];
+        this.materials = [];
 
         /**
          * 用于渲染的纹理列表。
          * @type {Array<string>}
          */
-        this.texture = [];
+        this.textures = [];
     }
 
     /**
      * 设置渲染控制器的默认几何体。
-     * @param {string} geometry - 要设置的几何体。
+     * @param {`geometry.${string}`} geometry - 要设置的几何体。
      */
     setGeometry(geometry) {
         this.geometry = geometry;
@@ -108,19 +112,20 @@ export class AddonRenderController {
 
     /**
      * 向材质列表中添加一个材质。
-     * @param {string} material - 要添加的材质。
+     * @template T
+     * @param {import("../../type.js").MaterialDesc<T>} material - 要添加的材质。
      */
     addMaterial(material) {
-        this.material.push(material);
+        this.materials.push(material);
         return this; // 支持链式调用
     }
 
     /**
      * 向纹理列表中添加一个纹理。
-     * @param {string} texture - 要添加的纹理。
+     * @param {`texture.${string}`} texture - 要添加的纹理。
      */
     addTexture(texture) {
-        this.texture.push(texture);
+        this.textures.push(texture);
         return this; // 支持链式调用
     }
 
@@ -161,8 +166,8 @@ export class AddonRenderController {
         return {
                 arrays: this.arrays,
                 geometry: this.geometry,
-                material: this.material,
-                texture: this.texture
+                materials: this.materials,
+                textures: this.textures
         };
     }
 }
