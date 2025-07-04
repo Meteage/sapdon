@@ -2,6 +2,12 @@ import { RideableComponentDesc } from '../../type.js'
 
 export class EntityComponent {
   
+  static setTypeFamily(family_arr) {
+    return new Map().set("minecraft:type_family", {
+      "family": family_arr
+    });
+  }
+
   static setDamageSensor(deals_damage){
     return new Map().set("minecraft:damage_sensor",{
 				"triggers": {

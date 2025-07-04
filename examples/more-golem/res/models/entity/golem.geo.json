@@ -1,0 +1,68 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.fram_golem",
+				"texture_width": 128,
+				"texture_height": 64,
+				"visible_bounds_width": 3,
+				"visible_bounds_height": 5,
+				"visible_bounds_offset": [0, 1.5, 0]
+			},
+			"bones": [
+				{
+					"name": "body",
+					"pivot": [0, 23, 0],
+					"cubes": [
+						{"origin": [-7, 8, -6], "size": [16, 16, 11], "uv": [0, 36]}
+					]
+				},
+				{
+					"name": "head",
+					"parent": "body",
+					"pivot": [0, 23, -2],
+					"cubes": [
+						{"origin": [-3, 24, -4.5], "size": [8, 8, 8], "uv": [12, 0]}
+					],
+					"locators": {
+						"lead": [0, 23, -2]
+					}
+				},
+				{
+					"name": "arm0",
+					"parent": "body",
+					"pivot": [0, 23, 0],
+					"cubes": [
+						{"origin": [-11, 9.5, -3], "size": [4, 16, 6], "uv": [80, 42]}
+					]
+				},
+				{
+					"name": "arm1",
+					"parent": "body",
+					"pivot": [0, 23, 0],
+					"cubes": [
+						{"origin": [9, 9.5, -3], "size": [4, 16, 6], "uv": [108, 42]}
+					]
+				},
+				{
+					"name": "leg0",
+					"parent": "body",
+					"pivot": [-4, 5, 0],
+					"cubes": [
+						{"origin": [-6.5, 0, -3], "size": [5, 8, 5], "uv": [80, 0]}
+					]
+				},
+				{
+					"name": "leg1",
+					"parent": "body",
+					"pivot": [5, 5, 0],
+					"mirror": true,
+					"cubes": [
+						{"origin": [2.5, 0, -3], "size": [5, 8, 5], "uv": [107, 0], "mirror": false}
+					]
+				}
+			]
+		}
+	]
+}

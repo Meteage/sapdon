@@ -8,6 +8,7 @@ export class NativeEntity {
             // 获取行为数据
             const behData = NativeEntityData.getDataById("beh", proto_id)?.["minecraft:entity"];
             if (!behData) {
+                
                 throw new Error(`Behavior data not found for proto_id: ${proto_id}`);
             }
 
