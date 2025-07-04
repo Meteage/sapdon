@@ -197,76 +197,9 @@ const fram_golem = EntityAPI.createNativeEntity("more_golem:frame_golem","minecr
       fram_golem.behavior.addComponent(
        map
       );
-/*
-      //最多控制16个
-      for(let i=0;i<(targetMaxCount-1);i++){
-        fram_golem.behavior.addComponentGroup(`more_golem:golem_${i}`,
-            new Map().set( "minecraft:behavior.nearest_attackable_target",{
-                "priority": 3,
-                "must_reach": true,
-                "must_see": true,
-                "entity_types": [
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "golem_target"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 0
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                },
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "more_golem:frame_golem"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 1
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                },
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "creeper"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 2
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                }
-                ]
-            })
-        )
-      }
-*/
+      fram_golem.behavior.addComponent(
+        
+      )
+
 // 提交所有注册
 registry.submit()

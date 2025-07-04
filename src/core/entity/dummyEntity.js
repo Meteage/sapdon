@@ -11,7 +11,14 @@ export class DummyEntity extends Entity{
                 EntityComponent.setPhysics(false,false),
                 EntityComponent.setPushable(false,false),
                 EntityComponent.setCollisionBox(0.001,0.001),
-                EntityComponent.setDamageSensor(false)
+                EntityComponent.setDamageSensor(false),
+                EntityComponent.setCustomHitTest([
+                    {
+						"pivot": [0, 100, 0],
+						"width": 0,
+						"height": 0
+				    }
+                ])
             )
         )
 
