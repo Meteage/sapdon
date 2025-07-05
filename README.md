@@ -119,3 +119,15 @@ npm update sapdon
     1. 查看详细输出 `npm run build -- verbose`
     2. 保存中间文件夹 `dist` `npm run build -- keep`
     3. 你也可以组合两个参数 `npm run build -- keep verbose`
+
+
+
+
+###(真正的教程)
+1.确保你已经安装了nodejs
+2.克隆本项目 命令 git clone https://github.com/Meteage/sapdon.git
+3.构建最新版本 在项目目录下运行命令 npm run build
+4.创建软连接 npm link
+5.创建你的项目 sapdon create <your-project-name>
+6.编写代码
+7.构建项目 sapdon build <your-project-name>
