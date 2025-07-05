@@ -16,7 +16,7 @@ renderControllers.addRenderController(
         .setGeometry('geometry.default')
 )
 
-export function createVehicle(id: string, tex: string, geo: string, fixAnim: string, interactText: string = 'Interact', speed = 0.8, seatHeight = 0.3, autoStep = 1.1) {
+export function createVehicle(id: string, tex: string, geo: string, fixAnim: string, interactText: string = 'Interact', speed = 0.8, seatHeight = 0.3, autoStep = 1.1, rotSensitivity = 2, renderMethod = 'entity_nocull') {
     const vehicle = EntityAPI.createEntity(id, tex)
 
     vehicle.behavior.addComponent(
@@ -35,10 +35,12 @@ export function createVehicle(id: string, tex: string, geo: string, fixAnim: str
                         max_rider_count: 1,
                         position: [-0.45, seatHeight, 0],
                     }
-                ]
+                ],
+                familyTypes: [ 'player' ]
             }),
+            EntityComponent.setTypeFamily([ 'vehicle' ]),
             EntityComponent.setMovement(speed),
-            EntityComponent.setMovementBasic(2.5),
+            EntityComponent.setMovementBasic(rotSensitivity),
             EntityComponent.setInputGroundControlled(),
             EntityComponent.setVariableMaxAutoStep(autoStep, autoStep, autoStep)
         )
@@ -46,7 +48,7 @@ export function createVehicle(id: string, tex: string, geo: string, fixAnim: str
 
     vehicle.resource
         .addGeometry('default', geo)
-        .addMaterial('default', 'entity_nocull')
+        .addMaterial('default', renderMethod)
         .addRenderController('controller.render.vehicle')
         .addAnimation('fix', fixAnim)
         .setScript('animate', [ 'fix' ])
