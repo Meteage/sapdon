@@ -1,4 +1,18 @@
 export class ItemComponent {
+
+  /**
+   * 自定义物品组件 
+   * [warning] 需要物品格式版本 format_version >1.21.90 and Scripting V2.0.0
+   * @param {string} component_id 组件标识符
+   * @param {object} params 自定义参数接口对象
+   * @returns {Map} 物品组件Map
+   */
+  static setCustomComponentV2(component_id,params){
+    return new Map([[
+      component_id,
+      params
+    ]]);
+  }
   /**
    * 物品的耐久度组件
    * @param {number} max_durability 最大耐久

@@ -29,6 +29,7 @@ export class Item {
             group,
             hide_in_command = false,
             max_stack_size = 64,
+            format_version = "1.20.40"
         } = options;
 
         this.identifier = identifier;
@@ -36,6 +37,7 @@ export class Item {
         this.texture = texture;
         this.group = group;
         this.hide_in_command = hide_in_command;
+        this.format_version = format_version;
         this.components = new Map();
 
         // 初始化默认组件
@@ -81,7 +83,7 @@ export class Item {
     @Serializer
     toObject() {
         const item = new AddonItem(
-            "1.21.40", // 格式版本
+            this.format_version, // 格式版本
             new AddonItemDefinition(
                 new AddonItemDescription(
                     this.identifier,
