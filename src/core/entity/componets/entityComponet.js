@@ -1,13 +1,292 @@
 import { RideableComponentDesc } from '../../type.js'
 
 export class EntityComponent {
-
-  static setCustomHitTest(hitboxes){
+  /**
+   * 设置实体周围的效果范围
+   * @param {Object} options - 效果配置
+   * @param {string} options.effect - 效果ID（如"minecraft:poison"）
+   * @param {number} [options.range=0.2] - 效果作用范围（单位：格）
+   * @param {number|'infinite'} [options.duration=10] - 效果持续时间（秒）
+   * @param {number} [options.cooldown=0] - 效果触发冷却时间（秒）
+   * @param {Object} [options.filter] - 实体过滤器配置
+   * @returns {Map} 返回 Minecraft mob_effect 组件
+   * 
+   * @example // 河豚毒效果（小范围中毒）
+   * const pufferfish = EntityComponent.setMobEffect({
+   *   effect: "minecraft:poison",
+   *   range: 0.2,
+   *   duration: 10
+   * });
+   * 
+   * @example // 监守者黑暗效果（大范围）
+   * const warden = EntityComponent.setMobEffect({
+   *   effect: "minecraft:darkness",
+   *   range: 20,
+   *   duration: 13,
+   *   cooldown: 6,
+   *   filter: {
+   *     all_of: [
+   *       { test: "is_family", subject: "other", value: "player" },
+   *       { operator: "not", test: "has_ability", subject: "other", value: "invulnerable" }
+   *     ]
+   *   }
+   * });
+   * 
+   * @example // 无限持续时间效果
+   * const infiniteEffect = EntityComponent.setMobEffect({
+   *   effect: "minecraft:regeneration",
+   *   duration: 'infinite'
+   * });
+   */
+  static setMobEffect({ effect, range = 0.2, duration = 10, cooldown = 0, filter }) {
+    const data = {
+      mob_effect: effect,
+      effect_range: range,
+      effect_time: duration,
+      cooldown_time: cooldown
+    };
+    if (filter) data.entity_filter = filter;
+    return new Map([['minecraft:mob_effect', data]]);
+  }
+  /**
+   * 设置控制实体所需的物品
+   * @param {string|string[]} controlItems - 可控制物品ID或数组
+   * @returns {Map} 返回 Minecraft item_controllable 组件
+   * 
+   * @example // 猪控制（胡萝卜钓竿）
+   * const pigControl = EntityComponent.setItemControllable("carrotOnAStick");
+   * 
+   * @example // 炽足兽控制（诡异菌钓竿）
+   * const striderControl = EntityComponent.setItemControllable("warped_fungus_on_a_stick");
+   * 
+   * @example // 多物品控制（同时接受两种控制物品）
+   * const multiControl = EntityComponent.setItemControllable([
+   *   "carrotOnAStick",
+   *   "custom:special_stick"
+   * ]);
+   */
+  static setItemControllable(controlItems) {
     return new Map([[
-      "minecraft:custom_hit_test",{
-				"hitboxes": hitboxes
-			},
-    ]])
+      'minecraft:item_controllable',
+      {
+        control_items: Array.isArray(controlItems) ? controlItems : [controlItems]
+      }
+    ]]);
+  }
+  /**
+   * 设置实体群组大小追踪规则
+   * @param {number} [radius=16] - 检测半径范围（单位：方块格，默认16格）
+   * @param {Object} [filter] - 实体过滤器配置（可选）
+   * @returns {Map} 返回 Minecraft group_size 组件配置
+   * 
+   * @example // 基础用法 - 只设置检测半径
+   * const basic = EntityComponent.setGroupSize(12);
+   * 
+   * @example // 猪灵配置 - 32格半径，过滤成年猪灵
+   * const hoglin = EntityComponent.setGroupSize(32, {
+   *   all_of: [
+   *     { test: "has_component", operator: "!=", value: "minecraft:is_baby" },
+   *     { test: "is_family", value: "hoglin" }
+   *   ]
+   * });
+   * 
+   * @example // 村民配置 - 24格半径，过滤成年村民
+   * const villager = EntityComponent.setGroupSize(24, {
+   *   all_of: [
+   *     { test: "is_family", value: "villager" },
+   *     { test: "has_component", operator: "!=", value: "minecraft:is_baby" }
+   *   ]
+   * });
+   * 
+   * @example // 怪物群体检测 - 16格半径，过滤所有敌对生物
+   * const monsters = EntityComponent.setGroupSize(16, {
+   *   any_of: [
+   *     { test: "is_family", value: "monster" },
+   *     { test: "is_family", value: "undead" }
+   *   ]
+   * });
+   */
+  static setGroupSize(radius = 16, filter) {
+    const data = { radius };
+    if (filter) data.filters = filter;
+    return new Map([['minecraft:group_size', data]]);
+  }
+  /**
+   * 设置实体的装备配置
+   * @param {Object} options - 装备配置选项
+   * @param {string} [options.table] - 装备表的文件路径（相对于行为包根目录）
+   * @param {Array<Object>} [options.slotDropChance] - 装备槽位的掉落概率配置
+   * @param {string} options.slotDropChance[].slot - 装备槽位名称（如："slot.weapon.mainhand"）
+   * @param {number} options.slotDropChance[].dropChance - 掉落概率（0-1）
+   * @returns {Map} 返回 Minecraft 装备组件
+   * 
+   * @example
+   * // 沼泽僵尸（使用骨骼装备表）
+   * const bogged = EntityComponent.setEquipment({
+   *   table: "loot_tables/entities/skeleton_gear.json"
+   * });
+   * 
+   * // 溺尸（设置主手武器100%掉落）
+   * const drowned = EntityComponent.setEquipment({
+   *   slotDropChance: [{
+   *     slot: "slot.weapon.mainhand",
+   *     dropChance: 1
+   *   }]
+   * });
+   * 
+   * // 村民（主手武器不会掉落）
+   * const villager = EntityComponent.setEquipment({
+   *   slotDropChance: [{
+   *     slot: "slot.weapon.mainhand",
+   *     dropChance: 0
+   *   }]
+   * });
+   */
+  static setEquipment(options = {}) {
+    const componentData = {};
+    
+    if (options.table) {
+      componentData.table = options.table;
+    }
+    
+    if (options.slotDropChance) {
+      componentData.slot_drop_chance = options.slotDropChance.map(item => ({
+        slot: item.slot,
+        drop_chance: item.dropChance
+      }));
+    }
+    
+    return new Map([[
+      'minecraft:equipment',
+      componentData
+    ]]);
+  }
+   /**
+   * 设置实体装备物品的行为
+   * @param {Object} [options={}] - 装备配置选项
+   * @param {boolean} [options.canWearArmor] - 是否可以穿戴盔甲
+   * @param {Array<Object>} [options.excludedItems] - 禁止装备的物品列表
+   * @param {string} options.excludedItems[].item - 禁止装备的物品ID（格式："命名空间:物品名:数据值"）
+   * @returns {Map} 返回 Minecraft 装备物品组件
+   * 
+   * @example
+   * // 沼泽僵尸（禁止装备特定旗帜）
+   * const bogged = EntityComponent.setEquipItem({
+   *   excludedItems: [{ item: "minecraft:banner:15" }]
+   * });
+   * 
+   * // 唤魔者（默认空配置）
+   * const evoker = EntityComponent.setEquipItem();
+   * 
+   * // 狐狸（禁止穿戴盔甲）
+   * const fox = EntityComponent.setEquipItem({
+   *   canWearArmor: false
+   * });
+   */
+  static setEquipItem(options = {}) {
+    const componentData = {};
+    
+    if (options.canWearArmor !== undefined) {
+      componentData.can_wear_armor = options.canWearArmor;
+    }
+    
+    if (options.excludedItems) {
+      componentData.excluded_items = options.excludedItems;
+    }
+    
+    return new Map([[
+      'minecraft:equip_item',
+      componentData
+    ]]);
+  }
+  /**
+   * Makes entity immune to fire damage
+   * @param {boolean} [value=true] - Whether the entity is fire immune
+   * @returns {Map} Minecraft fire_immune component
+   */
+  static setFireImmune(value = true) {
+    return new Map([[
+      'minecraft:fire_immune',
+      value === false ? {} : true
+    ]]);
+  }
+  /**
+   * Sets the crop growth promotion properties when entity walks over crops
+   * @param {Object} options - Growth configuration
+   * @param {number} [options.chance=0] - Success chance per tick (0-1)
+   * @param {number} [options.charges=10] - Number of growth charges
+   * @returns {Map} Minecraft grows_crop component
+   */
+  static setGrowsCrop({ chance = 0, charges = 10 } = {}) {
+    return new Map([[
+      'minecraft:grows_crop',
+      { chance, charges }
+    ]]);
+  }
+   /**
+   * 设置实体立即消失
+   * @param {Object} [options] - 消失配置选项
+   * @param {boolean} [options.removeChildEntities=false] - 是否同时移除子实体（如被拴绳牵引的实体）
+   * @returns {Map} 返回Minecraft立即消失组件
+   */
+  static setInstantDespawn(options = {}) {
+    return new Map([[
+      'minecraft:instant_despawn',
+      { remove_child_entities: !!options.removeChildEntities }
+    ]]);
+  }
+  /**
+   * 设置实体在指定方块内的通知器
+   * @param {Array} blockList - 要监测的方块列表
+   * @param {Object[]} blockList[].block - 方块定义
+   * @param {string} blockList[].block.name - 方块ID (如"minecraft:bubble_column")
+   * @param {Object} [blockList[].block.states] - 方块状态 (如{"drag_down": true})
+   * @param {Object} [blockList[].entered_block_event] - 进入方块时触发的事件
+   * @param {string} blockList[].entered_block_event.event - 进入事件名称
+   * @param {string} [blockList[].entered_block_event.target="self"] - 事件目标
+   * @param {Object} [blockList[].exited_block_event] - 离开方块时触发的事件
+   * @param {string} blockList[].exited_block_event.event - 离开事件名称
+   * @param {string} [blockList[].exited_block_event.target="self"] - 事件目标
+   * @returns {Map} 返回Minecraft方块内部通知器组件
+   */
+  static setInsideBlockNotifier(blockList) {
+    return new Map([[
+      'minecraft:inside_block_notifier',
+      { block_list: blockList }
+    ]]);
+  }
+   /**
+   * 设置实体的库存属性
+   * @param {Object} options - 库存配置选项
+   * @param {number} [options.additionalSlotsPerStrength] - 每点力量值增加的额外槽位数
+   * @param {boolean} [options.canBeSiphonedFrom] - 是否允许漏斗从此库存抽取物品
+   * @param {'horse'|'minecart_chest'|'chest_boat'} [options.containerType] - 容器类型
+   * @param {number} [options.inventorySize] - 库存槽位数量
+   * @param {boolean} [options.isPrivate] - 死亡时是否不掉落库存物品
+   * @param {boolean} [options.restrictToOwner] - 是否只有所有者能访问
+   * @returns {Map} 返回Minecraft库存组件
+   */
+  static setInventoryProperties(options) {
+    return new Map([[
+      'minecraft:inventory', 
+      {
+        additional_slots_per_strength: options.additionalSlotsPerStrength,
+        can_be_siphoned_from: options.canBeSiphonedFrom,
+        container_type: options.containerType,
+        inventory_size: options.inventorySize,
+        private: options.isPrivate,
+        restrict_to_owner: options.restrictToOwner
+      }
+    ]]);
+  }
+
+  /**
+   * 设置自定义碰撞箱
+   * @param {Array} hitboxes - 碰撞箱定义数组
+   * @returns {Map} 返回Minecraft自定义碰撞测试组件
+   */
+  static setCustomHitTest(hitboxes) {
+    return new Map([['minecraft:custom_hit_test', { hitboxes }]]);
   }
   
   static setTypeFamily(family_arr) {

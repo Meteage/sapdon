@@ -5,13 +5,12 @@ const GolemMaxCount = 16; // 傀儡最大数量
 ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'apple')
     .addComponent(ItemComponent.combineComponents(
         ItemComponent.setDisplayName('农业傀儡召唤物'),
-        new Map([[
-          "golem_craft:golem_summon",
+        ItemComponent.setCustomComponentV2("golem_craft:golem_summon",
           {
             "golem_type":"more_golem:frame_golem"
           }
-        ]])
-    ))
+        )
+    )).format_version = "1.21.90"
 
 const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none",{});
       target_dummy.behavior.addComponent(
@@ -20,8 +19,8 @@ const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none
      
       target_dummy.behavior.addProperty("more_golem:target_index",{
                     "type": "int",
-                    "range": [0, GolemMaxCount-1],
-                    "default": 0
+                    "range": [0, GolemMaxCount], //0-16 0-15 可以使用 16为保留位
+                    "default": 16  //默认为16，保留位即无目标
                 })
 
 
