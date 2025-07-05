@@ -1,29 +1,29 @@
 {
-	"format_version": "1.8.0",
-	"animations": {
-		"animation.vehicle.sedan": {
-			"loop": true,
-			"bones": {
+    "format_version": "1.8.0",
+    "animations": {
+        "animation.vehicle.sedan": {
+            "loop": true,
+            "bones": {
                 "shelf": {
-					"scale": [1.4, 1.4, -1.4]
-				},
-				"FL": {
-					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
-				},
+                    "scale": [1.4, 1.4, -1.4]
+                },
+                "FL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
                 "FR": {
-					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
-				},
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
                 "RL": {
-					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
-				},
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
                 "RR": {
-					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
-				}
-			}
-		},
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                }
+            }
+        },
         "animation.vehicle.mclaren_p1": {
             "loop": true,
-			"bones": {
+            "bones": {
                 "FL": {
                     "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
                 },
@@ -37,10 +37,37 @@
                     "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
                 },
                 "shelf": {
-					"scale": [1.4, 1.4, 1.4],
+                    "scale": [1.4, 1.4, 1.4],
                     "rotation": [0, 180, 0]
-				}
-			}
+                }
+            }
+        },
+        "animation.vehicle.porsche918": {
+            "loop": true,
+            "bones": {
+                "FLW": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "FRW": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "RLW": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "RRW": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "FL": {
+                    "rotation": [0, "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "FR": {
+                    "rotation": [0, "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "frame": {
+                    "scale": [0.55, 0.55, 0.55],
+                    "rotation": [0, 0, 0]
+                }
+            }
         }
-	}
+    }
 }
