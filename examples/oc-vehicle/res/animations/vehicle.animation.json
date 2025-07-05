@@ -1,0 +1,46 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.vehicle.sedan": {
+			"loop": true,
+			"bones": {
+                "shelf": {
+					"scale": [1.4, 1.4, -1.4]
+				},
+				"FL": {
+					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+				},
+                "FR": {
+					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "-Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+				},
+                "RL": {
+					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+				},
+                "RR": {
+					"rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+				}
+			}
+		},
+        "animation.vehicle.mclaren_p1": {
+            "loop": true,
+			"bones": {
+                "FL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "FR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "RL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "RR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "shelf": {
+					"scale": [1.4, 1.4, 1.4],
+                    "rotation": [0, 180, 0]
+				}
+			}
+        }
+	}
+}
