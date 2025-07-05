@@ -1,18 +1,28 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor } from '@sapdon/core'
 
-const targetMaxCount = 16; // 傀儡目标最大数量
+const GolemMaxCount = 16; // 傀儡最大数量
 
-ItemAPI.createItem('test:stick', ItemCategory.Items, 'stick')
+ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'apple')
     .addComponent(ItemComponent.combineComponents(
-        ItemComponent.setDisplayName('Stick'),
-        ItemComponent.setThrowable(true),
-        ItemComponent.setIcon('stick')
+        ItemComponent.setDisplayName('农业傀儡召唤物'),
+        new Map([[
+          "golem_craft:golem_summon",
+          {
+            "golem_type":"more_golem:frame_golem"
+          }
+        ]])
     ))
 
 const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none",{});
       target_dummy.behavior.addComponent(
         EntityComponent.setTypeFamily(["golem_target"])
       );
+     
+      target_dummy.behavior.addProperty("more_golem:target_index",{
+                    "type": "int",
+                    "range": [0, GolemMaxCount-1],
+                    "default": 0
+                })
 
 
 const jsonData = {
@@ -90,70 +100,7 @@ const jsonData = {
       }
     }
   },
-  "minecraft:behavior.nearest_attackable_target":{
-                "priority": 3,
-                "must_reach": true,
-                "must_see": true,
-                "entity_types": [
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "chicken"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 0
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                },
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "cow"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 1
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                },
-                {
-                    "filters": {
-                    "all_of": [
-                        {
-                        "test": "is_family",
-                        "subject": "other",
-                        "operator": "==",
-                        "value": "creeper"
-                        },
-                        {
-                            "test": "int_property",
-                            "domain": "more_golem:target_index",
-                            "operator": "==",
-                            "value": 2
-                        }
-                    ]
-                    },
-                    "max_dist": 24
-                }
-                ]
-            },
+  
   "minecraft:persistent": {},
   "minecraft:physics": {},
   "minecraft:pushable": {
@@ -172,7 +119,7 @@ const jsonData = {
 // 转换为 Map<string, any>
 const map = new Map<string, any>(Object.entries(jsonData));
 
-const fram_golem = EntityAPI.createNativeEntity("more_golem:frame_golem","minecraft:iron_golem",{});
+const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/entity/fram_golem");
       fram_golem.resource.addGeometry("default","geometry.fram_golem");
       fram_golem.resource.textures = {};
       fram_golem.resource.addTexture("default","textures/entity/fram_golem");
@@ -188,17 +135,81 @@ const fram_golem = EntityAPI.createNativeEntity("more_golem:frame_golem","minecr
       fram_golem.resource.setScript("animate",["attack","walk","move","move_to_target","walk_to_target"]);
       
       
-      fram_golem.behavior.addProperty("more_golem:target_index",{
-                    "type": "int",
-                    "range": [0, targetMaxCount-1],
-                    "default": 0
-      });// 傀儡目标索引
-
+      
       fram_golem.behavior.addComponent(
        map
       );
+
+      fram_golem.behavior.addProperty("more_golem:golem_index",{
+                    "type": "int",
+                    "range": [0, GolemMaxCount-1],
+                    "default": 0
+                })
+      type golem_filter = 
+                            {
+                                "filters": {
+                                "all_of": [
+                                    {
+                                        "test": "is_family",
+                                        "subject": "other",
+                                        "operator": "==",
+                                        "value": "golem_target"
+                                    },
+                                    {
+                                        "test": "int_property",
+                                        "domain": "more_golem:golem_index",
+                                        "operator": "==",
+                                        "value": number
+                                    },
+                                     {
+                                        "test": "int_property",
+                                        "subject": "other",
+                                        "domain": "more_golem:target_index",
+                                        "operator": "==",
+                                        "value": number
+                                    }
+                                ]
+                                },
+                                "max_dist": 24
+                            }
+                            
+                        
+      const golem_filter_arr:golem_filter[] = [];
+
+      for(let i = 0;i<GolemMaxCount;i++){
+        golem_filter_arr.push(
+        {
+                                "filters": {
+                                "all_of": [
+                                    {
+                                        "test": "is_family",
+                                        "subject": "other",
+                                        "operator": "==",
+                                        "value": "golem_target"
+                                    },
+                                    {
+                                        "test": "int_property",
+                                        "domain": "more_golem:golem_index",
+                                        "operator": "==",
+                                        "value": i
+                                    },
+                                     {
+                                        "test": "int_property",
+                                        "subject": "other",
+                                        "domain": "more_golem:target_index",
+                                        "operator": "==",
+                                        "value": i
+                                    }
+                                ]
+                                },
+                                    "max_dist": 24
+
+                            }
+        )
+      }
+
       fram_golem.behavior.addComponent(
-        
+        new NearestAttackableTargetBehavor(3,golem_filter_arr).toObject()
       )
 
 // 提交所有注册
