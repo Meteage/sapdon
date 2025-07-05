@@ -44,6 +44,30 @@ export class EntityComponent {
     ]])
   }
 
+  static setInputGroundControlled() {
+    return new Map([[
+        'minecraft:input_ground_controlled',
+        {}
+    ]])
+  }
+
+  /**
+   * @param {number} [base] 
+   * @param {number} [controlled] 
+   * @param {number} [jumpPrevented] 
+   * @returns 
+   */
+  static setVariableMaxAutoStep(base, controlled, jumpPrevented) {
+    return new Map([[
+        'minecraft:variable_max_auto_step',
+        {
+            'base_value': base,
+            'controlled_value': controlled,
+            'jump_prevented_value': jumpPrevented
+        }
+    ]])
+  }
+
   static setMovement(speed){
     return new Map().set("minecraft:movement", {
       "value": speed

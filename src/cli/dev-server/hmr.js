@@ -19,7 +19,8 @@ export function hmr(projectPath, projectName) {
 
             if (
                 filename.startsWith('.') ||
-                filename.startsWith(path.join(buildDir, './'))
+                filename.startsWith(path.join(buildDir, './')) ||
+                filename.includes('.tmp')
             ) {
                 return
             }
