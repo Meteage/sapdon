@@ -68,6 +68,35 @@
                     "rotation": [0, 0, 0]
                 }
             }
+        },
+        "animation.vehicle.yadi": {
+            "loop": true,
+            "bones": {
+                "body": {
+                    "scale": 1.5,
+                    "rotation": [ 0, 0,  "-Math.max(-20, Math.min(20,query.yaw_speed * 0.2))"]
+                }
+            }
+        },
+        "animation.vehicle.porsche911_930": {
+            "loop": true,
+            "bones": {
+                "frame": {
+                    "scale": [1.8, 1.8, 1.8]
+                },
+                "FL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "FR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "RL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "RR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                }
+            }
         }
     }
 }
