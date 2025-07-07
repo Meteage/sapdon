@@ -288,13 +288,6 @@ export class EntityComponent {
   static setCustomHitTest(hitboxes) {
     return new Map([['minecraft:custom_hit_test', { hitboxes }]]);
   }
-  
-  static setTypeFamily(family_arr) {
-    return new Map().set("minecraft:type_family", {
-      "family": family_arr
-    });
-  }
-
 
     /**
      * @param {string[]} family_arr 

@@ -1,4 +1,5 @@
-import { system, world, Vector3, Entity, BlockVolume, BlockFilter, Dimension } from '@minecraft/server';
+import { system, world, Vector3, Entity, BlockVolume, BlockFilter, Dimension, EntityComponentTypes } from '@minecraft/server';
+import { get } from 'http';
 
 interface BlockVolumeSize {
     length: number;
@@ -39,6 +40,30 @@ function getNeighboringBlockVolume(center: Vector3, blockVolumeSize: BlockVolume
     };
     
     return new BlockVolume(fromLoc, toLoc);
+}
+
+
+
+function getNeighboringFarmLand(source:Entity){
+    world.sendMessage("获取周围农田");
+    const nbv = getNeighboringBlockVolume(source.location, {
+        length: 16,
+        width: 16,
+        height: 16
+    });
+    const farmLandPosList = getBlockListFromBlockVolume(
+        source.dimension, 
+        nbv, 
+        { includeTypes: ["minecraft:farmland"] }
+    );
+    farmLandPosList.forEach(pos => {
+        source.dimension.spawnParticle("minecraft:blue_flame_particle", {
+            x:pos.x,
+            y:pos.y+1,
+            z:pos.z
+        });
+    });
+    return farmLandPosList;
 }
 
 type GolemAndTargets = {
@@ -86,8 +111,11 @@ class GolemManagerSystem {
                         target.remove();
                     }
                 }
+                else{
+                    //
+                }
             });
-        });
+        },10);
 
         this.golemCount++;
         return golem;
@@ -103,6 +131,21 @@ class GolemManagerSystem {
         target.setProperty("more_golem:target_index", targetIndex);
         this.golemRecord.get(targetIndex)?.targets.push(target);
         return target;
+    }
+    //通过编号获取傀儡
+    getGolemByNumber(num:number){
+        return this.golemRecord.get(num)?.golem;
+    }
+    //获取傀儡某个库存槽的物品
+    getGolemSlotItem(golem_num:number,slot:number){
+        const golem = this.getGolemByNumber(golem_num);
+        //world.sendMessage("golem_isVaid?:"+golem?.isValid)
+        const container = golem?.getComponent(EntityComponentTypes.Inventory)?.container;
+        //world.sendMessage("container ?:"+container?.isValid )
+        return container?.getItem(slot);
+    }
+    getGolemMainHandItem(golem_num:number){
+        return this.getGolemSlotItem(golem_num,0);
     }
 }
 
@@ -137,23 +180,33 @@ world.afterEvents.itemUse.subscribe((event) => {
     const { itemStack, source } = event;
     
     if (!itemStack) return;
-
+    world.sendMessage("itemTypeId:"+ itemStack.typeId)
     switch (itemStack.typeId) {
+        case 'minecraft:stick':
+            //获取0号傀儡
+            const golem = golemManager.getGolemByNumber(0);
+            if(golem&&golem.isValid){
+                //获取傀儡库存的0号槽物品
+                const mainHandItem = golemManager.getGolemMainHandItem(0);
+                world.sendMessage("mainHandTypeId:"+mainHandItem?.typeId)
+
+                const seed_list = ["minecraft:wheat_seeds"]//小麦，土豆，等等
+                if(mainHandItem && seed_list.includes(mainHandItem.typeId)){
+                    //搜索附近农田
+                    const nfd_pos_list  = getNeighboringFarmLand(golem);
+                    nfd_pos_list.forEach((pos)=>{
+                        golemManager.spawnTarget(golem.dimension,0,{
+                            x:pos.x+0.5,
+                            y:pos.y+1,
+                            z:pos.z+0.5
+                        })
+                    })
+                }
+            }
+            
+            break;
         case 'minecraft:diamond':
-            world.sendMessage("获取周围农田");
-            const nbv = getNeighboringBlockVolume(source.location, {
-                length: 16,
-                width: 16,
-                height: 16
-            });
-            const farmLandPosList = getBlockListFromBlockVolume(
-                source.dimension, 
-                nbv, 
-                { includeTypes: ["minecraft:farmland"] }
-            );
-            farmLandPosList.forEach(pos => {
-                source.dimension.spawnParticle("minecraft:blue_flame_particle", pos);
-            });
+            getNeighboringFarmLand(source);
             break;
             
         case "minecraft:iron_ingot":
@@ -167,3 +220,70 @@ world.afterEvents.itemUse.subscribe((event) => {
             break;
     }
 });
+
+
+import { BlockComponent, BlockComponentTypes, Container, } from "@minecraft/server";
+
+//含有容器的方块类型列表
+const BLOCK_C_LIST:string[] = [
+    "minecraft:chest"
+];
+
+//获取方块容器
+function getBlockContainer(dimension:Dimension,location:Vector3):Container|undefined{
+    const block = dimension.getBlock(location);
+    if(!block || !block.isValid || !BLOCK_C_LIST.includes(block.typeId)) return undefined
+    return block.getComponent(BlockComponentTypes.Inventory)?.container;
+}
+/**
+ * 在容器中查找指定类型的物品所在的槽位
+ * @param container 要搜索的容器
+ * @param itemTypeId 要查找的物品类型ID
+ * @returns 找到的槽位索引，未找到则返回undefined
+ */
+function findSlotByItemType(container: Container, itemTypeId: string): number | undefined {
+    for (let slot = 0; slot < container.size; slot++) {
+        const itemStack = container.getItem(slot);
+        if (itemStack?.typeId === itemTypeId) {
+            return slot;
+        }
+    }
+    return undefined;
+}
+
+/**
+ * 将物品从源容器的指定槽位转移到目标容器
+ * @param sourceSlot 源容器中的槽位索引
+ * @param sourceContainer 源容器
+ * @param targetContainer 目标容器
+ * @returns 是否成功转移了物品
+ */
+function transferItemBetweenContainers(
+    sourceSlot: number,
+    sourceContainer: Container,
+    targetContainer: Container
+){
+    const remainingItem = sourceContainer.transferItem(sourceSlot, targetContainer);
+    // 如果返回undefined表示全部转移成功
+    return remainingItem === undefined;
+}
+
+//测试
+world.afterEvents.playerInteractWithBlock.subscribe((event)=>{
+    const {itemStack,block} = event;
+    const itemTypeId = itemStack?.typeId;
+    world.sendMessage("itemTypeId:"+itemTypeId)
+
+    switch(itemTypeId){
+        case 'minecraft:stick':
+            //测试
+            const container = getBlockContainer(block.dimension,block.center());
+            if(container){
+                const slot = findSlotByItemType(container,"minecraft:wheat_seeds");
+                if(slot){
+                    world.sendMessage("num:"+container.getItem(slot)?.amount)
+                }
+            }
+        break
+    }
+})
