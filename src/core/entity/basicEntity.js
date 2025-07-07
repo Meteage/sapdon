@@ -2,6 +2,12 @@ import { AddonEntity, AddonEntityDefinition, AddonEntityDescription } from "../a
 import { Serializer, serialize } from "../../utils/index.js"
 
 export class BasicEntity {
+    static entities = new Map()
+
+    static getEntity(identifier) {
+        return this.entities.get(identifier)
+    }
+
     /**
      * 构造函数
      * @param {string} identifier - 实体的唯一标识符
@@ -33,6 +39,7 @@ export class BasicEntity {
         this.components = new Map(Object.entries(data.components ?? {}));
         this.component_groups = new Map(Object.entries(data.component_groups ?? {}));
         this.events = new Map(Object.entries(data.events ?? {}));
+        BasicEntity.entities.set(this.identifier, this)
     }
     /**
      * 添加属性到实体

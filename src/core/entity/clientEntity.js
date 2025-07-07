@@ -6,6 +6,16 @@ import { Serializer, serialize } from "../../utils/index.js"
  * 继承自 AddonClientEntityDescription，并扩展了实体的数据加载和 JSON 序列化功能。
  */
 export class ClientEntity extends AddonClientEntityDescription {
+    static entities = new Map()
+
+    /**
+     * @param {string} identifier 
+     * @returns {ClientEntity}
+     */
+    static getEntity(identifier) {
+        return this.entities.get(identifier)
+    }
+
     /**
      * 构造函数，用于创建一个客户端实体实例。
      * 
@@ -25,6 +35,9 @@ export class ClientEntity extends AddonClientEntityDescription {
             // 将数据对象的属性赋值到当前实例
             this[key] = data[key];
         });
+
+        // 将当前实体实例存储到静态实体集合中
+        ClientEntity.entities.set(this.identifier, this);
     }
 
     /**

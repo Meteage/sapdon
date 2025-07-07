@@ -43,10 +43,10 @@ export const EntityAPI = {
     /**
      * 创建一个普通实体。
      * @param {string} identifier - 实体的唯一标识符。
-     * @param {string} texture - 实体的纹理。
-     * @param {Object} behData - 实体的行为数据。
-     * @param {Object} resData - 实体的资源数据。
-     * @param {Object} options - 额外选项。
+     * @param {string} [texture] - 实体的纹理。
+     * @param {Object} [behData] - 实体的行为数据。
+     * @param {Object} [resData] - 实体的资源数据。
+     * @param {Object} [options] - 额外选项。
      * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
      */
     createEntity: function (identifier, texture, behData = {}, resData = {}, options = {}) {

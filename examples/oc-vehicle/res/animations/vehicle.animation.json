@@ -97,6 +97,26 @@
                     "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
                 }
             }
+        },
+        "animation.vehicle.mustang2024": {
+            "loop": true,
+            "bones": {
+                "frame": {
+                    "scale": [1.8, 1.8, 1.8]
+                },
+                "FL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "FR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", "Math.max(-35, Math.min(35,query.yaw_speed * 0.2))", 0]
+                },
+                "RL": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                },
+                "RR": {
+                    "rotation": ["math.mod(q.modified_distance_moved, 1) * 360", 0, 0]
+                }
+            }
         }
     }
 }

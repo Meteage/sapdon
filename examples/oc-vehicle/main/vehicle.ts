@@ -41,22 +41,25 @@ export interface VehicleOptions {
     width?: number
     height?: number
     seats?: Partial<RideableSeat>[]
+    familyCanRide?: string[]
 }
 
 const defaultSeats = (seatHeight: number): Partial<RideableSeat>[] => [
     {
-        max_rider_count: 1,
+        min_rider_count: 1,
+        max_rider_count: 2,
         position: [0.45, seatHeight, 0],
     },
     {
-        max_rider_count: 1,
+        min_rider_count: 1,
+        max_rider_count: 2,
         position: [-0.45, seatHeight, 0],
     }
 ]
 
 export function createVehicle({
     id, tex, geo, anim, interactText = 'Interact', speed = 0.8, seatHeight = 0.3, autoStep = 1.1, rotSensitivity = 2, renderMethod = 'entity_nocull', family = [],
-    width = 3, height = 2, seats = defaultSeats(seatHeight)
+    width = 3, height = 2, seats = defaultSeats(seatHeight), familyCanRide = [],
 }: VehicleOptions) {
     const vehicle = EntityAPI.createEntity(id, tex)
 
@@ -68,7 +71,7 @@ export function createVehicle({
                 interactText,
                 seatCount: 2,
                 seats,
-                familyTypes: [ 'player' ]
+                familyTypes: [ 'player', ...familyCanRide ],
             }),
             EntityComponent.setTypeFamily([ 'vehicle', ...family ]),
             EntityComponent.setMovement(speed),

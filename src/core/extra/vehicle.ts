@@ -1,4 +1,5 @@
-import { RideableSeat } from "../type.js"
+import { AddonRenderControllerGroup } from "../addon/index.js"
+import { MaterialDesc, RideableSeat } from "../type.js"
 
 export class BaseVehicle {
     readonly seats: RideableSeat[] = []
@@ -27,7 +28,5 @@ export class BaseVehicle {
 
     constructor(
         public readonly id: string,
-        public readonly model: string,
-        public readonly renderController: string,
     ) {}
 }

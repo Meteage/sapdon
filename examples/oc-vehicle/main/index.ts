@@ -9,7 +9,7 @@ createVehicle({
     geo: 'geometry.vehicle.sedan',
     anim: 'animation.vehicle.sedan',
     interactText: 'Enter Sedan',
-    speed: 0.6,
+    speed: 0.4,
     seatHeight: 0.3,
     autoStep: 1.1,
     rotSensitivity: 3,
@@ -57,6 +57,20 @@ createVehicle({
 })
 
 createVehicle({
+    id: 'vehicle:ford_mustang2024',
+    tex: 'textures/entity/mustang2024.png',
+    geo: 'geometry.vehicle.mustang2024',
+    anim: 'animation.vehicle.mustang2024',
+    interactText: 'Enter Ford Mustang 2024',
+    speed: 0.6,
+    seatHeight: 0.2,
+    autoStep: 0.6,
+    rotSensitivity: 2.2,
+    renderMethod: 'entity_nocull',
+    family: [ 'four_wheeled' ],
+})
+
+createVehicle({
     id: 'vehicle:yadi',
     tex: 'textures/entity/yadi.png',
     geo: 'geometry.vehicle.bike_yadi',
@@ -70,11 +84,43 @@ createVehicle({
     width: 1,
     seats: [
         {
-            max_rider_count: 1,
+            min_rider_count: 1,
+            max_rider_count: 2,
+            position: [
+                0, 0.5, -0.3
+            ]
+        },
+        {
+            min_rider_count: 1,
+            max_rider_count: 2,
             position: [
                 0, 0.5, -0.7
             ]
-        }
+        },
+    ]
+})
+
+createVehicle({
+    id: 'vehicle:heavy_truck',
+    tex: 'textures/entity/heavy_truck.png',
+    geo: 'geometry.vehicle.heavy_truck',
+    anim: 'animation.vehicle.mustang2024',
+    interactText: 'Enter Da Yun Heavy Truck',
+    speed: 0.5,
+    seatHeight: 1,
+    autoStep: 1.6,
+    rotSensitivity: 1,
+    renderMethod: 'entity_nocull',
+    family: [ 'ten_wheeled' ],
+    familyCanRide: [ 'vehicle' ],
+    seats: [
+        {
+            min_rider_count: 1,
+            max_rider_count: 2,
+            position: [
+                0.8, 2.3, 0.3
+            ]
+        },
     ]
 })
 

@@ -1,4 +1,4 @@
-export type MaterialDesc<Parts extends string = ''> = Record<Parts | '*', `material.${string}`>
+export type MaterialDesc<Parts extends string = '*'> = Record<Parts | '*', `material.${string}`>
 export interface RideableComponent {
     controllingSeat: number
     crouchingSkipInteract: boolean

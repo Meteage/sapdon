@@ -103,7 +103,7 @@ export class AddonRenderController {
 
     /**
      * 设置渲染控制器的默认几何体。
-     * @param {`geometry.${string}`} geometry - 要设置的几何体。
+     * @param {string} geometry - 要设置的几何体。
      */
     setGeometry(geometry) {
         this.geometry = geometry;
