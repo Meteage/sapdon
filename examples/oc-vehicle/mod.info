@@ -2,7 +2,7 @@
   "name": "oc-vehicle",
   "description": "A new sapdon project",
   "author": "RGB39",
-  "version": "1.0.1",
-  "min_engine_version": "1.19.50",
+  "version": "1.0.",
+  "min_engine_version": "1.21.50",
   "language": "ts"
 }

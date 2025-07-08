@@ -13,7 +13,7 @@ createVehicle({
     seatHeight: 0.3,
     autoStep: 1.1,
     rotSensitivity: 3,
-    family: [ 'four_wheeled' ],
+    family: [ 'four_wheeled', 'simple' ],
 })
 
 createVehicle({
@@ -26,7 +26,7 @@ createVehicle({
     seatHeight: -0.1,
     autoStep: 0.6,
     rotSensitivity: 1.8,
-    family: [ 'four_wheeled' ],
+    family: [ 'four_wheeled', 'sports_car', 'simple' ],
 })
 
 createVehicle({
@@ -39,7 +39,7 @@ createVehicle({
     seatHeight: 0.1,
     autoStep: 0.6,
     rotSensitivity: 2,
-    family: [ 'four_wheeled' ],
+    family: [ 'four_wheeled', 'sports_car', 'simple' ],
 })
 
 createVehicle({
@@ -53,7 +53,7 @@ createVehicle({
     autoStep: 0.6,
     rotSensitivity: 2.2,
     renderMethod: 'entity_alphablend',
-    family: [ 'four_wheeled' ],
+    family: [ 'four_wheeled', 'sports_car' ],
 })
 
 createVehicle({
@@ -67,7 +67,7 @@ createVehicle({
     autoStep: 0.6,
     rotSensitivity: 2.2,
     renderMethod: 'entity_nocull',
-    family: [ 'four_wheeled' ],
+    family: [ 'four_wheeled', 'sports_car', 'simple' ],
 })
 
 createVehicle({

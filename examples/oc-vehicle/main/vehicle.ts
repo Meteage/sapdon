@@ -72,6 +72,8 @@ export function createVehicle({
                 seatCount: 2,
                 seats,
                 familyTypes: [ 'player', ...familyCanRide ],
+                // onRiderEnterEvent: 'vehicle:enter',
+                // onRiderExitEvent: 'vehicle:exit',
             }),
             EntityComponent.setTypeFamily([ 'vehicle', ...family ]),
             EntityComponent.setMovement(speed),

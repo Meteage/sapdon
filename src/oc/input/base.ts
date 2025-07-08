@@ -37,7 +37,7 @@ export class PlayerInputComponent<Actor> extends BaseComponent<Actor> {
             state.times--
         }
 
-        this.keyStateMapping.set(key, state)   
+        this.keyStateMapping.set(key, state)
     }
     
     inputAxis(key: string, value: AxisValue) {

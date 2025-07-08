@@ -1,0 +1,59 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.driving.sedan": {
+			"loop": true,
+			"override_previous_animation": true,
+			"bones": {
+				"waist": {
+					"rotation": [-7.5, 0, 0]
+				},
+				"leftArm": {
+					"rotation": [-75, 0, 0]
+				},
+				"rightArm": {
+					"rotation": [-77.5, 0, 0]
+				},
+				"rightLeg": {
+					"rotation": [-74.9453, 4.82922, 1.29717]
+				},
+				"leftLeg": {
+					"rotation": [-74.87647, -7.24305, -1.95155]
+				}
+			}
+		},
+		"animation.driving.sports_car": {
+			"loop": true,
+			"override_previous_animation": true,
+			"bones": {
+				"waist": {
+					"rotation": [-25, 0, 0],
+					"position": [0, -0.93969, -0.34202]
+				},
+				"leftArm": {
+					"rotation": [-75, 0, 0]
+				},
+				"rightArm": {
+					"rotation": [-80, 0, 0]
+				},
+				"rightLeg": {
+					"rotation": [-47.25471, 5.52235, 5.08269],
+					"position": [0, 2.94911, -2.70236]
+				},
+				"leftLeg": {
+					"rotation": [-44.75386, -5.29571, -5.31847],
+					"position": [0, 3.53553, -3.53553]
+				}
+			}
+		},
+		"animation.driving.hidden": {
+			"loop": true,
+			"override_previous_animation": true,
+			"bones": {
+				"root": {
+					"scale": 0
+				}
+			}
+		}
+	}
+}
