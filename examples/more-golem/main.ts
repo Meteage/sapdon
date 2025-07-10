@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
@@ -210,7 +210,15 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
       })
       }
       fram_golem.behavior.addComponent(
-        new NearestAttackableTargetBehavor(3,golem_filter_arr).toObject()
+        EntityComponent.combineComponents(
+          new NearestAttackableTargetBehavor(3,golem_filter_arr).toObject(),
+          new PickupItemsBehavior(2)
+            .setCanPickupAnyItem(true)
+            .setCanPickupToHandOrEquipment(true)
+            .setSearchHeight(32)
+            .setGoalRadius(2.2)
+            .toObject()
+        )
       )
 
 // 提交所有注册
