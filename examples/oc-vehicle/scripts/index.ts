@@ -4,19 +4,19 @@ import {
     MinecraftGameInstance,
 } from '@sapdon/runtime'
 
-const riding = new Map<Player, Entity>()
-
 @MinecraftMain
 export class Main extends MinecraftGameInstance {
+    readonly riding = new Map<string, string>()
+
     afterStart(): void {
         world.afterEvents.playerInteractWithEntity.subscribe(ev => {
-            if (!ev.target.typeId.startsWith('vehicle')) {
+            if (!ev.target?.typeId.startsWith('vehicle')) {
                 return
             }
 
             // console.log(`Player interacted with ${ev.target.typeId}`)
             const { player, target } = ev
-            riding.set(player, target)
+            this.riding.set(player.id, target.id)
             const typeFamily = ev.target.getComponent(EntityTypeFamilyComponent.componentId) as EntityTypeFamilyComponent
             player.inputPermissions.setPermissionCategory(InputPermissionCategory.MoveLeft, false)
             player.inputPermissions.setPermissionCategory(InputPermissionCategory.MoveRight, false)
@@ -39,7 +39,11 @@ export class Main extends MinecraftGameInstance {
         })
 
         system.runInterval(() => {
-            for (const [ rider, vehicle ] of riding) {
+            for (const [ riderId, vehicleId ] of this.riding) {
+                console.log(this.riding.size)
+                const rider = world.getEntity(riderId) as Player
+                const vehicle = world.getEntity(vehicleId)
+
                 if (!vehicle || !rider) {
                     return
                 }
@@ -53,7 +57,7 @@ export class Main extends MinecraftGameInstance {
                     rider.playAnimation('animation.driving.hidden', { stopExpression: '1' })
                     rider.inputPermissions.setPermissionCategory(InputPermissionCategory.MoveLeft, true)
                     rider.inputPermissions.setPermissionCategory(InputPermissionCategory.MoveRight, true)
-                    riding.delete(rider)
+                    this.riding.delete(rider.id)
                 }
             }
         })
