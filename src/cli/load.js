@@ -3,37 +3,8 @@ import { saveFile } from "./utils.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
 import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
 import { GRegistryServer } from "../core/registry.js"
-import { UISystemRegistryServer } from "../core/ui/registry/uiSystemRegistry.js"
 
-/**
- * 处理 blocks.json 数据
- * @param {Object} data blocks.json 数据
- * @returns {Object} 处理后的 blocks 数据
- */
-export const processBlocksData = (data) => {
-    const textures_arr = data.textures
 
-    // 检查 textures 数组长度
-    if (textures_arr.length !== 6) {
-        console.warn(`blocks.json 的 textures 数组长度不为 6，实际长度: ${textures_arr.length}`)
-        return {}
-    }
-
-    // 构建 blocks 数据
-    const blocks = {}
-    blocks[data.identifier] = {
-        textures: {
-            up: textures_arr[0],
-            down: textures_arr[1],
-            east: textures_arr[2],
-            west: textures_arr[3],
-            south: textures_arr[4],
-            north: textures_arr[5]
-        }
-    }
-
-    return blocks
-}
 
 /**
  * Server
@@ -48,9 +19,6 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
         const buildResDirPath = path.join(buildPath, `${projectName}_RP`)
         const resDir = (...name) => path.join(buildResDirPath, ...name)
 
-        // 初始化 blocks.json 数据
-        const blocksJsonPath = path.join(buildBehDirPath, "blocks.json")
-        const blocks = { "format_version": "1.20.20" }
 
         //生成item_texture.json
         const item_texture_dir = resDir("textures/items")
@@ -66,26 +34,12 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
         const flipbook_textures_path = resDir("textures/flipbook_textures.json")
         saveFile(flipbook_textures_path, JSON.stringify(FlipbookTextures.flipbook_textures, null, 2))
 
-        //_ui_defs.json
-        const ui_def = UISystemRegistryServer.getUIdefList()
-        saveFile(resDir("ui/_ui_defs.json"), JSON.stringify({ "ui_defs": ui_def }, null, 2))
-
-        UISystemRegistryServer.getUISystemList().forEach((ui_system) => {
-            if (ui_system.path) {
-                saveFile(resDir(ui_system.path, `${ui_system.name}.json`), JSON.stringify(ui_system, null, 2))
-            }
-        })
 
         // 从全局注册表中获取数据
         const dataList = GRegistryServer.getDataList()
-        // console.log("dataList:", dataList)
+
         // 遍历数据并保存到相应的目录
         dataList.forEach(({ name, root, path: dataPath, data }) => {
-            // 处理 blocks.json 数据
-            if (dataPath === "blocks/") {
-                const processedBlocks = processBlocksData(data)
-                Object.assign(blocks, processedBlocks)
-            }
 
             // 根据数据类型确定根目录
             const rootPath = root === "behavior" ? `${projectName}_BP` : `${projectName}_RP`
@@ -97,10 +51,6 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
             // 保存文件
             saveFile(filePath, JSON.stringify(data, null, 2))
         })
-
-        // 保存 blocks.json
-        console.log("保存 blocks.json 文件:", blocksJsonPath)
-        saveFile(blocksJsonPath, JSON.stringify(blocks, null, 2))
 
         console.log(`已加载并执行 ${modPath} 文件！`)
     } catch (err) {

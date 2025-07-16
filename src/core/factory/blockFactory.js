@@ -6,6 +6,8 @@ import { OreBlock } from "../block/oreBlock.js";
 import { RotatableBlock } from "../block/rotatableBlock.js";
 import { GRegistry } from "../registry.js";
 
+//blocks.json
+const blocks_json = {"format_version": "1.20.20"}
 
 /**
  * 注册方块到注册表中。
@@ -18,6 +20,21 @@ const registerBlock = (block) => {
 
     const block_name = block.identifier.replace(":", "_");
     GRegistry.register(block_name, "behavior", "blocks/", block);
+    
+    //blocks.json
+    const textures_arr = block.textures;
+    blocks_json[block_name] = {
+        textures: {
+            up: textures_arr[0],
+            down: textures_arr[1],
+            east: textures_arr[2],
+            west: textures_arr[3],
+            south: textures_arr[4],
+            north: textures_arr[5]
+        }
+    }
+
+    GRegistry.register("blocks","behavior","",blocks_json);
 };
 
 const registerFeature = (feature)=>{

@@ -1,7 +1,6 @@
 import { serialize } from "@sapdon/utils/index.js"
 import { cliRequest } from "../cli/dev-server/client.js"
 import { server } from "../cli/dev-server/server.js"
-import { UISystemRegistry } from "./ui/registry/uiSystemRegistry.js"
 import { handleRemoteLogger } from "@sapdon/cli/remoteLogger/server.js"
 
 const clientRegistryData: any[] = []
@@ -23,6 +22,7 @@ export class GRegistry {
 
     static submit() {
         cliRequest('submitGregistry', clientRegistryData.map(item => {
+            //console.log("Data is:",item.data,"type:",typeof(item.data))
             const data = typeof item.data === 'string'
                 ? JSON.parse(item.data)
                 : serialize<object, object>(item.data as any)
@@ -56,7 +56,6 @@ export class GRegistryServer {
 export namespace registry {
     export function submit() {
         GRegistry.submit()
-        UISystemRegistry.submit()
         cliRequest('submit', {})
     }
 }
