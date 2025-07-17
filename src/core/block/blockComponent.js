@@ -1,4 +1,39 @@
 export class BlockComponent {
+  /**
+   * 
+   * @param {string} texture 
+   * @param {string?} tint_method 
+   * @returns 
+   */
+  static setDestructionParticles(texture,tint_method){
+    return new Map([[
+      "minecraft:destruction_particles",{
+        "texture": texture,
+        "tint_method": tint_method
+      }
+    ]])
+    
+  }
+  /**
+   * 自定义方块组件 
+   * [warning] 需要 Scripting V2.0.0
+   * @param {string} component_id 组件标识符
+   * @param {object} params 自定义参数接口对象
+   * @returns {Map} 物品组件Map
+   */
+  static setCustomComponentV2(component_id,params){
+    return new Map([[
+      component_id,
+      params
+    ]]);
+  }
+
+ /**
+  * 
+  * @param {Array} interval_range 
+  * @param {boolean} looping 
+  * @returns 
+  */
  static setTick(interval_range,looping){
   return new Map().set("minecraft:tick",{
     interval_range:interval_range,

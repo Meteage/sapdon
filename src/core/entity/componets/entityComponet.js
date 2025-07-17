@@ -1,6 +1,16 @@
 import { RideableComponentDesc } from '../../type.js'
 
 export class EntityComponent {
+    /**
+   * 设置实体是否可以堆叠
+   * @returns 
+   */
+ static setIsStackable(){
+  return new Map([[
+              "minecraft:is_stackable",{}
+          ]])
+ }
+ 
   /**
    * 设置实体周围的效果范围
    * @param {Object} options - 效果配置

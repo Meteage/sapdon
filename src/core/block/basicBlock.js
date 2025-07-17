@@ -1,6 +1,7 @@
 import { Serializer, serialize } from "../../utils/index.js";
 import { AddonBlock, AddonBlockDefinition, AddonBlockDescription } from "../addon/block/block.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
+import { BlockComponent } from "./blockComponent.js";
 
 export class BasicBlock {
     /**
@@ -40,6 +41,29 @@ export class BasicBlock {
         this.states = new Map();
         this.components = new Map();
         this.permutations = [];
+
+        this.addComponent(
+            BlockComponent.setMaterialInstances ({
+                "down": {
+                    "texture": textures_arr[0] 
+                },
+                "up": {
+                    "texture": textures_arr[1]
+                },
+                "north": {
+                    "texture": textures_arr[2]
+                },
+                "east": {
+                    "texture": textures_arr[3]
+                },
+                "south": {
+                    "texture": textures_arr[4]
+                },
+                "west": {
+                    "texture": textures_arr[5]
+                }
+            })
+        )
     }
     
     getId() {
@@ -108,7 +132,7 @@ export class BasicBlock {
     @Serializer
     toObject() {
         return serialize(new AddonBlock(
-            "1.21.50", // 格式版本
+            "1.21.90", // 格式版本
             new AddonBlockDefinition(
                 new AddonBlockDescription(
                     this.identifier,

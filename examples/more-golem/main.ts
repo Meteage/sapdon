@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
@@ -220,6 +220,70 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
             .toObject()
         )
       )
+
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "apple");
+      neoGuidebook.format_version = "1.21.90"
+neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:guibook",{}));
+
+const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook","ui/",[320,207],"",16);
+
+//1
+//本书介绍页
+const book_intro = new StackPanel("book_intro_panel",undefined);
+const book_intro_text = "自定义的模组介绍";
+// 添加书名标题
+book_intro.addStack(["100%", "10%"],new Label("book_name",undefined).setText(new Text().setText("NeoGuidebook").setColor([0,0,0])));
+book_intro.addStack(["100%", "90%"],new Label("book_intro",undefined).setText(new Text().setText(book_intro_text).setColor([0,0,0])))
+
+//章节目录
+const book_chapter = new StackPanel("book_chapter_panel",undefined);
+//添加标题
+book_chapter.addStack(["100%","10%"],new Label("book_chapter",undefined).setText(new Text().setText("Chaper").setColor([0,0,0])))
+//添加具体目录
+book_chapter.addStack(["100%","90%"],
+    //
+    new StackPanel("book_directory",undefined)
+    //分割
+    .addStack(["100%","20%"],new Panel("none",undefined))
+
+    .addStack(["100%","20%"],
+        new StackPanel("chaper1",undefined).setOrientation("horizontal")
+        //添加章节跳转按键
+        .addStack(["20%","100%"],
+            //按键实现 继承自"sapdon_form_button_factory"
+            new UIElement("b1",undefined,"server_form.sapdon_form_button_factory")
+            //绑定脚本按钮
+            .addVariable("binding_button_text","test3") //绑定表单按钮test1
+            .addVariable("default_texture","textures/items/apple")
+            .addVariable("hover_texture","textures/items/diamond")
+            .addVariable("pressed_texture","textures/ui/book_pageleft_pressed")
+        )
+        //添加章节名字
+        .addStack(["80%","100%"],new Label("chaper_name",undefined).setText(new Text().setText("chapter 1").setColor([0,0,0])))
+    )
+    //
+    .addStack(["100%","20%"],
+        new StackPanel("chaper2",undefined).setOrientation("horizontal")
+        //添加图标
+        .addStack(["20%","100%"],
+            //按键实现 继承自"sapdon_form_button_factory"
+            new UIElement("b1",undefined,"server_form.sapdon_form_button_factory")
+            //绑定脚本按钮
+            .addVariable("binding_button_text","test4") //绑定表单按钮test1
+            .addVariable("default_texture","textures/items/diamond")
+            .addVariable("hover_texture","textures/items/apple")
+        )
+        //添加章节名字
+        .addStack(["80%","100%"],new Label("chaper_name",undefined).setText(new Text().setText("chapter 2").setColor([0,0,0])))
+
+    )
+)
+
+neo_guidebook.addPage("page_index0",book_intro,book_chapter);
+neo_guidebook.addPage("page_index1",new Panel("conten1").addControls([new Label("t1",undefined).setText(new Text().setText("第一章节内容\n介绍\n1\n2").setColor([0,0,0]))]),new Panel("none"));
+neo_guidebook.addPage("page_index2",new Panel("conten2").addControls([new Label("t1",undefined).setText(new Text().setText("第二章节内容\n介绍\n1\n2").setColor([0,0,0]))]),new Panel("none"));
+
+
 
 // 提交所有注册
 registry.submit()

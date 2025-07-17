@@ -9,7 +9,7 @@ export class UISystemRegistry {
         this.#ui_system_map[ui_system_path] = ui_system
         this.#ui_def_list.push(ui_system_path)
         GRegistry.register(ui_system.name,"resource",ui_system.path,ui_system);
-        GRegistry.register("_ui_def","resource","ui/",this.#ui_def_list);
+        GRegistry.register("_ui_defs","resource","ui/",{"ui_defs": this.#ui_def_list});
     }
 
     // 添加外部 UI 定义
@@ -18,8 +18,7 @@ export class UISystemRegistry {
             throw new Error("参数必须是一个数组")
         }
         this.#ui_def_list.concat(ui_defs)
-        GRegistry.register("_ui_def","resource","ui/",this.#ui_def_list);
-
+        GRegistry.register("_ui_defs","resource","ui/",{"ui_defs": this.#ui_def_list});
     }
 }
 

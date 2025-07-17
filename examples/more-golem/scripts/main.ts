@@ -1,5 +1,8 @@
 import { BlockComponent, BlockComponentTypes, BlockFilter, BlockPermutation, BlockVolume, Container, Dimension, Entity, EntityComponentTypes, ItemStack, system, Vector3, world } from "@minecraft/server";
 import { Utils } from "./utils.js";
+import { sapdon_system } from "./sapdon_lib/sapdon_system.js";
+
+sapdon_system
 
 //常量区
 const GOLEM_PROPERTY = "more_golem:golem_index";
