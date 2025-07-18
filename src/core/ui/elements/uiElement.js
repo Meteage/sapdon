@@ -99,6 +99,13 @@ export class UIElement {
     }
 
     serialize() {
+         // 复制Control的属性
+        for (const key in this.control) {
+            if (this.control.hasOwnProperty(key)) {
+                this.properties.set(key, this.control[key]);
+            }
+        }
+
         const json = Object.fromEntries(this.properties);
         Object.assign(json,Object.fromEntries(this.variables))
         return {

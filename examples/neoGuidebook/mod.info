@@ -1,7 +1,8 @@
 {
   "name": "neoGuidebook",
-  "description": "A new sapdon project",
-  "author": "Sapdon",
+  "description": "neoGuidebook 类java版帕秋莉手册",
+  "author": "Meteage",
   "version": "1.0.0",
-  "min_engine_version": "1.19.50"
+  "min_engine_version": "1.21.00",
+  "language": "ts"
 }

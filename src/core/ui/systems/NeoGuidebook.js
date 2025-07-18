@@ -144,8 +144,8 @@ export class NeoGuidebook {
     #createHomeButton(offset,size,bindingButtonName) {
         return new UIElement("home_button", undefined, "server_form.sapdon_form_button_factory")
             .addVariable("binding_button_text", bindingButtonName)
-            .addVariable("default_texture", "textures/gui/anvil-arrow-default")
-            .addVariable("hover_texture", "textures/gui/anvil-arrow-pressed")
+            .addVariable("default_texture", "textures/ui/book_shiftleft_default")
+            .addVariable("hover_texture", "textures/ui/book_shiftleft_hover")
             .addProp("offset", offset)
             .addProp("size", size)
             .addProp("layer", 5)

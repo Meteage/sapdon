@@ -9,6 +9,35 @@ import { Sprite } from "../properties/sprite.js";
 export const ServerFormSystem = new UISystem("server_form:server_form","ui/");
 
 
+export class ServerFormButton extends UIElement{
+  /**
+   * 定义一个新的表单按钮
+   * @param {*} name 
+   * @param {*} binding_button_name 
+   */
+  constructor(name,binding_button_name){
+    super(name,undefined,"server_form.sapdon_form_button_factory")
+    this.addVariable("binding_button_text",binding_button_name) 
+  }
+  /**
+   * 
+   * @param {string} texture 
+   * @returns 
+   */
+  setDefaultTexture(texture){
+    this.addVariable("default_texture",texture)
+    return this
+  }
+  setPressedTexture(texture){
+    this.addVariable("pressed_texture",texture)
+    return this
+  }
+  setHoverTexture(texture){
+    this.addVariable("hover_texture",texture)
+    return this
+  }
+}
+
 //表单按钮模板
 const form_button_template = new Button("sapdon_form_button_template","common.button");
       form_button_template.addVariable("pressed_button_name", "button.form_button_click")
