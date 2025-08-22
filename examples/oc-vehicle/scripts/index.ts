@@ -69,7 +69,7 @@ export class Main extends MinecraftGameInstance {
                 }
             }
         })
-        
+
     }
 }
 

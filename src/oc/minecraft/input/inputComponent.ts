@@ -1,10 +1,18 @@
-import { InputButton, ButtonState as MCButtonState, Entity, Player } from "@minecraft/server"
+import { Entity, Player, world, ButtonState } from "@minecraft/server"
 import { PlayerInputComponent } from "../../input/base.js"
 import { utils } from "../utils.js"
 import { Optional } from "../../../oc/optional.js"
+import { getGameInstance } from "@sapdon/runtime/arch.js"
 
 export class MinecraftPlayerInputComponent extends PlayerInputComponent<Entity> {
     private playerRef: Optional<Player> = Optional.none()
+
+    static {
+        world.afterEvents.playerButtonInput.subscribe(e => {
+            const input = getGameInstance()?.getLevel()?.getManager(e.player.id).getComponentUnsafe(MinecraftPlayerInputComponent)
+            input?.inputKey(e.button, e.newButtonState === ButtonState.Pressed)
+        })
+    }
 
     onTick(): void {
         if (this.playerRef.isEmpty()) {
@@ -18,12 +26,6 @@ export class MinecraftPlayerInputComponent extends PlayerInputComponent<Entity> 
         const player = this.playerRef.unwrap()
         const inputInfo = player.inputInfo
         const { x, y } = inputInfo.getMovementVector()
-        this.inputAxis('LStick', [ x, y ])
-
-        const JumpState = inputInfo.getButtonState(InputButton.Jump)
-        const SneakState = inputInfo.getButtonState(InputButton.Sneak)
-
-        this.inputKey('Space', JumpState === MCButtonState.Pressed)
-        this.inputKey('LShift', SneakState === MCButtonState.Pressed)
+        this.inputAxis('Movement', [ x, y ])
     }
 }
