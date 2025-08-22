@@ -4,7 +4,7 @@ import { Vec3 } from "@sapdon/runtime/math/index.js";
 
 export class EasyKinematicsComponent extends CustomComponent<Entity> {
     constructor(
-        readonly mass: number,
+        public mass = 1,
         public allowRotation: boolean = false,
         public simulated: boolean = false,
     ) {
@@ -15,7 +15,7 @@ export class EasyKinematicsComponent extends CustomComponent<Entity> {
     /**
      * Z 无法使用，实际上只允许 X 和 Y 轴旋转
      */
-    torque: Vec3 = Vec3.fromXYZ(0, 0, 0)
+    angularVelocity: Vec3 = Vec3.fromXYZ(0, 0, 0)
 
     onTick(dt: number): void {
         this.getEntity().use(en => {
