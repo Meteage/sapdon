@@ -56,8 +56,8 @@ export class ComponentManager<Actor> {
     #prependTicks: Function[] = []
     #nextTicks: Function[] = []
 
-    getComponentUnsafe(ctor: ComponentCtor<Actor>) {
-        return this.#components.get(ctor)
+    getComponentUnsafe<T extends ComponentCtor<Actor>>(ctor: T): InstanceType<T> {
+        return this.#components.get(ctor) as any
     }
 
     getComponent<T extends Component<Actor>>(ctor: ComponentCtor<Actor, T>): Optional<T> {
@@ -85,7 +85,9 @@ export class ComponentManager<Actor> {
         if (REQUIRED_COMPONENTS in component) {
             //@ts-ignore
             for (const [ ctor, comp ] of component[REQUIRED_COMPONENTS]) {
-                this.#attachComponent(ctor, comp, false)
+                if (!component.getManager().getComponentUnsafe(ctor)) {
+                    this.#attachComponent(ctor, comp, false)
+                }
             }
         }
 
@@ -248,7 +250,7 @@ export function RequireComponents<Actor>(...params: RequireComponentsParam<Actor
  */
 export function lazyGet<T extends ComponentCtor<unknown>>(component: Component<unknown>, ctor: T): InstanceType<T> {
     let inst: any = null
-    return new Proxy(Object.prototype, {
+    return new Proxy(Object.create(Object.prototype), {
         get(_, p) {
             if (inst) {
                 return inst[p]

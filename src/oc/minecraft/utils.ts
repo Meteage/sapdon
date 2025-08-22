@@ -17,7 +17,7 @@ class Utils {
 
     @MinecraftMethod
     toPlayer(entity: Entity): Optional<Player> {
-        return Optional.some(world.getAllPlayers().find(p => p.id === entity.id) as Player)
+        return Optional.some(entity as Player)
     }
 
     @MinecraftMethod

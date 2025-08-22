@@ -19,14 +19,26 @@ class KeyState implements IKeyState {
     consume(): void {
         this.times--
     }
-    
+
+}
+
+export interface InputKeyMapping {
+    Jump: boolean
+    Sneak: boolean
+    Attack: boolean
+    Interact: boolean
+    Sprint: boolean
+}
+
+export interface InputAxisMapping {
+    Movement: [ number, number ]
 }
 
 export class PlayerInputComponent<Actor> extends BaseComponent<Actor> {
     readonly keyStateMapping = new Map<string, IKeyState>()
     readonly axisMapping = new Map<string, AxisValue>()
 
-    inputKey(key: string, pressing: boolean) {
+    inputKey(key: keyof InputKeyMapping, pressing: boolean) {
         let state = this.keyStateMapping.get(key) ?? new KeyState()
 
         if (pressing) {
@@ -40,27 +52,27 @@ export class PlayerInputComponent<Actor> extends BaseComponent<Actor> {
         this.keyStateMapping.set(key, state)
     }
     
-    inputAxis(key: string, value: AxisValue) {
+    inputAxis(key: keyof InputAxisMapping, value: AxisValue) {
         this.axisMapping.set(key, value)
     }
 
-    getKeyState(key: string) {
+    getKeyState(key: keyof InputKeyMapping) {
         return this.keyStateMapping.get(key)
     }
 
-    getAxis(key: string): AxisValue | undefined {
+    getAxis(key: keyof InputAxisMapping): AxisValue | undefined {
         return this.axisMapping.get(key)
     }
 
-    getKeyPressing(key: string) {
+    getKeyPressing(key: keyof InputKeyMapping) {
         return this.getKeyState(key)?.pressing ?? false
     }
 
-    getKeyPressTimes(key: string) {
+    getKeyPressTimes(key: keyof InputKeyMapping) {
         return this.getKeyState(key)?.times ?? 0
     }
 
-    exhaust(key: string) {
+    exhaust(key: keyof InputKeyMapping) {
         const state = this.getKeyState(key)
         if (state) {
             state.times = 0
