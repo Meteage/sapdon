@@ -3,12 +3,14 @@ import { CustomComponent } from "@sapdon/runtime/core.js";
 import { Vec3 } from "@sapdon/runtime/math/index.js";
 
 export class EasyKinematicsComponent extends CustomComponent<Entity> {
+    angularVelocity: Vec3;
     constructor(
         readonly mass: number,
         public allowRotation: boolean = false,
         public simulated: boolean = false,
     ) {
         super()
+        this.angularVelocity = Vec3.fromXYZ(0, 0, 0);
     }
 
     force: Vec3 = Vec3.fromXYZ(0, 0, 0)

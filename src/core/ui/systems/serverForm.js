@@ -134,7 +134,9 @@ export class ServerUISystem  {
 
     const custom_server_form_factory =  new Panel("custom_server_form_factory");
         custom_server_form_factory.factory.setName("server_form_factory") //工程名被绑定至表单，不可改动
-        .setControlIds({"long_form": "@server_form.custom_root_panel"});
+        .setControlIds({
+          "long_form": "@server_form.custom_root_panel"
+        });
 
     //加入自定义表单内容
     const main_screen_content = new UIElement("main_screen_content")

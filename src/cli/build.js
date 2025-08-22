@@ -24,7 +24,6 @@ import { syncDevFilesServer } from './dev-server/syncFiles.js'
 import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
 import { GRegistryServer } from '../core/registry.js'
-import { UISystemRegistryServer } from '../core/ui/registry/uiSystemRegistry.js'
 import { getBuildConfig } from './meta/buildConfig.js'
 import { getBuildDirBp, getProjectPath } from './init.js'
 
@@ -262,7 +261,6 @@ export const buildProject = async (projectPath, projectName) => {
         // 在客户端启动前启动服务器
         startDevServer()
         GRegistryServer.startServer()
-        UISystemRegistryServer.startServer()
         server.handle('submit', () => {
             //只有当buildMode为development时才加载用户modjs文件
             if (buildConfig.buildOptions.buildMode === "development") {

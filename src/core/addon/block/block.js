@@ -38,8 +38,8 @@ export class AddonBlockDescription {
     /**
      * 方块描述类
      * @param {string} identifier 唯一标识符
-     * @param {map} traits 方块特性
-     * @param {map} states 方块状态
+     * @param {Map} traits 方块特性
+     * @param {Map} states 方块状态
      * @param {AddonMenuCategory} menu_category 
      */
     constructor(identifier, traits, states, menu_category){

@@ -23,7 +23,7 @@ export class TemptBehavior {
     /**
      * 设置是否会被吓跑。
      * @param {boolean} canGetScared 是否会被吓跑
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     canGetScared(canGetScared) {
       if (typeof canGetScared !== "boolean") {
@@ -36,7 +36,7 @@ export class TemptBehavior {
     /**
      * 设置是否考虑垂直距离。
      * @param {boolean} canTemptVertically 是否考虑垂直距离
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     canTemptVertically(canTemptVertically) {
       if (typeof canTemptVertically !== "boolean") {
@@ -49,7 +49,7 @@ export class TemptBehavior {
     /**
      * 设置是否在被骑乘时被吸引。
      * @param {boolean} canTemptWhileRidden 是否在被骑乘时被吸引
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     canTemptWhileRidden(canTemptWhileRidden) {
       if (typeof canTemptWhileRidden !== "boolean") {
@@ -62,7 +62,7 @@ export class TemptBehavior {
     /**
      * 设置吸引实体的物品列表。
      * @param {Array} items 吸引实体的物品列表
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     setItems(items) {
       if (!Array.isArray(items) || items.length === 0) {
@@ -76,7 +76,7 @@ export class TemptBehavior {
      * 设置播放吸引声音的随机间隔时间。
      * @param {number} min 最小间隔时间
      * @param {number} max 最大间隔时间
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     setSoundInterval(min, max) {
       if (typeof min !== "number" || typeof max !== "number" || min < 0 || max < 0) {
@@ -89,7 +89,7 @@ export class TemptBehavior {
     /**
      * 设置移动速度倍数。
      * @param {number} speedMultiplier 移动速度倍数
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     setSpeedMultiplier(speedMultiplier) {
       if (typeof speedMultiplier !== "number" || speedMultiplier <= 0) {
@@ -102,7 +102,7 @@ export class TemptBehavior {
     /**
      * 设置吸引时播放的声音。
      * @param {string} temptSound 吸引时播放的声音
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     setTemptSound(temptSound) {
       if (typeof temptSound !== "string") {
@@ -115,7 +115,7 @@ export class TemptBehavior {
     /**
      * 设置吸引的最大距离。
      * @param {number} withinRadius 吸引的最大距离
-     * @returns {Tempt} 返回当前实例以支持链式调用
+     * @returns {TemptBehavior} 返回当前实例以支持链式调用
      */
     setWithinRadius(withinRadius) {
       if (typeof withinRadius !== "number" || withinRadius < 0) {

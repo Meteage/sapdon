@@ -1,4 +1,5 @@
-export * from './neoGuidebook.js'
+export * from './neoGuibook/book.js'
+export * from './neoGuibook/page.js'
 export * from './chest.js'
 export * from './containerUISystem.js'
 export * from './guidebook.js'
