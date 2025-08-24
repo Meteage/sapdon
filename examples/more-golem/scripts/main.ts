@@ -11,8 +11,14 @@ const TARGET_PROPERTY = "more_golem:target_index";
 const GOLEM_FARMER_TYPE = "more_golem:frame_golem";
 const GOLEM_TARGET_TYPE = "more_golem:golem_target";
 
-
-
+/**
+ * 调试日志
+ * 
+ */
+function mylog(message: string) {
+    //console.log(message);
+    //world.sendMessage(message);
+}
 
 type position = `${number},${number},${number}`;
 
@@ -155,32 +161,32 @@ class FarmerGolem {
 
     public updateTask() {
 
-        world.sendMessage(`[调试]: 当前任务为 [${this.currentTask}]`);
+        mylog(`[调试]: 当前任务为 [${this.currentTask}]`);
 
         switch (this.currentTask) {
             case FarmTask.Idle:
-                world.sendMessage("[任务] 空闲状态");
+                mylog("[任务] 空闲状态");
 
                 if(this.hasEnoughItems("minecraft:wheat",0)){
-                    world.sendMessage("[任务] 任务切换至 [StoreItemsToChest]");
+                    mylog("[任务] 任务切换至 [StoreItemsToChest]");
                     this.currentTask = FarmTask.StoreItemsToChest;
                 }
                 else if (this.hasRipeCropsNearby()) {
-                        world.sendMessage("[任务] 任务切换至 [HarvestCrops]");
+                        mylog("[任务] 任务切换至 [HarvestCrops]");
                         this.currentTask = FarmTask.HarvestCrops;
                 } 
                 else if (this.hasEmptyFarmlandNearby()) {
-                    world.sendMessage("[调试] 有空田地");
+                    mylog("[调试] 有空田地");
 
                     if (!this.hasSeedsInInventory()) {
-                        world.sendMessage("[调试] 没有种子");
+                        mylog("[调试] 没有种子");
                         if(this.hasChestNearby()){
-                            world.sendMessage("[任务] 任务切换至 [GetSeedsFromChest]");
+                            mylog("[任务] 任务切换至 [GetSeedsFromChest]");
                             this.currentTask = FarmTask.GetSeedsFromChest 
                         }
                     } 
                     else {
-                        world.sendMessage("[任务] 任务切换至 [PlantCrops]");
+                        mylog("[任务] 任务切换至 [PlantCrops]");
                         this.currentTask = FarmTask.PlantCrops;
                     }
                 }
@@ -235,7 +241,7 @@ class FarmerGolem {
                 includeTypes:["minecraft:farmland"]
             }
         );
-        world.sendMessage("[调试] farmlandNearbyList:"+ farmlandNearbyList.length);
+        mylog("[调试] farmlandNearbyList:"+ farmlandNearbyList.length);
         const emptyFarmlandList = farmlandNearbyList.filter((pos)=>{
             return this.self.dimension.getBlock(pos)?.above()?.isAir;
         });
@@ -288,13 +294,13 @@ class FarmerGolem {
     private mainHandIsFull(itemType:string,amount:number): boolean{
         const mainHandItem = this.inventory.getItem(0);
         if(!mainHandItem || mainHandItem.typeId !== itemType ) return false;
-        world.sendMessage("amount:"+mainHandItem.amount);
+        mylog("amount:"+mainHandItem.amount);
         return mainHandItem.amount >= amount;
     }
 
     private hasEmptySlot():boolean {
-        world.sendMessage("[调试] emptySlotsCount:"+this.inventory.emptySlotsCount);
-        world.sendMessage("[调试] hasEmptySlot:"+(this.inventory.emptySlotsCount > 0));
+        mylog("[调试] emptySlotsCount:"+this.inventory.emptySlotsCount);
+        mylog("[调试] hasEmptySlot:"+(this.inventory.emptySlotsCount > 0));
         return this.inventory.emptySlotsCount > 0;
     }
 
@@ -318,13 +324,13 @@ class FarmerGolem {
             // 2.1 检查目标有效性
             if (!target.isValid) {
                 target_map.delete(entityId);
-                world.sendMessage(`[清理] 移除无效目标 ${entityId}`);
+                mylog(`[清理] 移除无效目标 ${entityId}`);
                 continue;
             }
 
             // 2.2 计算距离
             const distance = Utils.getDistance(this.self.location, target.location);
-            world.sendMessage(`[调试] 目标 ${entityId} 距离: ${distance.toFixed(2)}`);
+            mylog(`[调试] 目标 ${entityId} 距离: ${distance.toFixed(2)}`);
 
             // 2.3 检查是否在交互范围内
             if (distance > 2) {
@@ -340,9 +346,9 @@ class FarmerGolem {
 
         // 3. 结果处理
         if (nearestTarget) {
-            world.sendMessage(`[系统] 找到最近目标 (距离: ${minDistance.toFixed(2)})`);
+            mylog(`[系统] 找到最近目标 (距离: ${minDistance.toFixed(2)})`);
         } else if (target_map.size > 0) {
-            world.sendMessage("[提示] 有目标但未进入交互范围");
+            mylog("[提示] 有目标但未进入交互范围");
         }
 
         return nearestTarget;
@@ -354,36 +360,36 @@ class FarmerGolem {
     private registerTask(targetList:Vector3[],onArriveTask:(target:Entity)=>boolean) {
         //退出条件 
         if (targetList.length === 0) {
-            world.sendMessage("[系统] 目标列表无效");
+            mylog("[系统] 目标列表无效");
             this.currentTask = FarmTask.Idle;
             return;
         }
         //拿取物品
         switch(this.currentStage){
             case TaskStage.PlaceTarget:
-                world.sendMessage("[任务] 阶段1 发布路径点");
+                mylog("[任务] 阶段1 发布路径点");
                 //发布路径点
                 placeWaypoints(
                     this.self.dimension,
                     this.numberId,
                     targetList
                 );
-                world.sendMessage(`[系统] 已标记 ${targetList.length} 个目标`);
+                mylog(`[系统] 已标记 ${targetList.length} 个目标`);
                 this.currentStage++;
             break;
 
             case TaskStage.NavigateToTarget:
-                world.sendMessage("[任务] 阶段2 导航至目标");
+                mylog("[任务] 阶段2 导航至目标");
                 const target = this.findNearestTarget();
                 if(target){
-                    world.sendMessage("[系统] 已到达目标点:"+ JSON.stringify(target.location));
+                    mylog("[系统] 已到达目标点:"+ JSON.stringify(target.location));
                     //执行任务
                     if(onArriveTask(target)) this.currentStage++;
                 }
             break;
 
             case TaskStage.TaskFinish:
-                world.sendMessage("[任务] 阶段3 清除全部目标");
+                mylog("[任务] 阶段3 清除全部目标");
                 clearAllTarget();
                 this.currentTask = FarmTask.Idle;
                 this.currentStage = TaskStage.PlaceTarget;
@@ -403,7 +409,7 @@ class FarmerGolem {
             };
             const container = Utils.getBlockContainer(this.self.dimension, chestPos);
             if (!container?.isValid) {
-                world.sendMessage("[警告] 箱子容器无效");
+                mylog("[警告] 箱子容器无效");
                 clearTarget(target);
                 if(isLastTarget){
                     return true;
@@ -412,7 +418,7 @@ class FarmerGolem {
             }
             const seedSlot = Utils.findSlotByItemType(container, "minecraft:wheat_seeds");
             if (seedSlot === undefined) {
-                world.sendMessage("[提示] 箱子没有种子");
+                mylog("[提示] 箱子没有种子");
                 clearTarget(target);
                 if(isLastTarget){
                     return true;
@@ -428,10 +434,10 @@ class FarmerGolem {
 
             if (transferResult) {
                 const newAmount = this.inventory.getSlot(0)?.getItem()?.amount || 0;
-                world.sendMessage(`[系统] 获取种子成功 (当前: ${newAmount}/64)`);
+                mylog(`[系统] 获取种子成功 (当前: ${newAmount}/64)`);
                 //退出条件 1.拿取足够物品  2.没有更多目标了
                 if(this.hasEnoughItems("minecraft:wheat_seeds",64)){
-                    world.sendMessage("[系统] 种子已拿满");
+                    mylog("[系统] 种子已拿满");
                     return true;
                 }
                 else if(isLastTarget){
@@ -457,7 +463,7 @@ class FarmerGolem {
 
             const container = Utils.getBlockContainer(this.self.dimension, chestPos);
             if (!container?.isValid) {
-                world.sendMessage("[警告] 箱子容器无效");
+                mylog("[警告] 箱子容器无效");
                 clearTarget(target);
                 return false;
             }
@@ -469,17 +475,17 @@ class FarmerGolem {
                 if (!item || item.typeId === "minecraft:wheat_seeds") continue;
 
                 if (Utils.transferItemBetweenContainers(i, this.inventory, container)) {
-                    world.sendMessage(`[系统] 已存储 ${item.typeId}`);
+                    mylog(`[系统] 已存储 ${item.typeId}`);
                     storedAny = true;
                 }
             }
 
             // 7. 状态更新
             if (storedAny) {
-                world.sendMessage("[系统] 背包清理完成");
+                mylog("[系统] 背包清理完成");
                 return true;
             } else {
-                world.sendMessage("[警告] 未能存储任何物品");
+                mylog("[警告] 未能存储任何物品");
             }
 
             return false;
@@ -491,7 +497,7 @@ class FarmerGolem {
         this.registerTask(this.findEmptyFarmlandNearby(),(target:Entity)=>{
             //退出条件 1.手上没有物品 2.没有目标
             if (!this.mainHandIsFull("minecraft:wheat_seeds",0)) {
-                world.sendMessage("[系统] 手上没有种子");
+                mylog("[系统] 手上没有种子");
                 return true;
             }
 
@@ -500,7 +506,7 @@ class FarmerGolem {
 
             // 检查是否仍为空
             if (!this.self.dimension.getBlock(plantPos)?.isAir) {
-                world.sendMessage("[警告] 目标位置已被占用");
+                mylog("[警告] 目标位置已被占用");
                 clearTarget(target);
                 return false;
             }
@@ -508,13 +514,13 @@ class FarmerGolem {
             // 消耗种子
             const seedSlot = Utils.findSlotByItemType(this.inventory, "minecraft:wheat_seeds");
             if (seedSlot === undefined) {
-                world.sendMessage("[错误] 种子槽位丢失");
+                mylog("[错误] 种子槽位丢失");
                 return false;
             }
 
             const seedStack = this.inventory.getItem(seedSlot);
             if (!seedStack || seedStack.amount <= 0) {
-                world.sendMessage("[错误] 种子数量不足");
+                mylog("[错误] 种子数量不足");
                 return false;
             }
 
@@ -527,15 +533,15 @@ class FarmerGolem {
             }
 
             this.self.dimension.getBlock(plantPos)?.setType("minecraft:wheat");
-            world.sendMessage("[系统] 种植成功");
+            mylog("[系统] 种植成功");
 
             // 6. 状态更新
             const isLastFarmland = target_map.size === 1;
             clearTarget(target);
-            world.sendMessage(`[系统] 已种植 ${isLastFarmland ? "最后" : ""}块农田`);
+            mylog(`[系统] 已种植 ${isLastFarmland ? "最后" : ""}块农田`);
 
             if (isLastFarmland) {
-                world.sendMessage("[系统] 所有农田已种植完成");
+                mylog("[系统] 所有农田已种植完成");
                 return true;
             }
 
@@ -547,7 +553,7 @@ class FarmerGolem {
         this.registerTask(this.findRipeCropsNearby(),(target:Entity)=>{
             //退出条件 1.背包已满 2.没有目标
             if (this.hasEnoughItems("minecraft:wheat",64)) {
-                world.sendMessage("[系统] 背包已满，需要存储物品");
+                mylog("[系统] 背包已满，需要存储物品");
                 return true;
             }
 
@@ -561,17 +567,18 @@ class FarmerGolem {
             const block = this.self.dimension.getBlock(cropLocation);
             
             // 执行收割
-            block?.setType("minecraft:air");
-            this.self.dimension.spawnItem(new ItemStack("minecraft:wheat_seeds", 1), cropLocation);
-            this.self.dimension.spawnItem(new ItemStack("minecraft:wheat", 1), cropLocation);
+            block?.setType("minecraft:wheat");
+            this.inventory.addItem(new ItemStack("minecraft:wheat"));
+            //this.self.dimension.spawnItem(new ItemStack("minecraft:wheat_seeds", 1), cropLocation);
+            //this.self.dimension.spawnItem(new ItemStack("minecraft:wheat", 1), cropLocation);
 
             // 6. 状态更新
             const isLastCrop = target_map.size === 1;
             clearTarget(target);
-            world.sendMessage(`[系统] 已收获 ${isLastCrop ? "最后" : ""}作物`);
+            mylog(`[系统] 已收获 ${isLastCrop ? "最后" : ""}作物`);
 
             if (isLastCrop) {
-                world.sendMessage("[系统] 所有作物已收获完成");
+                mylog("[系统] 所有作物已收获完成");
                 return true;
             }
 
@@ -584,7 +591,7 @@ function clearTarget(target:Entity){
     const pos_key = locationToPosition(target.location);
     target.remove();
     target_map.delete(pos_key);
-    world.sendMessage(`[调试] 清除目标后剩余: ${target_map.size}`);
+    mylog(`[调试] 清除目标后剩余: ${target_map.size}`);
 }
 
 function clearAllTarget(){
@@ -608,7 +615,6 @@ function scanNearbyBlocks(
 }
 
 
-let golem: FarmerGolem | undefined;
 let numberId = 0;
 
 //只实现一个傀儡的导航
@@ -618,10 +624,10 @@ world.afterEvents.itemUse.subscribe((event) => {
     const dimension = source.dimension;
 
     switch (itemTypeId) {
-        case 'minecraft:apple':
+        case 'golem_craft:farm_golem_summon':
             if(numberId < 16){
                 //傀儡的生成
-                world.sendMessage("已生成傀儡");
+                mylog("已生成傀儡");
                 const golem = new FarmerGolem(dimension,numberId,source.location);
                 system.runInterval(()=>{
                     golem.updateTask()
@@ -631,4 +637,16 @@ world.afterEvents.itemUse.subscribe((event) => {
             
         break;
     }
+});
+
+world.afterEvents.playerSpawn.subscribe((event)=>{
+    system.runTimeout(()=>{
+        const player = event.player;
+        world.sendMessage("欢迎来到稻田傀儡模组示例！作者：Meteage");
+        if(player?.hasTag("gaven_guidebook")) return;
+        world.sendMessage("本模组仅供学习交流使用，请勿用于商业用途！");
+        world.sendMessage("作者B站：俊俊君啊");
+        player?.addTag("gaven_guidebook");
+        player?.runCommand(`give @s sapdon:neo_guidebook 1`);
+    },5*20);
 });

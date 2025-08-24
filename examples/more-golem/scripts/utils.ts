@@ -7,6 +7,10 @@ interface BlockVolumeSize {
     height: number;
 }
 
+function mylog(message: string) {
+    //console.log(message);
+    //world.sendMessage(message);
+}
 
 export namespace Utils {
 
@@ -48,7 +52,7 @@ export namespace Utils {
     
     
     export function getNeighboringBlockListByType(dimension:Dimension,center:Vector3,typeId:string){
-        world.sendMessage("获取周围"+typeId+"类型方块");
+        mylog("获取周围"+typeId+"类型方块");
         const nbv = getNeighboringBlockVolume(center, {
             length: 16,
             width: 16,

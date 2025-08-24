@@ -3,7 +3,6 @@ import { CustomComponent } from "@sapdon/runtime/core.js";
 import { Vec3 } from "@sapdon/runtime/math/index.js";
 
 export class EasyKinematicsComponent extends CustomComponent<Entity> {
-    angularVelocity: Vec3;
     constructor(
         public mass = 1,
         public allowRotation: boolean = false,

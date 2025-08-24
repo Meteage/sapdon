@@ -1,8 +1,8 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
-ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'apple')
+ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'armor_stand')
     .addComponent(ItemComponent.combineComponents(
         ItemComponent.setDisplayName('农业傀儡召唤物'),
         ItemComponent.setCustomComponentV2("golem_craft:golem_summon",
@@ -221,7 +221,100 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
         )
       )
 
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "book_written");
+      neoGuidebook.format_version = "1.21.90"
+      neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:guibook",{}));
+      neoGuidebook.addComponent(ItemComponent.setMaxStackSize(1));
+      neoGuidebook.addComponent(ItemComponent.setDisplayName("稻田傀儡模组指南"));
 
+
+const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook","ui/",[320,207]);
+
+const book_intro_text = "欢迎下载使用稻田傀儡模组 \n \n 本模组为MinecraftPE添加了一种\n新的实体:稻田傀儡 \n \n \n \n \n";
+const book_title_bar_text = "稻田傀儡模组指南\n     by Meteage";
+
+
+//1
+//本书介绍页
+const book_intro = new NeoGuidebookPage("book_intro_panel")
+      .addEmptySpace(["100%","5%"])
+      .addBookTitleBar(book_title_bar_text,["100%","15%"])
+      .addCategoryTitle(book_intro_text,["100%","70%"])
+
+
+
+//合成配方页
+//配方为:干草块 木棍 木棍
+//木棍 紫水晶 木棍
+//干草块 木棍 干草块
+const book_recipe = new NeoGuidebookPage("book_recipe")// 添加书籍分类
+      .addEmptySpace(["100%","5%"])
+      book_recipe.getPanel().addStack(
+        ["50%","30%"],
+        new BookRecipeGrid("recipe_grid",3,3,[
+          "textures/blocks/hay_block_side","textures/items/stick","textures/items/stick",
+          "textures/items/stick","textures/items/amethyst_shard","textures/items/stick",
+          "textures/blocks/hay_block_side","textures/items/stick","textures/blocks/hay_block_side"
+        ])
+      )
+
+
+const BOOK_CHAPTER_LIST = [
+    {
+        chapter_name:`农业傀儡功能介绍`,
+        chapter_texture:"textures/items/apple"
+    },
+    {
+        chapter_name:`农业傀儡行为介绍`,
+        chapter_texture:"textures/items/apple"
+    },
+    {
+        chapter_name:`农业傀儡制作方式`,
+        chapter_texture:"textures/items/apple"
+    }
+];
+
+//章节目录
+const book_chapter = new NeoGuidebookPage("book_chapter_panel")
+      .addChapters(BOOK_CHAPTER_LIST)
+      .buildChapterList()
+
+const golem_function_intro = "农业傀儡是一种可以帮助玩家\n进行农作物种植与收获的傀儡。\n\n农业傀儡可以自动种植和收获\n周围的农作物，极大地提高了\n玩家的农作物管理效率。\n"
+const golem_craft_intro = "制作农业傀儡需要以下材料：\n\n - 2个干草块\n - 4根木棍\n - 1个紫水晶碎片\n\n将这些材料按照特定的配方\n放置在工作台上即可制作出\n农业傀儡。\n"
+const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲暇模式：在没有任务时，\n农业傀儡会在农田附近闲逛。\n\n 2.耕种模式 ：当检测到\n附近有未种植的农作物时，\n农业傀儡会自动前往并进行种植。\n\n 3.收获模式：当农作物成熟时，\n农业傀儡会自动前往并进行收获。\n"
+
+const book_chapter_1 = new NeoGuidebookPage("book_chapter_1")
+      .addEmptySpace(["100%","5%"])
+      .addCategoryTitle("农业傀儡功能介绍",["100%","15%"])
+      .addBookText(golem_function_intro,["100%","75%"])
+      .addEmptySpace(["100%","5%"])
+
+const book_chapter_2 = new NeoGuidebookPage("book_chapter_3")
+      .addEmptySpace(["100%","5%"])
+      .addCategoryTitle("农业傀儡行为介绍",["100%","15%"])
+      .addBookText(golem_behavior_intro,["100%","75%"])
+      .addEmptySpace(["100%","5%"])
+
+const book_chapter_3 = new NeoGuidebookPage("book_chapter_2")
+      .addEmptySpace(["100%","5%"])
+      .addCategoryTitle("农业傀儡制作方式",["100%","15%"])
+      .addBookText(golem_craft_intro,["100%","75%"])
+      .addEmptySpace(["100%","5%"])
+
+
+
+neo_guidebook.addDoublePageStack("page_index0",book_intro.getPanel(),book_chapter.getPanel())
+neo_guidebook.addDoublePageStack("page_index1",book_chapter_1.getPanel(),book_chapter_2.getPanel())
+neo_guidebook.addDoublePageStack("page_index2",book_chapter_3.getPanel(),book_recipe.getPanel())
+/*
+RecipeAPI.registerSimpleShaped('golem_craft:farm_golem_summon',['golem_craft:farm_golem_summon'],
+  ['HSH','SAS','HSH'],{
+    H:'minecraft:hay_block',
+    S:'minecraft:stick',
+    A:'minecraft:amethyst_shard'
+  }
+).tags("crafting_table")
+*/
 
 // 提交所有注册
 registry.submit()

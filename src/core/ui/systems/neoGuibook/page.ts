@@ -112,6 +112,45 @@ export class BookCategoryGrid extends StackPanel {
     }
 }
 
+//创建配方网格组件
+export class BookRecipeGrid extends StackPanel {
+    constructor(id: string, row: number, col: number, items: string[]) {
+        super(id, undefined);
+        this.setControl(new Control().setLayer(6));
+        
+        // 计算每个按钮的宽度和高度百分比
+        const buttonWidth = `${100 / col}%`;
+        const buttonHeight = `${100 / row}%`;
+        
+        // 创建行
+        for (let r = 0; r < row; r++) {
+            const buttonRow = new StackPanel(`button_row_${r}`, undefined)
+                .setOrientation("horizontal");
+            
+            // 为每行添加列
+            for (let c = 0; c < col; c++) {
+                const index = r * col + c;
+                if (index < items.length) {
+                    const button = items[index];
+                    buttonRow.addStack(
+                        [buttonWidth, "100%"], 
+                        new BookImage(`item_${index}`, button, ["100%", "100%"])
+                    );
+                } else {
+                    // 添加空占位
+                    buttonRow.addStack(
+                        [buttonWidth, "100%"], 
+                        new EmptySpace(`empty_${r}_${c}`)
+                    );
+                }
+            }
+            
+            // 添加行到网格
+            this.addStack(["100%", buttonHeight], buttonRow);
+        }
+    }
+}
+
 // 章节项组件
 export class ChapterItem extends Panel {
     constructor(index: number, chapterName: string, texture: string) {
@@ -190,6 +229,12 @@ export class NeoGuidebookPage {
     addDivider(size: [string, string] = ["100%", "5%"]): this {
         this.panel.addStack(size, new Divider("divider"));
         return this;
+    }
+
+    // 添加配方网格
+    addRecipeGrid(row: number, col: number, items: string[], size: [string, string] = ["100%", "30%"]): this {
+        this.panel.addStack(size, new BookRecipeGrid("recipe_grid", row, col, items));
+        return this;    
     }
 
 
