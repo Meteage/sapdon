@@ -1,7 +1,7 @@
 {
   "name": "more-golem",
-  "description": "A new sapdon project",
-  "author": "Sapdon",
+  "description": "你的稻田助手，作者Meteage, B站：俊俊菌啊",
+  "author": "Meteage",
   "version": "1.0.0",
   "min_engine_version": "1.19.50",
   "language": "ts"

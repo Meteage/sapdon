@@ -1,0 +1,134 @@
+{
+    "hud_title_text/title_frame": {
+        "modifications": [
+            {
+                "array_name": "bindings",
+                "operation": "insert_back",
+                "value": [
+                    {
+                    "binding_name": "#hud_title_text_string",
+                    "binding_type": "global"
+                  },
+                    {
+                        "binding_type": "view",
+                        "source_property_name": "(not (%.7s * #hud_title_text_string = 'ui.hud.'))",
+                        "target_property_name": "#visible"
+                    }
+                ]
+            }
+        ]
+    },
+    "preserved_title_display": {
+        "$update_string": "ui.hud.test.",
+        "type": "panel",
+        "controls": [
+            {
+                "data_control": {
+                    "type": "panel",
+                    "size": [0, 0],
+                    "property_bag": {
+                        "#preserved_text": ""
+                    },
+                    "bindings": [
+                        {
+                            "binding_name": "#hud_title_text_string"
+                        },
+                        {
+                            "binding_name": "#hud_title_text_string",
+                            "binding_name_override": "#preserved_text",
+                            "binding_condition": "visibility_changed"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(not (#hud_title_text_string = #preserved_text) and not ((#hud_title_text_string - $update_string) = #hud_title_text_string))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "ui_bar_control_panel": {
+                    "type": "panel",
+                    "controls":[
+                        {
+                            "test_display": {
+                                "type": "image",
+                                "texture": "textures/items/apple",
+                                "size":[32,32],
+                                "bindings": [
+                                    {
+                                        "binding_type": "view",
+                                        "source_control_name": "data_control",
+                                        "source_property_name": "(#preserved_text)",
+                                        "target_property_name": "#text"
+                                    },
+                                    {
+                                        "binding_type": "view",
+                                        "source_property_name": "(#text = 'ui.hud.test.0')",
+                                        "target_property_name": "#visible"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "test_text": {
+                                "type": "label",
+                                "text": "#text_test",
+                                "size":[64,32],
+                                "bindings": [
+                                    {
+                                        "binding_type": "view",
+                                        "source_control_name": "data_control",
+                                        "source_property_name": "(#preserved_text - 'ui.hud.')",
+                                        "target_property_name": "#text_test0"
+                                    },
+                                    {
+                                        "binding_type": "view",
+                                        "source_property_name": "(#text_test0 + '0%')",
+                                        "target_property_name": "#text_test"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "test_display1": {
+                                "type": "image",
+                                "texture": "textures/items/diamond",
+                                "$length":"#text_x",
+                                "size":["$length",32],
+                                "bindings": [
+                                    {
+                                        "binding_type": "view",
+                                        "source_control_name": "data_control",
+                                        "source_property_name": "(#preserved_text)",
+                                        "target_property_name": "#text"
+                                    },
+                                    {
+                                        "binding_type": "view",
+                                        "source_control_name": "data_control",
+                                        "source_property_name": "(#preserved_text - 'ui.hud.test.' + '0%')",
+                                        "target_property_name": "#text_x"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "root_panel": {
+        "modifications": [
+            {
+                "array_name": "controls",
+                "operation": "insert_front",
+                "value": [
+                    
+                    {
+                        "preserved_title_display@preserved_title_display": {}
+                    }
+                ]
+            }
+        ]
+    }
+}

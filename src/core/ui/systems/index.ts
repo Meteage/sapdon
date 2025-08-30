@@ -1,5 +1,7 @@
 export * from './neoGuibook/book.js'
 export * from './neoGuibook/page.js'
+export * from './hud/hud.js'
+export * from './hud/hudElement.js'
 export * from './chest.js'
 export * from './containerUISystem.js'
 export * from './guidebook.js'

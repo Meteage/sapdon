@@ -1,0 +1,25 @@
+{
+  "format_version": "1.17.41",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "sapdon:masterball_recipe"
+    },
+    "tags": [
+      "crafting_table",
+      "altar"
+    ],
+   "pattern": [
+        "HSS",
+        "SAS",
+        "HSH"
+    ],
+    "key": {
+        "H":"minecraft:hay_block",
+        "S":"minecraft:stick",
+        "A":"minecraft:amethyst_shard"
+    },
+    "result": {
+      "item": "golem_craft:farm_golem_summon"
+    }
+  }
+}

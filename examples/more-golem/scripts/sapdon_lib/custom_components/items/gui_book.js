@@ -8,11 +8,14 @@ const item_ui_list ={
 
 let page_index = 0;
 
+function myLog(log){
+    //world.sendMessage(log);
+}
 
 /** @type {import("@minecraft/server").ItemCustomComponent} */
 export const GuiBookItemComponent = {
     onUse({itemStack,source}){
-        world.sendMessage(itemStack.typeId)
+        myLog(itemStack.typeId)
         if(source.typeId != "minecraft:player") return
         showGuidebook(source,item_ui_list[itemStack.typeId])
         //showTestGuideBook(source,"")
@@ -70,26 +73,26 @@ function showGuidebook(target,ui){
     switch(page_index){
         case 0:
             form.show(target).then((response) => {
-                world.sendMessage("response.selection:"+response.selection)
+                myLog("response.selection:"+response.selection)
                 switch(response.selection){
                     case 0:
                         page_index++;
-                        world.sendMessage("下一页")
+                        myLog("下一页")
                         showGuidebook(target,ui);
                         break;
                     case 1:
                         page_index = 1;
-                        world.sendMessage("傀儡功能")
+                        myLog("傀儡功能")
                         showGuidebook(target,ui);
                         break;
                     case 3:
                         page_index = 1;
-                        world.sendMessage("傀儡行为")
+                        myLog("傀儡行为")
                         showGuidebook(target,ui);
                         break;
                     case 5:
                         page_index = 2;
-                        world.sendMessage("傀儡合成")
+                        myLog("傀儡合成")
                         showGuidebook(target,ui);
                         break;
                 }
@@ -100,17 +103,17 @@ function showGuidebook(target,ui){
                 switch(response.selection){
                     case 0:
                         page_index--;
-                        world.sendMessage("上一页")
+                        myLog("上一页")
                         showGuidebook(target,ui);
                         break;
                     case 1:
                         page_index++;
-                        world.sendMessage("下一页")
+                        myLog("下一页")
                         showGuidebook(target,ui);
                         break;
                     case 2:
                         page_index = 0;
-                        world.sendMessage("首页")
+                        myLog("首页")
                         showGuidebook(target,ui);
                         break;
                 }
@@ -121,12 +124,12 @@ function showGuidebook(target,ui){
                 switch(response.selection){
                     case 0:
                         page_index--;
-                        world.sendMessage("上一页")
+                        myLog("上一页")
                         showGuidebook(target,ui);
                         break;
                     case 1:
                         page_index = 0;
-                        world.sendMessage("首页")
+                        myLog("首页")
                         showGuidebook(target,ui);
                         break;
                 }

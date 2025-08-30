@@ -1,18 +1,21 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
-ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'armor_stand')
+ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'farm_golem_summon')
     .addComponent(ItemComponent.combineComponents(
         ItemComponent.setDisplayName('农业傀儡召唤物'),
         ItemComponent.setCustomComponentV2("golem_craft:golem_summon",
           {
             "golem_type":"more_golem:frame_golem"
           }
-        )
+        ),
+        ItemComponent.setInteractButton("召唤傀儡")
     )).format_version = "1.21.90"
 
-const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none",{});
+const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none",{
+  is_spawnable:false
+});
       target_dummy.behavior.addComponent(
         EntityComponent.setTypeFamily(["golem_target"])
       );
@@ -26,7 +29,9 @@ const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none
       })
 
 
-const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/entity/fram_golem");
+const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/entity/fram_golem",{
+  is_spawnable:false
+});
       fram_golem.resource.addGeometry("default","geometry.fram_golem");
       fram_golem.resource.textures = {};
       fram_golem.resource.addTexture("default","textures/entity/fram_golem");
@@ -55,14 +60,14 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
               "height": 1.5
             },
             "minecraft:health": {
-              "value": 100,
-              "max": 100
+              "value": 50,
+              "max": 50
             },
             "minecraft:movement": {
               "value": 0.25
             },
             "minecraft:navigation.walk": {
-              "can_path_over_water": false,
+              "can_path_over_water": true,
               "avoid_water": true,
               "avoid_damage_blocks": true
             },
@@ -81,9 +86,7 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
                 "deals_damage": false
               }
             },
-            "minecraft:knockback_resistance": {
-              "value": 1
-            },
+           
             "minecraft:leashable": {
               "soft_distance": 4,
               "hard_distance": 6,
@@ -95,7 +98,7 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
               "track_target": true
             },
             "minecraft:behavior.move_towards_target": {
-              "priority": 2,
+              "priority": 3,
               "speed_multiplier": 0.9,
               "within_radius": 32
             },
@@ -133,7 +136,6 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
             "minecraft:follow_range": {
               "value": 64
             },
-            "minecraft:conditional_bandwidth_optimization": {},
             "minecraft:scale": {
               "value": 0.5
             }
@@ -211,21 +213,18 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
       }
       fram_golem.behavior.addComponent(
         EntityComponent.combineComponents(
-          new NearestAttackableTargetBehavor(3,golem_filter_arr).toObject(),
-          new PickupItemsBehavior(2)
-            .setCanPickupAnyItem(true)
-            .setCanPickupToHandOrEquipment(true)
-            .setSearchHeight(32)
-            .setGoalRadius(2.2)
-            .toObject()
+          new NearestAttackableTargetBehavor(3,golem_filter_arr)
+          .setMustSee(false)
+          .toObject()
         )
       )
 
-const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "book_written");
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "neoguidebook");
       neoGuidebook.format_version = "1.21.90"
       neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:guibook",{}));
       neoGuidebook.addComponent(ItemComponent.setMaxStackSize(1));
       neoGuidebook.addComponent(ItemComponent.setDisplayName("稻田傀儡模组指南"));
+      neoGuidebook.addComponent(ItemComponent.setInteractButton("打开指南"))
 
 
 const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook","ui/",[320,207]);
@@ -249,13 +248,10 @@ const book_intro = new NeoGuidebookPage("book_intro_panel")
 //干草块 木棍 干草块
 const book_recipe = new NeoGuidebookPage("book_recipe")// 添加书籍分类
       .addEmptySpace(["100%","5%"])
-      book_recipe.getPanel().addStack(
-        ["50%","30%"],
-        new BookRecipeGrid("recipe_grid",3,3,[
-          "textures/blocks/hay_block_side","textures/items/stick","textures/items/stick",
-          "textures/items/stick","textures/items/amethyst_shard","textures/items/stick",
-          "textures/blocks/hay_block_side","textures/items/stick","textures/blocks/hay_block_side"
-        ])
+      book_recipe.getPanel().addStack(["100%","50%"],
+        new Image("t",undefined).setSprite(
+          new Sprite().setTexture("textures/items/recipe_golem")
+        )
       )
 
 
@@ -279,9 +275,9 @@ const book_chapter = new NeoGuidebookPage("book_chapter_panel")
       .addChapters(BOOK_CHAPTER_LIST)
       .buildChapterList()
 
-const golem_function_intro = "农业傀儡是一种可以帮助玩家\n进行农作物种植与收获的傀儡。\n\n农业傀儡可以自动种植和收获\n周围的农作物，极大地提高了\n玩家的农作物管理效率。\n"
-const golem_craft_intro = "制作农业傀儡需要以下材料：\n\n - 2个干草块\n - 4根木棍\n - 1个紫水晶碎片\n\n将这些材料按照特定的配方\n放置在工作台上即可制作出\n农业傀儡。\n"
-const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲暇模式：在没有任务时，\n农业傀儡会在农田附近闲逛。\n\n 2.耕种模式 ：当检测到\n附近有未种植的农作物时，\n农业傀儡会自动前往并进行种植。\n\n 3.收获模式：当农作物成熟时，\n农业傀儡会自动前往并进行收获。\n"
+const golem_function_intro = "农业傀儡是一种可以帮助玩家\n进行农作物种植与收获的傀儡。\n\n农业傀儡可以自动种植和收获\n周围的农作物，极大地提高了\n玩家的农作物管理效率。\n召唤方法：使用农业傀儡召唤物召唤。\n"
+const golem_craft_intro = "制作农业傀儡需要以下材料：\n\n - 2个干草块\n - 4根木棍\n - 1个紫水晶碎片\n\n将这些材料按照特定的配方\n放置在工作台上即可制作出\n农业傀儡。\n\n\n\n"
+const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲暇模式：在没有任务时，\n农业傀儡会在农田附近闲逛。\n\n 2.耕种模式 ：当检测到\n附近有未种植的农作物时，\n农业傀儡会自动前往并进行种植。\n\n 3.收获模式：当农作物成熟时，\n农业傀儡会自动前往并进行收获。\n 任务执行： 傀儡执行任务的间隔为2秒一次。\n"
 
 const book_chapter_1 = new NeoGuidebookPage("book_chapter_1")
       .addEmptySpace(["100%","5%"])
@@ -315,6 +311,52 @@ RecipeAPI.registerSimpleShaped('golem_craft:farm_golem_summon',['golem_craft:far
   }
 ).tags("crafting_table")
 */
+
+UISystemRegistry.addOuterUIdefs(["ui/det_progress.json","ui/hud_screen.json"]);
+
+const statebar0 = new Image("statebar0",undefined)
+    .setSprite( 
+      new Sprite().setTexture("textures/gui/statebar")
+      .setUV([0,5]).setUVSize([182,5])
+    )
+    .setLayout(new Layout()
+      .setAnchorFrom("bottom_left")
+      .setAnchorTo("bottom_left")
+      .setSize(["30%","6%"])
+    )
+    statebar0.addProp("color", [1, 0.8, 0])
+
+const statebar1 = new Image("statebar1",undefined)
+    .setSprite( 
+      new Sprite().setTexture("textures/gui/statebar")
+      .setUV([0,5]).setUVSize([182,5])
+    )
+    .setLayout(new Layout()
+      .setAnchorFrom("bottom_left")
+      .setAnchorTo("bottom_left")
+      .setSize(["30%","6%"])
+    )
+    statebar1.addProp("color", [1, 0, 0])
+
+const statebar2 = new Image("statebar2",undefined)
+    .setSprite( 
+      new Sprite().setTexture("textures/gui/statebar")
+      .setUV([0,5]).setUVSize([182,5])
+    )
+    .setLayout(new Layout()
+      .setAnchorFrom("bottom_left")
+      .setAnchorTo("bottom_left")
+      .setSize(["30%","6%"])
+    )
+    statebar2.addProp("color", [1, 0.8, 1])
+
+HudUISystem.mountRootElement(
+  new HudStatePanel("icon")
+  .addStateControl(0,statebar0)
+  .addStateControl(1,statebar1)
+  .addStateControl(2,statebar2)
+  .getPanel()
+)
 
 // 提交所有注册
 registry.submit()

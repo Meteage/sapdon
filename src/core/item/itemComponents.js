@@ -1,4 +1,15 @@
 export class ItemComponent {
+  /**
+   * 设置交互按钮
+   * @param {string} interact_text 交互文本
+   * @returns 交互按钮组件
+   */
+  static setInteractButton(interact_text){
+    return new Map([[
+      "minecraft:interact_button",
+      interact_text
+    ]])
+  }
 
   /**
    * 自定义物品组件 

@@ -1,0 +1,9 @@
+{
+  "ui_defs": [
+    "ui/chest_screen.json",
+    "ui/server_form.json",
+    "ui/neo_guidebook.json",
+    "ui/det_progress.json",
+    "ui/hub_screen.json"
+  ]
+}

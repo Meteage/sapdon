@@ -9,9 +9,11 @@ export class NearestAttackableTargetBehavor{
     }
     setMustReach(must_reach){
         this.must_reach = must_reach;
+        return this;
     }
     setMustSee(must_see){
         this.must_see = must_see;
+        return this;
     }
 
     @Serializer

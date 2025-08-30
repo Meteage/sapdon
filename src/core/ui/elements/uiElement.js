@@ -27,7 +27,9 @@
     screen - elements that are called by the game directly, usually root panel elements
  */
 
+import { DataBinding } from "../properties/dataBinding.js";
 import { Control } from "../properties/control.js";
+import { Layout } from "../properties/layout.js";
 
 
 
@@ -38,8 +40,10 @@ export class UIElement {
         this.id = template ? `${name}@${template}` : name;
         this.name = name;
         this.control = new Control();
+        this.layout = new Layout();
         this.properties = new Map().set("type",type);
         this.variables = new Map();
+        this.dataBinding = new DataBinding();
         this.modifications = [];
     }
 
@@ -52,6 +56,12 @@ export class UIElement {
                 "size": [ "100%", "100%" ]
             }
         })
+        return this;
+    }
+
+    setLayout(layout){
+        if(!(layout instanceof Layout)) new Error("参数需要Layout类")
+        this.layout = layout;
         return this;
     }
     
@@ -103,6 +113,20 @@ export class UIElement {
         for (const key in this.control) {
             if (this.control.hasOwnProperty(key)) {
                 this.properties.set(key, this.control[key]);
+            }
+        }
+
+        // 复制DataBinding的属性
+        for (const key in this.dataBinding) {
+            if (this.dataBinding.hasOwnProperty(key)) {
+                this.properties.set(key, this.dataBinding[key]);
+            }
+        }
+
+        // 复制Layout的属性
+        for (const key in this.layout) {
+            if (this.layout.hasOwnProperty(key)) {
+                this.properties.set(key, this.layout[key]);
             }
         }
 

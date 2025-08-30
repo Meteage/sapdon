@@ -39,6 +39,7 @@ export class NeoGuidebook {
     private background_image:string = "textures/ui/book_back";
 
     //
+    private debug_mode:boolean = false;
     private system:UISystem;
     private root_panel_id:string;
     private root_panel_name:string;
@@ -128,9 +129,6 @@ export class NeoGuidebook {
             // 书页背景
             this.createBookPage(),
 
-            //Debug文本
-            this.createDebugText(),
-
             // 关闭按钮
             this.createCloseButton(),
 
@@ -141,6 +139,9 @@ export class NeoGuidebook {
             // 章节目录按钮
             this.createHomeButton([0,0], ["8%","8%"], "home_button")
         ]);
+
+        //Debug文本
+        if(this.debug_mode) this.addRootElement(this.createDebugText());
 
         this.updataUI();
     }

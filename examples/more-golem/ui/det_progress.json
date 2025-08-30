@@ -1,0 +1,782 @@
+            {
+    "namespace": "det",
+    "control": {
+        "type": "panel",
+        "bindings": [
+            {
+                "binding_name": "#hud_title_text_string"
+            },
+            {
+                "binding_name": "#hud_title_text_string",
+                "binding_name_override": "#title_text",
+                "binding_condition": "visibility_changed"
+            },
+            {
+                "binding_type": "view",
+                "source_property_name": "not (#hud_title_text_string = #title_text) and ((%.10s * #text) = 'ui.hud.det'))",
+                "target_property_name": "#visible"
+            }
+        ]
+    },
+    "bar": {
+        "type": "panel",
+        "size": [
+            100, 4
+        ],
+        "controls": [
+            {
+                "insane": {
+                    "type": "image",
+                    "texture": "textures/ui/progress_grayscaled",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "keep_ratio": false,
+                    "uv": [
+                        0, 5
+                    ],
+                    "uv_size": [
+                        182, 5
+                    ],
+                    "size": [
+                        100, 4
+                    ],
+                    "color": [1, 0, 0],
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(%.14s * #text = 'ui.hud.det.ins'))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "neutral": {
+                    "type": "image",
+                    "texture": "textures/ui/progress_grayscaled",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "keep_ratio": false,
+                    "uv": [
+                        0, 5
+                    ],
+                    "uv_size": [
+                        182, 5
+                    ],
+                    "size": [
+                        100, 4
+                    ],
+                    "color": [1, 0.8, 0],
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(%.14s * #text = 'ui.hud.det.ntl'))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            },
+            {
+                "sane": {
+                    "type": "image",
+                    "texture": "textures/ui/progress_grayscaled",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "keep_ratio": false,
+                    "uv": [
+                        0, 5
+                    ],
+                    "uv_size": [
+                        182, 5
+                    ],
+                    "size": [
+                        100, 4
+                    ],
+                    "color": [0, 1, 1],
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "(%.14s * #text = 'ui.hud.det.san'))",
+                            "target_property_name": "#visible"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "track": {
+        "type": "panel",
+        "anchor_from": "bottom_left",
+        "anchor_to": "bottom_left",
+        "controls": [
+            {
+                "track_sane": {
+                    "type": "image",
+                    "texture": "textures/ui/progress_grayscaled",
+                    "layer": 0,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "keep_ratio": false,
+                    "uv": [
+                        0, 0
+                    ],
+                    "uv_size": [
+                        182, 5
+                    ],
+                    "size": [
+                        100, 4
+                    ],
+                    "color": [ 0, 1, 1 ]
+                }
+            },
+            {
+                "track_neutral": {
+                    "type": "image",
+                    "texture": "textures/ui/progress_grayscaled",
+                    "layer": 0,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "keep_ratio": false,
+                    "uv": [
+                        0, 0
+                    ],
+                    "uv_size": [
+                        50, 5
+                    ],
+                    "size": [
+                        50, 4
+                    ],
+                    "color": [ 1, 0.8, 0 ]
+                }
+            }
+        ]
+    },
+    "progress": {
+        "type": "panel",
+        "offset": [
+            10, -10
+        ],
+        "size": [
+            100, 4
+        ],
+        "anchor_from": "bottom_left",
+        "anchor_to": "bottom_left",
+        "controls": [
+            {
+                "@control": {}
+            },
+            {
+                "@track": {}
+            },
+            {
+                "bar_0": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        0, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '0')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_5": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        5, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '5')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_10": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        10, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '10')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_15": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        15, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '15')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_20": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        20, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '20')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_25": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        25, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '25')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_30": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        30, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '30')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_35": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        35, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '35')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_40": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        40, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '40')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_45": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        45, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '45')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_50": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        50, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '50')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_55": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        55, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '55')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_60": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        60, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '60')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_65": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        65, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '65')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_70": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        70, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '70')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_75": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        75, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '75')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_80": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        80, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '80')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_85": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        85, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '85')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_90": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        90, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '90')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_95": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        95, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '95')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            },
+            {
+                "bar_100": {
+                    "type": "panel",
+                    "layer": 1,
+                    "anchor_from": "bottom_left",
+                    "anchor_to": "bottom_left",
+                    "size": [
+                        100, 4
+                    ],
+                    "clips_children": true,
+                    "bindings": [
+                        {
+                            "binding_type": "view",
+                            "source_control_name": "control",
+                            "source_property_name": "#title_text",
+                            "target_property_name": "#text"
+                        },
+                        {
+                            "binding_type": "view",
+                            "source_property_name": "((#text - (%.15s * #text)) = '100')",
+                            "target_property_name": "#visible"
+                        }
+                    ],
+                    "controls": [
+                        { "@bar": {} }
+                    ]
+                }
+            }
+        ]
+    }
+}
