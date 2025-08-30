@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout, Grid, GridProp } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
@@ -314,48 +314,89 @@ RecipeAPI.registerSimpleShaped('golem_craft:farm_golem_summon',['golem_craft:far
 
 UISystemRegistry.addOuterUIdefs(["ui/det_progress.json","ui/hud_screen.json"]);
 
-const statebar0 = new Image("statebar0",undefined)
-    .setSprite( 
-      new Sprite().setTexture("textures/gui/statebar")
-      .setUV([0,5]).setUVSize([182,5])
-    )
-    .setLayout(new Layout()
-      .setAnchorFrom("bottom_left")
-      .setAnchorTo("bottom_left")
-      .setSize(["30%","6%"])
-    )
-    statebar0.addProp("color", [1, 0.8, 0])
+const red_progress_back = new Panel("images_back")
+      .addControls([
+        new Image("back0",undefined)
+        .setSprite( 
+          new Sprite().setTexture("textures/gui/statebar")
+          .setUV([0,0]).setUVSize([182,5]).setClipDirection("left").setClipRatio(0.7).setClipPixelPerfect(true)
+        )
+        .setLayout(new Layout().setSize([182,5]))
+        .addProp("color", [1, 0, 0])
+        .setControl(new Control().setLayer(3)),
 
-const statebar1 = new Image("statebar1",undefined)
-    .setSprite( 
-      new Sprite().setTexture("textures/gui/statebar")
-      .setUV([0,5]).setUVSize([182,5])
-    )
-    .setLayout(new Layout()
-      .setAnchorFrom("bottom_left")
-      .setAnchorTo("bottom_left")
-      .setSize(["30%","6%"])
-    )
-    statebar1.addProp("color", [1, 0, 0])
+        new Image("back1",undefined)
+        .setSprite( 
+          new Sprite().setTexture("textures/gui/statebar")
+          .setUV([0,0]).setUVSize([182,5]).setClipDirection("left").setClipRatio(0.4).setClipPixelPerfect(true)
+        )
+        .setLayout(new Layout().setSize([182,5]))
+        .addProp("color", [1, 1, 0])
+        .setControl(new Control().setLayer(2)),
+        new Image("back2",undefined)
+        .setSprite( 
+          new Sprite().setTexture("textures/gui/statebar")
+          .setUV([0,0]).setUVSize([182,5]).setClipDirection("left").setClipRatio(0).setClipPixelPerfect(true)
+        )
+        .setLayout(new Layout().setSize([182,5]))
+        .addProp("color", [0, 0, 0.5])
+        .setControl(new Control().setLayer(1))
+      ])
 
-const statebar2 = new Image("statebar2",undefined)
-    .setSprite( 
-      new Sprite().setTexture("textures/gui/statebar")
-      .setUV([0,5]).setUVSize([182,5])
-    )
-    .setLayout(new Layout()
+
+
+const red_progress_item = new StackPanel("red_progress_item",undefined)
+      .setOrientation("horizontal")
+      .addStack(["1%","100%"],
+        new Panel("p",undefined)
+      )
+      .addStack(["98%","100%"],
+        new Image("iamge",undefined)
+        .setSprite(new Sprite().setTexture("textures/gui/statebar")
+        .setUV([1,5]).setUVSize([180,5]).setTiled(true)
+        )
+        .addProp("color", [0, 1, 1])
+        .setControl(new Control().setLayer(8))
+      )
+      .addStack(["1%","100%"],
+        new Panel("p",undefined)
+      )
+
+const red_progress_grid1 = new StackPanel("red_progress_grid",undefined)
+      .setLayout(new Layout().setSize([182,5]))
+      .setOrientation("horizontal")
+      .addStack(["30%","100%"],red_progress_item)
+
+const red_progress_grid2 = new StackPanel("red_progress_grid",undefined)
+      .setLayout(new Layout().setSize([182,5]))
+      .setOrientation("horizontal")
+      .addStack(["30%","100%"],red_progress_item)
+      .addStack(["30%","100%"],red_progress_item)
+
+const red_progress_grid3 = new StackPanel("red_progress_grid",undefined)
+      .setLayout(new Layout().setSize([182,5]))
+      .setOrientation("horizontal")
+      .addStack(["30%","100%"],red_progress_item)
+      .addStack(["30%","100%"],red_progress_item)
+      .addStack(["39%","100%"],red_progress_item)
+
+const red_progress_bar = new Panel("red_progress",undefined)
+     .addControls([
+        red_progress_back,
+        new HudStatePanel("icon_red")
+        .addStateControl(1,red_progress_grid1)
+        .addStateControl(2,red_progress_grid2)
+        .addStateControl(3,red_progress_grid3)
+        .getPanel()
+     ])
+     .setLayout(new Layout()
       .setAnchorFrom("bottom_left")
       .setAnchorTo("bottom_left")
       .setSize(["30%","6%"])
     )
-    statebar2.addProp("color", [1, 0.8, 1])
 
 HudUISystem.mountRootElement(
-  new HudStatePanel("icon")
-  .addStateControl(0,statebar0)
-  .addStateControl(1,statebar1)
-  .addStateControl(2,statebar2)
-  .getPanel()
+  red_progress_bar
 )
 
 // 提交所有注册

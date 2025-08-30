@@ -51,7 +51,7 @@ world.afterEvents.itemUse.subscribe((event) => {
 
 //循环任务
 system.runInterval(()=>{
-    world.sendMessage("tick")
+    //world.sendMessage("tick")
 },20*1)
 
 world.afterEvents.playerSpawn.subscribe((event)=>{
