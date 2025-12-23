@@ -1,0 +1,8 @@
+{
+  "name": "newColorParticle",
+  "description": "多彩粒子",
+  "author": "meteage",
+  "version": "1.0.0",
+  "min_engine_version": "1.19.50",
+  "language": "ts"
+}

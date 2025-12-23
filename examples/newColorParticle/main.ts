@@ -1,4 +1,4 @@
-import { EntityAPI, registry, UISystemRegistry } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, DummyEntity, EntityAPI } from '@sapdon/core'
 
 const dummy = EntityAPI.createDummyEntity("sapdon:color_particle", "textures/entity/none");
 
@@ -32,4 +32,4 @@ dummy.resource.addParticleEffect("color_particle", "sapdon:color_particle");
 dummy.resource.setScript("animate",["particle_player"]);
 
 // 提交所有注册
-registry.submit();
+registry.submit()

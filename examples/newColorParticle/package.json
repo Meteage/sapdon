@@ -1,7 +1,7 @@
 {
-    "name": "sapdon",
+    "name": "ts-sapdon",
     "version": "1.0.0",
-    "main": "main.mjs",
+    "main": "main.ts",
     "scripts": {
         "build": "sapdon build ./",
         "postinstall": "sapdon lib"

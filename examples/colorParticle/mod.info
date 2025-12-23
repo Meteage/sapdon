@@ -1,8 +1,0 @@
-{
-  "name": "colorParticle",
-  "description": "更丝滑的粒子",
-  "author": "Meteage",
-  "version": "1.0.0",
-  "min_engine_version": "1.20.20",
-  "language": "js"
-}

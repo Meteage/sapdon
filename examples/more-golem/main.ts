@@ -281,7 +281,7 @@ const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲
 
 const book_chapter_1 = new NeoGuidebookPage("book_chapter_1")
       .addEmptySpace(["100%","5%"])
-      .addCategoryTitle("农业傀儡功能介绍",["100%","15%"])
+      .addCategoryTitle("农业傀儡功能介绍1111",["100%","15%"])
       .addBookText(golem_function_intro,["100%","75%"])
       .addEmptySpace(["100%","5%"])
 

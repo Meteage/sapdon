@@ -1,5 +1,5 @@
-import { world, system, Dimension, Entity } from "@minecraft/server";
-import { Calculator, Transformation } from "./lib/core";
+import { world, system, Dimension, Entity, Vector3 } from "@minecraft/server";
+import { Calculator, Transformation } from "./lib/core.js";
 
 /**
  * 颜色粒子管理器
@@ -17,7 +17,7 @@ class ColorParticleManager {
      * @param {Function} movementFunction - 自定义粒子运动函数
      * @param {number} tick - 间隔任务的执行间隔（游戏刻）
      */
-    static spawnColorParticle(dimension, location, lifetime, color, movementFunction, tick = 1) {
+    static spawnColorParticle(dimension: Dimension, location:Vector3, lifetime:number, color:{r: number, g: number, b: number}, movementFunction:(currentLocation:Vector3, currentTick:number, totalTicks:number) => Vector3, tick = 1) {
         // 生成颜色粒子实体
         const particle = dimension.spawnEntity("sapdon:color_particle", location);
 
@@ -47,7 +47,7 @@ class ColorParticleManager {
      * @param {number} totalTicks - 粒子的总生命周期（游戏刻）
      * @param {Function} movementFunction - 自定义粒子运动函数
      */
-    static _onParticleTick(particle, totalTicks, movementFunction) {
+    static _onParticleTick(particle: Entity, totalTicks:number, movementFunction:(currentLocation:Vector3, currentTick:number, totalTicks:number) => Vector3) {
         const particleData = this.particleDataMap.get(particle.id);
 
         if (particleData.lifetime > 0) {
@@ -76,6 +76,7 @@ class ColorParticleManager {
 world.afterEvents.itemUse.subscribe((event) => {
     const item = event.itemStack.typeId;
     const player = event.source;
+    world.sendMessage("Item used: " + item);
 
     switch (item) {
         case "minecraft:diamond":
@@ -93,7 +94,7 @@ world.afterEvents.itemUse.subscribe((event) => {
                     player.dimension,
                     location,
                     10, // 生命周期为 100 秒
-                    { r: 0.001, g: 0.001, b: 0.999 }, // 蓝色
+                    { r: 0.101, g: 0.501, b: 0.001 }, // 蓝色
                     (currentLocation, currentTick, totalTicks) => {
                         // 计算旋转后的点
                         const rotatedPoints = Transformation.rotationTransformation(cubePoints, 'y', 2 * Math.PI * (currentTick / totalTicks));
@@ -106,6 +107,26 @@ world.afterEvents.itemUse.subscribe((event) => {
                     1 // 每 1 游戏刻执行一次
                 );
             });
+            break;
+        case "minecraft:gold_ingot":
+            // 使用金锭生成上升的螺旋粒子
+            ColorParticleManager.spawnColorParticle(
+                player.dimension,
+                player.location,
+                10, // 生命周期为 100 秒
+                { r: 0.999, g: 0.501, b: 0.001 }, // 黄色
+                (currentLocation, currentTick, totalTicks) => {
+                    const angle = (2 * Math.PI * currentTick) / totalTicks;
+                    const radius = 2;
+                    const height = currentTick / totalTicks * 5;
+                    return {
+                        x: currentLocation.x + radius * Math.cos(angle),
+                        y: currentLocation.y + height,
+                        z: currentLocation.z + radius * Math.sin(angle)
+                    };
+                },
+                1 // 每 1 游戏刻执行一次
+            );
             break;
     }
 });

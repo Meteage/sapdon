@@ -51,7 +51,7 @@ world.afterEvents.itemUse.subscribe((event) => {
 
 //循环任务
 system.runInterval(()=>{
-    //world.sendMessage("tick")
+    world.sendMessage("tick")
 },20*1)
 
 world.afterEvents.playerSpawn.subscribe((event)=>{
@@ -60,7 +60,7 @@ world.afterEvents.playerSpawn.subscribe((event)=>{
         player.sendMessage("欢迎来到稻田傀儡模组示例！作者：Meteage");
         if(player?.hasTag("gaven_guidebook")) return;
         player.sendMessage("本模组仅供学习交流使用，请勿用于商业用途！");
-        player.sendMessage("作者B站：俊俊君啊");
+        player.sendMessage("作者B站：俊俊君啊11111");
         player?.addTag("gaven_guidebook");
         player?.runCommand(`give @s sapdon:neo_guidebook 1`);
     },5*20);

@@ -7,7 +7,7 @@ const MC_PATH = process.env.MC_PATH
 const MC_BETA_PATH = process.env.MC_BETA_PATH
 
 const MC_INSTALL_PATH = {
-    MAIN: 'AppData/Local/Packages/Microsoft.MinecraftUWP_8wekyb3d8bbwe/LocalState/games/com.mojang/',
+    MAIN: 'AppData/Roaming/Minecraft Bedrock/Users/Shared/games/com.mojang',
     BETA: 'AppData/Local/Packages/Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe/LocalState/games/com.mojang/'
 }
 
