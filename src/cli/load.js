@@ -1,7 +1,7 @@
 import path from "path"
 import { saveFile } from "./utils.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
-import { FlipbookTextures, ItemTextureManager, terrainTextureManager } from "../core/texture.js"
+import { FlipbookTextures, ItemTextureManager, TerrainTextureManager } from "../core/texture.js"
 import { GRegistryServer } from "../core/registry.js"
 
 
@@ -28,7 +28,7 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
         //生成terrain_texture.json
         const terrain_texture_dir = resDir("textures/blocks")
         const terrain_texture_json_path = resDir("textures/terrain_texture.json")
-        generateBlockTextureJson(terrain_texture_dir, terrain_texture_json_path, projectName, terrainTextureManager.getTerrainTextures())
+        generateBlockTextureJson(terrain_texture_dir, terrain_texture_json_path, projectName, TerrainTextureManager.getTerrainTextures())
 
         //生成flipbook_textures.json
         const flipbook_textures_path = resDir("textures/flipbook_textures.json")

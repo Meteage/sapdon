@@ -439,11 +439,11 @@ export class BlockComponent {
     if (!instances || typeof instances !== "object") {
       throw new Error('instances must be an object');
     }
-
+/*
     if (!instances["*"] ) {
       throw new Error('material_instances must include a "*" material instance');
     }
-
+*/
     for (const [key, value] of Object.entries(instances)) {
       if (typeof value === "object") {
         if (!value.texture || typeof value.texture !== "string") {

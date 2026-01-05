@@ -14,20 +14,33 @@ export class GRegistry {
      * @param {string} name 文件名字
      * @param {string} root 根目录，如 "behavior"、"resource" 等
      * @param {string} path 数据的路径，如 "blocks/"、"items/"、"recipes/" 等
-     * @param {string | object} data 实例 必须包含 toJson 方法
+     * @param {object} data 数据操作类实例 通过toObject方法转成正确格式json文本 
      */
-    static register(name: string, root: string, path: string, data: string) {
+    static register(name: string, root: string, path: string, data: object) {
+        //此处是登记注册数据到客户端注册表
+        //此时不能调用toObject 因为此时只是在客户端生成注册数据，并没有定义好数据
+        
+        console.log("Registering:", { name, root, path, data });
+        //输出类名
+        /*
+        const className = data.constructor.name;
+        console.log(`Data is instance of: ${className}`);
+        */
         clientRegistryData.push({ name, root, path, data })
     }
 
     static submit() {
+        //此时用户端已经完成所有注册与更改，提交数据到服务器端
         cliRequest('submitGregistry', clientRegistryData.map(item => {
-            //console.log("Data is:",item.data,"type:",typeof(item.data))
-            const data = typeof item.data === 'string'
-                ? JSON.parse(item.data)
-                : serialize<object, object>(item.data as any)
+            //运行 toObject 方法，获取最终数据
 
-            item.data = data
+            //如果data有toObject方法则调用它
+            console.log("Preparing to submit registry item:", item.data);
+            if (typeof (item.data as any).toObject === 'function') {
+                item.data = (item.data as any).toObject()
+            }
+            console.log("Submitting registry item:", JSON.stringify(item.data));
+            
             return item
         }))
     }

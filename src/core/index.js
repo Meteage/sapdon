@@ -7,7 +7,7 @@ export * from './feature/index.js'
 export * from './feature-rule/index.js'
 export * from './item/index.js'
 export * from './ui/index.js'
-
+export * from './texture.js'
 export * from '../utils/index.js'
 export { registry } from './registry.js'
 

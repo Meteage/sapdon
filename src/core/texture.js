@@ -15,7 +15,7 @@ export class ItemTextureManager {
     }
 }
 
-export class terrainTextureManager {
+export class TerrainTextureManager {
     static terrain_texture_sets = new Map();
     static getTerrainTextureSet(){
         return this.terrain_texture_sets;
