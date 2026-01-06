@@ -98,6 +98,7 @@ export async function generateItemTextureJson(itemTexturesPath, outputPath,proje
     // 合并用户自定义的texture_data
     if(userItemTextures){
       Object.assign(itemTexturesSet,userItemTextures);
+      //console.log('合并后的物品贴图数据:',userItemTextures);
     }
 
     // 生成 JSON 数据
