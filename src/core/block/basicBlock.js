@@ -30,8 +30,9 @@ export class BasicBlock {
             }
         }
 
-        const { hide_in_command = false } = options;
+        const { hide_in_command = false, format_version = "1.21.90" } = options;
 
+        this.format_version = format_version;
         this.identifier = identifier;
         this.category = category;
         this.textures = textures_arr;
@@ -132,7 +133,7 @@ export class BasicBlock {
     @Serializer
     toObject() {
         return serialize(new AddonBlock(
-            "1.21.90", // 格式版本
+           this.format_version, // 格式版本
             new AddonBlockDefinition(
                 new AddonBlockDescription(
                     this.identifier,
