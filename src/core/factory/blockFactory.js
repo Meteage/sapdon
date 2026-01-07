@@ -13,7 +13,7 @@ const blocks_json = {"format_version": "1.20.20"}
  * 注册方块到注册表中。
  * @param {Block} block - 要注册的方块对象。
  */
-const registerBlock = (block) => {
+export const registerBlock = (block) => {
     if (!block || !block.identifier) {
         throw new Error("无效的方块对象或缺少 identifier。");
     }

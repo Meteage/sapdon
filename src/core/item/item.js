@@ -9,9 +9,9 @@ export class Item {
      * @param {string} identifier 物品唯一标识符
      * @param {string} category 菜单栏分类 可选："construction", "nature", "equipment", "items", and "none"
      * @param {string} texture 物品纹理
-     * @param {Object} options 可选参数
-     * @param {string} options.group 分组 
-     * @param {boolean} options.hide_in_command 是否在命令中隐藏，默认为 false
+     * @param {Object?} options 可选参数
+     * @param {string|undefined} options.group 分组 
+     * @param {boolean|undefined} options.hide_in_command 是否在命令中隐藏，默认为 false
      */
     constructor(identifier, category, texture, options = {}) {
         // 参数校验
@@ -29,7 +29,7 @@ export class Item {
             group,
             hide_in_command = false,
             max_stack_size = 64,
-            format_version = "1.20.40"
+            format_version = "1.21.40"
         } = options;
 
         this.identifier = identifier;

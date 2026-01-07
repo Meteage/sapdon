@@ -1,8 +1,11 @@
+import { create } from "lodash";
 import { Boot, Chestplate, Helmet, Leggings } from "../item/armor.js"
 import { Attachable } from "../item/attachable.js";
 import { Food } from "../item/food.js";
 import { Item } from "../item/item.js";
 import { GRegistry } from "../registry.js";
+import { FlipbookItem } from "../item/flipbookItem.js";
+import { registerBlock } from "./blockFactory.js";
 
 const registerItem = (itemData, attachableData) => {
     // 如果 itemData 存在且不为空，则注册
@@ -117,5 +120,28 @@ export const ItemAPI = {
         const item = new Leggings(identifier, item_texture, texture_path, options);
         registerItem(item.item, item.attachable);
         return item;
+    },
+    //注释
+    /**
+	 * 创建并注册翻书物品
+	 * 
+	 * @param {string}identifier - 物品的唯一标识符（如："my_mod:flipbook_item"）
+	 * @param {string}category - 物品所属的分类（如："construction", "equipment"等）
+	 * @param {string}texture - 纹理名称（不包含路径和后缀，如："my_flipbook_texture"）
+	 * @param {Object?}options - 可选的配置参数对象
+	 * @param {string?}options.group - 物品分组，用于在创造模式物品栏中分组显示
+	 * @param {boolean?}options.hide_in_command - 是否在命令自动补全中隐藏该物品
+	 * @param {number?}options.ticks_per_frame - 每个动画帧持续的游戏刻数（tick），默认8刻
+	 * @param {number?}options.max_stack_size - 物品的最大堆叠数量
+	 * @param {string?}options.format_version - 资源包的格式版本号
+	 */
+    createFlipbookItem: function (identifier, category, texture, options = {}) {
+        if (!identifier || !category || !texture) {
+            throw new Error("必须提供 identifier、category 和 texture。");
+        }
+        const flipbookItem = new FlipbookItem(identifier, category, texture, options);
+        registerItem(flipbookItem, {});
+        registerBlock(flipbookItem.block);
+        return flipbookItem;
     },
 };
