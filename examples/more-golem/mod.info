@@ -1,8 +1,8 @@
 {
   "name": "more-golem",
-  "description": "你的稻田助手，作者Meteage, B站：俊俊菌啊",
+  "description": "你的稻田助手，作者Meteage, B站：俊俊菌啊 TEST",
   "author": "Meteage",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "min_engine_version": "1.19.50",
   "language": "ts"
 }

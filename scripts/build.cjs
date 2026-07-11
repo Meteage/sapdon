@@ -79,7 +79,7 @@ async function startBuild() {
   try {
     //await build('cmd', 'tsc --declaration --emitDeclarationOnly')
     await build('cmd', 'tsc', 'TypeScript 编译')
-    await build('cmd', 'tsc-alias', '路径别名解析')
+    await build('cmd', 'npx tsc-alias', '路径别名解析')
     await build('file', './scripts/buildTask.cjs', '生产环境构建')
     
     if (!KEEP_DIST) {

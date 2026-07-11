@@ -261,9 +261,10 @@ export const buildProject = async (projectPath, projectName) => {
         // 在客户端启动前启动服务器
         startDevServer()
         GRegistryServer.startServer()
-        server.handle('submit', () => {
+        server.handle('submit', (data) => {
             //只有当buildMode为development时才加载用户modjs文件
             if (buildConfig.buildOptions.buildMode === "development") {
+                GRegistryServer.dataList = data
                 //动态加载用户modjs文件
                 generateAddon(absoluteModPath, buildDirPath, projectName)
             }

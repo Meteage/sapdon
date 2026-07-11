@@ -49,11 +49,7 @@ export const saveFile = (filePath, data) => {
 	fs.mkdirSync(path.dirname(filePath), { recursive: true })
 
 	// 创建文件并写入内容
-	fs.writeFile(filePath, data, err => {
-		if (err) {
-			return console.error(err)
-		}
-	})
+	fs.writeFileSync(filePath, data)
 }
 
 //@ts-ignore

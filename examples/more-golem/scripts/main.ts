@@ -33,7 +33,7 @@ world.afterEvents.itemUse.subscribe((event) => {
         case 'golem_craft:farm_golem_summon':
             //if(numberId < 16){
                 //傀儡的生成
-                world.sendMessage("已生成傀儡");
+                world.sendMessage("已生成傀儡啦");
                 const golem = new FarmerGolem(dimension,numberId,source.location);
                 const runid = system.runInterval(()=>{
                     if(golem.isVaild()) golem.updateTask();

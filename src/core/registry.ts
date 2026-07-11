@@ -68,7 +68,12 @@ export class GRegistryServer {
 
 export namespace registry {
     export function submit() {
-        GRegistry.submit()
-        cliRequest('submit', {})
+        const data = clientRegistryData.map(item => {
+            if (typeof (item.data as any).toObject === 'function') {
+                item.data = (item.data as any).toObject()
+            }
+            return item
+        })
+        cliRequest('submit', data)
     }
 }
