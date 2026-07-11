@@ -1,133 +1,245 @@
-
-# Sapdon 框架
+# Sapdon
 
 ![Sapdon Logo](pack_icon.png)
 
-Sapdon 是一个基于 JavaScript 开发的 Minecraft 基岩版模组开发框架。它通过提供丰富的 API 和自动化工具，帮助开发者简化传统开发流程，降低 JSON 配置复杂度，让您专注于模组逻辑实现。
+Minecraft Bedrock 版 Addon 开发框架，将 JSON 配置抽象为 TypeScript 类，提供类型安全的 API 和自动化构建工具。
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0-blue)](https://nodejs.org/)
 [![npm Version](https://img.shields.io/npm/v/sapdon)](https://www.npmjs.com/package/sapdon)
 [![QQ Group](https://img.shields.io/badge/QQ%E7%BE%A4-810904181-green)](https://qm.qq.com/q/2HrXHcKq9j)
 
-## ✨ 核心特性
+---
 
-- **JavaScript 驱动开发** - 告别繁琐的 JSON 配置，使用现代 JS 语法编写模组
-- **模块化 API 设计** - 提供物品/方块/实体/配方等 30+ 核心 API 接口
-- **智能编译系统** - 一键生成标准 mcaddon 包文件
+## 特性
 
-## 🚀 快速入门
+- **TypeScript / JavaScript 驱动** — 用代码定义物品、实体、方块、配方等，自动生成 JSON
+- **三层架构** — DTO 层映射 Minecraft Schema，业务逻辑层封装组件操作，工厂层提供简洁 API
+- **30+ 核心 API** — ItemAPI、EntityAPI、BlockAPI、RecipeAPI、BiomeAPI、FeatureAPI、UiAPI
+- **序列化系统** — 装饰器驱动，`@Serializer` 自动将类实例转为标准 Minecraft JSON
+- **即时代码注册** — 通过 HTTP 与开发服务器通信，无需手动管理 JSON 文件
+- **热更新 (HMR)** — 文件变更自动触发热更新，即时同步到 Minecraft
+- **OC 运行时** — ECS 游戏框架，用于 Minecraft Script API 环境，支持组件、调度器、输入处理
 
-### 环境准备
+---
 
-1. 安装 [Node.js](https://nodejs.org/) (推荐 v16+)
-2. 安装 Visual Studio Code 或其他现代编辑器
+## 快速开始
 
-### 安装 CLI
+### 环境要求
+
+- Node.js 16+
+- npm
+
+### 安装
 
 ```bash
 npm install -g sapdon
 ```
 
-### 创建新项目
+### 创建项目
 
 ```bash
-sapdon create hello_sapdon
+sapdon create my_addon
 ```
 
-根据提示输入项目信息：
-```text
-✔ Project Name: hello_sapdon
-✔ Project Description: 我的第一个 Sapdon 模组
-✔ Author Name: YourName
-✔ Project Version: 1.0.0
-✔ Minimum Engine Version: 1.19.50
-```
+根据提示输入项目信息，选择 TypeScript 或 JavaScript 模板。
 
 ### 项目结构
 
 ```
-hello_sapdon/
-├── res/            # 资源文件（纹理/模型/音效）
-├── scripts/        # 游戏脚本
-├── build.config    # 构建配置
-├── main.mjs        # 主入口文件
-├── mod.info        # 模组元数据
-└── pack_icon.png   # 模组图标
+my_addon/
+├── main.ts              # 构建入口（定义物品、实体等）
+├── build.config         # 构建配置
+├── mod.info             # 模组元数据
+├── tsconfig.json        # TypeScript 配置
+├── pack_icon.png        # 模组图标
+├── res/                 # 资源文件（纹理、模型、音效）
+└── scripts/
+    └── main.ts          # Script API 入口（游戏内运行时）
 ```
 
-## 📦 核心 API 示例
+### 编写代码
 
-### 创建一个基础物品
-1. 打开 `main.mjs` 文件。
-2. 写入以下内容以创建一个基础物品：
-   ```javascript
-   import { ItemAPI } from "@sapdon/core";
+```typescript
+// main.ts
+import { ItemAPI, EntityAPI, registry, ItemComponent } from '@sapdon/core'
 
-   ItemAPI.createItem("hello_sapdon:my_item", "items", "masterball");
-   ```
-   这段代码将创建一个名为 `my_item` 的物品，其命名空间为 `hello_sapdon`，类型为 `items`，并使用 `masterball` 作为图标。
+// 创建一个物品
+ItemAPI.createItem('my_addon:magic_ingot', 'items', 'magic_ingot')
+  .addComponent(ItemComponent.setDisplayName('魔法锭'))
 
+// 提交注册
+registry.submit()
+```
 
-## 🛠 执行构建命令
+### 构建
 
-1. 在终端中输入以下命令以构建 `hello_sapdon` 项目：
-   ```bash
-   sapdon build hello_sapdon
-   ```
-2. 构建完成后，您将在 `hello_sapdon` 文件夹下看到一个 `dev` 文件夹，其中包含构建好的 Addon 包。
-
-
-生成优化后的 mcaddon 包文件
-
-## 📚 学习资源
-
-- [官方文档](./doc/)
-- [入门教程](./doc/hello_sapdon)
-- [示例模组仓库](./examples/)
-
-
-## ❓ 常见问题
-
-### 如何更新框架版本？
 ```bash
-npm update sapdon
+# 在项目目录中
+sapdon build .
 ```
 
-### 如何添加依赖库？
-在 `build.config` 中添加：
-```json
-{
-  "dependencies": [
-    {
-      "module_name": "@minecraft/server",
-      "version": "1.8.0"
-    }
-  ]
-}
+构建输出在 `dev/` 目录：
+- `dev/my_addon_BP/` — 行为包（entities/, items/, blocks/, scripts/...）
+- `dev/my_addon_RP/` — 资源包（entity/, textures/, animations/, ui/...）
+
+构建完成后自动同步到 Minecraft 开发包目录。
+
+---
+
+## 核心 API 示例
+
+### 物品
+
+```typescript
+// 基础物品
+ItemAPI.createItem('my:item', 'items', 'texture')
+
+// 食物
+ItemAPI.createFood('my:food', 'items', 'apple')
+  .addComponent(ItemComponent.setFoodComponent(4, 0.6))
+
+// 带自定义组件的物品
+ItemAPI.createItem('my:tool', 'items', 'tool_tex')
+  .addComponent(ItemComponent.setHandEquipped(true))
+  .addComponent(ItemComponent.setDurability(250))
+  .format_version = '1.21.90'
 ```
 
-## 🤝 社区支持
+### 实体
 
-- 官方 QQ 群：`810904181`
+```typescript
+// 创建实体（自动注册 behavior + resource）
+const golem = EntityAPI.createEntity('my:golem', 'textures/entity/golem', {
+  is_spawnable: true,
+  is_summonable: true
+})
 
-## ts支持
-[quick start](./doc/sapdon-ts.md)
+// 行为包组件
+golem.behavior.addComponent(
+  EntityComponent.combineComponents(
+    EntityComponent.setHealth(50, 50),
+    EntityComponent.setMovement(0.25),
+    EntityComponent.setCollisionBox(1, 1.5)
+  )
+)
 
-## 编译 Sapdon
-1. 安装依赖：`npm install`
-2. 编译：`npm run build`
-    1. 查看详细输出 `npm run build -- verbose`
-    2. 保存中间文件夹 `dist` `npm run build -- keep`
-    3. 你也可以组合两个参数 `npm run build -- keep verbose`
+// 资源包配置
+golem.resource.addGeometry('default', 'geometry.golem')
+golem.resource.addMaterial('default', 'entity_alphatest')
+golem.resource.addTexture('default', 'textures/entity/golem')
+```
 
+### 方块
 
+```typescript
+// 基础方块（6面纹理）
+BlockAPI.createBasicBlock('my:block', 'nature',
+  ['down', 'up', 'north', 'south', 'west', 'east'])
 
+// 可旋转方块
+BlockAPI.createRotatableBlock('my:log', 'nature',
+  ['log_top', 'log_top', 'log_side', 'log_side', 'log_side', 'log_side'],
+  { rotationType: RotationTypes.LOG })
+```
 
-###(真正的教程)
-1.确保你已经安装了nodejs
-2.克隆本项目 命令 git clone https://github.com/Meteage/sapdon.git
-3.构建最新版本 在项目目录下运行命令 npm run build
-4.创建软连接 npm link
-5.创建你的项目 sapdon create <your-project-name>
-6.编写代码
-7.构建项目 sapdon build <your-project-name>
+### 配方
+
+```typescript
+// 有序配方
+RecipeAPI.registerSimpleShaped('my:item', ['my:item'],
+  ['ABA', 'BCB', 'ABA'], {
+    A: 'minecraft:iron_ingot',
+    B: 'minecraft:gold_ingot',
+    C: 'minecraft:diamond'
+  }
+).tags('crafting_table')
+
+// 熔炉配方
+RecipeAPI.registerSimpleFurnace('my:smelted', 'my:ore')
+```
+
+---
+
+## 架构概览
+
+### 三层核心架构
+
+```
+┌──────────────────────────────────────────────┐
+│  工厂/API 层                                  │
+│  ItemAPI, EntityAPI, BlockAPI, RecipeAPI...    │
+│  用户直接调用，创建实例并注册                    │
+├──────────────────────────────────────────────┤
+│  业务逻辑层                                    │
+│  Item, Entity, Block, Biome...                │
+│  封装组件操作方法                               │
+├──────────────────────────────────────────────┤
+│  DTO 层                                       │
+│  AddonItem, AddonEntity, AddonBlock...         │
+│  1:1 映射 Minecraft JSON Schema               │
+└──────────────────────────────────────────────┘
+```
+
+### 数据流
+
+```
+用户代码 (main.ts)         CLI 进程              构建输出
+    │                        │                     │
+    │── registry.submit() ──→│  HTTP POST           │
+    │                        │  generateAddon()     │
+    │                        │  → entities/*.json   │
+    │                        │  → items/*.json      │
+    │                        │  → blocks/*.json     │
+    │                        │  → scripts/index.js  │
+    │                        │                     │
+    │                        │── syncDevFilesServer │
+    │                        │  → Minecraft 目录   │
+```
+
+详见 [doc/dev/architecture.md](./doc/dev/architecture.md)。
+
+---
+
+## 文档
+
+| 文档 | 说明 |
+|------|------|
+| [快速入门](./doc/user/quick-start.md) | 安装、创建、构建 |
+| [物品教程](./doc/user/tutorials/item.md) | 基础物品 → 食物 → 盔甲 |
+| [实体教程](./doc/user/tutorials/entity.md) | 创建实体 → 组件 → AI 行为 |
+| [方块教程](./doc/user/tutorials/block.md) | 基础方块 → 旋转 → 作物 |
+| [配方教程](./doc/user/tutorials/recipe.md) | 有序/无序/熔炉配方 |
+| [物品 API](./doc/user/api/item.md) | ItemAPI、Item、ItemComponent |
+| [实体 API](./doc/user/api/entity.md) | EntityAPI、EntityComponent、AI |
+| [方块 API](./doc/user/api/block.md) | BlockAPI、BlockComponent |
+| [配方 API](./doc/user/api/recipe.md) | RecipeAPI、配方类 |
+| [生物群系 & 特征 API](./doc/user/api/biome.md) | BiomeAPI、FeatureAPI |
+| [纹理 API](./doc/user/api/texture.md) | 纹理管理器 |
+| [build.config](./doc/user/config/build-config.md) | 构建配置字段 |
+| [常见问题](./doc/user/faq.md) | FAQ |
+| [架构概览](./doc/dev/architecture.md) | 整体架构（源码开发者） |
+| [Core 模块](./doc/dev/core.md) | 三层架构详解（源码开发者） |
+| [CLI 模块](./doc/dev/cli.md) | 构建管道（源码开发者） |
+| [OC 运行时](./doc/dev/oc.md) | ECS 框架（源码开发者） |
+
+---
+
+## 编译 Sapdon 框架
+
+```bash
+git clone https://github.com/Meteage/sapdon.git
+cd sapdon
+npm install
+npm run build
+```
+
+构建选项：
+- `npm run build -- verbose` — 查看详细日志
+- `npm run build -- keep` — 保留中间 `dist/` 目录
+
+---
+
+## 社区
+
+- QQ 群：`810904181`
+- [GitHub Issues](https://github.com/Meteage/sapdon/issues)
