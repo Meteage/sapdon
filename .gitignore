@@ -8,6 +8,7 @@ src/cli/build.config
 development_*
 workspace/
 dist
-/dev
+dev/
+!doc/dev/
 prod
 res.hint.ts
