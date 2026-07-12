@@ -2,7 +2,7 @@ import path from "path"
 import { saveFile } from "./utils.js"
 import { generateBlockTextureJson, generateItemTextureJson } from "./tools/textureSet.js"
 //import { FlipbookTextures, ItemTextureManager, TerrainTextureManager } from "../core/texture.js"
-import { GRegistryServer } from "../core/registry.js"
+import { GRegistryServer } from "./registryServer.js"
 
 
 /**
