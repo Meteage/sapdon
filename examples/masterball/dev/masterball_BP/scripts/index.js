@@ -1,4 +1,4 @@
-import { ItemStack, world } from "@minecraft/server";
+import { world, ItemStack } from '@minecraft/server';
 
 // 存储抛掷物ID和实体ID的映射
 const entityReleseMap = new Map(); // 抛掷物ID -> 实体ID
@@ -157,3 +157,4 @@ function replaceNumbersWithLetters(str) {
     };
     return str.replace(/[0-9]/g, match => numberToLetter[match]);
 }
+//# sourceMappingURL=index.js.map

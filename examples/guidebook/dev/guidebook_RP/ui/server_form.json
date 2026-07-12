@@ -39,9 +39,9 @@
       }
     ],
     "$pressed_button_name": "button.form_button_click",
-    "$default_texture|default": "",
-    "$hover_texture|default": "",
-    "$pressed_texture|default": "",
+    "$default_texture|default": "textures/gui/newgui/buttons/borderless/light",
+    "$hover_texture|default": "textures/gui/newgui/buttons/borderless/lighthover",
+    "$pressed_texture|default": "textures/gui/newgui/buttons/borderless/lightpressed",
     "$binding_button_text|default": ""
   },
   "sapdon_form_button_factory": {

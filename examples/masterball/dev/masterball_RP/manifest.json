@@ -1,14 +1,14 @@
 {
   "format_version": 2,
   "header": {
-    "name": "masterball_RP",
-    "description": "神奇的大师球, 欢迎加入q群315179277 未经允许，请勿转载  §2by [B站]君俊菌啊 or xiaoben    ",
+    "name": "examples/masterball_RP",
+    "description": "神奇的大师球",
     "version": [
       1,
       0,
       0
     ],
-    "uuid": "98e5db64-9a52-4022-83f2-8c6a8552108d",
+    "uuid": "5f7adcc9-7642-460b-bff9-277d041bfd7f",
     "min_engine_version": [
       1,
       20,
@@ -19,7 +19,7 @@
     {
       "description": "资源模块",
       "type": "resources",
-      "uuid": "88491c6f-28ea-4ace-b877-793adcf93b27",
+      "uuid": "6d9466a2-c5e1-4a72-a848-ba0bf84c6037",
       "version": [
         1,
         0,

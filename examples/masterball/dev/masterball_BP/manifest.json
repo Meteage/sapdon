@@ -1,14 +1,14 @@
 {
   "format_version": 2,
   "header": {
-    "name": "masterball_BP",
+    "name": "examples/masterball_BP",
+    "description": "神奇的大师球",
     "version": [
       1,
       0,
       0
     ],
-    "description": "神奇的大师球, 欢迎加入q群315179277 未经允许，请勿转载  §2by [B站]君俊菌啊 or xiaoben    ",
-    "uuid": "1fb20a92-2e4a-4eac-aaf5-bbb2a8559501",
+    "uuid": "484d5d2d-219e-4999-8f64-0bacfc2ac101",
     "min_engine_version": [
       1,
       20,
@@ -19,7 +19,7 @@
     {
       "description": "行为模块",
       "type": "data",
-      "uuid": "36f6e998-997f-4212-9708-2b5806306eb9",
+      "uuid": "3dff634b-8481-4745-9ac8-362a8d369867",
       "version": [
         1,
         0,
@@ -29,7 +29,7 @@
     {
       "description": "脚本模块",
       "type": "script",
-      "uuid": "f5593d7d-ef12-4690-b4aa-1905870e8ceb",
+      "uuid": "e0d5461e-4c70-452a-a619-ab030f170972",
       "version": [
         1,
         0,
