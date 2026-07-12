@@ -165,8 +165,7 @@ class Item {
 │ registry.submit()                                      │
 │   → 遍历 clientRegistry[]                              │
 │   → 调用每个 data 的 toObject() 获取最终 JSON 数据      │
-│   → transportPost('submit', data)                      │
-│     (src/core/transport/client.ts, HTTP POST fallback) │
+│   → HTTP POST 到 dev server (localhost:49037/submit)   │
 └───────────────────────┬──────────────────────────────┘
                         │ HTTP POST
                         ▼
@@ -220,37 +219,32 @@ class Item {
 
 ---
 
-## 5. 注册系统
+## 5. 注册系统 (`src/core/registry.ts`)
 
-注册系统采用 **客户端-服务端** 架构，分为两个部分：
+采用 **客户端-服务端** 架构：
 
-### 客户端 (`src/core/registry.ts` + `src/core/transport/client.ts`)
+### 客户端（在用户构建脚本的子进程中运行）
 
-位于 core 模块，供用户代码在子进程中调用。依赖通用的 HTTP 客户端，不引入 CLI 代码：
+| 组件 | 说明 |
+|------|------|
+| `GRegistry` | 累加注册数据的客户端注册表 |
+| `GRegistry.register(name, root, path, data)` | 注册一个条目：文件名、根目录(behavior/resource)、子路径、数据实例 |
+| `GRegistry.submit()` | 调用所有 data 的 `toObject()`，然后 HTTP POST 到 dev server |
+| `registry.submit()` | 命名空间下的便捷入口 |
 
-| 组件 | 位置 | 说明 |
-|------|------|------|
-| `GRegistry` | `src/core/registry.ts` | 累加注册数据的客户端注册表 |
-| `GRegistry.register(name, root, path, data)` | `registry.ts` | 注册一个条目：文件名、根目录(behavior/resource)、子路径、数据实例 |
-| `GRegistry.submit()` | `registry.ts` | 调用所有 data 的 `toObject()`，然后 HTTP POST 到 dev server |
-| `registry.submit()` | `registry.ts` | 命名空间下的便捷入口 |
-| `transportPost()` | `src/core/transport/client.ts` | 通用 HTTP POST 客户端，端口可被 `SAPDON_DEV_SERVER_PORT` 环境变量覆盖 |
-
-### 服务端 (`src/cli/registryServer.ts`)
-
-位于 CLI 模块，直接引用 `dev-server/server.ts` 和 `remoteLogger`。在 CLI 主进程中运行，不对外暴露：
+### 服务端（在 CLI 的 dev server 中运行）
 
 | 组件 | 说明 |
 |------|------|
 | `GRegistryServer` | 服务端注册表，接收并存储数据 |
 | `GRegistryServer.dataList` | 存储 `{ name, root, path, data }` 数组 |
-| `GRegistryServer.startServer()` | 注册 `submitGregistry` 和 `remote-logger` 的 HTTP handler |
+| `GRegistryServer.startServer()` | 注册 HTTP handler |
 
 ### 数据提交逻辑
 
-```typescript
-import { transportPost } from './transport/client.js'
+注册数据直接带在 `submit` 请求体中发送，避免了旧版两步请求（先 `submitGregistry` 再 `submit`）的竞态条件：
 
+```typescript
 export function submit() {
     const data = clientRegistryData.map(item => {
         if (typeof item.data.toObject === 'function') {
@@ -258,7 +252,7 @@ export function submit() {
         }
         return item
     })
-    transportPost('submit', data)
+    cliRequest('submit', data)
 }
 ```
 
@@ -303,9 +297,8 @@ export function submit() {
 | `src/cli/load.js` | `generateAddon()` — 遍历 dataList 写入 JSON 文件，生成纹理 JSON |
 | `src/cli/init.js` | 项目初始化：脚手架生成、路径辅助 |
 | `src/cli/utils.ts` | `saveFile`、`readFile`、`copyFileSync` 等文件 I/O 工具 |
-| `src/cli/registryServer.ts` | `GRegistryServer` — 服务端注册表，注册 submit/remote-logger handler |
 | `src/cli/dev-server/server.ts` | `DevelopmentServer` — HTTP 服务，用于构建时 IPC |
-| `src/cli/dev-server/client.js` | `cliRequest()` / `post()` — CLI 内部使用的 HTTP 客户端（remoteLogger 等） |
+| `src/cli/dev-server/client.js` | `cliRequest()` — 子进程向 dev server 发送数据的 HTTP 客户端 |
 | `src/cli/dev-server/hmr.js` | `hmr()` — 文件监听器，热更新触发重建 |
 | `src/cli/dev-server/syncFiles.js` | `syncDevFilesServer()` — 同步到 Minecraft 目录；`writeLib()` — 复制库文件 |
 
@@ -313,14 +306,13 @@ export function submit() {
 
 ## 7. 开发服务器
 
-- **端口**: 49037（可通过环境变量 `SAPDON_DEV_SERVER_PORT` 覆盖）
+- **端口**: 49037
 - **实现**: 原生 Node.js `http.createServer()`
 - **传输**: HTTP POST + JSON body
 - **通信模式**:
-  - 客户端（子进程中用户代码）：`transportPost(path, ...params)`（来自 `src/core/transport/client.ts`）
-  - 服务端（CLI 进程）：`server.handle(url, handler)`（来自 `src/cli/dev-server/server.ts`）
+  - 客户端（子进程中用户代码）：`cliRequest(path, ...params)`
+  - 服务端（CLI 进程）：`server.handle(url, handler)`
   - 编码/解码：`encode()`/`decode()`（基于 `JSON.stringify` + `jsonEncoderReplacer`）
-- **架构原则**: core 模块只包含通用 HTTP 客户端，不引用 CLI 代码。服务端逻辑全部位于 CLI 内部。
 
 ### Handler 列表
 

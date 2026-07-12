@@ -12,7 +12,6 @@ src/cli/
 ├── start.js                 # CLI 命令定义 (commander)，入口脚本
 ├── build.js                 # 构建编排器：bundler、manifest 生成、注册
 ├── load.js                  # 处理注册数据，生成 JSON 文件
-├── registryServer.ts        # GRegistryServer — 服务端注册表，注册 submit/remote-logger handler
 ├── init.js                  # 项目初始化、路径辅助
 ├── utils.ts                 # 通用文件 I/O 工具
 ├── tools/
@@ -37,7 +36,7 @@ src/cli/
     └── message.ts            # 日志消息类型定义
 ```
 
-共 22 个文件。
+共 21 个文件。
 
 ---
 
@@ -182,15 +181,15 @@ generateTextureFiles()
 
 ```
  子进程 (用户代码)                    CLI 主进程
- ┌─────────────────────────┐      ┌──────────────────────────┐
- │                         │      │                          │
- │ GRegistry               │      │  DevelopmentServer       │
- │ .register()             │ POST │  (端口 49037)            │
- │ .submit()               │─────→│                          │
- │                         │      │  cliServerHandlers:      │
- │ core/transport/client.ts│      │    submit                │
- │ transportPost()         │      │    remote-logger         │
- └─────────────────────────┘      └──────────────────────────┘
+ ┌─────────────────┐              ┌──────────────────────┐
+ │                 │              │                      │
+ │ GRegistry       │  HTTP POST   │  DevelopmentServer   │
+ │ .register()     │─────────────→│  (端口 49037)        │
+ │ .submit()       │              │                      │
+ │                 │              │  cliServerHandlers:  │
+ │ client.js:      │              │    submit           │
+ │ cliRequest()    │              │    remote-logger    │
+ └─────────────────┘              └──────────────────────┘
 ```
 
 ### `server.ts` — DevelopmentServer 类
@@ -439,13 +438,13 @@ start.js (命令定义)
 build.js (构建核心)
   ├── load.js          → generateAddon (数据处理)
   ├── dev-server/      → server, startDevServer, syncDevFilesServer
-  ├── registryServer.js → GRegistryServer
+  ├── core/registry.js → GRegistryServer
   ├── core/addon/manifest.js → 清单生成
   └── meta/buildConfig.js → 配置读取
 
 load.js (JSON 文件生成)
   ├── tools/textureSet.js → 纹理图集
-  └── registryServer.js → GRegistryServer
+  └── core/registry.js → GRegistryServer
 
 dev-server/ (IPC 基础设施)
   ├── server.ts ←→ client.js (HTTP 通信)
