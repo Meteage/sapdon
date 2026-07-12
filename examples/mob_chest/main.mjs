@@ -1,16 +1,4 @@
-import { BlockComponent } from "../../src/core/block/blockComponent.js";
-import { TileBlock } from "../../src/core/block/TileBlock.js";
-import { BlockAPI } from "../../src/core/factory/BlockFactory.js";
-import { EntityAPI, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem } from "../../src/core/index.js";
-import { Modifications } from "../../src/core/ui/elements/UIElement.js";
-import { Control } from "../../src/core/ui/Properties/Control.js";
-import { GridProp } from "../../src/core/ui/Properties/gridProp.js";
-import { Layout } from "../../src/core/ui/Properties/Layout.js";
-import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
-import { Text } from "../../src/core/ui/Properties/Text.js";
-import { UISystemRegistry } from "../../src/core/ui/registry/UISystemRegistry.js";
-import { ChestUISystem } from "../../src/core/ui/systems/chest.js";
-import { ContainerUISystem } from "../../src/core/ui/systems/ContainerUISystem.js";
+import { BlockComponent, TileBlock, BlockAPI, EntityAPI, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, registry } from '@sapdon/core'
 
 
 const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
@@ -23,7 +11,7 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
           }
         })
       )
-      mob_chest.entity.client_entity
+      mob_chest.entity.resource
         .addMaterial("default","entity_alphatest")
         .addGeometry("default","geometry.mob_chest")
         .addAnimation("default","animation.mob_chest.default")
@@ -33,7 +21,7 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
         .setScript("animate",["interact_controller"])
         .addRenderController("controller.render.cow")
 
-        mob_chest.entity.entity.addProperty("mob_chest:chest_state",{
+        mob_chest.entity.behavior.addProperty("mob_chest:chest_state",{
             "type": "enum",
             "values": ["default", "open", "close"],
             "default": "default",
@@ -83,3 +71,5 @@ BlockAPI.createBlock("sapdon:falling_block","construction",[
 
 const falling_block_entity = EntityAPI.createProjectile("sapdon:falling_block_entity","textures/blocks/entity/normal");
       falling_block_entity.resource.addGeometry("default","geometry.mob_chest")
+
+registry.submit()

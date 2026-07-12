@@ -27,12 +27,12 @@ const myBlock = BlockAPI.createBasicBlock(
   'sapdon:my_basic_block',
   'nature',
   [
-    'stone_down',   // down
-    'stone_up',     // up
-    'stone_north',  // north
-    'stone_south',  // south
-    'stone_west',   // west
-    'stone_east'    // east
+    'stone',   // down
+    'stone',   // up
+    'stone',   // north
+    'stone',   // south
+    'stone',   // west
+    'stone'    // east
   ],
   {
     group: 'construction',
@@ -87,15 +87,15 @@ const multiBlock = BlockAPI.createBlock(
   [
     {
       stateTag: 0,
-      textures: ['stage0_down', 'stage0_up', 'stage0_north', 'stage0_south', 'stage0_west', 'stage0_east']
+      textures: ['stone', 'stone', 'stone', 'stone', 'stone', 'stone']
     },
     {
       stateTag: 1,
-      textures: ['stage1_down', 'stage1_up', 'stage1_north', 'stage1_south', 'stage1_west', 'stage1_east']
+      textures: ['cobblestone', 'cobblestone', 'cobblestone', 'cobblestone', 'cobblestone', 'cobblestone']
     },
     {
       stateTag: 2,
-      textures: ['stage2_down', 'stage2_up', 'stage2_north', 'stage2_south', 'stage2_west', 'stage2_east']
+      textures: ['mossy_cobblestone', 'mossy_cobblestone', 'mossy_cobblestone', 'mossy_cobblestone', 'mossy_cobblestone', 'mossy_cobblestone']
     }
   ],
   {
@@ -140,7 +140,7 @@ import { BlockAPI, registry, RotationTypes } from '@sapdon/core'
 const pillar = BlockAPI.createRotatableBlock(
   'sapdon:pillar',
   'construction',
-  ['pillar_top', 'pillar_top', 'pillar_side', 'pillar_side', 'pillar_side', 'pillar_side'],
+  ['oak_log_top', 'oak_log_top', 'oak_log', 'oak_log', 'oak_log', 'oak_log'],
   {
     rotationType: RotationTypes.CARDINAL,
     yRotationOffset: 180
@@ -151,7 +151,7 @@ const pillar = BlockAPI.createRotatableBlock(
 const machine = BlockAPI.createRotatableBlock(
   'sapdon:machine',
   'construction',
-  ['machine_top', 'machine_bottom', 'machine_front', 'machine_back', 'machine_left', 'machine_right'],
+  ['stone', 'stone', 'furnace_front', 'stone', 'stone', 'stone'],
   {
     rotationType: RotationTypes.FACING
   }
@@ -161,7 +161,7 @@ const machine = BlockAPI.createRotatableBlock(
 const customLog = BlockAPI.createRotatableBlock(
   'sapdon:custom_log',
   'nature',
-  ['log_top', 'log_top', 'log_side', 'log_side', 'log_side', 'log_side'],
+  ['oak_log_top', 'oak_log_top', 'oak_log', 'oak_log', 'oak_log', 'oak_log'],
   {
     rotationType: RotationTypes.LOG
   }
@@ -194,7 +194,7 @@ const chair = BlockAPI.createGeometryBlock(
   'geometry.chair',
   {
     '*': {
-      texture: 'chair_texture',
+      texture: 'oak_planks',
       render_method: 'opaque'
     }
   }
@@ -238,10 +238,10 @@ const tomato = BlockAPI.createCropBlock(
   'sapdon:tomato',
   'nature',
   [
-    { stateTag: 0, textures: ['tomato_stage_0', 'tomato_stage_0', 'tomato_stage_0', 'tomato_stage_0', 'tomato_stage_0', 'tomato_stage_0'] },
-    { stateTag: 1, textures: ['tomato_stage_1', 'tomato_stage_1', 'tomato_stage_1', 'tomato_stage_1', 'tomato_stage_1', 'tomato_stage_1'] },
-    { stateTag: 2, textures: ['tomato_stage_2', 'tomato_stage_2', 'tomato_stage_2', 'tomato_stage_2', 'tomato_stage_2', 'tomato_stage_2'] },
-    { stateTag: 3, textures: ['tomato_stage_3', 'tomato_stage_3', 'tomato_stage_3', 'tomato_stage_3', 'tomato_stage_3', 'tomato_stage_3'] }
+    { stateTag: 0, textures: ['wheat_stage_0', 'wheat_stage_0', 'wheat_stage_0', 'wheat_stage_0', 'wheat_stage_0', 'wheat_stage_0'] },
+    { stateTag: 1, textures: ['wheat_stage_1', 'wheat_stage_1', 'wheat_stage_1', 'wheat_stage_1', 'wheat_stage_1', 'wheat_stage_1'] },
+    { stateTag: 2, textures: ['wheat_stage_2', 'wheat_stage_2', 'wheat_stage_2', 'wheat_stage_2', 'wheat_stage_2', 'wheat_stage_2'] },
+    { stateTag: 3, textures: ['wheat_stage_3', 'wheat_stage_3', 'wheat_stage_3', 'wheat_stage_3', 'wheat_stage_3', 'wheat_stage_3'] }
   ],
   {
     group: 'nature',
@@ -272,7 +272,7 @@ import { BlockAPI, registry } from '@sapdon/core'
 const rubyOre = BlockAPI.createOreBlock(
   'sapdon:ruby_ore',
   'nature',
-  ['ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore'],
+  ['diamond_ore', 'diamond_ore', 'diamond_ore', 'diamond_ore', 'diamond_ore', 'diamond_ore'],
   {
     group: 'nature'
   }
@@ -303,7 +303,7 @@ import { BlockAPI, registry, BlockComponent } from '@sapdon/core'
 const componentBlock = BlockAPI.createBasicBlock(
   'sapdon:component_demo',
   'construction',
-  ['demo', 'demo', 'demo', 'demo', 'demo', 'demo']
+  ['stone', 'stone', 'stone', 'stone', 'stone', 'stone']
 )
 
 // 材质实例
@@ -440,7 +440,7 @@ import { TileBlock, registry } from '@sapdon/core'
 const chestBlock = new TileBlock(
   'sapdon:tile_chest',
   'construction',
-  ['chest_front', 'chest_front', 'chest_side', 'chest_side', 'chest_side', 'chest_side']
+  ['stone', 'stone', 'stone', 'stone', 'stone', 'stone']
 )
 
 // 自定义几何模型

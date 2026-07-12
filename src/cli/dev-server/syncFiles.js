@@ -31,16 +31,19 @@ export async function writeLib(projectPath) {
 
     fs.writeFileSync(path.join(targetCorePath, 'package.json'), JSON.stringify({
         name: '@sapdon/core',
+        type: 'module',
         main: 'index.js',
         version: packageJson.version,
     }))
     fs.writeFileSync(path.join(targetCliPath, 'package.json'), JSON.stringify({
         name: '@sapdon/cli',
+        type: 'module',
         main: 'index.js',
         version: packageJson.version,
     }))
     fs.writeFileSync(path.join(targetOcPath, 'package.json'), JSON.stringify({
         name: '@sapdon/runtime',
+        type: 'module',
         main: 'index.js',
         version: packageJson.version,
     }))

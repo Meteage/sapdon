@@ -315,6 +315,18 @@ export class BlockComponent {
   }
 
   /**
+   * 设置方块的骨骼可见性。
+   * @param {Object} bone_visibility - 骨骼可见性配置。
+   * @returns {Map} - 新的组件集合。
+   */
+  static setBoneVisibility(bone_visibility) {
+    if (!bone_visibility || typeof bone_visibility !== "object") {
+      throw new Error('bone_visibility must be an object');
+    }
+    return new Map().set("minecraft:geometry", { bone_visibility });
+  }
+
+  /**
    * 设置方块的物品视觉属性。
    * @param {String} geometry - 几何模型标识符。
    * @param {Object} materialInstances - 材质实例配置。

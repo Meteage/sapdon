@@ -27,7 +27,7 @@ import { ItemAPI, registry, ItemComponent, ItemCategory } from '@sapdon/core'
 const myItem = ItemAPI.createItem(
     'my_mod:simple_item',   // 标识符（命名空间:物品名）
     ItemCategory.Items,      // 分类（items 类别）
-    'my_item_texture',       // 纹理名称（对应 RP/textures/items/ 下的纹理）
+    'apple',                 // 纹理名称（使用原版纹理，无需实际文件）
     {
         group: 'minecraft:itemGroup.name.ingredients',  // 创造模式物品栏分组
         max_stack_size: 16,                              // 最大堆叠数量
@@ -71,7 +71,7 @@ import { ItemAPI, registry, ItemCategory } from '@sapdon/core'
 const myFood = ItemAPI.createFood(
     'my_mod:magic_apple',   // 标识符
     ItemCategory.Items,       // 分类
-    'magic_apple',            // 纹理名称
+    'apple',                  // 纹理名称（使用原版苹果纹理）
     {
         nutrition: 6,              // 营养值（恢复的饥饿值）
         saturationModifier: 1.2,   // 饱和度修正值
@@ -111,8 +111,8 @@ import { ItemAPI, registry } from '@sapdon/core'
 // 参数: (标识符, 物品纹理, 纹理路径, 可选配置)
 const helmet = ItemAPI.createHelmetArmor(
     'my_mod:crystal_helmet',         // 标识符
-    'crystal_helmet',                // 物品纹理名称（用于物品图标）
-    'textures/models/armor/crystal', // 纹理路径（穿戴在玩家身上时的模型纹理）
+    'diamond',                       // 物品纹理名称（用于物品图标，原版钻石纹理）
+    'textures/models/armor/diamond', // 纹理路径（穿戴在玩家身上时的模型纹理）
     {
         // 可选：自定义分组等
     }
@@ -130,8 +130,8 @@ import { ItemAPI, registry } from '@sapdon/core'
 
 const chestplate = ItemAPI.createChestplateArmor(
     'my_mod:crystal_chestplate',
-    'crystal_chestplate',
-    'textures/models/armor/crystal'
+    'diamond',
+    'textures/models/armor/diamond'
 )
 
 registry.submit()
@@ -145,8 +145,8 @@ import { ItemAPI, registry } from '@sapdon/core'
 
 const leggings = ItemAPI.createLeggingsArmor(
     'my_mod:crystal_leggings',
-    'crystal_leggings',
-    'textures/models/armor/crystal'
+    'diamond',
+    'textures/models/armor/diamond'
 )
 
 registry.submit()
@@ -160,8 +160,8 @@ import { ItemAPI, registry } from '@sapdon/core'
 
 const boots = ItemAPI.createBootArmor(
     'my_mod:crystal_boots',
-    'crystal_boots',
-    'textures/models/armor/crystal'
+    'diamond',
+    'textures/models/armor/diamond'
 )
 
 registry.submit()
@@ -191,7 +191,7 @@ import { ItemAPI, registry } from '@sapdon/core'
 // 创建一个可附着物（用于手持 3D 模型）
 const attachable = ItemAPI.createAttachable(
     'my_mod:special_item',           // 标识符
-    'textures/items/special_item',   // 纹理路径
+    'textures/items/diamond',        // 纹理路径（使用原版纹理）
     'entity_alphatest'               // 材质类型
 )
 
@@ -230,7 +230,7 @@ import { ItemAPI, registry } from '@sapdon/core'
 const flipbook = ItemAPI.createFlipbookItem(
     'my_mod:animated_block',      // 标识符
     'construction',               // 分类
-    'my_animation_texture',       // 纹理名称（对应 blocks 文件夹下的纹理）
+    'oak_log',                    // 纹理名称（使用原版纹理）
     {
         ticks_per_frame: 4,       // 每帧持续的游戏刻数（1秒=20刻），默认8刻
         max_stack_size: 64,       // 最大堆叠数量
@@ -262,7 +262,7 @@ registry.submit()
 // main.ts — 手持组件示例
 import { ItemAPI, registry, ItemComponent, ItemCategory } from '@sapdon/core'
 
-const tool = ItemAPI.createItem('my_mod:special_tool', ItemCategory.Items, 'tool_texture')
+const tool = ItemAPI.createItem('my_mod:special_tool', ItemCategory.Items, 'diamond')
 tool.addComponent(
     ItemComponent.combineComponents(
         ItemComponent.setHandEquipped(true),            // 像工具一样手持渲染
@@ -324,7 +324,7 @@ tool.addComponent(
 
 ```typescript
 // 使用 combineComponents 一次性添加多个组件
-const item = ItemAPI.createItem('my_mod:complex_item', ItemCategory.Items, 'complex')
+const item = ItemAPI.createItem('my_mod:complex_item', ItemCategory.Items, 'nether_star')
 item.addComponent(
     ItemComponent.combineComponents(
         ItemComponent.setDisplayName('复杂物品'),
@@ -375,7 +375,7 @@ import { ItemAPI, registry, ItemComponent, ItemCategory } from '@sapdon/core'
 const item = ItemAPI.createItem(
     'my_mod:versioned_item',
     ItemCategory.Items,
-    'versioned_tex',
+    'diamond',
     {
         format_version: '1.21.40',  // 默认值
     }
@@ -402,14 +402,14 @@ registry.submit()
 import { ItemAPI, registry, ItemComponent, ItemCategory } from '@sapdon/core'
 
 // 1. 基础物品
-ItemAPI.createItem('my_mod:ingot', ItemCategory.Items, 'my_ingot', {
+ItemAPI.createItem('my_mod:ingot', ItemCategory.Items, 'iron_ingot', {
     group: 'minecraft:itemGroup.name.ingredients',
     max_stack_size: 64,
 })
 .addComponent(ItemComponent.setDisplayName('§b神秘锭'))
 
 // 2. 食物
-ItemAPI.createFood('my_mod:special_food', ItemCategory.Items, 'special_food', {
+ItemAPI.createFood('my_mod:special_food', ItemCategory.Items,     'apple', {
     nutrition: 8,
     saturationModifier: 1.5,
     canAlwaysEat: true,
@@ -417,13 +417,13 @@ ItemAPI.createFood('my_mod:special_food', ItemCategory.Items, 'special_food', {
 })
 
 // 3. 全套盔甲
-ItemAPI.createHelmetArmor('my_mod:ruby_helmet', 'ruby_helmet', 'textures/models/armor/ruby')
-ItemAPI.createChestplateArmor('my_mod:ruby_chestplate', 'ruby_chestplate', 'textures/models/armor/ruby')
-ItemAPI.createLeggingsArmor('my_mod:ruby_leggings', 'ruby_leggings', 'textures/models/armor/ruby')
-ItemAPI.createBootArmor('my_mod:ruby_boots', 'ruby_boots', 'textures/models/armor/ruby')
+ItemAPI.createHelmetArmor('my_mod:ruby_helmet', 'diamond', 'textures/models/armor/diamond')
+ItemAPI.createChestplateArmor('my_mod:ruby_chestplate', 'diamond', 'textures/models/armor/diamond')
+ItemAPI.createLeggingsArmor('my_mod:ruby_leggings', 'diamond', 'textures/models/armor/diamond')
+ItemAPI.createBootArmor('my_mod:ruby_boots', 'diamond', 'textures/models/armor/diamond')
 
 // 4. 高级工具（组合组件）
-ItemAPI.createItem('my_mod:super_sword', ItemCategory.Equipment, 'super_sword', {
+ItemAPI.createItem('my_mod:super_sword', ItemCategory.Equipment, 'diamond_sword', {
     format_version: '1.21.40',
 })
 .addComponent(

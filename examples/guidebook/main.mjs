@@ -1,9 +1,4 @@
-import { Image, ItemAPI, ItemComponent, Label, Panel, UIElement } from "../../src/core/index.js";
-import { StackPanel } from "../../src/core/ui/elements/StackPanel.js";
-import { Layout } from "../../src/core/ui/Properties/Layout.js";
-import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
-import { Text } from "../../src/core/ui/Properties/Text.js";
-import { Guidebook } from "../../src/core/ui/systems/guidebook.js";
+import { Image, ItemAPI, ItemComponent, Label, Panel, UIElement, StackPanel, Layout, Sprite, Text, Guidebook, registry } from '@sapdon/core'
 
 ItemAPI.createItem("sapdon:test_guidebook", "items", "masterball")
 .addComponent(ItemComponent.setCustomComponents(["sapdon:custom_guidebook"]))
@@ -66,3 +61,5 @@ const guidebook = new Guidebook("sapdon:guidebook","ui/")
       )
 
 const apple = new Panel()
+
+registry.submit()

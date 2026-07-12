@@ -1,8 +1,4 @@
-import { Image, Label, Panel, ServerUISystem, StackPanel, UIElement, UISystem } from "../../src/core/index.js";
-import { Layout } from "../../src/core/ui/Properties/Layout.js";
-import { Sprite } from "../../src/core/ui/Properties/Sprite.js";
-import { Text } from "../../src/core/ui/Properties/Text.js";
-import { UISystemRegistry } from "../../src/core/ui/registry/UISystemRegistry.js";
+import { Image, Label, Panel, ServerUISystem, StackPanel, UIElement, UISystem, Layout, Sprite, Text, UISystemRegistry, registry } from '@sapdon/core'
 
 
 const test_ui_root = new Panel("root_panel").enableDebug();
@@ -49,3 +45,5 @@ const test_ui_system = new UISystem("test:test_ui","ui/"); //添加ui系统
 //UISystemRegistry.addOuterUIdefs(["ui/其他ui.json"])  导入外部ui文件
 
 ServerUISystem.bindingTitlewithContent("我的自定义表单","test.root_panel")
+
+registry.submit()

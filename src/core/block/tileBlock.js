@@ -121,7 +121,7 @@ export class TileBlock {
                 }
             ]
         }))
-        this.entity.client_entity.addMaterial("default","entity_alphatest")
+        this.entity.resource.addMaterial("default","entity_alphatest")
         .addGeometry("default","geometry.cube")
         .addRenderController("controller.render.cow")
     }
@@ -129,12 +129,12 @@ export class TileBlock {
         //设置方块模型
         this.block.addComponent(BlockComponent.setGeometry(geometry));
         //设置实体模型
-        this.entity.client_entity.addGeometry("default",geometry);
+        this.entity.resource.addGeometry("default",geometry);
     }
     addAnimation(name,animation){
-        this.entity.client_entity.addAnimation(name,animation);
+        this.entity.resource.addAnimation(name,animation);
     }
     setScript(key,value){
-        this.entity.client_entity.setScript(key,value);
+        this.entity.resource.setScript(key,value);
     }
 }

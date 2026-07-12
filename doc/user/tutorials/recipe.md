@@ -24,11 +24,11 @@ import { RecipeAPI, registry } from '@sapdon/core'
 import { RecipeAPI, registry } from '@sapdon/core'
 
 RecipeAPI.registerSimpleShaped(
-  'sapdon:custom_sword',
-  'sapdon:custom_sword',
+  'sapdon:diamond_sword',
+  'minecraft:diamond_sword',
   [' X ', ' X ', ' Y '],
   {
-    X: { item: 'minecraft:iron_ingot' },
+    X: { item: 'minecraft:diamond' },
     Y: { item: 'minecraft:stick' }
   }
 ).tags(['crafting_table'])

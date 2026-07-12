@@ -1,7 +1,4 @@
-import { EntityAPI } from "../../src/core/factory/EntityFactory.js";
-import { ItemAPI } from "../../src/core/factory/ItemFactory.js";
-import { RecipeAPI } from "../../src/core/factory/RecipeFactory.js";
-import { ItemComponent } from "../../src/core/item/ItemComponents.js";
+import { EntityAPI, ItemAPI, RecipeAPI, ItemComponent, registry } from '@sapdon/core'
 
  ItemAPI.createItem("sapdon:caught_masterball","none","masterball",{hide_in_command:true})
         .addComponent(
@@ -39,3 +36,5 @@ RecipeAPI.registerShaped("sapdon:uncaught_masterball")
       "III"
     ])
     .output("sapdon:uncaught_masterball")*/
+
+registry.submit()

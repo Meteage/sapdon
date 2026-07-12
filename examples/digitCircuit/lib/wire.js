@@ -1,5 +1,4 @@
-import { BlockComponent } from "../../../src/core/block/blockComponent.js";
-import { BlockAPI } from "../../../src/core/factory/BlockFactory.js";
+import { BlockComponent, BlockAPI } from '@sapdon/core';
 
 export class  BlockWire {
     constructor(identifier, category, variantDatas, options = {}){
@@ -13,8 +12,9 @@ export class  BlockWire {
             bone_visibility[sides[key]] = `q.block_state('wire:${sides[key]}') == 1`;
         }
         block.addComponent(
-            BlockComponent.setGeometry("geometry.wire",bone_visibility)
-        );
-        
+            BlockComponent.setBoneVisibility(bone_visibility)
+        )
+
+        this.block = block;
     }
 }

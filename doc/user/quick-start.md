@@ -69,6 +69,20 @@ cd hello_sapdon
 sapdon build .
 ```
 
+### 构建模式
+
+`build.config` 中的 `buildMode` 控制构建行为：
+
+| 模式 | 行为 |
+|------|------|
+| `development`（默认） | 运行 `main.ts` → 根据代码生成所有 JSON → 打包脚本 → 同步到 Minecraft |
+| `production` | 跳过 `main.ts`，直接同步已有 `dev/` 目录到 Minecraft（适合直接编辑 JSON 测试） |
+
+```bash
+# 使用 sapdon pack 以 production 模式构建（不启动热更新）
+sapdon pack
+```
+
 ## 构建输出
 
 构建完成后，`dev/` 目录下生成：
