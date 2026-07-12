@@ -1,7 +1,5 @@
 import { serialize } from "@sapdon/utils/index.js"
-import { cliRequest } from "../cli/dev-server/client.js"
-import { server } from "../cli/dev-server/server.js"
-import { handleRemoteLogger } from "@sapdon/cli/remoteLogger/server.js"
+import { transportPost } from "./transport/client.js"
 
 const clientRegistryData: any[] = []
 
@@ -31,7 +29,7 @@ export class GRegistry {
 
     static submit() {
         //此时用户端已经完成所有注册与更改，提交数据到服务器端
-        cliRequest('submitGregistry', clientRegistryData.map(item => {
+        transportPost('submitGregistry', clientRegistryData.map(item => {
             //运行 toObject 方法，获取最终数据
 
             //如果data有toObject方法则调用它
@@ -46,26 +44,6 @@ export class GRegistry {
     }
 }
 
-/**
- * Server
- */
-export class GRegistryServer {
-    static dataList: any[] = []
-    static getDataList() {
-        return [...GRegistryServer.dataList]
-    }
-
-    static startServer() {
-        server.handle('submitGregistry', (data: any) => {
-            //@ts-ignore
-            // console.log(data.map(item => item.data.description))
-            this.dataList = data
-        })
-
-        server.handle('remote-logger', handleRemoteLogger)
-    }
-}
-
 export namespace registry {
     export function submit() {
         const data = clientRegistryData.map(item => {
@@ -74,6 +52,6 @@ export namespace registry {
             }
             return item
         })
-        cliRequest('submit', data)
+        transportPost('submit', data)
     }
 }

@@ -23,7 +23,7 @@ import terser from '@rollup/plugin-terser'
 import { syncDevFilesServer } from './dev-server/syncFiles.js'
 import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
-import { GRegistryServer } from '../core/registry.js'
+import { GRegistryServer } from './registryServer.js'
 import { getBuildConfig } from './meta/buildConfig.js'
 import { getBuildDirBp, getProjectPath } from './init.js'
 

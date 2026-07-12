@@ -29,7 +29,7 @@
 
 | 模块 | 职责 |
 |------|------|
-| `registry.ts` | 客户端-服务端注册系统，连接用户代码与 CLI 构建管道 |
+| `registry.ts` | 客户端注册系统，通过 `transport/` 模块向 CLI dev server 提交数据 |
 | `texture.js` | 纹理管理器（ItemTextureManager、TerrainTextureManager、FlipbookTextures） |
 | `ui/` | Minecraft JSON UI 系统生成器 |
 | `extra/` | 附加功能（客户端实体外观、载具基类） |
@@ -42,7 +42,9 @@
 ```
 src/core/
 ├── index.js                     # 包入口，聚合导出所有模块
-├── registry.ts                  # 注册系统 (GRegistry / GRegistryServer / registry.submit)
+├── registry.ts                  # 注册系统 (GRegistry / registry.submit)
+├── transport/
+│   └── client.ts                # HTTP POST 客户端，向 CLI dev server 提交数据
 ├── texture.js                   # 纹理管理器
 ├── type.ts                      # 共享类型 (MaterialDesc, RideableComponent 等)
 │
@@ -548,21 +550,19 @@ enum ItemCategory {
 
 ```
 用户代码 (main.ts)                    CLI 进程
-                                     ┌────────────────┐
+                                      ┌──────────────────────┐
   GRegistry.register(name,root,path,data)
-    → clientRegistryData.push({...})  │                │
-                                     │  dev server     │
-  registry.submit()                   │  /submit        │
-    → cliRequest('submit', data) ────→│  handler        │
-                                     │  → GRegistry    │
-                                     │    Server       │
-                                     │    .dataList    │
-                                     │  → generate     │
-                                     │    Addon()      │
-                                     └────────────────┘
+    → clientRegistryData.push({...})  │                      │
+                                      │  dev server           │
+  registry.submit()                   │  /submit              │
+    → transportPost('submit', data) ──→│  handler              │
+      (core/transport/client.ts)      │  → GRegistryServer    │
+                                      │    .dataList          │
+                                      │  → generateAddon()    │
+                                      └──────────────────────┘
 ```
 
-### 6.2 GRegistry (客户端)
+### 6.2 GRegistry (客户端，位于 core)
 
 ```typescript
 class GRegistry {
@@ -570,11 +570,13 @@ class GRegistry {
   // 推入 clientRegistryData 数组
 
   static submit()
-  // 调用 data.toObject() 后发送 HTTP POST
+  // 调用 data.toObject() 后通过 transportPost 发送 HTTP POST
 }
 ```
 
-### 6.3 GRegistryServer (服务端)
+### 6.3 GRegistryServer (服务端，位于 CLI)
+
+`GRegistryServer` 位于 `src/cli/registryServer.ts`，直接引用 CLI 的 `DevelopmentServer` 和 `remoteLogger`：
 
 ```typescript
 class GRegistryServer {
@@ -585,15 +587,15 @@ class GRegistryServer {
   // 返回 dataList 的拷贝
 
   static startServer()
-  // 注册 submit handler
+  // 注册 submitGregistry 和 remote-logger handler
 }
 ```
 
 ### 6.4 registry.submit() (用户入口)
 
-当前实现（已修复竞态条件，单请求）：
-
 ```typescript
+import { transportPost } from './transport/client.js'
+
 export namespace registry {
   export function submit() {
     const data = clientRegistryData.map(item => {
@@ -602,7 +604,7 @@ export namespace registry {
       }
       return item
     })
-    cliRequest('submit', data)
+    transportPost('submit', data)
   }
 }
 ```
