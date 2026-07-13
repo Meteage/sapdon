@@ -9,16 +9,16 @@ export class FetchSeedsTask implements ITask {
   readonly timeout = 200
 
   condition(ctx: ITaskContext): boolean {
-    const { inventory, config } = ctx
+    const { inventory, config, homePos } = ctx
     if (inventory.emptySlotsCount === 0) return false
     if (hasAnySeed(inventory, config)) return false
-    if (!anyChestHasSeed(ctx.location, ctx.dimension, config)) return false
+    if (!anyChestHasSeed(ctx.location, ctx.dimension, config, homePos)) return false
     return true
   }
 
   execute(ctx: ITaskContext): void {
-    const { dimension, location, config, inventory } = ctx
-    const chests = findChests(location, dimension, config)
+    const { dimension, location, config, inventory, homePos } = ctx
+    const chests = findChests(location, dimension, config, homePos)
     if (chests.length === 0) return
 
     ctx.navigateTo(this.name, this.timeout, chests, (target) => {
@@ -48,12 +48,20 @@ function hasAnySeed(inv: Container, config: IGolemConfig): boolean {
   return false
 }
 
-function findChests(location: Vector3, dimension: Dimension, config: IGolemConfig): Vector3[] {
+function isInHomeRange(pos: Vector3, homePos: Vector3 | undefined, homeRange: number): boolean {
+  if (!homePos) return true
+  const dx = pos.x - homePos.x
+  const dy = pos.y - homePos.y
+  const dz = pos.z - homePos.z
+  return Math.sqrt(dx * dx + dy * dy + dz * dz) <= homeRange
+}
+
+function findChests(location: Vector3, dimension: Dimension, config: IGolemConfig, homePos?: Vector3): Vector3[] {
   const from = { x: location.x - config.scanRange, y: location.y - 2, z: location.z - config.scanRange }
   const to = { x: location.x + config.scanRange, y: location.y + 2, z: location.z + config.scanRange }
   const vol = new BlockVolume(from, to)
   const result = dimension.getBlocks(vol, { includeTypes: config.chestTypes }, true)
-  return [...result.getBlockLocationIterator()]
+  return [...result.getBlockLocationIterator()].filter(pos => isInHomeRange(pos, homePos, config.homeRange))
 }
 
 function getChestContainer(dim: Dimension, loc: Vector3): Container | undefined {
@@ -63,8 +71,8 @@ function getChestContainer(dim: Dimension, loc: Vector3): Container | undefined 
   return comp?.container
 }
 
-function anyChestHasSeed(location: Vector3, dimension: Dimension, config: IGolemConfig): boolean {
-  const chests = findChests(location, dimension, config)
+function anyChestHasSeed(location: Vector3, dimension: Dimension, config: IGolemConfig, homePos?: Vector3): boolean {
+  const chests = findChests(location, dimension, config, homePos)
   for (const chestPos of chests) {
     const container = getChestContainer(dimension, chestPos)
     if (!container) continue

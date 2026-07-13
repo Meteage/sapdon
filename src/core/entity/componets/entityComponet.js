@@ -856,6 +856,59 @@ export class EntityComponent {
         return projectileMap;
     }
 
+    /**
+     * 设置实体的家（工作站点）组件，用于限制实体的活动范围。
+     * @param {Object} [options] - 配置选项
+     * @param {number} [options.restriction_radius=16] - 限制半径（方块格）
+     * @param {string[]} [options.home_block_list=["minecraft:chest"]] - 可绑定为家的方块列表
+     * @param {string} [options.restriction_type] - 限制类型（可选，如 "limited"），需 format_version >= 1.21.40
+     * @returns {Map} 返回 Minecraft home 组件
+     * 
+     * @example // 基础用法 - 16格半径，箱子作为家
+     * const home = EntityComponent.setHome();
+     * 
+     * @example // 自定义配置
+     * const customHome = EntityComponent.setHome({
+     *   restriction_radius: 32,
+     *   home_block_list: ["minecraft:chest", "minecraft:barrel"],
+     *   restriction_type: "limited"
+     * });
+     */
+    static setHome({ restriction_radius = 16, home_block_list = ["minecraft:chest"], restriction_type } = {}) {
+        const data = {
+            restriction_radius,
+            home_block_list,
+        };
+        if (restriction_type) data.restriction_type = restriction_type;
+        return new Map([['minecraft:home', data]]);
+    }
 
+    /**
+     * 设置可分享物品列表（该实体感兴趣并会主动拾取的物品）
+     * 与 minecraft:behavior.pickup_items 配合使用
+     * @param {Object} [options] - 配置选项
+     * @param {Array<Object>} [options.items=[]] - 物品条目列表
+     * @param {string} options.items[].item - 物品ID
+     * @param {number} [options.items[].want_amount] - 想要保留的数量
+     * @param {number} [options.items[].surplus_amount] - 溢出阈值（超出此数量可分享给玩家）
+     * @param {number} [options.items[].priority] - 优先级（数值越小优先级越高）
+     * @param {number} [options.items[].max_amount] - 最大持有数
+     * @param {number} [options.items[].pickup_limit] - 单次拾取数限制
+     * @param {boolean} [options.items[].pickup_only] - 是否只拾取不分享
+     * @param {boolean} [options.items[].stored_in_inventory] - 是否存入库存
+     * @param {boolean} [options.items[].consume_item] - 是否消耗物品
+     * @param {Object} [options.items[].admire] - 欣赏物品行为
+     * @param {Object} [options.items[].barter] - 以物易物配置
+     * @param {Object} [options.items[].craft_into] - 合成转换配置
+     * @param {boolean} [options.all_items=false] - 是否接受任意物品
+     * @param {boolean} [options.singular_pickup=false] - 是否一次只拾取一个
+     * @returns {Map} 返回 Minecraft shareables 组件
+     */
+    static setShareables({ items = [], all_items = false, singular_pickup = false } = {}) {
+        const data = { items };
+        if (all_items) data.all_items = true;
+        if (singular_pickup) data.singular_pickup = true;
+        return new Map([['minecraft:shareables', data]]);
+    }
 
 }

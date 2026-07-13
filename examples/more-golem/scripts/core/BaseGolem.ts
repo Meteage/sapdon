@@ -5,11 +5,16 @@ import { ITaskContext, IGolemConfig, DEFAULT_GOLEM_CONFIG, GOLEM_PROPERTY, TARGE
 type position = `${number},${number},${number}`
 
 export abstract class BaseGolem {
+  static activeGolems = new Map<number, BaseGolem>()
+
   readonly self: Entity
   readonly numberId: number
   protected inventory: Container
   protected engine: TaskEngine = new TaskEngine()
   protected config: IGolemConfig
+  protected intervalIds: number[] = []
+
+  readonly homePos: Vector3
 
   private targetMap = new Map<position, Entity>()
   private currentCallback: ((target: Entity) => boolean) | null = null
@@ -17,12 +22,14 @@ export abstract class BaseGolem {
   private currentTimeout = 0
   private navStartTick = 0
 
-  constructor(dim: Dimension, typeId: string, numberId: number, location: Vector3, config: IGolemConfig = DEFAULT_GOLEM_CONFIG) {
+  constructor(dim: Dimension, typeId: string, numberId: number, location: Vector3, config: IGolemConfig = DEFAULT_GOLEM_CONFIG, existingEntity?: Entity) {
     this.config = config
     this.numberId = numberId
-    this.self = this.spawnGolem(dim, typeId, location)
+    this.homePos = { x: location.x, y: location.y, z: location.z }
+    this.self = existingEntity ?? this.spawnGolem(dim, typeId, location)
     this.inventory = this.self.getComponent(EntityComponentTypes.Inventory)!.container!
 
+    BaseGolem.activeGolems.set(this.numberId, this)
     this.initIntervals(dim)
   }
 
@@ -123,8 +130,26 @@ export abstract class BaseGolem {
       inventory: this.inventory,
       location: this.self.location,
       config: this.config,
+      homePos: this.homePos,
+      homeRange: this.config.homeRange,
       navigateTo: (taskName, timeout, targets, onArrive) => this.navigateTo(taskName, timeout, targets, onArrive),
     }
+  }
+
+  isInHomeRange(pos: Vector3): boolean {
+    const dx = pos.x - this.homePos.x
+    const dy = pos.y - this.homePos.y
+    const dz = pos.z - this.homePos.z
+    return Math.sqrt(dx * dx + dy * dy + dz * dz) <= this.config.homeRange
+  }
+
+  remove() {
+    BaseGolem.activeGolems.delete(this.numberId)
+    this.clearAllTargets()
+    for (const id of this.intervalIds) {
+      system.clearRun(id)
+    }
+    if (this.self.isValid) this.self.remove()
   }
 
   isValid(): boolean {
@@ -132,25 +157,25 @@ export abstract class BaseGolem {
   }
 
   private initIntervals(dim: Dimension) {
-    system.runInterval(() => {
+    this.intervalIds.push(system.runInterval(() => {
       for (const [, target] of this.targetMap) {
         if (!target.isValid) continue
         dim.spawnParticle("minecraft:blue_flame_particle", target.location)
       }
-    }, 10)
+    }, 10))
 
-    system.runInterval(() => {
+    this.intervalIds.push(system.runInterval(() => {
       for (const [key, target] of this.targetMap) {
         if (!target?.isValid) this.targetMap.delete(key)
       }
-    }, 20 * 30)
+    }, 20 * 30))
 
-    system.runInterval(() => {
+    this.intervalIds.push(system.runInterval(() => {
       if (this.targetMap.size === 0 || !this.currentTaskName) return
       const elapsed = system.currentTick - this.navStartTick
       const remain = Math.max(0, this.currentTimeout - elapsed)
       world.sendMessage(`§7[#${this.numberId}] §f${this.currentTaskName.padEnd(14)} §7· §6${(remain / 20).toFixed(1).padStart(5)}s §7/ ${(this.currentTimeout / 20).toFixed(1)}s`)
-    }, 20)
+    }, 20))
   }
 
   protected tickTasks() {

@@ -9,7 +9,7 @@ export class StoreItemsTask implements ITask {
   readonly timeout = 200
 
   condition(ctx: ITaskContext): boolean {
-    const { inventory, config } = ctx
+    const { inventory, config, homePos } = ctx
     for (const crop of config.crops) {
       if (hasCropToStore(inventory, crop.cropType)) return true
     }
@@ -17,8 +17,8 @@ export class StoreItemsTask implements ITask {
   }
 
   execute(ctx: ITaskContext): void {
-    const { config, dimension, location, inventory } = ctx
-    const chests = findChests(location, dimension, config)
+    const { config, dimension, location, inventory, homePos } = ctx
+    const chests = findChests(location, dimension, config, homePos)
     if (chests.length === 0) return
 
     ctx.navigateTo(this.name, this.timeout, chests, (target) => {
@@ -53,12 +53,20 @@ function isSeed(typeId: string, config: import("../core/types.js").IGolemConfig)
   return config.crops.some(c => c.seedType === typeId)
 }
 
-function findChests(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig): Vector3[] {
+function isInHomeRange(pos: Vector3, homePos: Vector3 | undefined, homeRange: number): boolean {
+  if (!homePos) return true
+  const dx = pos.x - homePos.x
+  const dy = pos.y - homePos.y
+  const dz = pos.z - homePos.z
+  return Math.sqrt(dx * dx + dy * dy + dz * dz) <= homeRange
+}
+
+function findChests(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig, homePos?: Vector3): Vector3[] {
   const from = { x: location.x - config.scanRange, y: location.y - 2, z: location.z - config.scanRange }
   const to = { x: location.x + config.scanRange, y: location.y + 2, z: location.z + config.scanRange }
   const vol = new BlockVolume(from, to)
   const result = dimension.getBlocks(vol, { includeTypes: config.chestTypes }, true)
-  return [...result.getBlockLocationIterator()]
+  return [...result.getBlockLocationIterator()].filter(pos => isInHomeRange(pos, homePos, config.homeRange))
 }
 
 function getChestContainer(dim: Dimension, loc: Vector3): Container | undefined {
