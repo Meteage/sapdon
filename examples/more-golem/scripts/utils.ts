@@ -12,6 +12,24 @@ function mylog(message: string) {
     //world.sendMessage(message);
 }
 
+const cacheStore = new Map<string, { data: any, expires: number }>()
+
+export function cacheResult<T>(key: string, ttl: number, fn: () => T): T {
+  const now = Date.now()
+  const cached = cacheStore.get(key)
+  if (cached && cached.expires > now) return cached.data as T
+  const data = fn()
+  cacheStore.set(key, { data, expires: now + ttl })
+  return data
+}
+
+export function clearCache(pattern?: string) {
+  if (!pattern) { cacheStore.clear(); return }
+  for (const key of cacheStore.keys()) {
+    if (key.includes(pattern)) cacheStore.delete(key)
+  }
+}
+
 export namespace Utils {
 
     export function getDistance(pos1: Vector3, pos2: Vector3): number {
