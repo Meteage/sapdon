@@ -1,5 +1,5 @@
 import { ITask } from "../core/task/ITask.js"
-import { ITaskContext } from "../core/types.js"
+import { ITaskContext, IGolemConfig } from "../core/types.js"
 import { BlockVolume, Container, Dimension, Vector3, BlockComponentTypes } from "@minecraft/server"
 import { Utils } from "../utils.js"
 
@@ -10,8 +10,9 @@ export class FetchSeedsTask implements ITask {
 
   condition(ctx: ITaskContext): boolean {
     const { inventory, config } = ctx
-    if (inventory.size === inventory.emptySlotsCount) return false
+    if (inventory.emptySlotsCount === 0) return false
     if (hasAnySeed(inventory, config)) return false
+    if (!anyChestHasSeed(ctx.location, ctx.dimension, config)) return false
     return true
   }
 
@@ -37,7 +38,7 @@ export class FetchSeedsTask implements ITask {
   }
 }
 
-function hasAnySeed(inv: Container, config: import("../core/types.js").IGolemConfig): boolean {
+function hasAnySeed(inv: Container, config: IGolemConfig): boolean {
   for (const crop of config.crops) {
     for (let i = 0; i < inv.size; i++) {
       const item = inv.getItem(i)
@@ -47,7 +48,7 @@ function hasAnySeed(inv: Container, config: import("../core/types.js").IGolemCon
   return false
 }
 
-function findChests(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig): Vector3[] {
+function findChests(location: Vector3, dimension: Dimension, config: IGolemConfig): Vector3[] {
   const from = { x: location.x - config.scanRange, y: location.y - 2, z: location.z - config.scanRange }
   const to = { x: location.x + config.scanRange, y: location.y + 2, z: location.z + config.scanRange }
   const vol = new BlockVolume(from, to)
@@ -60,4 +61,16 @@ function getChestContainer(dim: Dimension, loc: Vector3): Container | undefined 
   if (!block || !block.isValid) return undefined
   const comp = block.getComponent(BlockComponentTypes.Inventory)
   return comp?.container
+}
+
+function anyChestHasSeed(location: Vector3, dimension: Dimension, config: IGolemConfig): boolean {
+  const chests = findChests(location, dimension, config)
+  for (const chestPos of chests) {
+    const container = getChestContainer(dimension, chestPos)
+    if (!container) continue
+    for (const crop of config.crops) {
+      if (Utils.findSlotByItemType(container, crop.seedType) !== undefined) return true
+    }
+  }
+  return false
 }
