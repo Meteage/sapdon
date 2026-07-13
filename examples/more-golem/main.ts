@@ -13,6 +13,13 @@ ItemAPI.createItem('golem_craft:farm_golem_summon', ItemCategory.Items, 'farm_go
         ItemComponent.setInteractButton("召唤傀儡")
     )).format_version = "1.21.90"
 
+ItemAPI.createItem('golem_craft:golem_capture', ItemCategory.Items, 'stick')
+    .addComponent(ItemComponent.combineComponents(
+        ItemComponent.setDisplayName('傀儡收纳器'),
+        ItemComponent.setCustomComponentV2("golem_craft:golem_capture", {}),
+        ItemComponent.setInteractButton("收纳傀儡")
+    )).format_version = "1.21.90"
+
 const target_dummy = EntityAPI.createDummyEntity("more_golem:golem_target","none",{
   is_spawnable:false
 });
@@ -51,7 +58,7 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
         EntityComponent.combineComponents(
           EntityComponent.setInventoryProperties({
             containerType:"minecart_chest",
-            inventorySize:2
+            inventorySize:16
           }),
           new Map<string, any>(Object.entries({
             "minecraft:nameable": {},
@@ -87,6 +94,20 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
               }
             },
            
+            "minecraft:home": {
+              "restriction_radius": 16,
+              "home_block_list": ["minecraft:chest"]
+            },
+            "minecraft:behavior.move_towards_home_restriction": {
+              "priority": 4,
+              "speed_multiplier": 1.0
+            },
+            "minecraft:behavior.go_home": {
+              "priority": 5,
+              "speed_multiplier": 1.0,
+              "goal_radius": 1.0,
+              "interval": 120
+            },
             "minecraft:leashable": {
               "soft_distance": 4,
               "hard_distance": 6,
@@ -127,6 +148,23 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
               }
             },
             
+            "minecraft:shareables": {
+              "items": [
+                { "item": "minecraft:wheat", "want_amount": 8, "stored_in_inventory": true, "priority": 0 },
+                { "item": "minecraft:wheat_seeds", "want_amount": 16, "stored_in_inventory": true, "priority": 1 },
+                { "item": "minecraft:carrot", "want_amount": 8, "stored_in_inventory": true, "priority": 0 },
+                { "item": "minecraft:potato", "want_amount": 8, "stored_in_inventory": true, "priority": 0 },
+                { "item": "minecraft:beetroot", "want_amount": 8, "stored_in_inventory": true, "priority": 0 },
+                { "item": "minecraft:beetroot_seeds", "want_amount": 16, "stored_in_inventory": true, "priority": 1 }
+              ]
+            },
+            "minecraft:behavior.pickup_items": {
+              "priority": 2,
+              "can_pickup_any_item": false,
+              "can_pickup_to_hand_or_equipment": false,
+              "max_dist": 16,
+              "speed_multiplier": 1.2
+            },
             "minecraft:persistent": {},
             "minecraft:physics": {},
             "minecraft:pushable": {
@@ -275,15 +313,18 @@ const book_chapter = new NeoGuidebookPage("book_chapter_panel")
       .addChapters(BOOK_CHAPTER_LIST)
       .buildChapterList()
 
-const golem_function_intro = "农业傀儡是一种可以帮助玩家\n进行农作物种植与收获的傀儡。\n\n农业傀儡可以自动种植和收获\n周围的农作物，极大地提高了\n玩家的农作物管理效率。\n召唤方法：使用农业傀儡召唤物召唤。\n"
 const golem_craft_intro = "制作农业傀儡需要以下材料：\n\n - 2个干草块\n - 4根木棍\n - 1个紫水晶碎片\n\n将这些材料按照特定的配方\n放置在工作台上即可制作出\n农业傀儡。\n\n\n\n"
 const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲暇模式：在没有任务时，\n农业傀儡会在农田附近闲逛。\n\n 2.耕种模式 ：当检测到\n附近有未种植的农作物时，\n农业傀儡会自动前往并进行种植。\n\n 3.收获模式：当农作物成熟时，\n农业傀儡会自动前往并进行收获。\n 任务执行： 傀儡执行任务的间隔为2秒一次。\n"
 
 const book_chapter_1 = new NeoGuidebookPage("book_chapter_1")
       .addEmptySpace(["100%","5%"])
-      .addCategoryTitle("农业傀儡功能介绍1111",["100%","15%"])
-      .addBookText(golem_function_intro,["100%","75%"])
-      .addEmptySpace(["100%","5%"])
+      .addCategoryTitle("农业傀儡功能介绍",["100%","15%"])
+      .addDivider(["100%","3%"])
+      .addBookText("自动种植与收割\n小麦、胡萝卜、土豆、甜菜根", ["100%","18%"])
+      .addBookText("自动拾取掉落作物\n存入16格背包", ["100%","18%"])
+      .addBookText("绑定箱子为家\n16格范围内自动工作", ["100%","18%"])
+      .addBookText("召唤：潜行右键箱子\n收纳：使用傀儡收纳器捕获", ["100%","15%"])
+      .addEmptySpace(["100%","8%"])
 
 const book_chapter_2 = new NeoGuidebookPage("book_chapter_3")
       .addEmptySpace(["100%","5%"])

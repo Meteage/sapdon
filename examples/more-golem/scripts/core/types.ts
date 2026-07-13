@@ -13,6 +13,8 @@ export interface IGolemConfig {
   cooldownDuration: number
   crops: ICropConfig[]
   chestTypes: string[]
+  homeRange: number
+  homeBlockList: string[]
 }
 
 export const DEFAULT_GOLEM_CONFIG: IGolemConfig = {
@@ -23,7 +25,9 @@ export const DEFAULT_GOLEM_CONFIG: IGolemConfig = {
   crops: [
     { seedType: "minecraft:wheat_seeds", cropType: "minecraft:wheat", growthState: 7 }
   ],
-  chestTypes: ["minecraft:chest"]
+  chestTypes: ["minecraft:chest"],
+  homeRange: 16,
+  homeBlockList: ["minecraft:chest"]
 }
 
 export const GOLEM_PROPERTY = "more_golem:golem_index"
@@ -38,6 +42,8 @@ export interface ITaskContext {
   inventory: Container
   location: Vector3
   config: IGolemConfig
+  homePos?: Vector3
+  homeRange: number
   navigateTo(taskName: string, timeout: number, targets: Vector3[], onArrive: (target: Entity) => boolean): void
 }
 

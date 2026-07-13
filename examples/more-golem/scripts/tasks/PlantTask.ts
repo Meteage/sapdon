@@ -9,14 +9,14 @@ export class PlantTask implements ITask {
   readonly timeout = 200
 
   condition(ctx: ITaskContext): boolean {
-    const { inventory, config } = ctx
+    const { inventory, config, homePos } = ctx
     if (!hasAnySeed(inventory, config)) return false
-    return hasEmptyFarmland(ctx.location, ctx.dimension, ctx.config)
+    return hasEmptyFarmland(ctx.location, ctx.dimension, ctx.config, homePos)
   }
 
   execute(ctx: ITaskContext): void {
-    const { config, dimension, location, inventory } = ctx
-    const farmlands = findEmptyFarmland(location, dimension, config)
+    const { config, dimension, location, inventory, homePos } = ctx
+    const farmlands = findEmptyFarmland(location, dimension, config, homePos)
     if (farmlands.length === 0) return
 
     ctx.navigateTo(this.name, this.timeout, farmlands, (target) => {
@@ -53,15 +53,26 @@ function hasAnySeed(inv: Container, config: import("../core/types.js").IGolemCon
   return false
 }
 
-function hasEmptyFarmland(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig): boolean {
-  return findEmptyFarmland(location, dimension, config).length > 0
+function isInHomeRange(pos: Vector3, homePos: Vector3 | undefined, homeRange: number): boolean {
+  if (!homePos) return true
+  const dx = pos.x - homePos.x
+  const dy = pos.y - homePos.y
+  const dz = pos.z - homePos.z
+  return Math.sqrt(dx * dx + dy * dy + dz * dz) <= homeRange
 }
 
-function findEmptyFarmland(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig): Vector3[] {
+function hasEmptyFarmland(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig, homePos?: Vector3): boolean {
+  return findEmptyFarmland(location, dimension, config, homePos).length > 0
+}
+
+function findEmptyFarmland(location: Vector3, dimension: Dimension, config: import("../core/types.js").IGolemConfig, homePos?: Vector3): Vector3[] {
   const from = { x: location.x - config.scanRange, y: location.y - 2, z: location.z - config.scanRange }
   const to = { x: location.x + config.scanRange, y: location.y + 2, z: location.z + config.scanRange }
   const vol = new BlockVolume(from, to)
   const result = dimension.getBlocks(vol, { includeTypes: ["minecraft:farmland"] }, true)
   const positions = [...result.getBlockLocationIterator()]
-  return positions.filter(pos => dimension.getBlock(pos)?.above()?.isAir)
+  return positions.filter(pos => {
+    if (!isInHomeRange(pos, homePos, config.homeRange)) return false
+    return dimension.getBlock(pos)?.above()?.isAir
+  })
 }
