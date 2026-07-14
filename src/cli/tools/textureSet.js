@@ -12,6 +12,12 @@ import path from "path";
 const traverseDirectory = async (directory, basePath, prefix = "") => {
   const texturesSet = {};
 
+  try {
+    await fs.access(directory);
+  } catch {
+    return texturesSet;
+  }
+
   const files = await fs.readdir(directory);
 
   for (const file of files) {

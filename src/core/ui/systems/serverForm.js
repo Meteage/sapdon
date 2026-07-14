@@ -86,6 +86,31 @@ export const form_button_panel = new Panel("sapdon_form_button_factory")
 ServerFormSystem.addElement(form_button_template)
 ServerFormSystem.addElement(form_button_panel)
 
+// third_party_server_screen — custom screen that suppresses the exit animation
+const third_party_server_screen = new UIElement("third_party_server_screen", "screen", "common.base_screen");
+third_party_server_screen.addVariable("screen_animations", ["@server_form.screen_exit_animation_pop_wait"]);
+third_party_server_screen.addVariable("background_animations", ["@server_form.screen_exit_animation_pop_wait"]);
+third_party_server_screen.addVariable("screen_content", "server_form.main_screen_content");
+third_party_server_screen.addProp("button_mappings", [
+  {
+    "from_button_id": "button.menu_cancel",
+    "to_button_id": "button.menu_exit",
+    "mapping_type": "global"
+  }
+]);
+ServerFormSystem.addElement(third_party_server_screen);
+
+// screen_exit_animation_pop_wait — zero-offset animation to suppress exit transition
+const screen_exit_animation = new UIElement("screen_exit_animation_pop_wait");
+screen_exit_animation.addProp("anim_type", "offset");
+screen_exit_animation.addProp("easing", "linear");
+screen_exit_animation.addProp("duration", 0.1);
+screen_exit_animation.addProp("from", [0, 0]);
+screen_exit_animation.addProp("to", [0, 0]);
+screen_exit_animation.addProp("play_event", "screen.exit_pop");
+screen_exit_animation.addProp("end_event", "screen.exit_end");
+ServerFormSystem.addElement(screen_exit_animation);
+
 
 export class ServerUISystem  {
   static #binding_map = new Map();
@@ -113,8 +138,6 @@ export class ServerUISystem  {
   }
 
   static #updateServerFormSystem(){
-     //文本化处理
-    //console.log("ttttt:",this.getBindingTitleList())
     const user_custom_ui_text = this.getBindingTitleList().map((title_name)=>{
       console.log("title_name",title_name)
       return `'${title_name}'`;
@@ -133,23 +156,14 @@ export class ServerUISystem  {
       });
 
     const custom_server_form_factory =  new Panel("custom_server_form_factory");
-        custom_server_form_factory.factory.setName("server_form_factory") //工程名被绑定至表单，不可改动
+        custom_server_form_factory.factory.setName("server_form_factory")
         .setControlIds({
           "long_form": "@server_form.custom_root_panel"
         });
 
-    //加入自定义表单内容
-    const main_screen_content = new UIElement("main_screen_content")
-      .addModification({
-        array_name: "controls",
-        operation:Modifications.OPERATION.INSERT_BACK,
-        value:[
-          custom_server_form_factory.serialize()
-        ]
-    });
-
-    //自定义ui模板
-    const custom_ui_template = new Panel("custom_ui_template")
+    //自定义ui模板 (只创建一次)
+    if (!ServerFormSystem.getElement("custom_ui_template")) {
+      const custom_ui_template = new Panel("custom_ui_template")
         custom_ui_template.dataBinding.addDataBinding(
           new DataBindingObject().setBindingName("#title_text")
         ).addDataBinding(
@@ -160,10 +174,24 @@ export class ServerUISystem  {
         custom_ui_template.control.addControl(
           new UIElement("main",undefined,"$main_content").serialize()
         )
+      ServerFormSystem.addElement(custom_ui_template)
+    }
 
-    //类似于 root ，决定什么时候加载自定义界面 ，不可改动
+    //main_screen_content (只创建一次)
+    if (!ServerFormSystem.getElement("main_screen_content")) {
+      const main_screen_content = new UIElement("main_screen_content")
+        .addModification({
+          array_name: "controls",
+          operation:Modifications.OPERATION.INSERT_BACK,
+          value:[
+            custom_server_form_factory.serialize()
+          ]
+        });
+      ServerFormSystem.addElement(main_screen_content)
+    }
+
+    //custom_root_panel 每次重建 (绑定列表变化)
     const custom_form_root = new Panel("custom_form_root")
-        //custom_form_root.addVariable("title_needs_to_contain",user_custom_ui_text)
         custom_form_root.dataBinding.addDataBinding(
           new DataBindingObject().setBindingType("view")
           .setSourceControlName("custom_root_panel")
@@ -171,9 +199,7 @@ export class ServerUISystem  {
           .setTargetPropertyName("#visible")
         );
 
-    //用户自定义ui内容绑定
     this.#binding_map.forEach((content,key)=>{
-      //加入 root
       custom_form_root.control.addControl(
         new UIElement("custom_ui_"+key,undefined,"custom_ui_template")
         .addVariable("main_content",content)
@@ -181,15 +207,12 @@ export class ServerUISystem  {
       )
     })
 
-    //类似于 sreen，必要，不可改动
     const custom_root_panel = new Panel("custom_root_panel");
         custom_root_panel.dataBinding.addDataBinding(new DataBindingObject().setBindingName("#title_text"))
         custom_root_panel.control.addControl(custom_form_root.serialize())
-    
+
     ServerFormSystem
-    .addElement(custom_ui_template)   
     .addElement(long_form)
     .addElement(custom_root_panel)
-    .addElement(main_screen_content)
   }
 }

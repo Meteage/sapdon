@@ -8,13 +8,23 @@ export class EmptySpace extends Panel {
     }
 }
 
-// 标题组件
+// 标题组件（居中）
 export class BookTitle extends Label {
     constructor(id: string, title: string, size: [string, string] = ["100%", "100%"]) {
         super(id, undefined);
         this.setText(new Text().setText(title).setColor([0, 0, 0]))
             .setControl(new Control().setLayer(5))
             .setLayout(new Layout().setAnchorTo("center"));
+    }
+}
+
+// 文本组件（左对齐）
+export class BookText extends Label {
+    constructor(id: string, text: string, size: [string, string] = ["100%", "100%"]) {
+        super(id, undefined);
+        this.setText(new Text().setText(text).setColor([0, 0, 0]))
+            .setControl(new Control().setLayer(5))
+            .setLayout(new Layout().setAnchorFrom("left").setAnchorTo("left").setOffset([4, 0]));
     }
 }
 
@@ -214,8 +224,8 @@ export class NeoGuidebookPage {
         return this;
     }
 
-    addBookText(text:string,size: [string, string] = ["100%", "15%"],){
-        this.panel.addStack(size,new BookTitle("text",text))
+    addBookText(text:string, size: [string, string] = ["100%", "15%"]){
+        this.panel.addStack(size, new BookText("text", text))
         return this;
     }
 
@@ -305,62 +315,9 @@ export class NeoGuidebookPage {
     // 清空内容
     clear(): this {
         this.panel = new StackPanel(this.panel.id, undefined);
-        this.panel.setOrientation("horizontal");
+        this.panel.setOrientation("vertical");
         this.categories = [];
         this.chapters = [];
         return this;
     }
 }
-/*
-// 使用示例
-export function createExampleGuidebook(): NeoGuidebookPage {
-    const guidebook = new NeoGuidebookPage("main_guidebook");
-    
-    // 添加书籍分类
-    const categoryButtons = [
-        { id: "chapter_1", texture: "textures/items/apple" },
-        { id: "chapter_2", texture: "textures/items/iron_ingot" },
-        { id: "chapter_3", texture: "textures/items/gold_ingot" },
-        { id: "chapter_4", texture: "textures/items/diamond" }
-    ];
-
-    const categoryImages = [
-        { id: "image1", texture: "textures/items/apple" },
-        { id: "image2", texture: "textures/items/apple" },
-        { id: "image3", texture: "textures/items/apple" },
-        { id: "image4", texture: "textures/items/apple" }
-    ];
-
-    guidebook.addBookCategory("书籍分类",4,4, categoryButtons, categoryImages);
-    
-    // 添加章节目录
-    for(let i = 0; i < 6; i++) {
-        guidebook.addChapter(`item_${i}`, "textures/items/apple");
-    }
-    
-    guidebook.buildChapterList();
-    
-    return guidebook;
-}
-
-// 链式调用示例
-export function createChainExample(): NeoGuidebookPage {
-    return new NeoGuidebookPage("chain_example")
-        .addBookCategory(
-            "冒险指南", 4,4,
-            [
-                { id: "adv1", texture: "textures/items/map" },
-                { id: "adv2", texture: "textures/items/compass" }
-        ,
-            
-                { id: "adv_img1", texture: "textures/items/map" },
-                { id: "adv_img2", texture: "textures/items/compass" }
-            ],[]
-        )
-        .addEmptySpace()
-        .addChapter("开始冒险", "textures/items/map")
-        .addChapter("生存技巧", "textures/items/apple")
-        .addChapter("战斗指南", "textures/items/sword")
-        .buildChapterList();
-}
-*/

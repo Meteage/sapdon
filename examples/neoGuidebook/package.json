@@ -1,5 +1,5 @@
 {
-    "name": "ts-sapdon",
+    "name": "neoGuidebook",
     "version": "1.0.0",
     "main": "main.ts",
     "scripts": {
@@ -14,7 +14,7 @@
     "license": "ISC",
     "type": "module",
     "devDependencies": {
-        "@minecraft/server": "^2.0.0",
-        "@minecraft/server-ui": "^2.0.0"
+        "@minecraft/server": "^2.8.0",
+        "@minecraft/server-ui": "^2.1.0"
     }
 }

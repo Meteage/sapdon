@@ -1,12 +1,3 @@
-
-//重新设计指导手册
-//书页以一页一页为独立的单位
-//书页格局布局 有 纯文本类 分类导航类  选项栏类  起始页类
-//元件 标题title 书签bar 选项栏 分类栏 文本text
-//每一个书页都是一个Panel 有两种类型 单页型 与 双叶型
-//单页型 只有一页内容 双叶型 有两页内容
-
-
 import { ButtonMapping } from "../../buttonMapping.js";
 import { DataBindingObject } from "../../dataBindingObject.js";
 import { Button } from "../../elements/button.js";
@@ -24,92 +15,142 @@ import { ServerFormButton, ServerUISystem } from "../serverForm.js";
 import { UISystem } from "../system.js";
 
 type BookPage = {
-    /** 书页ID */
     id: string;
-    /** 书页内容 */
     content: Panel;
 }
 
-//指导书类 实现指导手册注册 书页管理 
+type CustomButtonConfig = {
+    id: string;
+    position: "bottom_left" | "bottom_right" | "bottom_middle" | "top_left" | "top_right";
+    offset: [number, number];
+    size: [number | string, number | string];
+    defaultTexture: string;
+    hoverTexture: string;
+    pressedTexture: string;
+    bindingButtonName: string;
+}
+
+type ButtonTextures = {
+    prevDefault?: string;
+    prevHover?: string;
+    prevPressed?: string;
+    nextDefault?: string;
+    nextHover?: string;
+    nextPressed?: string;
+    homeDefault?: string;
+    homeHover?: string;
+    homePressed?: string;
+    closeDefault?: string;
+    closeHover?: string;
+    closePressed?: string;
+}
+
+type NeoGuidebookOptions = {
+    size?: [number, number];
+    background?: string;
+    debug?: boolean;
+    buttons?: {
+        prev?: { visible?: boolean };
+        next?: { visible?: boolean };
+        home?: { visible?: boolean };
+        close?: { visible?: boolean };
+    };
+    textures?: ButtonTextures;
+}
+
 export class NeoGuidebook {
-    //书页管理
-    private identifer:string;
-    private book_pages:BookPage[] = [];
-    private size:[number,number];
-    private background_image:string = "textures/ui/book_back";
+    private identifier: string;
+    private book_pages: BookPage[] = [];
+    private size: [number, number];
+    private background_image: string;
+    private debug_mode: boolean;
+    private system: UISystem;
+    private root_panel_id: string;
+    private root_panel_name: string;
+    private root_panel_elements: UIElement[] = [];
+    private custom_buttons: CustomButtonConfig[] = [];
+    private button_visibility: Record<string, boolean> = {};
+    private textures: ButtonTextures = {};
+    private dirty: boolean = false;
 
-    //
-    private debug_mode:boolean = false;
-    private system:UISystem;
-    private root_panel_id:string;
-    private root_panel_name:string;
-    private root_panel_elements:UIElement[] = [];
-    
-    /**
-     * @param {string} identifer - UI唯一标识符（格式 "命名空间:名称"）
-     * @param {string} path - UI路径 例如"ui/"
-     * @param {[number, number]} size - 面板尺寸 [宽, 高]
-     */
-    constructor(identifer:string,path:string,size?:[number,number]){
-        this.identifer = identifer;
-        // 解析命名空间
-        const [namespace, name] = identifer.split(":");
+    constructor(identifier: string, path: string, size?: [number, number], options?: NeoGuidebookOptions){
+        this.identifier = identifier;
+        const [namespace, name] = identifier.split(":");
 
-        //根面板名字
         this.root_panel_name = `${name}_root_panel`;
         this.root_panel_id = `${namespace}.${this.root_panel_name}`;
-        this.size = size || [320,207];
+        this.size = size || options?.size || [320,207];
+        this.background_image = options?.background || "textures/ui/book_back";
+        this.debug_mode = options?.debug || false;
+        this.textures = options?.textures || {};
 
-        //注册
-        this.system = new UISystem(identifer, path);
-        // 注册UI系统
+        if (options?.buttons) {
+            if (options.buttons.prev?.visible != null) this.button_visibility["prev"] = options.buttons.prev.visible;
+            if (options.buttons.next?.visible != null) this.button_visibility["next"] = options.buttons.next.visible;
+            if (options.buttons.home?.visible != null) this.button_visibility["home"] = options.buttons.home.visible;
+            if (options.buttons.close?.visible != null) this.button_visibility["close"] = options.buttons.close.visible;
+        }
+
+        this.system = new UISystem(identifier, path);
         ServerUISystem.bindingTitlewithContent(
             this.system.name,
             this.root_panel_id
         );
 
-        //初始化
         this.initUI();
-
     }
 
-    /**添加单页书面 */
-    public addSinglePageStack(page_id:string,page_content:Panel){
-        
-        page_content.addVariable("binding_text",page_id);
+    public getPageIds(): string[] {
+        return this.book_pages.map(p => p.id);
+    }
+
+    public getPageCount(): number {
+        return this.book_pages.length;
+    }
+
+    public addCustomButton(config: CustomButtonConfig): this {
+        this.custom_buttons.push(config);
+        this.dirty = true;
+        this.flush();
+        return this;
+    }
+
+    public addSinglePageStack(page_id: string, page_content: Panel){
+        page_content.addVariable("binding_text", page_id);
         page_content.dataBinding.addDataBinding(
             new DataBindingObject().setBindingType("view")
             .setSourcePropertyName("($binding_text = #form_text)")
             .setTargetPropertyName("#visible")
         );
 
-        this.book_pages.push({
-            id: page_id,
-            content:page_content
-        });
-        this.updataUI();
+        this.book_pages.push({ id: page_id, content: page_content });
+        this.dirty = true;
+        this.flush();
     }
 
-    /**添加双页书面 */
-    public addDoublePageStack(page_id:string,left_page:Panel,right_page:Panel){
+    public addDoublePageStack(page_id: string, left_page: Panel, right_page: Panel, ratio?: [string, string]){
+        const r = ratio || ["50%", "100%"];
         const page = new StackPanel(`${page_id}_page_panel`).setOrientation("horizontal")
               .setControl(new Control().setLayer(5))
-              //.setLayout(new Layout().setSize(["90%","90%"]))
-              .addVariable("binding_text",page_id)
-              .addStack(["50%","100%"],left_page)
-              .addStack(["50%","100%"],right_page)
+              .addVariable("binding_text", page_id)
+              .addStack(r, left_page)
+              .addStack(r, right_page);
               page.dataBinding.addDataBinding(
                 new DataBindingObject().setBindingType("view")
                 .setSourcePropertyName("($binding_text = #form_text)")
                 .setTargetPropertyName("#visible")
             );
 
-        this.book_pages.push({
-            id: page_id,
-            content:page
-        });
+        this.book_pages.push({ id: page_id, content: page });
 
-        this.updataUI();
+        this.dirty = true;
+        this.flush();
+    }
+
+    private flush(){
+        if (!this.dirty) return;
+        this.dirty = false;
+        this.updateUI();
     }
 
     private createPagesPanel(){
@@ -120,44 +161,53 @@ export class NeoGuidebook {
     }
 
     private initUI() {
-        
-        // 2. 添加基础UI元素
-        this.addRootElements([
-            // 背景图
+        const elements: UIElement[] = [
             new Image("book_background")
                 .setSprite(new Sprite().setTexture(this.background_image)),
-            // 书页背景
             this.createBookPage(),
+        ];
 
-            // 关闭按钮
-            this.createCloseButton(),
+        if (this.button_visibility["close"] !== false) elements.push(this.createCloseButton());
+        if (this.button_visibility["prev"] !== false) elements.push(this.createPageButton("prev", [7, -9], "prev_button"));
+        if (this.button_visibility["next"] !== false) elements.push(this.createPageButton("next", [-7, -9], "next_button"));
+        if (this.button_visibility["home"] !== false) elements.push(this.createHomeButton([0, 0], ["8%", "8%"], "home_button"));
 
-            // 翻页按钮
-            this.createPageButton("prev", [ 7, -9], "book_pageleft", "prev_button"),
-            this.createPageButton("next", [-7, -9], "book_pageright","next_button"),
+        this.addRootElements(elements);
 
-            // 章节目录按钮
-            this.createHomeButton([0,0], ["8%","8%"], "home_button")
-        ]);
-
-        //Debug文本
         if(this.debug_mode) this.addRootElement(this.createDebugText());
-
-        this.updataUI();
+        this.dirty = true;
+        this.flush();
     }
-    
 
-    private updataUI(){
+    private createCustomButtons(): UIElement[] {
+        return this.custom_buttons.map(cfg => {
+            return new UIElement(cfg.id, undefined, "server_form.sapdon_form_button_factory")
+                .addVariable("binding_button_text", cfg.bindingButtonName)
+                .addVariable("default_texture", cfg.defaultTexture)
+                .addVariable("hover_texture", cfg.hoverTexture)
+                .addVariable("pressed_texture", cfg.pressedTexture)
+                .addProp("offset", cfg.offset)
+                .addProp("size", cfg.size)
+                .addProp("layer", 5)
+                .addProp("anchor_from", cfg.position)
+                .addProp("anchor_to", cfg.position);
+        });
+    }
 
+    private updateUI(){
         const root_panel = new Panel(this.root_panel_name);
         root_panel.setLayout(new Layout().setSize(this.size));
         root_panel.addControls(this.root_panel_elements);
+        root_panel.addControls(this.createCustomButtons());
         root_panel.addControl(this.createPagesPanel());
 
         this.system.addElement(root_panel);
     }
-    
-    /** 创建关闭按钮 */
+
+    private tex(name: string, fallback: string): string {
+        return (this.textures as any)[name] || fallback;
+    }
+
     private createCloseButton() {
         return new Button("close_button")
             .setLayout(
@@ -181,8 +231,8 @@ export class NeoGuidebook {
             ]);
     }
 
-    /** 创建翻页按钮（通用方法） */
-    private createPageButton(type:string, offset:[number,number], texturePrefix:string,bindingButtonName:string) {
+    private createPageButton(type: string, offset: [number, number], bindingButtonName: string) {
+        const prefix = type === "prev" ? "book_pageleft" : "book_pageright";
         const buttonId = `${type}_button`;
         const button_anchor = type === "prev" ? "left" : "right";
         return new Panel(`${buttonId}_panel`)
@@ -191,30 +241,31 @@ export class NeoGuidebook {
                 new Layout()
                     .setSize([24, 24])
                     .setOffset(offset)
-                    .setAnchorFrom(`bottom_${button_anchor}`) 
-                    .setAnchorTo(`bottom_${button_anchor}`) 
+                    .setAnchorFrom(`bottom_${button_anchor}`)
+                    .setAnchorTo(`bottom_${button_anchor}`)
             )
             .addControl(
                 new UIElement(buttonId, undefined, "server_form.sapdon_form_button_factory")
-                    .addVariable("binding_button_text", `${bindingButtonName}`)
-                    .addVariable("default_texture", `textures/ui/${texturePrefix}_default`)
-                    .addVariable("hover_texture", `textures/ui/${texturePrefix}_hover`)
-                    .addVariable("pressed_texture", `textures/ui/${texturePrefix}_pressed`)
+                    .addVariable("binding_button_text", bindingButtonName)
+                    .addVariable("default_texture", this.tex(type + "Default", `textures/ui/${prefix}_default`))
+                    .addVariable("hover_texture", this.tex(type + "Hover", `textures/ui/${prefix}_hover`))
+                    .addVariable("pressed_texture", this.tex(type + "Pressed", `textures/ui/${prefix}_pressed`))
             );
     }
-    /**创建返回章节目录按键 */
-    private createHomeButton(offset:[number,number],size:[number|string,number|string],bindingButtonName:string) {
+
+    private createHomeButton(offset: [number, number], size: [number|string, number|string], bindingButtonName: string) {
         return new UIElement("home_button", undefined, "server_form.sapdon_form_button_factory")
             .addVariable("binding_button_text", bindingButtonName)
-            .addVariable("default_texture", "textures/ui/book_shiftleft_default")
-            .addVariable("hover_texture", "textures/ui/book_shiftleft_hover")
+            .addVariable("default_texture", this.tex("homeDefault", "textures/ui/book_shiftleft_default"))
+            .addVariable("hover_texture", this.tex("homeHover", "textures/ui/book_shiftleft_hover"))
+            .addVariable("pressed_texture", this.tex("homePressed", "textures/ui/book_shiftleft_pressed"))
             .addProp("offset", offset)
             .addProp("size", size)
             .addProp("layer", 5)
             .addProp("anchor_from","bottom_middle")
             .addProp("anchor_to","bottom_middle")
     }
-    /**创建书页 */
+
     private createBookPage() {
         return new StackPanel("book_page_stack_panel").setOrientation("horizontal")
         .setLayout(new Layout().setSize(this.size))
@@ -253,7 +304,6 @@ export class NeoGuidebook {
         );
     }
 
-    /**创建调试数据内容文本 */
     private createDebugText() {
         return new Panel("data_text_panel")
             .setLayout(new Layout().setSize([64, 8*8]).setAnchorFrom("top_middle").setAnchorTo("top_middle"))
@@ -263,31 +313,20 @@ export class NeoGuidebook {
             ));
     }
 
-    /**
-     * 向系统注册一个元素
-     * @param {UIElement} element 
-     */
-    public registerElement(element:UIElement){
+    public registerElement(element: UIElement){
         this.system.addElement(element);
         return this;
     }
-    /**
-     * 向根面板添加元素
-     */
-    public addRootElement(element:UIElement){
+
+    public addRootElement(element: UIElement){
         this.root_panel_elements.push(element);
         return this;
     }
 
-     /**
-     * 向根面板添加多个元素
-     * @param {Array} elements 
-     */
-    public addRootElements(elements:UIElement[]){
+    public addRootElements(elements: UIElement[]){
         for(let i in elements){
             this.addRootElement(elements[i]);
         }
         return this;
     }
 }
-

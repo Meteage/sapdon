@@ -17,7 +17,7 @@ export class UISystemRegistry {
         if (!Array.isArray(ui_defs)) {
             throw new Error("参数必须是一个数组")
         }
-        this.#ui_def_list.concat(ui_defs)
+        this.#ui_def_list.push(...ui_defs)
         GRegistry.register("_ui_defs","resource","ui/",{"ui_defs": this.#ui_def_list});
     }
 }

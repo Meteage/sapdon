@@ -1,8 +1,7 @@
 {
   "name": "neoGuidebook",
-  "description": "neoGuidebook 类java版帕秋莉手册",
-  "author": "Meteage",
+  "description": "NeoGuidebook 技术手册",
+  "author": "meteage",
   "version": "1.0.0",
-  "min_engine_version": "1.21.00",
-  "language": "ts"
+  "min_engine_version": "1.26.30"
 }

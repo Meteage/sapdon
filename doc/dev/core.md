@@ -653,7 +653,7 @@ UIElement (基类: name, type, template, control, layout, properties)
 | `ChestUISystem` | `systems/chest.js` | 容器 UI 系统 |
 | `ContainerUISystem` | `systems/containerUISystem.js` | 自定义容器 UI |
 | `Guidebook` | `systems/guidebook.js` | 指南书 UI |
-| `NeoGuidebook` | `systems/neoGuibook/book.ts` | 新版指南书 UI |
+| `NeoGuidebook` | `systems/neoGuibook/book.ts` | 新版指南书 UI，详见 [neo-guidebook.md](neo-guidebook.md) |
 | `HudUISystem` | `systems/hud/hud.ts` | HUD 系统 |
 | `HudStatePanel` | `systems/hud/hudElement.ts` | HUD 状态面板 |
 
