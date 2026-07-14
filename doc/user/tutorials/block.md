@@ -260,6 +260,17 @@ registry.submit()
 - **放置过滤** — 只能放置在耕地上方
 - **选择框** — 每阶段自动调整高度
 
+### 运行时组件
+
+作物方块的生长和骨粉交互需要注册框架内置的脚本组件。在 `scripts/index.ts` 中：
+
+```typescript
+import { registerBuiltinComponents } from '@sapdon/runtime'
+registerBuiltinComponents()
+```
+
+这样就自动注册了 `sapdon:sapdon:crop_growth` 组件，作物才能正常生长和响应骨粉。
+
 ---
 
 ## 6. 矿物方块

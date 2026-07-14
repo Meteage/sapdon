@@ -206,15 +206,28 @@ BlockAPI.createCropBlock(
 - `minecraft:placement_filter` → 仅允许放置在耕地上方
 - 每个生长阶段自动调整选择框高度
 
+**运行时依赖**
+
+作物方块的生长、骨粉交互等行为需要注册框架内置的运行时组件。在 `scripts/index.ts` 中添加：
+
+```typescript
+import { registerBuiltinComponents } from '@sapdon/runtime'
+registerBuiltinComponents()
+```
+
 **示例**
 
 ```typescript
+import { BlockAPI, registry } from '@sapdon/core'
+
 const crop = BlockAPI.createCropBlock('demo:tomato', 'nature', [
   { stateTag: 0, textures: ['stage_0', 'stage_0', 'stage_0', 'stage_0', 'stage_0', 'stage_0'] },
   { stateTag: 1, textures: ['stage_1', 'stage_1', 'stage_1', 'stage_1', 'stage_1', 'stage_1'] },
   { stateTag: 2, textures: ['stage_2', 'stage_2', 'stage_2', 'stage_2', 'stage_2', 'stage_2'] },
   { stateTag: 3, textures: ['stage_3', 'stage_3', 'stage_3', 'stage_3', 'stage_3', 'stage_3'] }
 ])
+
+registry.submit()
 ```
 
 ---
@@ -481,6 +494,8 @@ new CropBlock(
 - `minecraft:geometry` → `geometry.crop`
 - `minecraft:placement_filter` → 仅限耕地上方
 - 每生长阶段设置自定义选择框高度
+
+**运行时依赖：** 需调用 `registerBuiltinComponents()` 注册内置的生长脚本组件。
 
 ---
 

@@ -40,7 +40,8 @@ hello_sapdon/
 ├── pack_icon.png        # 模组图标
 ├── res/                 # 资源文件（纹理、模型、音效）
 └── scripts/
-    └── main.ts          # Script API 入口（游戏内逻辑）
+    ├── index.ts         # 脚本入口——注册组件 + 游戏内逻辑
+    └── main.ts          # 游戏主类
 ```
 
 ## 编写代码
