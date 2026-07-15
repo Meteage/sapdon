@@ -303,7 +303,7 @@ interface BuildConfig {
   formatVersion: number                    // 当前是 2
   buildOptions: {
     useHMR: boolean                        // 热更新
-    buildMode: 'development' | 'production' // 构建模式
+    buildMode: 'dev' | 'prod' | 'debug' // 构建模式
     buildEntry: string                     // main.ts 入口
     scriptEntry: string                    // scripts/main.ts
     scriptOutput: string                   // scripts/index.js

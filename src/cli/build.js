@@ -59,9 +59,9 @@ export const scriptBundler = {
                     //@ts-ignore
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
-                    ...(buildConfig.buildOptions.buildMode === 'development' ? [] : [
+                    ...(buildConfig.buildOptions.buildMode === 'prod' ? [
                         terser(),
-                    ]),
+                    ] : []),
                 ],
                 external(name) {
                     for (const candidate of rollupIgnores) {
@@ -113,9 +113,9 @@ export const scriptBundler = {
                     //@ts-ignore
                     json(),
                     // visualizer({ open: true }),  //可视化分析, 打包出问题取消注释这一行
-                    ...(buildConfig.buildOptions.buildMode === 'development' ? [] : [
+                    ...(buildConfig.buildOptions.buildMode === 'prod' ? [
                         terser(),
-                    ]),
+                    ] : []),
                 ],
                 external(name) {
                     for (const candidate of rollupIgnores) {
@@ -151,7 +151,7 @@ async function bundleScripts(useJs=false) {
     scriptBundler[elementType](
         path.join(projectPath, scriptEntry),
         path.join(getBuildDirBp(), scriptOutput),
-        buildMode === 'development' ? true : false
+        buildMode === 'dev' ? true : false
     )
 }
 
@@ -263,7 +263,7 @@ export const buildProject = async (projectPath, projectName) => {
         GRegistryServer.startServer()
         server.handle('submit', async (data) => {
             // development：运行 main.ts 生成 JSON；production：跳过（仅同步已有 dev/ 目录）
-            if (buildConfig.buildOptions.buildMode === "development") {
+            if (buildConfig.buildOptions.buildMode !== "debug") {
                 GRegistryServer.dataList = data
                 await generateAddon(absoluteModPath, buildDirPath, projectName)
             }

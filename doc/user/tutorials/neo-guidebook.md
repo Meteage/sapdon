@@ -57,7 +57,7 @@ my_guidebook/
   "formatVersion": 2,
   "buildOptions": {
     "useHMR": true,
-    "buildMode": "development",
+    "buildMode": "dev",
     "buildEntry": "main.ts",
     "scriptEntry": "scripts/index.ts",
     "scriptOutput": "scripts/index.js",

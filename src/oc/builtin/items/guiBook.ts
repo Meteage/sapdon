@@ -46,7 +46,7 @@ function showGuidebook(target: any, ui: string) {
 
 export const GuiBookItemComponent: ItemCustomComponent = {
     onUse({ itemStack, source }) {
-        if (source.typeId != "minecraft:player") return;
+        if (source.typeId != "minecraft:player" || !itemStack) return;
         showGuidebook(source, item_ui_list[itemStack.typeId]);
     }
 };

@@ -76,8 +76,9 @@ sapdon build .
 
 | 模式 | 行为 |
 |------|------|
-| `development`（默认） | 运行 `main.ts` → 根据代码生成所有 JSON → 打包脚本 → 同步到 Minecraft |
-| `production` | 跳过 `main.ts`，直接同步已有 `dev/` 目录到 Minecraft（适合直接编辑 JSON 测试） |
+| `dev`（默认） | 运行 `main.ts` → 根据代码生成所有 JSON → 打包脚本（不压缩）→ 同步到 Minecraft |
+| `prod` | 运行 `main.ts` → 生成 JSON → 打包脚本（terser 压缩）→ 同步 |
+| `debug` | 跳过 `main.ts`，跳过压缩，直接同步已有 `dev/` 目录到 Minecraft（适合直接编辑 JSON 测试） |
 
 ```bash
 # 使用 sapdon pack 以 production 模式构建（不启动热更新）

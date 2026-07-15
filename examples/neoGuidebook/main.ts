@@ -5,7 +5,7 @@ import {
     NeoGuidebook, NeoGuidebookPage
 } from '@sapdon/core'
 
-const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "masterball")
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "book")
 neoGuidebook.format_version = "1.21.90"
 neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:neo_guibook", {}))
 neoGuidebook.addComponent(ItemComponent.setMaxStackSize(1))
@@ -24,15 +24,12 @@ const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook", "ui/", [32
 
 const cover = new NeoGuidebookPage("cover")
     .addEmptySpace(["100%", "5%"])
-    .addBookTitleBar("NeoGuidebook TEST技术手册\n     by Meteage", ["100%", "15%"])
+    .addBookTitleBar("NeoGuidebook TEST技术手册", ["100%", "15%"])
     .addEmptySpace(["100%", "3%"])
-    .addCategoryTitle(
-        "NeoGuidebook 是基于 Minecraft Bedrock JSON UI 体系的\n" +
-        "构建时代码生成框架。它通过链式 API 生成结构化指南手册，\n" +
-        "利用 Server Form 的 #title_text / #form_text 数据绑定\n" +
-        "实现自定义 UI 注入与页面切换。\n",
-        ["100%", "60%"]
-    )
+    .addBookText("NeoGuidebook 是基于 Minecraft Bedrock JSON UI 体系的", ["100%", "15%"])
+    .addBookText("构建时代码生成框架。它通过链式 API 生成结构化指南手册，", ["100%", "15%"])
+    .addBookText("利用 Server Form 的 #title_text / #form_text 数据绑定", ["100%", "15%"])
+    .addBookText("实现自定义 UI 注入与页面切换。", ["100%", "15%"])
 
 const BOOK_CHAPTERS = [
     { chapter_name: "架构概述",      chapter_texture: "textures/items/map" },

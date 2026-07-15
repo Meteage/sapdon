@@ -13,7 +13,7 @@ export interface BuildConfig {
     formatVersion: number
     buildOptions: {
         useHMR: boolean
-        buildMode: 'development' | 'production'
+        buildMode: 'dev' | 'prod' | 'debug'
         buildEntry: string
         scriptEntry: string
         scriptOutput: string
@@ -47,7 +47,7 @@ export function transferV1ToV2({ defaultConfig, resources, scripts }: any) {
         formatVersion: 2,
         buildOptions: {
             useHMR: true,
-            buildMode: 'development',
+            buildMode: 'dev',
             buildEntry: defaultConfig.buildEntry,
             scriptEntry: defaultConfig.scriptEntry,
             scriptOutput: defaultConfig.scriptEntry.replace('.ts', '.js'),

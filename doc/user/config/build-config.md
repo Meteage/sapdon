@@ -9,7 +9,7 @@
   "formatVersion": 2,
   "buildOptions": {
     "useHMR": true,                       // 是否启用热更新
-    "buildMode": "development",           // "development" | "production"
+    "buildMode": "dev",                   // "dev" | "prod" | "debug"
     "buildEntry": "main.ts",              // Addon 构建入口文件
     "useJs": false,                       // 是否使用 JavaScript
     "scriptEntry": "scripts/main.ts",     // Script API 入口
@@ -39,10 +39,9 @@
 
 | 值 | 说明 |
 |----|------|
-| `development` | **完整构建**：运行 `main.ts` → 根据代码生成所有 JSON → 打包脚本 → 同步到 Minecraft 目录。Script API 输出带 sourcemap，不压缩。 |
-| `production` | **仅同步**：跳过 `main.ts` 执行和 JSON 生成，将已有 `dev/` 目录直接同步到 Minecraft 目录。适合直接编辑 JSON 文件测试时使用。 |
-
-> 注意：`production` 模式不会运行 `main.ts`，也不会生成物品/实体/方块/配方的 JSON 文件。确保 `dev/` 目录已有正确的 JSON 文件（通常从一次 `development` 构建中获得）。
+| `dev` | **完整构建**：运行 `main.ts` → 根据代码生成所有 JSON → 打包脚本 → 同步到 Minecraft 目录。Script API 输出带 sourcemap，不压缩。 |
+| `prod` | **生产构建**：运行 `main.ts` → 生成 JSON → 打包脚本（terser 压缩混淆）→ 同步。不生成 sourcemap。 |
+| `debug` | **仅同步**：跳过 `main.ts` 执行和 JSON 生成，跳过脚本压缩，将已有 `dev/` 目录直接同步到 Minecraft 目录。适合直接编辑 JSON 文件测试时使用。 |
 
 ### buildEntry
 构建入口文件路径（相对项目根目录）。文件中的 `registry.submit()` 会将注册数据提交到构建系统。

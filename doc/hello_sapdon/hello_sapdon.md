@@ -106,7 +106,7 @@ hello_sapdon/
   ]
 }
 ```
-- **buildMode**：构建模式。设置为 `"development"` 时，构建程序将根据 `main.mjs` 中的内容构建 Addon 包，并将输出到 `buildDir` 指定的文件夹中；设置为 `"debug"` 时，仅将 `dev` 文件夹的内容输出到指定路径。
+- **buildMode**：构建模式。`"dev"`（默认）执行 `main.mjs` 生成所有 JSON；`"prod"` 生成 JSON 并压缩脚本；`"debug"` 跳过代码执行，仅将 `dev/` 输出到游戏目录。
 - **buildEntry**：构建入口文件的路径，即您编写模组内容的文件。
 - **scriptEntry**：脚本入口文件的路径。
 - **buildDir**：构建输出文件夹的路径，构建好的 Addon 包将输出到此文件夹。
