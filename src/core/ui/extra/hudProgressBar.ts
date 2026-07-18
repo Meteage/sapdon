@@ -20,6 +20,8 @@ interface HudProgressBarOptions {
     barSize?: [string | number, string | number]
     layers: ProgressBarLayer[]
     states: number
+    fillColor?: [number, number, number]
+    fillUv?: [number, number]
     segments?: {
         count: number
         color: [number, number, number]
@@ -27,6 +29,8 @@ interface HudProgressBarOptions {
     hudSize?: [string | number, string | number]
     anchorFrom?: string
     anchorTo?: string
+    offset?: [number, number]
+    clipDirection?: string
 }
 
 export class HudProgressBar {
@@ -41,42 +45,65 @@ export class HudProgressBar {
             hudSize: ["30%", "6%"],
             anchorFrom: "bottom_left",
             anchorTo: "bottom_left",
+            offset: [0, 0],
+            clipDirection: "left",
+            fillUv: [0, 5],
             ...options
         }
         this.panel = this.build()
     }
 
     private build(): Panel {
-        const hsp = new HudStatePanel(this.options.id)
+        const rootPanel = new Panel(this.options.id, undefined)
+
+        const bgPanel = new Panel(`${this.options.id}_bg`, undefined)
+        for (let l = 0; l < this.options.layers.length; l++) {
+            const layer = this.options.layers[l]
+            const img = new Image(`${this.options.id}_l${l}`, undefined)
+            img.setSprite(
+                new Sprite()
+                    .setTexture(this.options.texture)
+                    .setUV(this.options.uv!)
+                    .setUVSize(this.options.uvSize!)
+                    .setClipDirection(this.options.clipDirection!)
+                    .setClipPixelPerfect(true)
+                    .setClipRatio(layer.clipRatio)
+            )
+            img.setLayout(new Layout().setSize(this.options.barSize!))
+            img.addProp("color", layer.color)
+            img.setControl(new Control().setLayer(l))
+            bgPanel.addControl(img)
+        }
+        rootPanel.addControl(bgPanel)
+
+        const hsp = new HudStatePanel(`${this.options.id}_states`)
 
         for (let i = 0; i < this.options.states; i++) {
-            const progress = this.options.states > 1
-                ? i / (this.options.states - 1)
+            const statePanel = new Panel(`${this.options.id}_s${i}`, undefined)
+            const fillRatio = this.options.states > 1
+                ? 1 - i / this.options.states
                 : 0
 
-            const statePanel = new Panel(`${this.options.id}_s${i}`, undefined)
-
-            for (let l = 0; l < this.options.layers.length; l++) {
-                const layer = this.options.layers[l]
-                const img = new Image(`${this.options.id}_l${l}_s${i}`, undefined)
-                img.setSprite(
+            if (this.options.fillColor) {
+                const fillImg = new Image(`${this.options.id}_fill_s${i}`, undefined)
+                fillImg.setSprite(
                     new Sprite()
                         .setTexture(this.options.texture)
-                        .setUV(this.options.uv!)
+                        .setUV(this.options.fillUv!)
                         .setUVSize(this.options.uvSize!)
-                        .setClipDirection("left")
+                        .setClipDirection(this.options.clipDirection!)
                         .setClipPixelPerfect(true)
-                        .setClipRatio(layer.clipRatio * progress)
+                        .setClipRatio(fillRatio)
                 )
-                img.setLayout(new Layout().setSize(this.options.barSize!))
-                img.addProp("color", layer.color)
-                img.setControl(new Control().setLayer(l))
-                statePanel.addControl(img)
+                fillImg.setLayout(new Layout().setSize(this.options.barSize!))
+                fillImg.addProp("color", this.options.fillColor)
+                fillImg.setControl(new Control().setLayer(this.options.layers.length))
+                statePanel.addControl(fillImg)
             }
 
             if (this.options.segments) {
                 const segCount = this.options.segments.count
-                const filledCount = Math.ceil(segCount * progress)
+                const filledCount = Math.min(i, segCount)
                 const segWidth = Math.floor(100 / segCount)
 
                 const segPanel = new StackPanel(`${this.options.id}_seg_g${i}`, undefined)
@@ -110,12 +137,14 @@ export class HudProgressBar {
             hsp.addStateControl(i, statePanel)
         }
 
-        const rootPanel = hsp.getPanel()
+        rootPanel.addControl(hsp.getPanel())
+
         rootPanel.setLayout(
             new Layout()
                 .setAnchorFrom(this.options.anchorFrom!)
                 .setAnchorTo(this.options.anchorTo!)
                 .setSize(this.options.hudSize!)
+                .setOffset(this.options.offset!)
         )
 
         return rootPanel

@@ -359,12 +359,13 @@ new HudProgressBar({
     uv: [0, 0],
     uvSize: [182, 5],
     barSize: [182, 5],
-    layers: [{ color: [1, 0, 0], clipRatio: 1 }],
+    layers: [{ color: [0.5, 0, 0], clipRatio: 0 }],
+    fillColor: [1, 0, 0],
     states: 10,
-    segments: { count: 3, color: [0, 1, 1] },
     hudSize: ["30%", "6%"],
-    anchorFrom: "bottom_left",
-    anchorTo: "bottom_left"
+    anchorFrom: "bottom_middle",
+    anchorTo: "bottom_middle",
+    offset: [0, -20]
 }).mountToHud()
 
 // 提交所有注册

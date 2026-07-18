@@ -1,5 +1,6 @@
 import { GameMode, ItemStack, Player, system, world, EntityComponentTypes } from "@minecraft/server";
 import "./sapdon_lib/sapdon_system.js"
+import "./hudController.js"
 import { FarmerGolem } from "./golems/FarmerGolem.js";
 import { BaseGolem } from "./core/BaseGolem.js";
 import { GOLEM_FARMER_TYPE, GOLEM_TARGET_TYPE, GOLEM_PROPERTY } from "./core/types.js";
@@ -124,6 +125,13 @@ world.afterEvents.entityHitEntity.subscribe((event) => {
   player.dimension.spawnItem(summonStack, pos)
 })
 
+
+
+const STATE_PREFIX = "ui.hud.red_progress_states.";
+const MAX_SPEED = 10;
+
+
+
 world.afterEvents.playerSpawn.subscribe((event) => {
     const initId = system.runInterval(() => {
         if (world.getAllPlayers().length > 0) {
@@ -140,4 +148,20 @@ world.afterEvents.playerSpawn.subscribe((event) => {
         player?.addTag("gaven_guidebook");
         player?.runCommand(`give @s sapdon:neo_guidebook 1`);
     }, 5 * 20);
+
+    system.runInterval(() => {
+
+    for (const player of world.getAllPlayers()) {
+        const vel = player.getVelocity();
+        const speed = Math.sqrt(vel.x * vel.x + vel.z * vel.z)*10;
+        const state = Math.min(Math.floor((speed)), 9);
+        world.sendMessage(`x:${vel.x} y:${vel.y} z:${vel.z} state: ${state}` )
+
+        player.runCommand(`title @s title ${STATE_PREFIX}${state}`);
+
+    }
+}, 2);
+
 });
+
+
