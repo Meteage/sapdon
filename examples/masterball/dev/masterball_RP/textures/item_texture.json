@@ -1,9 +1,0 @@
-{
-  "resource_pack_name": "masterball",
-  "texture_name": "atlas.items",
-  "texture_data": {
-    "masterball": {
-      "textures": "textures/items/masterball"
-    }
-  }
-}

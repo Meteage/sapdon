@@ -7,6 +7,8 @@ const clientRegistryData: any[] = []
  * Client
  */
 export class GRegistry {
+    static debug = false
+
     /**
      * 生成注册器
      * @param {string} name 文件名字
@@ -15,29 +17,17 @@ export class GRegistry {
      * @param {object} data 数据操作类实例 通过toObject方法转成正确格式json文本 
      */
     static register(name: string, root: string, path: string, data: object) {
-        //此处是登记注册数据到客户端注册表
-        //此时不能调用toObject 因为此时只是在客户端生成注册数据，并没有定义好数据
-        
-        console.log("Registering:", { name, root, path, data });
-        //输出类名
-        /*
-        const className = data.constructor.name;
-        console.log(`Data is instance of: ${className}`);
-        */
+        if (GRegistry.debug) console.log("Registering:", { name, root, path, data })
         clientRegistryData.push({ name, root, path, data })
     }
 
     static submit() {
-        //此时用户端已经完成所有注册与更改，提交数据到服务器端
         transportPost('submitGregistry', clientRegistryData.map(item => {
-            //运行 toObject 方法，获取最终数据
-
-            //如果data有toObject方法则调用它
-            console.log("Preparing to submit registry item:", item.data);
+            if (GRegistry.debug) console.log("Preparing to submit registry item:", item.data)
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
             }
-            console.log("Submitting registry item:", JSON.stringify(item.data));
+            if (GRegistry.debug) console.log("Submitting registry item:", JSON.stringify(item.data))
             
             return item
         }))
