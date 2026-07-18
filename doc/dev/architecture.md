@@ -271,7 +271,8 @@ export function submit() {
 | 命令 | 说明 |
 |------|------|
 | `sapdon build <name>` | 完整构建 + 启动热更新 |
-| `sapdon pack` | 构建当前目录项目（不带 HMR） |
+| `sapdon compile` | 构建当前目录项目（不带 HMR） |
+| `sapdon pack` | 将构建产物打包为 `.mcaddon` 文件 |
 | `sapdon create <name>` | 从模板脚手架新项目 |
 | `sapdon init` | 为已有项目添加 sapdon 配置 |
 | `sapdon lib` | 复制库文件到 `node_modules/@sapdon/` |

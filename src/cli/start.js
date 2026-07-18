@@ -9,6 +9,7 @@ import fs from "fs"
 import { fileURLToPath } from "url"
 import { writeLib } from './dev-server/syncFiles.js'
 import { initResourceDir } from './res/server.js'
+import { packProject } from './pack.js'
 import { hmr } from './dev-server/hmr.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -38,7 +39,7 @@ program.command("init").description("初始化一个基于NodeJS的项目").acti
     packageJsonData.scripts = {
         ...packageJsonData.scripts,
         init: "sapdon init",
-        pack: "sapdon pack",
+        compile: "sapdon compile",
         config: "sapdon config"
     }
 
@@ -120,13 +121,21 @@ program.command("build <project-name>").description("Build the project").action(
     }
 })
 
-// pack 命令
-program.command("pack").description("Pack the current project").action(() => {
-    console.log("Packing the current project...")
+// compile 命令（原 pack）
+program.command("compile").description("Compile the current project (build without HMR)").action(() => {
+    console.log("Compiling the current project...")
     const projectPath = process.cwd()
     if (projectCanBuild(projectPath)) {
         buildProject(projectPath, path.basename(projectPath))
     }
+})
+
+// pack 命令
+program.command("pack").description("Package build output into .mcaddon file").action(async () => {
+    const projectPath = process.cwd()
+    const projectName = path.basename(projectPath)
+    globalObject.projectPath = projectPath
+    await packProject(projectName)
 })
 
 program.command('lib').description('Generate lib files for development server.').action(() => {

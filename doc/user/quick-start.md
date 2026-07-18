@@ -81,9 +81,19 @@ sapdon build .
 | `debug` | 跳过 `main.ts`，跳过压缩，直接同步已有 `dev/` 目录到 Minecraft（适合直接编辑 JSON 测试） |
 
 ```bash
-# 使用 sapdon pack 以 production 模式构建（不启动热更新）
+# 使用 sapdon compile 以 production 模式构建（不启动热更新）
+sapdon compile
+```
+
+### 打包为 .mcaddon
+
+构建完成后，可将输出打包为 `.mcaddon` 文件，方便分发：
+
+```bash
 sapdon pack
 ```
+
+输出文件：`dev/<项目名>.mcaddon`
 
 ## 构建输出
 
