@@ -30,3 +30,5 @@ export * from "./buttonMapping.js"
 export * from "./dataBindingObject.js"
 
 export * from "./registry/uiSystemRegistry.js"
+
+export * from "./extra/hudProgressBar.js"
