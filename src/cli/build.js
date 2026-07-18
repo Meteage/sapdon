@@ -43,6 +43,23 @@ const rollupIgnores = [
     '@minecraft',
 ]
 
+const uuidCachePath = (buildDirPath) => path.join(buildDirPath, '.sapdon_uuid.json')
+
+function loadOrCreateUuids(buildDirPath) {
+    const cachePath = uuidCachePath(buildDirPath)
+    if (fs.existsSync(cachePath)) {
+        return JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
+    }
+    const uuids = {
+        bp: generateUUID(),
+        rp: generateUUID()
+    }
+    fs.mkdirSync(path.dirname(cachePath), { recursive: true })
+    fs.writeFileSync(cachePath, JSON.stringify(uuids, null, 2))
+    console.log('已生成持久化 UUID 用于 BP/RP 交叉绑定')
+    return uuids
+}
+
 //脚本打包器
 export const scriptBundler = {
     js: async (source, target, sourcemap) => {
@@ -220,6 +237,9 @@ export const buildProject = async (projectPath, projectName) => {
         //判断manifest.json是否已经生成过了，生成过了就不用生成
         const manifestPath = path.join(buildBehDirPath, "manifest.json")
         if (pathNotExist(manifestPath)) {
+            const uuids = loadOrCreateUuids(buildDirPath)
+            const versionArray = versionStringToArray(modInfo.version)
+
             const behManifest = generateBehManifest(
                 modInfo.name,
                 modInfo.description,
@@ -228,7 +248,10 @@ export const buildProject = async (projectPath, projectName) => {
                     min_engine_version: min_engine_version,
                 },
                 buildConfig.buildOptions.dependencies,
-                buildConfig.buildOptions.scriptOutput
+                buildConfig.buildOptions.scriptOutput,
+                uuids.bp,
+                uuids.rp,
+                versionArray
             )
 
             const resManifest = generateResManifest(
@@ -238,7 +261,10 @@ export const buildProject = async (projectPath, projectName) => {
                 {
                     min_engine_version: min_engine_version,
                 },
-                []
+                [],
+                uuids.bp,
+                uuids.rp,
+                versionArray
             )
 
             //BP
@@ -287,27 +313,27 @@ function versionStringToArray(versionString) {
     return versionArray
 }
 
-const generateBehManifest = (name, description, version, options = {}, dependencies = [], entry) => {
+const generateBehManifest = (name, description, version, options = {}, dependencies = [], entry, headerUuid, rpUuid, versionArray) => {
     console.log("开始生成behavior_packs/manifest.json")
     console.log("Entry:", entry)
     const header = new AddonManifestHeader(
         (name + "_BP"),
         description,
-        versionStringToArray(version),
-        generateUUID(),
+        versionArray,
+        headerUuid,
         options
     )
     const module = new AddonManifestModule(
         "行为模块",
         "data",
         generateUUID(),
-        versionStringToArray(version)
+        versionArray
     )
     const script_module = new AddonManifestModule(
         "脚本模块",
         "script",
         generateUUID(),
-        versionStringToArray(version)
+        versionArray
     )
     if (entry) { script_module.entry = entry }
 
@@ -325,7 +351,10 @@ const generateBehManifest = (name, description, version, options = {}, dependenc
         2,//格式版本
         header,
         [module, script_module],
-        dependencies,
+        [
+            ...dependencies,
+            { uuid: rpUuid, version: versionArray }
+        ],
         null,
         metadata
     )
@@ -333,19 +362,19 @@ const generateBehManifest = (name, description, version, options = {}, dependenc
     return JSON.stringify(manifest, null, 2)
 }
 
-const generateResManifest = (name, description, version, options = {}, dependencies = []) => {
+const generateResManifest = (name, description, version, options = {}, dependencies = [], bpUuid, headerUuid, versionArray) => {
     const header = new AddonManifestHeader(
         (name + "_RP"),
         description,
-        versionStringToArray(version),
-        generateUUID(),
+        versionArray,
+        headerUuid,
         options
     )
     const module = new AddonManifestModule(
         "资源模块",
         "resources",
         generateUUID(),
-        versionStringToArray(version)
+        versionArray
     )
 
     const metadata = new AddonManifestMetadata(
@@ -362,7 +391,10 @@ const generateResManifest = (name, description, version, options = {}, dependenc
         2,//格式版本
         header,
         [module],
-        [],
+        [
+            ...dependencies,
+            { uuid: bpUuid, version: versionArray }
+        ],
         null,
         metadata
     )
