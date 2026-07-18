@@ -22,19 +22,11 @@ ItemAPI.createItem("sapdon:uncaught_masterball","items","masterball")
 
 EntityAPI.createProjectile("sapdon:projectile_masterball","textures/items/masterball");
 
-/*
-RecipeAPI.registerShaped("sapdon:uncaught_masterball")
-    .tags( ["crafting_table","altar"])
-    .key({ 
-        "I": "minecraft:iron_ingot",
-        "A": "minecraft:amethyst_shard",
-        "D": "minecraft:diamond"
-    })
-    .pattern([
-      "IAI",
-      "IDI",
-      "III"
-    ])
-    .output("sapdon:uncaught_masterball")*/
+RecipeAPI.registerSimpleShaped(
+    "sapdon:uncaught_masterball_recipe",
+    "sapdon:uncaught_masterball",
+    ["###", "#C#", "###"],
+    { "#": "minecraft:iron_ingot", "C": "minecraft:chest" }
+)
 
 registry.submit()
