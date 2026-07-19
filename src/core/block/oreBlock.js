@@ -4,10 +4,10 @@ import { CoordinateDistribution } from "../feature-rule/distribution/coordinateD
 import { FeatureRule } from "../feature-rule/featureRule.js";
 import { BasicBlock } from "./basicBlock.js";
 
-export class OreBlock{
-    
+export class OreBlock extends BasicBlock {
+
     constructor(identifier, category, textures_arr, options = {}){
-        this.block = new BasicBlock(identifier, category, textures_arr, options);
+        super(identifier, category, textures_arr, options);
         this.feature = new OreFeature(`${identifier}_ore_feature`,6,[
             {
                 "places_block": identifier,

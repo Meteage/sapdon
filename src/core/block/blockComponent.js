@@ -1,9 +1,9 @@
+/** @template T */
 export class BlockComponent {
   /**
-   * 
-   * @param {string} texture 
-   * @param {string?} tint_method 
-   * @returns 
+   * @param {string} texture
+   * @param {string} [tint_method]
+   * @returns {Map<string, any>}
    */
   static setDestructionParticles(texture,tint_method){
     return new Map([[
@@ -19,7 +19,7 @@ export class BlockComponent {
    * [warning] 需要 Scripting V2.0.0
    * @param {string} component_id 组件标识符
    * @param {object} params 自定义参数接口对象
-   * @returns {Map} 物品组件Map
+   * @returns {Map<string, any>} 物品组件Map
    */
   static setCustomComponentV2(component_id,params){
     return new Map([[
@@ -32,19 +32,19 @@ export class BlockComponent {
   * 
   * @param {Array} interval_range 
   * @param {boolean} looping 
-  * @returns 
-  */
+   * @returns {Map<string, any>}
+   */
  static setTick(interval_range,looping){
-  return new Map().set("minecraft:tick",{
+   return new Map().set("minecraft:tick",{
     interval_range:interval_range,
     looping:looping
-  })
- }
+   })
+  }
  /**
   * 
-  * @param {Array} custom_components 
-  * @returns 
-  */
+   * @param {Array} custom_components 
+   * @returns {Map<string, any>}
+   */
   static setCustomComponents(custom_components){
     return new Map().set("minecraft:custom_components",[...custom_components])
   }
@@ -55,7 +55,7 @@ export class BlockComponent {
  * @param {number[]} [scale_pivot=[0, 0, 0]] - 缩放的枢轴点 [x, y, z]。
  * @param {number[]} [rotation=[0, 0, 0]] - 旋转向量（角度）[x, y, z]。
  * @param {number[]} [rotation_pivot=[0, 0, 0]] - 旋转的枢轴点 [x, y, z]。
- * @returns {Map} - 一个包含变换数据的 Map 对象。
+ * @returns {Map<string, any>} - 一个包含变换数据的 Map 对象。
  * @throws {Error} - 如果任何参数无效，则抛出错误。
  */
   static setTransformation(
@@ -101,7 +101,7 @@ export class BlockComponent {
   /**
    * 设置方块的呼吸行为。
    * @param {String} value - 呼吸行为，可选值为 "solid" 或 "air"。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setBreathability(value) {
     if (value !== "solid" && value !== "air") {
@@ -113,7 +113,7 @@ export class BlockComponent {
   /**
    * 启用或禁用方块的碰撞箱。
    * @param {Boolean} enabled - 是否启用碰撞箱。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setCollisionBoxEnabled(enabled) {
     if (typeof enabled !== "boolean") {
@@ -126,7 +126,7 @@ export class BlockComponent {
    * 设置自定义的碰撞箱。
    * @param {Array} origin - 碰撞箱的起点坐标 [x, y, z]。
    * @param {Array} size - 碰撞箱的大小 [width, height, depth]。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setCollisionBoxCustom(origin, size) {
     if (!Array.isArray(origin) || origin.length !== 3) {
@@ -153,7 +153,7 @@ export class BlockComponent {
    * 设置方块的合成台属性。
    * @param {Array} craftingTags - 合成标签。
    * @param {String} tableName - 合成台名称。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setCraftingTable(craftingTags, tableName) {
     if (!Array.isArray(craftingTags) || craftingTags.length > 64) {
@@ -178,7 +178,7 @@ export class BlockComponent {
   /**
    * 启用或禁用方块的爆炸抗性。
    * @param {Boolean} enabled - 是否启用爆炸抗性。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setDestructibleByExplosionEnabled(enabled) {
     if (typeof enabled !== "boolean") {
@@ -190,7 +190,7 @@ export class BlockComponent {
   /**
    * 设置自定义的爆炸抗性。
    * @param {Number} explosionResistance - 爆炸抗性值。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setDestructibleByExplosionCustom(explosionResistance) {
     if (typeof explosionResistance !== "number") {
@@ -204,7 +204,7 @@ export class BlockComponent {
   /**
    * 启用或禁用方块的挖掘抗性。
    * @param {Boolean} enabled - 是否启用挖掘抗性。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setDestructibleByMiningEnabled(enabled) {
     if (typeof enabled !== "boolean") {
@@ -217,7 +217,7 @@ export class BlockComponent {
    * 设置自定义的挖掘抗性。
    * @param {Number} secondsToDestroy - 破坏所需时间（秒）。
    * @param {Array} itemSpecificSpeeds - 特定工具的挖掘速度。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setDestructibleByMiningCustom(secondsToDestroy, itemSpecificSpeeds) {
     if (typeof secondsToDestroy !== "number") {
@@ -244,7 +244,7 @@ export class BlockComponent {
   /**
    * 设置方块的显示名称。
    * @param {String} displayName - 显示名称。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setDisplayName(displayName) {
     if (typeof displayName !== "string") {
@@ -256,7 +256,7 @@ export class BlockComponent {
   /**
    * 启用或禁用方块的易燃性。
    * @param {Boolean} enabled - 是否启用易燃性。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setFlammableEnabled(enabled) {
     if (typeof enabled !== "boolean") {
@@ -269,7 +269,7 @@ export class BlockComponent {
    * 设置自定义的易燃性。
    * @param {Number} catchChanceModifier - 着火概率。
    * @param {Number} destroyChanceModifier - 被火焰摧毁的概率。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setFlammableCustom(catchChanceModifier, destroyChanceModifier) {
     if (typeof catchChanceModifier !== "number" || catchChanceModifier < 0) {
@@ -288,7 +288,7 @@ export class BlockComponent {
   /**
    * 设置方块的摩擦力。
    * @param {Number} value - 摩擦力值，范围为 0.0 到 0.9。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setFriction(value) {
     if (typeof value !== "number" || value < 0.0 || value > 0.9) {
@@ -300,24 +300,41 @@ export class BlockComponent {
   /**
    * 设置方块的几何模型。
    * @param {String} identifier - 几何模型标识符。
-   * @param {Object} bone_visibility - 骨骼可见性配置。
-   * @returns {Map} - 新的组件集合。
+   * @param {Object} [options] - 可选参数。
+   * @param {Object} [options.bone_visibility] - 骨骼可见性配置。
+   * @param {String} [options.culling] - 裁剪规则标识符（格式: <namespace>:culling.<name>）。
+   * @param {String} [options.culling_layer] - 裁剪层标识符（如 "minecraft:culling_layer.leaves"）。
+   * @param {String} [options.culling_shape] - 体素形状（仅支持 "minecraft:unit_cube"）。
+   * @param {Boolean|String[]} [options.uv_lock] - 是否锁定 UV 旋转，或指定骨骼名称数组。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
-  static setGeometry(identifier, bone_visibility) {
+  static setGeometry(identifier, options = {}) {
     if (typeof identifier !== "string") {
       throw new Error('identifier must be a string');
     }
-    return new Map().set("minecraft:geometry",
-      {
-        identifier: identifier,
-        bone_visibility: bone_visibility
-      });
+    const geometry = { identifier };
+    if (options.bone_visibility) {
+      geometry.bone_visibility = options.bone_visibility;
+    }
+    if (options.culling) {
+      geometry.culling = options.culling;
+    }
+    if (options.culling_layer) {
+      geometry.culling_layer = options.culling_layer;
+    }
+    if (options.culling_shape) {
+      geometry.culling_shape = options.culling_shape;
+    }
+    if (options.uv_lock !== undefined) {
+      geometry.uv_lock = options.uv_lock;
+    }
+    return new Map().set("minecraft:geometry", geometry);
   }
 
   /**
    * 设置方块的骨骼可见性。
    * @param {Object} bone_visibility - 骨骼可见性配置。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setBoneVisibility(bone_visibility) {
     if (!bone_visibility || typeof bone_visibility !== "object") {
@@ -330,7 +347,7 @@ export class BlockComponent {
    * 设置方块的物品视觉属性。
    * @param {String} geometry - 几何模型标识符。
    * @param {Object} materialInstances - 材质实例配置。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setItemVisual(geometry, materialInstances) {
     if (typeof geometry !== "string") {
@@ -349,7 +366,7 @@ export class BlockComponent {
   /**
    * 设置方块的光衰减值。
    * @param {Number} value - 光的衰减值，范围为 0 到 15。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setLightDampening(value) {
     if (typeof value !== "number" || value < 0 || value > 15) {
@@ -361,7 +378,7 @@ export class BlockComponent {
   /**
    * 设置方块的光照强度。
    * @param {Number} value - 光照强度，范围为 0 到 15。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setLightEmission(value) {
     if (typeof value !== "number" || value < 0 || value > 15) {
@@ -376,7 +393,7 @@ export class BlockComponent {
    * @param {String} liquidType - 液体类型。
    * @param {String} onLiquidTouches - 对液体的反应方式。
    * @param {Array} stopsLiquidFlowingFromDirection - 阻止液体流动的方向。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setLiquidDetection(canContainLiquid, liquidType, onLiquidTouches, stopsLiquidFlowingFromDirection) {
     if (typeof canContainLiquid !== "boolean") {
@@ -412,7 +429,7 @@ export class BlockComponent {
   /**
    * 设置方块的战利品表路径。
    * @param {String} path - 战利品表路径。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setLoot(path) {
     if (typeof path !== "string" || path.length > 256) {
@@ -424,7 +441,7 @@ export class BlockComponent {
   /**
    * 设置方块的地图颜色。
    * @param {String|Array} value - 地图颜色，可以是十六进制字符串或 RGB 数组。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setMapColor(value) {
     if (typeof value === "string") {
@@ -445,7 +462,7 @@ export class BlockComponent {
   /**
    * 设置方块的材质实例。
    * @param {Object} instances - 材质实例配置。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setMaterialInstances(instances) {
     if (!instances || typeof instances !== "object") {
@@ -481,7 +498,7 @@ export class BlockComponent {
   /**
    * 设置方块的放置过滤条件。
    * @param {Array} conditions - 放置条件列表。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setPlacementFilter(conditions) {
     if (!Array.isArray(conditions) || conditions.length === 0 || conditions.length > 64) {
@@ -530,7 +547,7 @@ export class BlockComponent {
    * 设置方块的红石导电性。
    * @param {Boolean} allowsWireToStepDown - 是否允许红石线向下阶梯连接。
    * @param {Boolean} redstoneConductor - 方块是否可以被红石信号激活。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setRedstoneConductivity(allowsWireToStepDown, redstoneConductor) {
     if (typeof allowsWireToStepDown !== "boolean") {
@@ -549,7 +566,7 @@ export class BlockComponent {
   /**
    * 启用或禁用方块的选择框。
    * @param {Boolean} enabled - 是否启用选择框。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setSelectionBoxEnabled(enabled) {
     if (typeof enabled !== "boolean") {
@@ -562,7 +579,7 @@ export class BlockComponent {
    * 设置自定义的选择框。
    * @param {Array} origin - 选择框的起点坐标 [x, y, z]。
    * @param {Array} size - 选择框的大小 [width, height, depth]。
-   * @returns {Map} - 新的组件集合。
+   * @returns {Map<string, any>} - 新的组件集合。
    */
   static setSelectionBoxCustom(origin, size) {
     if (!Array.isArray(origin) || origin.length !== 3) {
@@ -586,9 +603,206 @@ export class BlockComponent {
   }
 
   /**
+   * 设置方块实体（Block Entity，实验性功能，需开启 Upcoming Creator Features）。
+   * @param {Boolean} [dynamic_properties=false] - 是否启用动态属性存储。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setBlockEntity(dynamic_properties = false) {
+    return new Map().set("minecraft:block_entity", {
+      dynamic_properties
+    });
+  }
+
+  /**
+   * 设置方块的活塞移动行为。
+   * @param {String} movement_type - 移动类型: "immovable" | "popped" | "push" | "push_pull"。
+   * @param {String} [sticky] - 黏性行为: "same" 可复制黏液块/蜂蜜块功能。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setMovable(movement_type, sticky) {
+    const valid = ["immovable", "popped", "push", "push_pull"];
+    if (!valid.includes(movement_type)) {
+      throw new Error(`movement_type must be one of: ${valid.join(", ")}`);
+    }
+    const obj = { movement_type };
+    if (sticky) obj.sticky = sticky;
+    return new Map().set("minecraft:movable", obj);
+  }
+
+  /**
+   * 设置方块的监听红石信号行为（配合自定义组件 onRedstoneUpdate 使用）。
+   * @param {Number} min_power - 最小触发红石信号强度 (0-15)。
+   * @param {Boolean} [propagates_power] - 是否传导红石信号。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setRedstoneConsumer(min_power, propagates_power) {
+    return new Map().set("minecraft:redstone_consumer", {
+      min_power,
+      propagates_power
+    });
+  }
+
+  /**
+   * 设置方块产生红石信号。
+   * @param {Number} power - 信号强度 (0-15)。
+   * @param {String} strongly_powered_face - 强充能方向: "up" | "down" | "north" | "south" | "east" | "west"。
+   * @param {String[]} [connected_faces] - 连接的方向数组。
+   * @param {Boolean} [transform_relative] - 面方向是否相对于变换组件的旋转。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setRedstoneProducer(power, strongly_powered_face, connected_faces, transform_relative) {
+    return new Map().set("minecraft:redstone_producer", {
+      power,
+      strongly_powered_face,
+      connected_faces,
+      transform_relative
+    });
+  }
+
+  /**
+   * 设置方块可被替换（放置其他方块时替换此方块）。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setReplaceable() {
+    return new Map().set("minecraft:replaceable", {});
+  }
+
+  /**
+   * 设置方块的支撑形状。
+   * @param {String} shape - 支撑形状: "fence" | "stair"。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setSupport(shape) {
+    if (!["fence", "stair"].includes(shape)) {
+      throw new Error('shape must be "fence" or "stair"');
+    }
+    return new Map().set("minecraft:support", { shape });
+  }
+
+  /**
+   * 设置方块标签。
+   * @param {String[]} tags - 标签数组。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setTags(tags) {
+    if (!Array.isArray(tags)) {
+      throw new Error('tags must be an array');
+    }
+    return new Map().set("minecraft:tags", tags);
+  }
+
+  /**
+   * 设置方块可被拴绳拴住（类似栅栏）。
+   * @param {Number[]} [offset=[0, 12, 0]] - 拴绳结位置偏移 [x, y, z]。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setLeashable(offset = [0, 12, 0]) {
+    return new Map().set("minecraft:leashable", { offset });
+  }
+
+  /**
+   * 设置方块对实体坠落事件的触发。
+   * @param {Number} min_fall_distance - 最小坠落距离（方块数）。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setEntityFallOn(min_fall_distance) {
+    return new Map().set("minecraft:entity_fall_on", { min_fall_distance });
+  }
+
+  /**
+   * 设置方块可放入花盆（配合 setEmbeddedVisual 使用）。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setFlowerPottable() {
+    return new Map().set("minecraft:flower_pottable", {});
+  }
+
+  /**
+   * 设置方块与降水（雨/雪）的交互行为。
+   * @param {String} behavior - 降水行为: "obstruct_rain_accumulate_snow" | "obstruct_rain" | "snowlogging" | "none"。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setPrecipitationInteractions(behavior) {
+    const valid = ["obstruct_rain_accumulate_snow", "obstruct_rain", "snowlogging", "none"];
+    if (!valid.includes(behavior)) {
+      throw new Error(`behavior must be one of: ${valid.join(", ")}`);
+    }
+    return new Map().set("minecraft:precipitation_interactions", {
+      precipitation_behavior: behavior
+    });
+  }
+
+  /**
+   * 设置方块的随机偏移（碰撞箱/选择框/几何）。
+   * @param {Object} axis_config - 每个轴的偏移配置。
+   * @param {Object} [axis_config.x] - X 轴配置。
+   * @param {Object} [axis_config.y] - Y 轴配置。
+   * @param {Object} [axis_config.z] - Z 轴配置。
+   * @param {Object} axis_config.x.range - 范围 {min, max}。
+   * @param {Number} [axis_config.x.steps=0] - 步数（0=任意值）。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setRandomOffset(axis_config) {
+    return new Map().set("minecraft:random_offset", axis_config);
+  }
+
+  /**
+   * 设置方块对箱子开启的遮挡行为。
+   * @param {String} rule - 遮挡规则: "always" | "never" | "shape"。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setChestObstruction(rule) {
+    if (!["always", "never", "shape"].includes(rule)) {
+      throw new Error('rule must be "always", "never", or "shape"');
+    }
+    return new Map().set("minecraft:chest_obstruction", {
+      obstruction_rule: rule
+    });
+  }
+
+  /**
+   * 设置方块在花盆中的显示外观。
+   * @param {String|Object} geometry - 几何标识符或几何对象。
+   * @param {Object} material_instances - 材质实例。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setEmbeddedVisual(geometry, material_instances) {
+    return new Map().set("minecraft:embedded_visual", {
+      geometry,
+      material_instances
+    });
+  }
+
+  /**
+   * 设置方块与栅栏/墙等方块的连接规则。
+   * @param {String} [accepts_from="all"] - 连接来源: "all" | "only_fences" | "none"。
+   * @param {String[]} [enabled_directions] - 允许连接的方向数组。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setConnectionRule(accepts_from = "all", enabled_directions) {
+    const valid = ["all", "only_fences", "none"];
+    if (!valid.includes(accepts_from)) {
+      throw new Error(`accepts_from must be one of: ${valid.join(", ")}`);
+    }
+    return new Map().set("minecraft:connection_rule", {
+      accepts_connections_from: accepts_from,
+      enabled_directions
+    });
+  }
+
+  /**
+   * 设置方块的声音。
+   * @param {String} sound - 声音名称。
+   * @returns {Map<string, any>} - 新的组件集合。
+   */
+  static setSound(sound) {
+    return new Map().set("minecraft:sound", sound);
+  }
+
+  /**
    * 将多个组件集合合并为一个。
    * @param {...Map} componentMaps - 多个组件集合。
-   * @returns {Map} - 合并后的组件集合。
+   * @returns {Map<string, any>} - 合并后的组件集合。
    */
   static combineComponents(...componentMaps) {
     return new Map(componentMaps.flatMap(map => [...map]));

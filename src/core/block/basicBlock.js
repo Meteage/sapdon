@@ -30,7 +30,7 @@ export class BasicBlock {
             }
         }
 
-        const { hide_in_command = false, format_version = "1.21.90" } = options;
+        const { hide_in_command = false, format_version = "1.26.30" } = options;
 
         this.format_version = format_version;
         this.identifier = identifier;
@@ -76,8 +76,20 @@ export class BasicBlock {
         return this;
     }
 
-    registerState(key,value){
-        this.states.set(key,value);
+    registerState(key, value) {
+        if (value && typeof value === 'object' && !Array.isArray(value) && value.values) {
+            if (Array.isArray(value.values)) {
+                if (!value.values.length) throw new Error(`state "${key}" values array must not be empty`);
+            } else if (value.values && typeof value.values.min !== 'number' || typeof value.values.max !== 'number') {
+                throw new Error(`state "${key}" values range must have min and max as numbers`);
+            }
+        } else if (Array.isArray(value)) {
+            // Legacy shorthand — wrap in { values }
+            value = { values: value };
+        } else {
+            throw new Error(`state "${key}" value must be { values: [...] } or { values: { min, max } }`);
+        }
+        this.states.set(key, value);
         return this;
     }
 
@@ -110,18 +122,18 @@ export class BasicBlock {
     /**
      * 添加方块变体
      * @param {string} condition 变体条件
-     * @param {Map} componentMap 组件 Map
+     * @param {Map|Object} component 组件 Map 或普通对象
      */
-    addPermutation(condition, componentMap) {
+    addPermutation(condition, component) {
         if (!condition || typeof condition !== "string") {
             throw new Error("condition is required and must be a string");
         }
-        if (!componentMap || !(componentMap instanceof Map)) {
-            throw new Error("componentMap is required and must be a Map");
+        if (!component) {
+            throw new Error("component is required");
         }
         this.permutations.push({
             condition: condition,
-            components: Object.fromEntries(componentMap)
+            components: component instanceof Map ? Object.fromEntries(component) : component
         });
         return this;
     }

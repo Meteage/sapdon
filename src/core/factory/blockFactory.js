@@ -6,8 +6,9 @@ import { OreBlock } from "../block/oreBlock.js";
 import { RotatableBlock } from "../block/rotatableBlock.js";
 import { GRegistry } from "../registry.js";
 
-//blocks.json
+//blocks.json — cumulative, registered once by reference
 const blocks_json = {"format_version": "1.20.20"}
+let blocksJsonRegistered = false
 
 /**
  * 注册方块到注册表中。
@@ -21,7 +22,7 @@ export const registerBlock = (block) => {
     const block_name = block.identifier.replace(":", "_");
     GRegistry.register(block_name, "behavior", "blocks/", block);
     
-    //blocks.json
+    //blocks.json — accumulate textures
     const textures_arr = block.textures;
     blocks_json[block_name] = {
         textures: {
@@ -34,7 +35,11 @@ export const registerBlock = (block) => {
         }
     }
 
-    GRegistry.register("blocks","behavior","",blocks_json);
+    // Register once by reference; mutations reflect at submit time
+    if (!blocksJsonRegistered) {
+        GRegistry.register("blocks","behavior","",blocks_json);
+        blocksJsonRegistered = true
+    }
 };
 
 const registerFeature = (feature)=>{
@@ -139,7 +144,7 @@ export const BlockAPI = {
     },
     createOreBlock(identifier, category, textures_arr, options = {}){
         const ore_block = new OreBlock(identifier, category, textures_arr, options)
-        registerBlock(ore_block.block); // 调用注册方法
+        registerBlock(ore_block); // 调用注册方法（OreBlock extends BasicBlock）
         registerFeature(ore_block.feature); // 调用注册方法
         registerFeatureRule(ore_block.feature_rules); // 调用注册方法
         return ore_block;
