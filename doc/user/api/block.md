@@ -160,6 +160,9 @@ interface MaterialInstance {
   render_method?: 'opaque' | 'double_sided' | 'blend' | 'alpha_test' | 'alpha_test_single_sided'
   ambient_occlusion?: boolean | number
   face_dimming?: boolean
+  tint_method?: string       // 生物群系染色方法，如 "grass"
+  alpha_masked_tint?: boolean // 是否基于 alpha 通道应用染色
+  isotropic?: boolean         // 是否随机旋转 UV
 }
 ```
 
@@ -269,7 +272,7 @@ BlockAPI.createOreBlock(
 const ore = BlockAPI.createOreBlock('demo:ruby_ore', 'nature',
   ['ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore', 'ruby_ore']
 )
-// ore.block — 方块
+// ore (OreBlock extends BasicBlock) — 方块本身
 // ore.feature — 矿脉特征
 // ore.feature_rules — 特征规则
 ```
@@ -542,11 +545,10 @@ new OreBlock(
 )
 ```
 
-### 属性
+### 属性（继承自 BasicBlock 之外的额外属性）
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
-| `block` | `BasicBlock` | 矿方块实例 |
 | `feature` | `OreFeature` | 矿脉特征 |
 | `feature_rules` | `FeatureRule` | 特征规则（默认 Y 0-64，10次/区块，主世界群系） |
 
@@ -727,10 +729,14 @@ static setFlammableEnabled(enabled: boolean): Map
 ### setFlammableCustom
 
 ```typescript
-static setFlammableCustom(catchChanceModifier: number, destroyChanceModifier: number): Map
+static setFlammableCustom(
+  catchChanceModifier: number,
+  destroyChanceModifier: number,
+  lava_flammable?: 'always' | 'never'
+): Map
 ```
 
-设置自定义燃烧概率（≥ 0）。
+设置自定义燃烧概率（≥ 0）。可选 `lava_flammable` 参数控制岩浆能否点燃该方块，默认 `"never"`。
 
 ### setFriction
 
@@ -767,10 +773,13 @@ static setLoot(path: string): Map
 ### setMapColor
 
 ```typescript
-static setMapColor(value: string | number[]): Map
+static setMapColor(value: string | number[] | { color: string | number[], tint_method?: string }): Map
 ```
 
-设置地图颜色。支持十六进制字符串 `"#RRGGBB"` 或 RGB 数组 `[255, 0, 0]`。
+设置地图颜色。支持：
+- 十六进制字符串 `"#RRGGBB"`
+- RGB 数组 `[255, 0, 0]`
+- 对象格式 `{ color: "#RRGGBB", tint_method: "grass" }` — 带生物群系染色
 
 ### setTransformation
 
@@ -849,10 +858,16 @@ static setCustomComponentV2(component_id: string, params: object): Map
 ### setDestructionParticles
 
 ```typescript
-static setDestructionParticles(texture: string, tint_method?: string): Map
+static setDestructionParticles(
+  texture: string,
+  options?: {
+    particle_count?: number   // 粒子数量 0-255，默认 100
+    tint_method?: string      // 染色方法，如 "grass"
+  }
+): Map
 ```
 
-设置破坏粒子纹理。
+设置破坏粒子纹理。可选 `particle_count` 控制粒子数量（0-255，默认 100）。
 
 ### setItemVisual
 
@@ -865,15 +880,39 @@ static setItemVisual(geometry: string, materialInstances: object): Map
 ### setLiquidDetection
 
 ```typescript
+// 选项对象格式（推荐，支持多检测规则）
+static setLiquidDetection(options: {
+  detection_rules?: {
+    liquid_type: string
+    can_contain_liquid: boolean
+    on_liquid_touches?: 'blocking' | 'broken' | 'popped' | 'no_reaction'
+    stops_liquid_flowing_from_direction?: string[]
+    use_liquid_clipping?: boolean
+  }[]
+  use_liquid_clipping?: boolean
+}): Map
+
+// 旧版单规则格式（向后兼容）
 static setLiquidDetection(
   canContainLiquid: boolean,
   liquidType?: 'water',
   onLiquidTouches?: 'blocking' | 'broken' | 'popped' | 'no_reaction',
-  stopsLiquidFlowingFromDirection?: ('up' | 'down' | 'north' | 'south' | 'east' | 'west')[]
+  stopsLiquidFlowingFromDirection?: string[]
 ): Map
 ```
 
-设置液体检测属性。
+设置液体检测属性。使用对象参数时可设置 `detection_rules` 数组（支持水淹等行为）和 `use_liquid_clipping`。
+
+```typescript
+// 示例：水淹方块
+BlockComponent.setLiquidDetection({
+  detection_rules: [{
+    liquid_type: "water",
+    can_contain_liquid: true,
+    on_liquid_touches: "no_reaction"
+  }]
+})
+```
 
 ### setBreathability
 
@@ -905,6 +944,111 @@ static toJSON(components: Map): object
 ```
 
 将组件 Map 转换为普通 JSON 对象。
+
+---
+
+## BlockCustomComponentBuilder
+
+块自定义组件构建器，提供 TypeScript 类型安全的流式 API 定义块事件处理器，并可生成脚本端注册代码。
+
+```typescript
+import { BlockCustomComponentBuilder } from '@sapdon/core'
+```
+
+### 构造函数
+
+```typescript
+new BlockCustomComponentBuilder(componentId: string)
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `componentId` | `string` | 自定义组件标识符，格式 `"命名空间:组件名"` |
+
+### 方法
+
+#### 事件绑定（均返回 `this`，可链式调用）
+
+| 方法 | 对应事件 | Wiki 说明 |
+|------|---------|-----------|
+| `beforeOnPlayerPlace(handler)` | `beforeOnPlayerPlace` | 玩家放置前触发 |
+| `onBlockStateChange(handler)` | `onBlockStateChange` | 块状态改变时触发 |
+| `onBreak(handler)` | `onBreak` | 块被破坏时触发 |
+| `onEntity(handler)` | `onEntity` | 实体在块上执行事件时触发 |
+| `onEntityFallOn(handler)` | `onEntityFallOn` | 实体坠落在块上时触发 |
+| `onPlace(handler)` | `onPlace` | 块被放置时触发 |
+| `onPlayerBreak(handler)` | `onPlayerBreak` | 玩家破坏块时触发 |
+| `onPlayerInteract(handler)` | `onPlayerInteract` | 玩家与块交互时触发 |
+| `onRandomTick(handler)` | `onRandomTick` | 随机刻触发 |
+| `onRedstoneUpdate(handler)` | `onRedstoneUpdate` | 红石信号更新时触发 |
+| `onStepOff(handler)` | `onStepOff` | 实体离开块时触发 |
+| `onStepOn(handler)` | `onStepOn` | 实体踏上块时触发 |
+| `onTick(handler)` | `onTick` | 块计划刻触发 |
+
+#### `id(): string`
+
+返回组件标识符，用于 `BlockComponent.setCustomComponents()`。
+
+#### `build(): BlockCustomComponentHandlers`
+
+构建处理器对象，可用于 runtime 的 `registerCustomComponent`。
+
+#### `handlerCount(): number`
+
+返回已注册的事件处理器数量。
+
+### 事件参数类型
+
+| 接口名 | 属性 |
+|--------|------|
+| `BeforeOnPlayerPlaceEvent` | `block`, `cancel`, `dimension`, `face`, `permutationToPlace`, `player?` |
+| `OnBlockStateChangeEvent` | `block`, `dimension`, `previousPermutation` |
+| `OnBreakEvent` | `block`, `dimension`, `blockDestructionSource?`, `brokenBlockPermutation`, `entitySource?` |
+| `OnEntityEvent` | `block`, `blockPermutation`, `dimension`, `entitySource`, `name` |
+| `OnEntityFallOnEvent` | `block`, `dimension`, `entity?`, `fallDistance` |
+| `OnPlaceEvent` | `block`, `dimension`, `previousBlock` |
+| `OnPlayerBreakEvent` | `block`, `brokenBlockPermutation`, `dimension`, `player?` |
+| `OnPlayerInteractEvent` | `block`, `dimension`, `face`, `faceLocation`, `player?` |
+| `OnRandomTickEvent` | `block`, `dimension` |
+| `OnRedstoneUpdateEvent` | `block`, `dimension`, `power` |
+| `OnStepOffEvent` | `block`, `dimension`, `entity?` |
+| `OnStepOnEvent` | `block`, `dimension`, `entity?` |
+| `OnTickEvent` | `block`, `dimension` |
+
+### 示例
+
+```typescript
+import { BlockAPI, BlockComponent, BlockCustomComponentBuilder, registry } from '@sapdon/core'
+
+// 定义块自定义组件事件处理器（构建时）
+const growComponent = new BlockCustomComponentBuilder('wiki:crop_grow')
+  .onRandomTick(({ block }) => {
+    const stage = block.permutation.getState('sapdon:block_variant_tag') as number
+    if (stage < 3) {
+      block.setPermutation(
+        block.permutation.withState('sapdon:block_variant_tag', stage + 1)
+      )
+    }
+  })
+  .onPlayerInteract(({ block, player }) => {
+    if (player?.getGameMode() === 'creative') {
+      block.setPermutation(
+        block.permutation.withState('sapdon:block_variant_tag', 3)
+      )
+    }
+  })
+
+// 创建方块并关联组件 ID
+const crop = BlockAPI.createCropBlock('wiki:tomato', 'nature', [
+  { stateTag: 0, textures: ['stage_0', 'stage_0', 'stage_0', 'stage_0', 'stage_0', 'stage_0'] },
+  { stateTag: 1, textures: ['stage_1', 'stage_1', 'stage_1', 'stage_1', 'stage_1', 'stage_1'] },
+  { stateTag: 2, textures: ['stage_2', 'stage_2', 'stage_2', 'stage_2', 'stage_2', 'stage_2'] },
+  { stateTag: 3, textures: ['stage_3', 'stage_3', 'stage_3', 'stage_3', 'stage_3', 'stage_3'] }
+])
+crop.addComponent(BlockComponent.setCustomComponents([growComponent.id()]))
+
+registry.submit()
+```
 
 ---
 
@@ -949,7 +1093,7 @@ class Block extends BasicBlock { ... }
 class RotatableBlock extends BasicBlock { ... }
 class GeometryBlock extends BasicBlock { ... }
 class CropBlock extends Block { ... }
-class OreBlock { block, feature, feature_rules }
+class OreBlock extends BasicBlock { feature, feature_rules }
 class TileBlock { block, entity }
 
 // 枚举
@@ -957,4 +1101,7 @@ RotationTypes = { CARDINAL, FACING, BLOCK_FACE, LOG }
 
 // 工具类
 BlockComponent = { setMaterialInstances, setGeometry, ... }
+
+// 块自定义组件构建器
+class BlockCustomComponentBuilder { constructor(componentId), id(), build(), handlerCount(), onTick(), ... }
 ```

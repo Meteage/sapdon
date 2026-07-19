@@ -1,18 +1,28 @@
 /** @template T */
 export class BlockComponent {
   /**
-   * @param {string} texture
-   * @param {string} [tint_method]
+   * @param {string} texture - 纹理短名
+   * @param {Object|string} [options] - 可选参数对象，或旧版 tint_method 字符串
+   * @param {number} [options.particle_count] - 粒子数量 (0-255，默认 100)
+   * @param {string} [options.tint_method] - 染色方法（如 "grass"）
    * @returns {Map<string, any>}
    */
-  static setDestructionParticles(texture,tint_method){
-    return new Map([[
-      "minecraft:destruction_particles",{
-        "texture": texture,
-        "tint_method": tint_method
+  static setDestructionParticles(texture, options = {}){
+    if (typeof options === 'string') {
+      options = { tint_method: options };
+    }
+    const obj = { texture };
+    const { particle_count, tint_method } = options;
+    if (particle_count !== undefined) {
+      if (!Number.isInteger(particle_count) || particle_count < 0 || particle_count > 255) {
+        throw new Error('particle_count must be an integer between 0 and 255');
       }
-    ]])
-    
+      obj.particle_count = particle_count;
+    }
+    if (tint_method) {
+      obj.tint_method = tint_method;
+    }
+    return new Map([["minecraft:destruction_particles", obj]]);
   }
   /**
    * 自定义方块组件 
@@ -269,9 +279,10 @@ export class BlockComponent {
    * 设置自定义的易燃性。
    * @param {Number} catchChanceModifier - 着火概率。
    * @param {Number} destroyChanceModifier - 被火焰摧毁的概率。
+   * @param {String} [lava_flammable] - 岩浆能否点燃该方块 ("always"|"never"，默认 "never")
    * @returns {Map<string, any>} - 新的组件集合。
    */
-  static setFlammableCustom(catchChanceModifier, destroyChanceModifier) {
+  static setFlammableCustom(catchChanceModifier, destroyChanceModifier, lava_flammable) {
     if (typeof catchChanceModifier !== "number" || catchChanceModifier < 0) {
       throw new Error('catchChanceModifier must be a number greater than or equal to 0');
     }
@@ -279,10 +290,17 @@ export class BlockComponent {
       throw new Error('destroyChanceModifier must be a number greater than or equal to 0');
     }
 
-    return new Map().set("minecraft:flammable", {
+    const obj = {
       catch_chance_modifier: catchChanceModifier,
       destroy_chance_modifier: destroyChanceModifier,
-    });
+    };
+    if (lava_flammable !== undefined) {
+      if (!["always", "never"].includes(lava_flammable)) {
+        throw new Error('lava_flammable must be "always" or "never"');
+      }
+      obj.lava_flammable = lava_flammable;
+    }
+    return new Map().set("minecraft:flammable", obj);
   }
 
   /**
@@ -389,13 +407,34 @@ export class BlockComponent {
 
   /**
    * 设置方块的液体检测属性。
-   * @param {Boolean} canContainLiquid - 是否可以包含液体。
-   * @param {String} liquidType - 液体类型。
-   * @param {String} onLiquidTouches - 对液体的反应方式。
-   * @param {Array} stopsLiquidFlowingFromDirection - 阻止液体流动的方向。
+   * @param {Boolean|Object} canContainLiquid - 是否可容纳液体，或是完整选项对象
+   * @param {String} [liquidType] - 液体类型
+   * @param {String} [onLiquidTouches] - 对液体的反应方式
+   * @param {Array} [stopsLiquidFlowingFromDirection] - 阻止液体流动的方向
    * @returns {Map<string, any>} - 新的组件集合。
    */
   static setLiquidDetection(canContainLiquid, liquidType, onLiquidTouches, stopsLiquidFlowingFromDirection) {
+    const validReactions = ["blocking", "broken", "popped", "no_reaction"];
+    const validDirections = ["up", "down", "north", "south", "east", "west"];
+
+    if (typeof canContainLiquid === "object" && !Array.isArray(canContainLiquid)) {
+      const opts = canContainLiquid;
+      const obj = {};
+      if (opts.detection_rules) {
+        if (!Array.isArray(opts.detection_rules)) {
+          throw new Error('detection_rules must be an array');
+        }
+        obj.detection_rules = opts.detection_rules;
+      }
+      if (opts.use_liquid_clipping !== undefined) {
+        if (typeof opts.use_liquid_clipping !== "boolean") {
+          throw new Error('use_liquid_clipping must be a boolean');
+        }
+        obj.use_liquid_clipping = opts.use_liquid_clipping;
+      }
+      return new Map().set("minecraft:liquid_detection", obj);
+    }
+
     if (typeof canContainLiquid !== "boolean") {
       throw new Error('canContainLiquid must be a boolean');
     }
@@ -404,12 +443,10 @@ export class BlockComponent {
       throw new Error('liquidType must be "water"');
     }
 
-    const validReactions = ["blocking", "broken", "popped", "no_reaction"];
     if (onLiquidTouches && !validReactions.includes(onLiquidTouches)) {
       throw new Error('onLiquidTouches must be one of: "blocking", "broken", "popped", "no_reaction"');
     }
 
-    const validDirections = ["up", "down", "north", "south", "east", "west"];
     if (stopsLiquidFlowingFromDirection && Array.isArray(stopsLiquidFlowingFromDirection)) {
       for (const direction of stopsLiquidFlowingFromDirection) {
         if (!validDirections.includes(direction)) {
@@ -440,10 +477,28 @@ export class BlockComponent {
 
   /**
    * 设置方块的地图颜色。
-   * @param {String|Array} value - 地图颜色，可以是十六进制字符串或 RGB 数组。
+   * @param {String|Array|Object} value - 地图颜色，可以是十六进制字符串、RGB 数组或对象格式。
    * @returns {Map<string, any>} - 新的组件集合。
    */
   static setMapColor(value) {
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const { color, tint_method } = value;
+      if (typeof color === "string") {
+        if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+          throw new Error('mapColor color must be a valid hex string (e.g., "#FFFFFF")');
+        }
+      } else if (Array.isArray(color)) {
+        if (color.length !== 3 || color.some((v) => typeof v !== "number" || v < 0 || v > 255)) {
+          throw new Error('mapColor color must be a valid RGB array (e.g., [255, 255, 255])');
+        }
+      } else {
+        throw new Error('mapColor must be a hex string, RGB array, or { color, tint_method } object');
+      }
+      const obj = { color };
+      if (tint_method) obj.tint_method = tint_method;
+      return new Map().set("minecraft:map_color", obj);
+    }
+
     if (typeof value === "string") {
       if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
         throw new Error('mapColor must be a valid hex string (e.g., "#FFFFFF")');
@@ -486,6 +541,15 @@ export class BlockComponent {
         }
         if (value.render_method && !["opaque", "double_sided", "blend", "alpha_test", "alpha_test_single_sided"].includes(value.render_method)) {
           throw new Error(`render_method in material instance "${key}" must be one of: opaque, double_sided, blend, alpha_test, alpha_test_single_sided`);
+        }
+        if (value.tint_method !== undefined && typeof value.tint_method !== "string") {
+          throw new Error(`tint_method in material instance "${key}" must be a string`);
+        }
+        if (value.alpha_masked_tint !== undefined && typeof value.alpha_masked_tint !== "boolean") {
+          throw new Error(`alpha_masked_tint in material instance "${key}" must be a boolean`);
+        }
+        if (value.isotropic !== undefined && typeof value.isotropic !== "boolean") {
+          throw new Error(`isotropic in material instance "${key}" must be a boolean`);
         }
       } else if (typeof value !== "string") {
         throw new Error(`material instance "${key}" must be an object or a string`);

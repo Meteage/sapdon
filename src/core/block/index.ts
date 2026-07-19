@@ -1,6 +1,7 @@
 export * from './basicBlock.js'
 export * from './block.js'
 export * from './blockComponent.js'
+export * from './blockCustomComponent.js'
 export * from './cropBlock.js'
 export * from './geometryBlock.js'
 export * from './oreBlock.js'
