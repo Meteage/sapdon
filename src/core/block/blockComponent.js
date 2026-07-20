@@ -56,7 +56,11 @@ export class BlockComponent {
    * @returns {Map<string, any>}
    */
   static setCustomComponents(custom_components){
-    return new Map().set("minecraft:custom_components",[...custom_components])
+    const map = new Map();
+    for (const id of custom_components) {
+      map.set(id, {});
+    }
+    return map;
   }
   /**
  * 创建一个用于 Minecraft 方块的变换对象，并返回一个 Map。

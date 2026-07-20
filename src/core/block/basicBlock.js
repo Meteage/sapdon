@@ -44,26 +44,29 @@ export class BasicBlock {
         this.permutations = [];
 
         this.addComponent(
-            BlockComponent.setMaterialInstances ({
-                "down": {
-                    "texture": textures_arr[0] 
-                },
-                "up": {
-                    "texture": textures_arr[1]
-                },
-                "north": {
-                    "texture": textures_arr[2]
-                },
-                "east": {
-                    "texture": textures_arr[3]
-                },
-                "south": {
-                    "texture": textures_arr[4]
-                },
-                "west": {
-                    "texture": textures_arr[5]
-                }
-            })
+            BlockComponent.combineComponents(
+                BlockComponent.setMaterialInstances({
+                    "down": {
+                        "texture": textures_arr[0] 
+                    },
+                    "up": {
+                        "texture": textures_arr[1]
+                    },
+                    "north": {
+                        "texture": textures_arr[2]
+                    },
+                    "east": {
+                        "texture": textures_arr[3]
+                    },
+                    "south": {
+                        "texture": textures_arr[4]
+                    },
+                    "west": {
+                        "texture": textures_arr[5]
+                    }
+                }),
+                BlockComponent.setGeometry("minecraft:geometry.full_block")
+            )
         )
     }
     
@@ -144,20 +147,22 @@ export class BasicBlock {
      */
     @Serializer
     toObject() {
+        const components = Object.fromEntries(this.components);
+
         return serialize(new AddonBlock(
-           this.format_version, // 格式版本
+           this.format_version,
             new AddonBlockDefinition(
                 new AddonBlockDescription(
                     this.identifier,
-                    Object.fromEntries(this.traits), // 将 Map 转换为普通对象
-                    Object.fromEntries(this.states), // 将 Map 转换为普通对象
+                    Object.fromEntries(this.traits),
+                    Object.fromEntries(this.states),
                     new AddonMenuCategory(
                         this.category,
                         this.group,
                         this.hide_in_command
                     )
                 ),
-                Object.fromEntries(this.components), // 将 Map 转换为普通对象
+                components,
                 this.permutations
             )
         ))

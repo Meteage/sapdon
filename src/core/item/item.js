@@ -82,8 +82,10 @@ export class Item {
      */
     @Serializer
     toObject() {
+        const components = Object.fromEntries(this.components);
+
         const item = new AddonItem(
-            this.format_version, // 格式版本
+            this.format_version,
             new AddonItemDefinition(
                 new AddonItemDescription(
                     this.identifier,
@@ -93,7 +95,7 @@ export class Item {
                         this.hide_in_command
                     )
                 ),
-                Object.fromEntries(this.components) // 将 Map 转换为普通对象
+                components
             )
         );
         return serialize(item);

@@ -279,6 +279,177 @@ const ore = BlockAPI.createOreBlock('demo:ruby_ore', 'nature',
 
 ---
 
+---
+
+### createGlassBlock
+
+创建透明玻璃方块。
+
+```typescript
+BlockAPI.createGlassBlock(
+  identifier: string,
+  category: string,
+  texture: string,
+  options?: GlassBlockOptions
+): GlassBlock
+```
+
+**参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `identifier` | `string` | 方块唯一标识符 |
+| `category` | `string` | 创造栏分类 |
+| `texture` | `string` | 纹理短名（6 面复用） |
+| `options.group` | `string` | 分组，默认 `"construction"` |
+| `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
+| `options.geometry` | `string` | 自定义几何模型标识符，如 `"geometry.custom_glass"` |
+| `options.culling` | `string` | 裁剪规则标识符，如 `"wiki:culling.custom_glass"` |
+
+**自动添加的组件**
+- `minecraft:material_instances` → 6 面材质实例，`render_method: "blend"`
+- `minecraft:light_dampening` → `0`
+- `minecraft:destructible_by_mining` → `{ seconds_to_destroy: 0.3 }`
+- `minecraft:destructible_by_explosion` → `{ explosion_resistance: 0.3 }`
+- 可选 `minecraft:geometry`（设 `geometry` 参数时自动添加）
+
+**示例**
+
+```typescript
+const glass = BlockAPI.createGlassBlock('wiki:glass', 'construction', 'glass_tex')
+```
+
+---
+
+### createFenceBlock
+
+创建栅栏方块。
+
+```typescript
+BlockAPI.createFenceBlock(
+  identifier: string,
+  category: string,
+  textures_arr: string[],
+  options?: FenceBlockOptions
+): FenceBlock
+```
+
+**参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `identifier` | `string` | 方块唯一标识符 |
+| `category` | `string` | 创造栏分类 |
+| `textures_arr` | `string[]` | 6 纹理数组 |
+| `options.group` | `string` | 分组，默认 `"construction"` |
+| `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
+| `options.leashable` | `boolean` | 是否可被拴绳拴住，默认 `false` |
+
+**自动添加的组件**
+- `minecraft:collision_box` → 自定义栅栏柱碰撞箱
+- `minecraft:selection_box` → 同上
+- `minecraft:support` → `{ shape: "fence" }`
+- `minecraft:connection_rule` → 接受所有方向连接
+- 可选 `minecraft:leashable`（设 `leashable` 参数时自动添加）
+
+**示例**
+
+```typescript
+const fence = BlockAPI.createFenceBlock('wiki:fence', 'construction',
+  ['fence_tex', 'fence_tex', 'fence_tex', 'fence_tex', 'fence_tex', 'fence_tex']
+)
+```
+
+---
+
+### createStairBlock
+
+创建楼梯方块（8 个 permutation：4 方向 × 2 上下）。
+
+```typescript
+BlockAPI.createStairBlock(
+  identifier: string,
+  category: string,
+  textures_arr: string[],
+  options?: StairBlockOptions
+): StairBlock
+```
+
+**参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `identifier` | `string` | 方块唯一标识符 |
+| `category` | `string` | 创造栏分类 |
+| `textures_arr` | `string[]` | 6 纹理数组 |
+| `options.group` | `string` | 分组，默认 `"construction"` |
+| `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
+
+**自动添加的组件**
+- `minecraft:destructible_by_mining` / `minecraft:destructible_by_explosion`
+- `minecraft:support` → `{ shape: "stair" }`
+
+**自动注册的 Traits**
+- `minecraft:placement_direction` → 控制 `minecraft:cardinal_direction` 状态
+- `minecraft:placement_position` → 控制 `minecraft:vertical_half` 状态
+
+**自动生成的 Permutations（8 个）**
+
+底部 4 方向 + 顶部 4 方向，每个 permutation 设置碰撞箱、选择框和旋转变换。
+
+**示例**
+
+```typescript
+const stair = BlockAPI.createStairBlock('wiki:stair', 'construction',
+  ['stair_tex', 'stair_tex', 'stair_tex', 'stair_tex', 'stair_tex', 'stair_tex']
+)
+```
+
+---
+
+### createTrapdoorBlock
+
+创建活板门方块（16 个 permutation：4 方向 × 2 上下 × 2 开闭）。
+
+```typescript
+BlockAPI.createTrapdoorBlock(
+  identifier: string,
+  category: string,
+  texture: string,
+  options?: TrapdoorBlockOptions
+): TrapdoorBlock
+```
+
+**参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `identifier` | `string` | 方块唯一标识符 |
+| `category` | `string` | 创造栏分类 |
+| `texture` | `string` | 纹理短名（6 面复用） |
+| `options.group` | `string` | 分组，默认 `"construction"` |
+| `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
+
+**自动添加的组件**
+- `minecraft:material_instances` → 6 面材质实例，`render_method: "blend"`
+- `minecraft:destructible_by_mining` / `minecraft:destructible_by_explosion`
+
+**自动注册的 Traits**
+- `minecraft:placement_direction` → 控制 `minecraft:cardinal_direction` 状态
+- `minecraft:placement_position` → 控制 `minecraft:vertical_half` 状态
+
+**自动生成的 Permutations（16 个）**
+
+每个 permutation 根据方向、上下半、开闭状态设置碰撞箱。
+
+**示例**
+
+```typescript
+const trapdoor = BlockAPI.createTrapdoorBlock('wiki:trapdoor', 'construction', 'trapdoor_tex')
+```
+
+---
+
 ## BasicBlock
 
 所有方块类型的基类。
@@ -551,6 +722,117 @@ new OreBlock(
 |------|------|------|
 | `feature` | `OreFeature` | 矿脉特征 |
 | `feature_rules` | `FeatureRule` | 特征规则（默认 Y 0-64，10次/区块，主世界群系） |
+
+---
+
+## GlassBlock
+
+继承自 `BasicBlock`，透明玻璃方块。
+
+```typescript
+import { GlassBlock } from '@sapdon/core'
+```
+
+### 构造函数
+
+```typescript
+new GlassBlock(
+  identifier: string,
+  category: string,
+  texture: string,
+  options?: {
+    group?: string
+    hide_in_command?: boolean
+    geometry?: string
+    culling?: string
+  }
+)
+```
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `texture` | `string` | 单纹理短名，6 面复用 |
+
+构造函数自动添加 `light_dampening: 0`、`render_method: "blend"` 材质实例、挖掘/爆炸抗性。可选 `geometry` + `culling` 支持相邻面剔除。
+
+---
+
+## FenceBlock
+
+继承自 `BasicBlock`，栅栏方块。
+
+```typescript
+import { FenceBlock } from '@sapdon/core'
+```
+
+### 构造函数
+
+```typescript
+new FenceBlock(
+  identifier: string,
+  category: string,
+  textures_arr: string[],
+  options?: {
+    group?: string
+    hide_in_command?: boolean
+    leashable?: boolean
+  }
+)
+```
+
+构造函数自动添加自定义碰撞箱、`support: "fence"`、`connection_rule: "all"`。
+
+---
+
+## StairBlock
+
+继承自 `BasicBlock`，楼梯方块。
+
+```typescript
+import { StairBlock } from '@sapdon/core'
+```
+
+### 构造函数
+
+```typescript
+new StairBlock(
+  identifier: string,
+  category: string,
+  textures_arr: string[],
+  options?: {
+    group?: string
+    hide_in_command?: boolean
+  }
+)
+```
+
+构造函数自动注册 `minecraft:cardinal_direction` 和 `minecraft:vertical_half` 状态，通过 `placement_direction` 和 `placement_position` trait 控制玩家放置朝向，生成 8 个 permutation（含半砖碰撞箱 + 方向旋转变换）。
+
+---
+
+## TrapdoorBlock
+
+继承自 `BasicBlock`，活板门方块。
+
+```typescript
+import { TrapdoorBlock } from '@sapdon/core'
+```
+
+### 构造函数
+
+```typescript
+new TrapdoorBlock(
+  identifier: string,
+  category: string,
+  texture: string,
+  options?: {
+    group?: string
+    hide_in_command?: boolean
+  }
+)
+```
+
+构造函数自动注册 `minecraft:cardinal_direction`、`minecraft:vertical_half`、`minecraft:open` 三个状态，生成 16 个 permutation。活板门关闭时为薄板碰撞箱（下半或上半），打开时根据方向生成竖立薄板碰撞箱。
 
 ---
 
@@ -1050,6 +1332,29 @@ crop.addComponent(BlockComponent.setCustomComponents([growComponent.id()]))
 registry.submit()
 ```
 
+### 运行时脚本自动生成
+
+`registry.submit()` 会自动收集所有 `BlockCustomComponentBuilder` 实例，并在构建时通过 `load.js` 生成对应的运行时脚本文件：
+
+- **脚本文件** → `scripts/custom_components/{componentId}.js`（以 `:` 替换为 `_` 命名）
+- **索引文件** → `scripts/custom_components/index.js`（以正确 ID 注册所有组件）
+- 文件已存在时**跳过**，不会覆盖用户修改
+
+需要在项目入口文件 `scripts/index.js`（或 `scripts/index.ts`）中添加导入：
+
+```typescript
+import './custom_components/index.js'
+```
+
+这样 `load.js` 生成的注册代码即可自动执行。
+
+内置 OC 运行时组件（如 `sapdon:head_rotation`）注册只需调用：
+
+```typescript
+import { registerBuiltinComponents } from '@sapdon/runtime'
+registerBuiltinComponents()
+```
+
 ---
 
 ## Permutation
@@ -1076,6 +1381,113 @@ interface Permutation {
 
 ---
 
+---
+
+## TintMethod
+
+生物群系染色方法常量，用于 `BlockComponent.setMaterialInstances()` 和 `BlockComponent.setMapColor()` 的 `tint_method` 参数。
+
+```typescript
+import { TintMethod } from '@sapdon/core'
+```
+
+```typescript
+const TintMethod = {
+  GRASS: 'grass',                   // 草地色
+  WATER: 'water',                   // 水色
+  DEFAULT_FOLIAGE: 'default_foliage',     // 默认 foliage 色
+  EVERGREEN_FOLIAGE: 'evergreen_foliage', // 常绿 foliage 色
+  DRY_FOLIAGE: 'dry_foliage',            // 干 foliage 色
+  BIRCH_FOLIAGE: 'birch_foliage',        // 白桦 foliage 色
+} as const
+```
+
+**示例**
+
+```typescript
+BlockComponent.setMaterialInstances({
+  '*': { texture: 'grass_tex', render_method: 'opaque', tint_method: TintMethod.GRASS }
+})
+```
+
+---
+
+## FlipbookTextureConfig
+
+翻转书纹理配置构建器，用于生成资源包 `flipbook_textures.json`。
+
+```typescript
+import { FlipbookTextureConfig } from '@sapdon/core'
+```
+
+### 方法
+
+| 方法 | 说明 |
+|------|------|
+| `addEntry(entry: FlipbookEntry)` | 添加一个翻转书纹理条目 |
+| `addEntries(entries: FlipbookEntry[])` | 批量添加多个条目 |
+| `toObject()` | 生成 `{ flipbook_textures: [...] }` 对象，可直接注册到资源包 |
+
+**FlipbookEntry**
+
+```typescript
+interface FlipbookEntry {
+  flipbook_texture: string   // 纹理短名
+  atlas_tile?: string        // 图集 tile 名称（默认同 flipbook_texture）
+  ticks_per_frame?: number   // 每帧停留 tick 数（默认 2）
+  blend_frames?: boolean     // 是否混合帧（默认 false）
+  replicate?: number         // 复制次数（默认 1）
+}
+```
+
+**示例**
+
+```typescript
+const flipbook = new FlipbookTextureConfig()
+  .addEntry({ flipbook_texture: 'water_flow', ticks_per_frame: 3 })
+  .addEntry({ flipbook_texture: 'lava_flow', ticks_per_frame: 2, blend_frames: true })
+```
+
+---
+
+## TextureVariationConfig
+
+纹理变体配置构建器，用于生成资源包 `terrain_texture.json`。
+
+```typescript
+import { TextureVariationConfig } from '@sapdon/core'
+```
+
+### 方法
+
+| 方法 | 说明 |
+|------|------|
+| `addTexture(name, path)` | 添加单纹理映射：短名 → 图片路径 |
+| `addTextureWithVariations(name, variations)` | 添加带权重的多变体纹理 |
+| `toObject()` | 生成 `{ texture_data: {...} }` 对象，可直接注册到资源包 |
+
+**TextureVariation**
+
+```typescript
+interface TextureVariation {
+  path: string    // 纹理图片路径
+  weight?: number // 随机权重（默认 1）
+}
+```
+
+**示例**
+
+```typescript
+const tex = new TextureVariationConfig()
+  .addTexture('stone', 'textures/blocks/stone')
+  .addTextureWithVariations('grass', [
+    { path: 'textures/blocks/grass_1', weight: 3 },
+    { path: 'textures/blocks/grass_2', weight: 1 }
+  ])
+```
+
+---
+
 ## 类型汇总
 
 ```typescript
@@ -1086,6 +1498,10 @@ BlockAPI.createRotatableBlock(identifier, category, textures_arr, options?)
 BlockAPI.createGeometryBlock(identifier, category, geometry, material_instances, options?)
 BlockAPI.createCropBlock(identifier, category, variantDatas, options?)
 BlockAPI.createOreBlock(identifier, category, textures_arr, options?)
+BlockAPI.createGlassBlock(identifier, category, texture, options?)
+BlockAPI.createFenceBlock(identifier, category, textures_arr, options?)
+BlockAPI.createStairBlock(identifier, category, textures_arr, options?)
+BlockAPI.createTrapdoorBlock(identifier, category, texture, options?)
 
 // 类
 class BasicBlock { ... }
@@ -1094,13 +1510,20 @@ class RotatableBlock extends BasicBlock { ... }
 class GeometryBlock extends BasicBlock { ... }
 class CropBlock extends Block { ... }
 class OreBlock extends BasicBlock { feature, feature_rules }
+class GlassBlock extends BasicBlock { ... }
+class FenceBlock extends BasicBlock { ... }
+class StairBlock extends BasicBlock { ... }
+class TrapdoorBlock extends BasicBlock { ... }
 class TileBlock { block, entity }
 
 // 枚举
 RotationTypes = { CARDINAL, FACING, BLOCK_FACE, LOG }
+TintMethod = { GRASS, WATER, DEFAULT_FOLIAGE, EVERGREEN_FOLIAGE, DRY_FOLIAGE, BIRCH_FOLIAGE }
 
 // 工具类
 BlockComponent = { setMaterialInstances, setGeometry, ... }
+class FlipbookTextureConfig { addEntry, addEntries, toObject }
+class TextureVariationConfig { addTexture, addTextureWithVariations, toObject }
 
 // 块自定义组件构建器
 class BlockCustomComponentBuilder { constructor(componentId), id(), build(), handlerCount(), onTick(), ... }

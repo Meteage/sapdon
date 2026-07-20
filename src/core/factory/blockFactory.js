@@ -1,9 +1,14 @@
 import { BasicBlock } from "../block/basicBlock.js";
 import { Block } from "../block/block.js";
 import { CropBlock } from "../block/cropBlock.js";
+import { FenceBlock } from "../block/fenceBlock.js";
 import { GeometryBlock } from "../block/geometryBlock.js";
+import { GlassBlock } from "../block/glassBlock.js";
+import { HeadBlock } from "../block/headBlock.js";
 import { OreBlock } from "../block/oreBlock.js";
 import { RotatableBlock } from "../block/rotatableBlock.js";
+import { StairBlock } from "../block/stairBlock.js";
+import { TrapdoorBlock } from "../block/trapdoorBlock.js";
 import { GRegistry } from "../registry.js";
 
 //blocks.json — cumulative, registered once by reference
@@ -162,6 +167,61 @@ export const BlockAPI = {
      * @param {string} options.render_method - 渲染方法，默认为 "alpha_test"。
      * @returns {CropBlock} 创建的方块对象。
      */
+    createHeadBlock: function (identifier, category, texture, options = {}) {
+        if (!identifier || !category || !texture) {
+            throw new Error("必须提供 identifier、category 和 texture。");
+        }
+        const block = new HeadBlock(identifier, category, texture, {
+            hide_in_command: false,
+            ...options
+        });
+        registerBlock(block);
+        return block;
+    },
+    createGlassBlock: function (identifier, category, texture, options = {}) {
+        if (!identifier || !category || !texture) {
+            throw new Error("必须提供 identifier、category 和 texture。");
+        }
+        const block = new GlassBlock(identifier, category, texture, {
+            hide_in_command: false,
+            ...options
+        });
+        registerBlock(block);
+        return block;
+    },
+    createFenceBlock: function (identifier, category, textures_arr, options = {}) {
+        if (!identifier || !category || !textures_arr) {
+            throw new Error("必须提供 identifier、category 和 textures_arr。");
+        }
+        const block = new FenceBlock(identifier, category, textures_arr, {
+            hide_in_command: false,
+            ...options
+        });
+        registerBlock(block);
+        return block;
+    },
+    createStairBlock: function (identifier, category, textures_arr, options = {}) {
+        if (!identifier || !category || !textures_arr) {
+            throw new Error("必须提供 identifier、category 和 textures_arr。");
+        }
+        const block = new StairBlock(identifier, category, textures_arr, {
+            hide_in_command: false,
+            ...options
+        });
+        registerBlock(block);
+        return block;
+    },
+    createTrapdoorBlock: function (identifier, category, texture, options = {}) {
+        if (!identifier || !category || !texture) {
+            throw new Error("必须提供 identifier、category 和 texture。");
+        }
+        const block = new TrapdoorBlock(identifier, category, texture, {
+            hide_in_command: false,
+            ...options
+        });
+        registerBlock(block);
+        return block;
+    },
     createCropBlock: function (identifier, category, variantDatas, options = {}) {
         if (!identifier || !category || !variantDatas || variantDatas.length === 0) {
             throw new Error("必须提供 identifier、category 和 variantDatas。");

@@ -19,6 +19,7 @@ export function hmr(projectPath, projectName) {
 
             if (
                 filename.startsWith('.') ||
+                filename.startsWith('node_modules') ||
                 filename.startsWith(path.join(buildDir, './')) ||
                 filename.includes('.tmp')
             ) {

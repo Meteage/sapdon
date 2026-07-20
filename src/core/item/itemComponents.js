@@ -53,7 +53,11 @@ export class ItemComponent {
   * @returns 
   */
   static setCustomComponents(custom_components){
-    return new Map().set("minecraft:custom_components",[...custom_components])
+    const map = new Map();
+    for (const id of custom_components) {
+      map.set(id, {});
+    }
+    return map;
   }
   /**
    * 设置物品的可投掷组件。

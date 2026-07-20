@@ -3,6 +3,7 @@
     "version": "3.3.3",
     "scripts": {
         "build": "node scripts/build.cjs",
+        "build:demo": "cd examples/block_demo && npm run build",
         "pub": "npm run build && npm publish"
     },
     "keywords": [

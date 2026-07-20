@@ -1,0 +1,17 @@
+{
+    "format_version": "1.21.20",
+    "minecraft:geometry": [{
+        "description": {
+            "identifier": "geometry.trapdoor",
+            "texture_width": 16,
+            "texture_height": 16
+        },
+        "bones": [{
+            "name": "trapdoor",
+            "pivot": [0, 0, 0],
+            "cubes": [
+                { "origin": [-8, 0, -8], "size": [16, 2, 16], "uv": [0, 0] }
+            ]
+        }]
+    }]
+}

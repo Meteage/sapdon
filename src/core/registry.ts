@@ -1,5 +1,6 @@
 import { serialize } from "@sapdon/utils/index.js"
 import { transportPost } from "./transport/client.js"
+import { BlockCustomComponentBuilder } from "./block/blockCustomComponent.js"
 
 const clientRegistryData: any[] = []
 
@@ -36,12 +37,25 @@ export class GRegistry {
 
 export namespace registry {
     export function submit() {
-        const data = clientRegistryData.map(item => {
+        const buildData = clientRegistryData.map(item => {
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
             }
             return item
         })
-        transportPost('submit', data)
+
+        // 自动收集 BlockCustomComponentBuilder 实例，生成 runtime 脚本数据
+        for (const builder of BlockCustomComponentBuilder.getAllInstances()) {
+            const safeName = builder.id().replace(/[^a-zA-Z0-9_]/g, '_')
+            const source = builder.generateRuntimeCode()
+            buildData.push({
+                name: safeName,
+                root: 'behavior',
+                path: 'scripts/custom_components/',
+                data: { _scriptSource: safeName, source, componentId: builder.id() }
+            })
+        }
+
+        transportPost('submit', buildData)
     }
 }

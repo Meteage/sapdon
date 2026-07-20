@@ -1,0 +1,7 @@
+{
+  "name": "block_demo",
+  "description": "Demo for GlassBlock, FenceBlock, StairBlock, TrapdoorBlock",
+  "author": "Sapdon",
+  "version": "1.0.0",
+  "min_engine_version": "1.19.50"
+}
