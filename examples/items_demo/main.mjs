@@ -1,4 +1,4 @@
-import { ItemAPI, ItemCategory, ItemComponent, TerrainTextureManager, registry } from '@sapdon/core'
+import { ItemAPI, ItemCategory, ItemComponent, TerrainTextureManager, registry, RecipeAPI } from '@sapdon/core'
 
 // 翻书物品的方块贴图注册（翻书条位于 items/flipbook_items/ 下，需登记到方块贴图表）
 TerrainTextureManager.registerTexture("amulet_runic", "textures/items/flipbook_items/amulet_runic")
@@ -96,7 +96,48 @@ ItemAPI.createFlipbookItem("items_demo:flipbook_cube", ItemCategory.Items, "amul
 ItemAPI.createAttachable("items_demo:masterball_attach", "textures/items/diamond", "entity_alphatest")
     .addGeometry("default", "geometry.large_item")
 
-// ============ 12. 物品目录（创造菜单分组） ============
+// ============ 13. 自定义武器（Wiki Custom Weapons 规范） ============
+ItemAPI.createItem("items_demo:my_sword", ItemCategory.Equipment, "my_sword", {
+    maxStackSize: 1,
+    group: "minecraft:itemGroup.name.sword",
+})
+    .addComponent(
+        ItemComponent.combineComponents(
+            ItemComponent.setDisplayName("My Custom Sword"),
+            ItemComponent.setHandEquipped(true),
+            ItemComponent.setDurability(600),
+            ItemComponent.setDamage(10),
+            ItemComponent.setCanDestroyInCreative(false),
+            ItemComponent.setEnchantable("sword", 10),
+            ItemComponent.setRepairable([
+                {
+                    items: ["minecraft:stick"],
+                    repairAmount: "context.other->q.remaining_durability + 0.05 * context.other->q.max_durability",
+                },
+            ]),
+            ItemComponent.setDigger({
+                destroySpeeds: [
+                    { block: "minecraft:web", speed: 15 },
+                    { block: "minecraft:bamboo", speed: 10 },
+                ],
+                useEfficiency: true,
+            })
+        )
+    )
+
+// 合成配方（末影珍珠 + 末影之眼 + 木棍）
+RecipeAPI.registerSimpleShaped(
+    "items_demo:my_sword",
+    { item: "items_demo:my_sword" },
+    ["e", "E", "#"],
+    {
+        "#": { item: "minecraft:stick" },
+        "E": { item: "minecraft:ender_eye" },
+        "e": { item: "minecraft:ender_pearl" },
+    }
+)
+
+// ============ 14. 物品目录（创造菜单分组） ============
 ItemAPI.createItemCatalog("1.26.30")
     .addGroup("equipment", ["items_demo:obsidian_sword", "items_demo:diamond_pickaxe"], {
         icon: "items_demo:obsidian_sword",
