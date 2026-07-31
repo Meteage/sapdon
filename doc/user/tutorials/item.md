@@ -223,13 +223,13 @@ registry.submit()
 
 ```typescript
 // main.ts — 翻书物品
-import { ItemAPI, registry } from '@sapdon/core'
+import { ItemAPI, ItemCategory, registry } from '@sapdon/core'
 
 // 创建一个翻书物品（动态纹理动画）
 // 参数: (标识符, 分类, 纹理名称, 可选配置)
 const flipbook = ItemAPI.createFlipbookItem(
     'my_mod:animated_block',      // 标识符
-    'construction',               // 分类
+    ItemCategory.Construction,     // 分类
     'oak_log',                    // 纹理名称（使用原版纹理）
     {
         ticks_per_frame: 4,       // 每帧持续的游戏刻数（1秒=20刻），默认8刻
@@ -348,7 +348,7 @@ registry.submit()
 | `setMaxStackSize(size)` | 设置最大堆叠数量 |
 | `setHandEquipped(bool)` | 设置手持渲染方式（true=像工具） |
 | `setDurability(max, min%, max%)` | 设置耐久度 |
-| `setFoodComponent(alwaysEat, nutrition, saturation, convertTo?)` | 设置食物属性 |
+| `setFoodComponent(options)` | 设置食物属性（`{ nutrition, saturationModifier, canAlwaysEat, usingConvertsTo }`） |
 | `setFuel(seconds)` | 设置燃料燃烧时间 |
 | `setWearable(protection, slot)` | 设置可穿戴属性 |
 | `setGlint(bool)` | 设置附魔光效 |

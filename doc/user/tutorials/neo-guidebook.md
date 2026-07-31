@@ -110,12 +110,12 @@ my_guidebook/
 import fs from "fs"
 import path from "path"
 import {
-    ItemAPI, ItemComponent, registry,
+    ItemAPI, ItemComponent, ItemCategory, registry,
     NeoGuidebook, NeoGuidebookPage
 } from '@sapdon/core'
 
 // 2.1 创建物品
-const item = ItemAPI.createItem("my_mod:guidebook", "items", "book_icon")
+const item = ItemAPI.createItem("my_mod:guidebook", ItemCategory.Items, "book_icon")
 item.format_version = "1.21.90"
 item.addComponent(ItemComponent.setCustomComponentV2("my_mod:book_component", {}))
 item.addComponent(ItemComponent.setMaxStackSize(1))
@@ -430,12 +430,12 @@ C:/Users/你的用户名/AppData/Local/Packages/
 import fs from "fs"
 import path from "path"
 import {
-    ItemAPI, ItemComponent, registry,
+    ItemAPI, ItemComponent, ItemCategory, registry,
     NeoGuidebook, NeoGuidebookPage
 } from '@sapdon/core'
 
 // 物品
-const item = ItemAPI.createItem("my_mod:guidebook", "items", "book_icon")
+const item = ItemAPI.createItem("my_mod:guidebook", ItemCategory.Items, "book_icon")
 item.format_version = "1.21.90"
 item.addComponent(ItemComponent.setCustomComponentV2("my_mod:book_component", {}))
 item.addComponent(ItemComponent.setMaxStackSize(1))

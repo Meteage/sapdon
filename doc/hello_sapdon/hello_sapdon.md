@@ -118,9 +118,9 @@ hello_sapdon/
 1. 打开 `main.mjs` 文件。
 2. 写入以下内容以创建一个基础物品：
    ```javascript
-   import { ItemAPI } from "../src/core";
+   import { ItemAPI, ItemCategory } from "../src/core";
 
-   ItemAPI.createItem("hello_sapdon:my_item", "items", "masterball");
+   ItemAPI.createItem("hello_sapdon:my_item", ItemCategory.Items, "masterball");
    ```
    这段代码将创建一个名为 `my_item` 的物品，其命名空间为 `hello_sapdon`，类型为 `items`，并使用 `masterball` 作为图标。
 

@@ -257,7 +257,7 @@ const fram_golem = EntityAPI.createEntity("more_golem:frame_golem","textures/ent
         )
       )
 
-const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "neoguidebook");
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", ItemCategory.Items, "neoguidebook");
       neoGuidebook.format_version = "1.21.90"
       neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:guibook",{}));
       neoGuidebook.addComponent(ItemComponent.setMaxStackSize(1));

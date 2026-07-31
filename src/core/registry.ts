@@ -5,6 +5,17 @@ import { BlockCustomComponentBuilder } from "./block/blockCustomComponent.js"
 const clientRegistryData: any[] = []
 
 /**
+ * 按 root + path + name 去重，保留最后一次注册的数据
+ */
+const dedupe = (data: any[]) => {
+    const seen = new Map<string, any>()
+    for (const item of data) {
+        seen.set(`${item.root}|${item.path}|${item.name}`, item)
+    }
+    return [...seen.values()]
+}
+
+/**
  * Client
  */
 export class GRegistry {
@@ -18,12 +29,13 @@ export class GRegistry {
      * @param {object} data 数据操作类实例 通过toObject方法转成正确格式json文本 
      */
     static register(name: string, root: string, path: string, data: object) {
-        if (GRegistry.debug) console.log("Registering:", { name, root, path, data })
-        clientRegistryData.push({ name, root, path, data })
+        const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_')
+        if (GRegistry.debug) console.log("Registering:", { name: safeName, root, path, data })
+        clientRegistryData.push({ name: safeName, root, path, data })
     }
 
     static submit() {
-        transportPost('submitGregistry', clientRegistryData.map(item => {
+        transportPost('submitGregistry', dedupe(clientRegistryData).map(item => {
             if (GRegistry.debug) console.log("Preparing to submit registry item:", item.data)
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
@@ -37,7 +49,7 @@ export class GRegistry {
 
 export namespace registry {
     export function submit() {
-        const buildData = clientRegistryData.map(item => {
+        const buildData = dedupe(clientRegistryData).map(item => {
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
             }

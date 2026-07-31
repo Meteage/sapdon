@@ -49,12 +49,12 @@ hello_sapdon/
 打开 `main.ts`，编写以下代码：
 
 ```typescript
-import { ItemAPI, registry, ItemComponent } from '@sapdon/core'
+import { ItemAPI, ItemCategory, registry, ItemComponent } from '@sapdon/core'
 
 // 创建一个基础物品
 const item = ItemAPI.createItem(
   'hello_sapdon:my_item',
-  'items',
+  ItemCategory.Items,
   'masterball'
 )
 item.addComponent(ItemComponent.setDisplayName('我的物品'))

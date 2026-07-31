@@ -1,8 +1,9 @@
 {
     "name": "sapdon",
-    "version": "3.3.3",
+    "version": "4.0.0",
     "scripts": {
         "build": "node scripts/build.cjs",
+        "test": "tsc && tsc-alias && node --test \"tests/*.test.mjs\"",
         "build:demo": "cd examples/block_demo && npm run build",
         "pub": "npm run build && npm publish"
     },

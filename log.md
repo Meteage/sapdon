@@ -95,3 +95,24 @@
 4.重构了NeoGuidebook类使得其更加方便好用 [2025,8,22,23,12]
 
 5.修复了延迟序列化的重大问题 [2026,1,5,21,12]
+
+
+大版本 4
+Item 模块重构（破坏性变更，核心库 4.0.0）
+
+更新
+1.盔甲系统重构为数据驱动结构：单一 Armor 类 + ArmorType 枚举替代 Chestplate/Boot/Leggings/Helmet 四个子类，规格集中于 ARMOR_TYPES 表
+2.Item 核心层全部迁移为 TypeScript（item/itemComponents/food/armor/attachable/itemFactory），补齐 ItemOptions/FoodOptions/ItemComponentMap 等类型
+3.ItemComponent.setFoodComponent 改为选项对象签名（原为 4 个位置参数）
+4.新增 ItemAPI.createLargeItem()，替代原 createItem 中 hide_in_command 隐式生成大型可附着物的行为
+5.Item 默认组件可覆盖：options.icon 传 null 可跳过 icon 组件，FlipbookItem 不再需要 removeComponent 变通
+6.setArrachableGeometry 拼写修正为 setAttachableGeometry
+7.序列化器 serialize() 支持沿原型链查找，修复子类实例序列化回退问题
+8.注册器 GRegistry/registry.submit 按 root+path+name 去重，注册文件名统一 sanitize
+9.引入 node:test 单元测试（tests/item.test.mjs，19 项）
+10.选项支持 camelCase 别名（hideInCommand/maxStackSize/formatVersion）
+11.Item / Food / FlipbookItem / ItemAPI 的 category 参数收紧为严格 ItemCategory 枚举类型，并在构造时做运行时校验（非法分类抛错）
+
+修复
+1.盔甲工厂方法未注册 Item+Attachable 的问题
+2.Armor 不再污染调用方传入的 options 对象

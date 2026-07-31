@@ -65,12 +65,13 @@ src/core/
 │
 ├── item/                        # ── 业务逻辑层 ──
 │   ├── index.ts
-│   ├── item.js                  #   Item 基类
-│   ├── itemComponents.js        #   ItemComponent 静态工厂 (~20 个组件方法)
-│   ├── food.js                  #   Food extends Item
-│   ├── flipbookItem.ts          #   FlipbookItem (动画纹理物品)
-│   ├── attachable.js            #   Attachable extends AddonAttachableDescription
-│   └── armor.js                 #   Armor / Chestplate / Boot / Leggings / Helmet
+│   ├── types.ts                  #   ItemOptions / FoodOptions / ItemComponentMap 等
+│   ├── item.ts                   #   Item 基类
+│   ├── itemComponents.ts         #   ItemComponent 静态工厂 (~20 个组件方法)
+│   ├── food.ts                   #   Food extends Item
+│   ├── flipbookItem.ts           #   FlipbookItem (动画纹理物品)
+│   ├── attachable.ts             #   Attachable extends AddonAttachableDescription
+│   └── armor.ts                  #   Armor 数据表驱动 (ArmorType: Chestplate/Helmet/Boots/Leggings)
 │
 ├── entity/                      # ── 业务逻辑层 ──
 │   ├── index.ts
@@ -220,42 +221,38 @@ class Item {
 Item
 ├── Food           (食物物品)
 ├── FlipbookItem   (动画纹理物品)
-└── Armor          (盔甲)
-    ├── Chestplate
-    ├── Boot
-    ├── Leggings
-    └── Helmet
+└── Armor          (盔甲，ArmorType 数据表驱动)
 
 Attachable (extends AddonAttachableDescription，独立体系)
 ```
 
-#### `Item` (`item/item.js`)
+#### `Item` (`item/item.ts`)
 
 | 方法 | 说明 |
 |------|------|
-| `constructor(identifier, category, texture, options)` | 创建物品，默认添加 icon + max_stack_size 组件 |
+| `constructor(identifier, category, texture, options)` | 创建物品，默认添加 icon + max_stack_size 组件（`options.icon` 传 `null` 可跳过 icon） |
 | `addComponent(componentMap)` | 添加组件 Map |
 | `removeComponent(key)` | 移除组件 |
 | `toObject()` | 序列化为 `AddonItem` |
 
-**options**: `{ group, hide_in_command, max_stack_size, format_version }`
+**options**: `{ group, hide_in_command / hideInCommand, max_stack_size / maxStackSize, format_version / formatVersion, icon }`
 
-#### `ItemComponent` (`item/itemComponents.js`)
+#### `ItemComponent` (`item/itemComponents.ts`)
 
-静态工厂方法，每个返回 `Map<string, any>`：
+静态工厂方法，每个返回 `Map<string, unknown>`：
 
 | 方法 | 对应 Minecraft 组件 |
 |------|-------------------|
 | `setIcon(texture)` | `minecraft:icon` |
 | `setMaxStackSize(size)` | `minecraft:max_stack_size` |
 | `setDisplayName(name)` | `minecraft:display_name` |
-| `setFoodComponent(nutrition, saturation)` | `minecraft:food` |
-| `setWearable(slot)` | `minecraft:wearable` |
+| `setFoodComponent(options)` | `minecraft:food` |
+| `setWearable(protection, slot)` | `minecraft:wearable` |
 | `setFuel(duration)` | `minecraft:fuel` |
 | `setGlint(bool)` | `minecraft:glint` |
 | `setHandEquipped(bool)` | `minecraft:hand_equipped` |
-| `setThrowable(launchPower)` | `minecraft:throwable` |
-| `setProjectile(projectile)` | `minecraft:projectile` |
+| `setThrowable(...)` | `minecraft:throwable` |
+| `setProjectile(...)` | `minecraft:projectile` |
 | `setUseModifiers(movement, duration)` | `minecraft:use_modifiers` |
 | `setUseAnimation(animation)` | `minecraft:use_animation` |
 | `setDurability(maxDurability)` | `minecraft:durability` |
@@ -264,22 +261,22 @@ Attachable (extends AddonAttachableDescription，独立体系)
 | `setCustomComponentV2(id, data)` | `minecraft:custom_components` |
 | `combineComponents(...maps)` | 合并多个组件 Map |
 
-#### `Food` (`item/food.js`)
+#### `Food` (`item/food.ts`)
 
-extends `Item`。自动添加 `use_modifiers` (0.35 移动, 32 持续)、`food` (4 营养, 0.6 饱和) 和 `use_animation` ("eat") 组件。
+extends `Item`。自动添加 `use_modifiers`（默认移动 1、持续 1）、`food`（默认营养 0、饱和 1）和 `use_animation`（默认 "eat"）组件，均可通过 options 覆盖。
 
-#### `Armor` (`item/armor.js`)
+#### `Armor` (`item/armor.ts`)
 
-组合 `Item` + `Attachable`。每个盔甲类型预设不同插槽和保护值：
+组合 `Item` + `Attachable`。由 `ArmorType` 枚举 + `ARMOR_TYPES` 规格表驱动，不同类型预设不同插槽和保护值：
 
-| 类型 | 插槽 | 保护 |
+| ArmorType | 插槽 | 保护 |
 |------|------|------|
-| `Helmet` | `slot.armor.head` | 3 |
-| `Chestplate` | `slot.armor.chest` | 5 |
-| `Leggings` | `slot.armor.legs` | 6 |
-| `Boot` | `slot.armor.feet` | 4 |
+| `ArmorType.Helmet` | `slot.armor.head` | 3 |
+| `ArmorType.Chestplate` | `slot.armor.chest` | 5 |
+| `ArmorType.Leggings` | `slot.armor.legs` | 6 |
+| `ArmorType.Boots` | `slot.armor.feet` | 4 |
 
-#### `Attachable` (`item/attachable.js`)
+#### `Attachable` (`item/attachable.ts`)
 
 extends `AddonAttachableDescription`。管理可附着物品的材质、纹理、几何和渲染控制器。
 
@@ -458,6 +455,7 @@ RotationTypes.LOG        // minecraft:pillar_axis (轴向旋转)
 | 方法 | 说明 |
 |------|------|
 | `createItem(identifier, category, texture, options)` | 创建普通物品并注册 |
+| `createLargeItem(identifier, category, texture, options)` | 创建大型 3D 物品 (Item+Attachable) |
 | `createFood(identifier, category, texture, options)` | 创建食物物品并注册 |
 | `createAttachable(identifier, texture, material, options)` | 创建可附着物并注册 |
 | `createChestplateArmor(id, itemTex, texPath, options)` | 创建胸甲 (Item+Attachable) |

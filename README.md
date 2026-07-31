@@ -26,7 +26,7 @@ Minecraft Bedrock 版 Addon 开发框架，将 JSON 配置抽象为 TypeScript �
 
 ### 环境要求
 
-- Node.js 16+
+- Node.js 18+
 - npm
 
 ### 安装
@@ -61,10 +61,10 @@ my_addon/
 
 ```typescript
 // main.ts
-import { ItemAPI, EntityAPI, registry, ItemComponent } from '@sapdon/core'
+import { ItemAPI, ItemCategory, EntityAPI, registry, ItemComponent } from '@sapdon/core'
 
 // 创建一个物品
-ItemAPI.createItem('my_addon:magic_ingot', 'items', 'magic_ingot')
+ItemAPI.createItem('my_addon:magic_ingot', ItemCategory.Items, 'magic_ingot')
   .addComponent(ItemComponent.setDisplayName('魔法锭'))
 
 // 提交注册
@@ -91,15 +91,17 @@ sapdon build .
 ### 物品
 
 ```typescript
+import { ItemAPI, ItemCategory } from '@sapdon/core'
+
 // 基础物品
-ItemAPI.createItem('my:item', 'items', 'texture')
+ItemAPI.createItem('my:item', ItemCategory.Items, 'texture')
 
 // 食物
-ItemAPI.createFood('my:food', 'items', 'apple')
-  .addComponent(ItemComponent.setFoodComponent(4, 0.6))
+ItemAPI.createFood('my:food', ItemCategory.Items, 'apple')
+  .addComponent(ItemComponent.setFoodComponent({ nutrition: 4, saturationModifier: 0.6 }))
 
 // 带自定义组件的物品
-ItemAPI.createItem('my:tool', 'items', 'tool_tex')
+ItemAPI.createItem('my:tool', ItemCategory.Items, 'tool_tex')
   .addComponent(ItemComponent.setHandEquipped(true))
   .addComponent(ItemComponent.setDurability(250))
   .format_version = '1.21.90'

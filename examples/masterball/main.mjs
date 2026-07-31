@@ -1,6 +1,6 @@
-import { EntityAPI, ItemAPI, RecipeAPI, ItemComponent, registry } from '@sapdon/core'
+import { EntityAPI, ItemAPI, RecipeAPI, ItemComponent, ItemCategory, registry } from '@sapdon/core'
 
- ItemAPI.createItem("sapdon:caught_masterball","none","masterball",{hide_in_command:true})
+ ItemAPI.createLargeItem("sapdon:caught_masterball", ItemCategory.None, "masterball",{hide_in_command:true})
         .addComponent(
             ItemComponent.combineComponents(
                 ItemComponent.setGlint(true),
@@ -10,7 +10,7 @@ import { EntityAPI, ItemAPI, RecipeAPI, ItemComponent, registry } from '@sapdon/
                 ItemComponent.setThrowable(true,1.,0,1.,0,false)
             )
         )
-ItemAPI.createItem("sapdon:uncaught_masterball","items","masterball")
+ItemAPI.createItem("sapdon:uncaught_masterball", ItemCategory.Items, "masterball")
 .addComponent(
     ItemComponent.combineComponents(
         ItemComponent.setDisplayName("大师球"),

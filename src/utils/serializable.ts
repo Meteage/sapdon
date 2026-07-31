@@ -70,25 +70,6 @@ export function Serializable(serializer: ISerializer = defaultSerializer) {
     }
 }
 
-/**
- * 只能应用一个 Serializer
- * 
- * 重复的 Serializer 会被覆盖
- * @param target 
- * @param ctx 
- */
-// export function Serializer(target: CallableFunction, ctx: DecoratorContext) {
-//     if (ctx.kind !== 'method') {
-//         throw new Error('Serializer decorator can only be applied to methods')
-//     }
-
-//     const ctor = Reflect.getPrototypeOf(target)?.constructor as ConstructorOf<any>
-//     if (!ctor) {
-//         throw new Error('Cannot serialize an instance of an anonymous class')
-//     }
-
-//     serializerMapping.set(ctor, target as ISerializer)
-// }
 export const Serializer: MethodDecorator = (target, prop) => {
     const ctor = target.constructor as ConstructorOf<any>
     if (!ctor) {
@@ -99,15 +80,24 @@ export const Serializer: MethodDecorator = (target, prop) => {
 }
 
 export function serialize<R, T extends object>(inst: T): R {
-    const ctor = Reflect.getPrototypeOf(inst as T)?.constructor as ConstructorOf<T>
-    if (!ctor) {
-        throw new Error('Cannot serialize an instance of an anonymous class')
+    // 沿原型链向上查找最近的序列化器，支持子类继承父类的序列化方法
+    let proto: object | null = Reflect.getPrototypeOf(inst as T)
+    while (proto) {
+        const ctor = (proto as any).constructor as ConstructorOf<any>
+        if (!ctor) {
+            break
+        }
+
+        const serializer = <ISerializer | undefined> getMetadata(ctor)?.[serializerSymbol]
+            ?? serializerMapping.get(ctor)
+        if (serializer) {
+            return serializer.call(inst, inst) as R
+        }
+
+        proto = Reflect.getPrototypeOf(proto)
     }
 
-    const serializer = <ISerializer> getMetadata(ctor)?.[serializerSymbol]
-        ?? serializerMapping.get(ctor)
-        ?? defaultSerializer
-    return serializer.call(inst, inst) as R
+    return defaultSerializer(inst) as R
 }
 
 export const jsonEncodeDecoder: EncodeDecoder<any, string> = {

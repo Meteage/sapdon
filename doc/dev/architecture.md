@@ -149,7 +149,7 @@ class Item {
 ```
 用户代码 (main.ts)
     │
-    │  ItemAPI.createItem('my:item', 'items', 'tex')
+    │  ItemAPI.createItem('my:item', ItemCategory.Items, 'tex')
     │  EntityAPI.createEntity('my:entity', 'tex')
     │  registry.submit()
     ▼

@@ -1,4 +1,5 @@
 import { Serializer } from "../../../utils/index.js"
+import { AddonMenuCategory } from "../menuCategory.js"
 
 export class AddonItem {
     format_version: string
@@ -10,7 +11,7 @@ export class AddonItem {
     }
 
     @Serializer
-    toObject(): Record<string, any> {
+    toObject(): Record<string, unknown> {
         return {
             format_version: this.format_version,
             ["minecraft:item"]: this.definitions
@@ -20,9 +21,9 @@ export class AddonItem {
 
 export class AddonItemDefinition {
     description: AddonItemDescription
-    components: Record<string, any>
+    components: Record<string, unknown>
 
-    constructor(description: AddonItemDescription, components: Record<string, any>) {
+    constructor(description: AddonItemDescription, components: Record<string, unknown>) {
         this.description = description;
         this.components = components;
     }
@@ -30,9 +31,9 @@ export class AddonItemDefinition {
 
 export class AddonItemDescription {
     identifier: string
-    menu_category: any
+    menu_category: AddonMenuCategory
 
-    constructor(identifier: string, menu_category: any) {
+    constructor(identifier: string, menu_category: AddonMenuCategory) {
         this.identifier = identifier;
         this.menu_category = menu_category;
     }

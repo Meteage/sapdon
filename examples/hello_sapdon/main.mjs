@@ -1,5 +1,5 @@
-import { ItemAPI, registry } from '@sapdon/core'
+import { ItemAPI, ItemCategory, registry } from '@sapdon/core'
 
-ItemAPI.createItem("hello_sapdon:my_item","items","masterball");
+ItemAPI.createItem("hello_sapdon:my_item", ItemCategory.Items, "masterball");
 
 registry.submit()

@@ -46,10 +46,10 @@ const item = ItemAPI.createItem(
 | 参数 | 类型 | 必填 | 描述 |
 |------|------|------|------|
 | `identifier` | string | 是 | 物品唯一标识符，格式 `namespace:name` |
-| `category` | string | 是 | 创造模式物品栏分类 |
+| `category` | ItemCategory | 是 | 创造模式物品栏分类，见 `ItemCategory` 枚举 |
 | `texture` | string | 是 | 纹理名称 |
 | `options.group` | string | 否 | 物品分组 |
-| `options.hide_in_command` | boolean | 否 | 是否在命令自动补全中隐藏（默认 false）。为 true 时自动创建附加物。 |
+| `options.hide_in_command` | boolean | 否 | 是否在命令自动补全中隐藏（默认 false） |
 | `options.max_stack_size` | number | 否 | 最大堆叠数量（默认 64，范围 1-99） |
 | `options.format_version` | string | 否 | 格式版本（默认 `'1.21.40'`） |
 
@@ -86,7 +86,7 @@ const food = ItemAPI.createFood(
 | 参数 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `identifier` | string | — | 唯一标识符 |
-| `category` | string | — | 创造菜单分类 |
+| `category` | ItemCategory | — | 创造菜单分类 |
 | `texture` | string | — | 纹理名称 |
 | `options.group` | string | `undefined` | 物品分组 |
 | `options.hide_in_command` | boolean | `false` | 是否在命令中隐藏 |
@@ -147,12 +147,12 @@ const chestplate = ItemAPI.createChestplateArmor(
     'ruby_chestplate',               // item_texture: string — 物品图标纹理
     'textures/models/armor/ruby',   // texture_path: string — 模型纹理路径
     {                                // options?: object
-        // 可传入标准选项
+        displayName: '红宝石胸甲',   // 自定义显示名称（默认："我的自定义胸甲"）
     }
 )
 ```
 
-**返回值：** `Chestplate` — 胸甲实例。
+**返回值：** `Armor` — 盔甲实例（`type === ArmorType.Chestplate`）。
 
 ---
 
@@ -168,7 +168,7 @@ const helmet = ItemAPI.createHelmetArmor(
 )
 ```
 
-**返回值：** `Helmet` — 头盔实例。
+**返回值：** `Armor` — 盔甲实例（`type === ArmorType.Helmet`）。
 
 ---
 
@@ -184,7 +184,7 @@ const boots = ItemAPI.createBootArmor(
 )
 ```
 
-**返回值：** `Boot` — 靴子实例。
+**返回值：** `Armor` — 盔甲实例（`type === ArmorType.Boots`）。
 
 ---
 
@@ -200,7 +200,12 @@ const leggings = ItemAPI.createLeggingsArmor(
 )
 ```
 
-**返回值：** `Leggings` — 护腿实例。
+**返回值：** `Armor` — 盔甲实例（`type === ArmorType.Leggings`）。
+
+> **说明：** 盔甲已重构为数据驱动结构，所有类型共享同一个 `Armor` 类，通过 `ArmorType` 枚举区分。
+> 可直接使用 `new Armor(id, item_texture, texture_path, ArmorType.Helmet, options)` 创建，
+> 并通过 `setAttachableGeometry(key, geometry)` 自定义几何模型（原 `setArrachableGeometry` 已改名）。
+> 访问内部对象：`armor.item`（物品）与 `armor.attachable`（可附着物），或 `armor.toObject()` 获取 `{ behavior, resource }`。
 
 ---
 
@@ -209,11 +214,11 @@ const leggings = ItemAPI.createLeggingsArmor(
 创建翻书物品（动态帧动画物品）。
 
 ```typescript
-import { ItemAPI } from '@sapdon/core'
+import { ItemAPI, ItemCategory } from '@sapdon/core'
 
 const flipbook = ItemAPI.createFlipbookItem(
     'my_mod:animated_block',     // identifier: string
-    'construction',               // category: string
+    ItemCategory.Construction,    // category: ItemCategory
     'my_flipbook_tex',            // texture: string — 纹理名称
     {
         group: 'minecraft:itemGroup.name.construction',
@@ -230,7 +235,7 @@ const flipbook = ItemAPI.createFlipbookItem(
 | 参数 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `identifier` | string | — | 唯一标识符 |
-| `category` | string | — | 创造菜单分类 |
+| `category` | ItemCategory | — | 创造菜单分类 |
 | `texture` | string | — | 纹理名称（位于 `textures/blocks/` 目录） |
 | `options.group` | string | `undefined` | 物品分组 |
 | `options.hide_in_command` | boolean | `false` | 是否在命令中隐藏 |
@@ -249,11 +254,11 @@ const flipbook = ItemAPI.createFlipbookItem(
 ### 构造函数
 
 ```typescript
-import { Item } from '@sapdon/core'
+import { Item, ItemCategory } from '@sapdon/core'
 
 const item = new Item(
     'my_mod:custom_item',   // identifier: string — 唯一标识符
-    'items',                 // category: string — 创造菜单分类
+    ItemCategory.Items,      // category: ItemCategory — 创造菜单分类
     'custom_texture',        // texture: string — 纹理名称
     {                        // options?: object
         group: '...',
@@ -269,7 +274,7 @@ const item = new Item(
 | 参数 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `identifier` | string | — | 唯一标识符 |
-| `category` | string | — | 创造菜单分类 |
+| `category` | ItemCategory | — | 创造菜单分类 |
 | `texture` | string | — | 纹理名称 |
 | `options.group` | string | `undefined` | 分组 |
 | `options.hide_in_command` | boolean | `false` | 是否在命令中隐藏 |
@@ -391,21 +396,26 @@ ItemComponent.setDisplayName('§c传奇之剑')
 
 ---
 
-### setFoodComponent(nutrition, saturation, canAlwaysEat?, usingConvertsTo?)
+### setFoodComponent(options)
 
 设置食物属性组件。
 
 ```typescript
-ItemComponent.setFoodComponent(true, 6, 1.2)
-// → Map { 'minecraft:food' => { can_always_eat: true, nutrition: 6, saturation_modifier: 1.2 } }
+ItemComponent.setFoodComponent({
+    nutrition: 6,
+    saturationModifier: 1.2,
+    canAlwaysEat: true,
+    usingConvertsTo: 'minecraft:bowl', // 可选
+})
+// → Map { 'minecraft:food' => { can_always_eat: true, nutrition: 6, saturation_modifier: 1.2, using_converts_to: 'minecraft:bowl' } }
 ```
 
 | 参数 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
-| `canAlwaysEat` | boolean | — | 是否可随时食用 |
-| `nutrition` | number | `0` | 营养值 |
-| `saturationModifier` | number | `0.6` | 饱和度修正值 |
-| `usingConvertsTo` | string | `undefined` | 食用后转换的目标物品 ID |
+| `options.canAlwaysEat` | boolean | `false` | 是否可随时食用 |
+| `options.nutrition` | number | `0` | 营养值 |
+| `options.saturationModifier` | number | `0.6` | 饱和度修正值 |
+| `options.usingConvertsTo` | string | `undefined` | 食用后转换的目标物品 ID |
 
 ---
 
@@ -672,40 +682,43 @@ ItemComponent.setCustomComponents(['my_mod:my_component'])
 
 ---
 
-## 4. Armor 子类
+## 4. Armor 类
 
-盔甲系统包含四个子类，分别对应四种盔甲类型。它们继承自 `Armor` 基类，内部创建 `Item` 和 `Attachable` 实例。
+盔甲系统已重构为数据驱动结构：单一 `Armor` 类 + `ArmorType` 枚举，内部创建 `Item` 和 `Attachable` 实例。
 
-### Armor 基类
+### Armor 构造
 
 ```typescript
-// 基类构造函数（不直接使用）
-new Armor(identifier, category, item_texture, texture_path, options?)
+import { Armor, ArmorType } from '@sapdon/core'
+
+new Armor(identifier, item_texture, texture_path, type, options?)
 ```
 
 | 属性/方法 | 类型 | 描述 |
 |-----------|------|------|
+| `type` | ArmorType | 盔甲类型 |
 | `item` | Item | 关联的物品实例 |
 | `attachable` | Attachable | 关联的可附着物实例 |
-| `setArrachableGeometry(key, geometry)` | this | 设置可附着物几何模型 |
+| `setAttachableGeometry(key, geometry)` | this | 设置可附着物几何模型 |
+| `toObject()` | object | 返回 `{ behavior, resource }` 两包 JSON |
 
-### 子类对照表
+### 类型对照表
 
-| 类 | 创建方法 | 保护值 | 插槽 | 几何模型 | 脚本 |
+| ArmorType | 创建方法 | 保护值 | 插槽 | 几何模型 | 脚本 |
 |----|---------|--------|------|---------|------|
 | **Helmet** | `ItemAPI.createHelmetArmor()` | 3 | `slot.armor.head` | `geometry.player.armor.helmet` | `v.helmet_layer_visible = 0.0;` |
 | **Chestplate** | `ItemAPI.createChestplateArmor()` | 5 | `slot.armor.chest` | `geometry.player.armor.chestplate` | `v.chest_layer_visible = 0.0;` |
 | **Leggings** | `ItemAPI.createLeggingsArmor()` | 6 | `slot.armor.legs` | `geometry.player.armor.leggings` | `v.leg_layer_visible = 0.0;` |
-| **Boot** | `ItemAPI.createBootArmor()` | 4 | `slot.armor.feet` | `geometry.player.armor.boots` | `v.boot_layer_visible = 0.0;` |
+| **Boots** | `ItemAPI.createBootArmor()` | 4 | `slot.armor.feet` | `geometry.player.armor.boots` | `v.boot_layer_visible = 0.0;` |
 
 ### 默认配置
 
-所有盔甲子类自动配置以下属性：
+所有盔甲类型自动配置以下属性：
 
 - 分类：`'equipment'`
 - 分组：对应的 `itemGroup.name.*`
 - 最大堆叠数量：`1`
-- 显示名称：各类型的默认名称
+- 显示名称：各类型的默认名称（可通过 `options.displayName` 覆盖）
 - 纹理：通过 `texture_path` 参数指定
 - 材质：`'armor'`（默认）和 `'armor_enchanted'`（附魔）
 - 渲染控制器：`'controller.render.armor'`
@@ -713,7 +726,7 @@ new Armor(identifier, category, item_texture, texture_path, options?)
 ```typescript
 // 自定义盔甲几何模型示例
 ItemAPI.createHelmetArmor('my_mod:custom_helmet', 'custom_helmet', 'textures/models/armor/custom')
-    .setArrachableGeometry('default', 'geometry.custom.helmet')
+    .setAttachableGeometry('default', 'geometry.custom.helmet')
 ```
 
 ---
@@ -739,9 +752,9 @@ class Food extends Item {
 | `minecraft:use_animation` | Food 构造 |
 
 ```typescript
-import { Food } from '@sapdon/core'
+import { Food, ItemCategory } from '@sapdon/core'
 
-const food = new Food('my_mod:apple', 'items', 'apple', {
+const food = new Food('my_mod:apple', ItemCategory.Items, 'apple', {
     nutrition: 8,
     saturationModifier: 1.5,
     canAlwaysEat: true,
@@ -773,11 +786,10 @@ enum ItemCategory {
 ```typescript
 import { ItemAPI, ItemCategory } from '@sapdon/core'
 
-// 使用枚举值
 ItemAPI.createItem('test:item', ItemCategory.Construction, 'tex')
-// 等价于
-ItemAPI.createItem('test:item', 'construction', 'tex')
 ```
+
+> **注意：** `category` 参数为严格枚举类型，传 `'construction'` 等裸字符串会报 TS 编译错误，并会在运行时校验失败。必须使用 `ItemCategory.Construction` 等枚举成员。
 
 ---
 

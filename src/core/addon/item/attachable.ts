@@ -10,7 +10,7 @@ export class AddonAttachable {
     }
 
     @Serializer
-    toObject(): Record<string, any> {
+    toObject(): Record<string, unknown> {
         return {
             format_version: this.format_version,
             ["minecraft:attachable"]: this.definitions
@@ -34,8 +34,8 @@ export class AddonAttachableDescription {
     animations?: Record<string, string>
     animation_controllers?: Record<string, string>[]
     render_controllers?: string[]
-    locators?: Record<string, any>
-    scripts?: Record<string, any>
+    locators?: Record<string, unknown>
+    scripts?: Record<string, unknown>
 
     constructor(identifier: string) {
         this.identifier = identifier;
@@ -77,13 +77,13 @@ export class AddonAttachableDescription {
         return this;
     }
 
-    addLocator(name: string, locator: any): this {
+    addLocator(name: string, locator: unknown): this {
         if (this.locators == undefined) this.locators = {};
         this.locators[name] = locator;
         return this;
     }
 
-    setScript(key: string, value: string): this {
+    setScript(key: string, value: unknown): this {
         if (this.scripts == undefined) this.scripts = {};
         this.scripts[key] = value;
         return this;

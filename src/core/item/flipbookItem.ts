@@ -2,6 +2,7 @@ import { GeometryBlock } from "../block/geometryBlock.js";
 import { FlipbookTextures } from "../texture.js";
 import { Item } from "./item.js";
 import { ItemComponent } from "./itemComponents.js";
+import type { ItemCategory } from "./types.js";
 
 /**
  * 翻书物品配置选项接口
@@ -74,15 +75,14 @@ export class FlipbookItem extends Item {
 	 */
 	constructor(
 		identifier: string, 
-		category: string, 
+		category: ItemCategory, 
 		texture: string, 
 		options?: FlipbookItemOptions
 	) {
-		// 调用父类Item的构造函数
-		super(identifier, category, texture, options);
+		// 调用父类Item的构造函数，icon 传 null 跳过默认图标组件
+		super(identifier, category, texture, { ...options, icon: null });
 
-		this.removeComponent("minecraft:icon")
-		.addComponent(
+		this.addComponent(
 			ItemComponent.setBlockPlacer(
 				identifier + "_block",  // 使用与物品对应的方块标识符,
 				false,

@@ -1,11 +1,11 @@
 import fs from "fs"
 import path from "path"
 import {
-    ItemAPI, ItemComponent, registry,
+    ItemAPI, ItemComponent, ItemCategory, registry,
     NeoGuidebook, NeoGuidebookPage
 } from '@sapdon/core'
 
-const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", "items", "book")
+const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", ItemCategory.Items, "book")
 neoGuidebook.format_version = "1.21.90"
 neoGuidebook.addComponent(ItemComponent.setCustomComponentV2("sapdon:neo_guibook", {}))
 neoGuidebook.addComponent(ItemComponent.setMaxStackSize(1))
