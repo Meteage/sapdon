@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { Item, Food, Armor, ArmorType, Attachable, ItemComponent, ItemCategory } from '../dist/core/item/index.js'
+import { Item, Food, Armor, ArmorType, Attachable, ItemComponent, ItemCategory, ItemCatalog } from '../dist/core/item/index.js'
 import { ItemAPI } from '../dist/core/factory/itemFactory.js'
 
 const itemGolden = {
@@ -201,4 +201,219 @@ test('ItemAPI.createFood 返回 Food', () => {
   const food = ItemAPI.createFood('test:f', ItemCategory.Items, 'f_tex', { nutrition: 8 })
   assert.equal(food instanceof Food, true)
   assert.deepEqual(food.toObject()['minecraft:item'].components['minecraft:food'].nutrition, 8)
+})
+
+test('ItemComponent.setBlockPlacer 选项对象签名', () => {
+  const component = ItemComponent.setBlockPlacer('wiki:custom_block', {
+    replaceBlockItem: true,
+    alignedPlacement: true,
+    useOn: ['minecraft:dirt', { name: 'wiki:other', states: { 'wiki:state': 5 } }, { tags: "q.any_tag('wiki:tag')" }],
+  })
+  assert.deepEqual(component.get('minecraft:block_placer'), {
+    block: 'wiki:custom_block',
+    replace_block_item: true,
+    aligned_placement: true,
+    use_on: ['minecraft:dirt', { name: 'wiki:other', states: { 'wiki:state': 5 } }, { tags: "q.any_tag('wiki:tag')" }],
+  })
+  assert.throws(() => ItemComponent.setBlockPlacer(''), /block/)
+})
+
+test('ItemComponent.setIcon 对象格式', () => {
+  const component = ItemComponent.setIcon({ default: 'wiki:item', dyed: 'wiki:item_dyed' })
+  assert.deepEqual(component.get('minecraft:icon'), { textures: { default: 'wiki:item', dyed: 'wiki:item_dyed' } })
+  assert.throws(() => ItemComponent.setIcon({ dyed: 'x' }), /default/)
+})
+
+test('ItemComponent.setUseModifiers 选项对象签名', () => {
+  const component = ItemComponent.setUseModifiers({
+    movementModifier: 0.5,
+    useDuration: 1,
+    emitVibrations: true,
+    startSound: 'item.bow.pull',
+    startUsing: 'always',
+  })
+  assert.deepEqual(component.get('minecraft:use_modifiers'), {
+    movement_modifier: 0.5,
+    use_duration: 1,
+    emit_vibrations: true,
+    start_sound: 'item.bow.pull',
+    start_using: 'always',
+  })
+  assert.throws(() => ItemComponent.setUseModifiers({ startUsing: 'bogus' }), /startUsing/)
+})
+
+test('ItemComponent.setWearable hidesPlayerLocation', () => {
+  const component = ItemComponent.setWearable(5, 'slot.armor.chest', true)
+  assert.deepEqual(component.get('minecraft:wearable'), {
+    protection: 5,
+    slot: 'slot.armor.chest',
+    hides_player_location: true,
+  })
+})
+
+test('ItemComponent 新组件输出', () => {
+  assert.deepEqual(ItemComponent.setAllowOffHand(true).get('minecraft:allow_off_hand'), true)
+  assert.deepEqual(ItemComponent.setBundleInteraction(12).get('minecraft:bundle_interaction'), { num_viewable_slots: 12 })
+  assert.deepEqual(ItemComponent.setCanDestroyInCreative(false).get('minecraft:can_destroy_in_creative'), false)
+  assert.deepEqual(ItemComponent.setCompostable(50).get('minecraft:compostable'), { composting_chance: 50 })
+  assert.deepEqual(ItemComponent.setDamage(10).get('minecraft:damage'), 10)
+  assert.deepEqual(ItemComponent.setDamageAbsorption(['all']).get('minecraft:damage_absorption'), { absorbable_causes: ['all'] })
+  assert.deepEqual(ItemComponent.setDyeable('#ffffff').get('minecraft:dyeable'), { default_color: '#ffffff' })
+  assert.deepEqual(ItemComponent.setEnchantable('sword', 10).get('minecraft:enchantable'), { slot: 'sword', value: 10 })
+  assert.deepEqual(ItemComponent.setEntityPlacer('minecraft:spider', { useOn: ['minecraft:dirt'] }).get('minecraft:entity_placer'), {
+    entity: 'minecraft:spider',
+    use_on: ['minecraft:dirt'],
+  })
+  assert.deepEqual(ItemComponent.setFireResistant(true).get('minecraft:fire_resistant'), { value: true })
+  assert.deepEqual(ItemComponent.setHoverTextColor('minecoin_gold').get('minecraft:hover_text_color'), 'minecoin_gold')
+  assert.deepEqual(ItemComponent.setLiquidClipped(true).get('minecraft:liquid_clipped'), true)
+  assert.deepEqual(ItemComponent.setRarity('rare').get('minecraft:rarity'), 'rare')
+  assert.deepEqual(ItemComponent.setShouldDespawn(false).get('minecraft:should_despawn'), false)
+  assert.deepEqual(ItemComponent.setStackedByData(true).get('minecraft:stacked_by_data'), true)
+  assert.deepEqual(ItemComponent.setStorageWeightLimit(64).get('minecraft:storage_weight_limit'), { max_weight_limit: 64 })
+  assert.deepEqual(ItemComponent.setStorageWeightModifier(4).get('minecraft:storage_weight_modifier'), { weight_in_storage_item: 4 })
+  assert.deepEqual(ItemComponent.setSwingDuration(1).get('minecraft:swing_duration'), { value: 1 })
+  assert.deepEqual(ItemComponent.setTags(['wiki:tag']).get('minecraft:tags'), { tags: ['wiki:tag'] })
+})
+
+test('ItemComponent 复杂对象组件输出', () => {
+  assert.deepEqual(ItemComponent.setCooldown({ category: 'wiki:cd', duration: 0.2, type: 'use' }).get('minecraft:cooldown'), {
+    category: 'wiki:cd',
+    duration: 0.2,
+    type: 'use',
+  })
+
+  assert.deepEqual(ItemComponent.setDigger({
+    destroySpeeds: [{ block: 'minecraft:gravel', speed: 0 }, { block: { tags: "q.any_tag('x')" }, speed: 6 }],
+    useEfficiency: true,
+  }).get('minecraft:digger'), {
+    destroy_speeds: [{ block: 'minecraft:gravel', speed: 0 }, { block: { tags: "q.any_tag('x')" }, speed: 6 }],
+    use_efficiency: true,
+  })
+
+  assert.deepEqual(ItemComponent.setDurabilitySensor({
+    durabilityThresholds: [{ durability: 100, particleType: 'minecraft:explosion_manual', soundEvent: 'blast' }, { durability: 5, soundEvent: 'raid.horn' }],
+  }).get('minecraft:durability_sensor'), {
+    durability_thresholds: [
+      { durability: 100, particle_type: 'minecraft:explosion_manual', sound_event: 'blast' },
+      { durability: 5, sound_event: 'raid.horn' },
+    ],
+  })
+
+  assert.deepEqual(ItemComponent.setKineticWeapon({
+    delay: 15,
+    hitboxMargin: 0.25,
+    reach: { min: 2, max: 4.5 },
+    creativeReach: { min: 2, max: 7.5 },
+    damageMultiplier: 0.7,
+    damageConditions: { max_duration: 300 },
+    knockbackConditions: { min_speed: 5.1 },
+  }).get('minecraft:kinetic_weapon'), {
+    delay: 15,
+    hitbox_margin: 0.25,
+    reach: { min: 2, max: 4.5 },
+    creative_reach: { min: 2, max: 7.5 },
+    damage_multiplier: 0.7,
+    damage_conditions: { max_duration: 300 },
+    knockback_conditions: { min_speed: 5.1 },
+  })
+
+  assert.deepEqual(ItemComponent.setPiercingWeapon({ reach: { min: 2, max: 4.5 } }).get('minecraft:piercing_weapon'), {
+    reach: { min: 2, max: 4.5 },
+  })
+
+  assert.deepEqual(ItemComponent.setRecord({ comparatorSignal: 1, duration: 5, soundEvent: 'bucket.empty.powder_snow' }).get('minecraft:record'), {
+    comparator_signal: 1,
+    duration: 5,
+    sound_event: 'bucket.empty.powder_snow',
+  })
+
+  assert.deepEqual(ItemComponent.setRepairable([
+    { items: ['minecraft:diamond'], repairAmount: 10 },
+    { items: [{ tags: "q.any_tag('minecraft:planks')" }], repairAmount: 'q.max_durability * 0.25' },
+  ]).get('minecraft:repairable'), {
+    repair_items: [
+      { items: ['minecraft:diamond'], repair_amount: 10 },
+      { items: [{ tags: "q.any_tag('minecraft:planks')" }], repair_amount: 'q.max_durability * 0.25' },
+    ],
+  })
+
+  assert.deepEqual(ItemComponent.setShooter({
+    ammunition: [{ item: 'minecraft:arrow', searchInventory: true, useInCreative: true, useOffhand: true }],
+    scalePowerByDrawDuration: true,
+  }).get('minecraft:shooter'), {
+    ammunition: [{ item: 'minecraft:arrow', search_inventory: true, use_in_creative: true, use_offhand: true }],
+    scale_power_by_draw_duration: true,
+  })
+
+  assert.deepEqual(ItemComponent.setStorageItem({
+    maxSlots: 64,
+    allowNestedStorageItems: true,
+    bannedItems: ['minecraft:shulker_box'],
+  }).get('minecraft:storage_item'), {
+    max_slots: 64,
+    allow_nested_storage_items: true,
+    banned_items: ['minecraft:shulker_box'],
+  })
+
+  assert.deepEqual(ItemComponent.setSwingSounds({ attackMiss: 'item.wooden_spear.attack_miss', attackHit: 'item.wooden_spear.attack_hit' }).get('minecraft:swing_sounds'), {
+    attack_miss: 'item.wooden_spear.attack_miss',
+    attack_hit: 'item.wooden_spear.attack_hit',
+  })
+})
+
+test('ItemComponent 新组件参数校验', () => {
+  assert.throws(() => ItemComponent.setBundleInteraction(0), /1-64/)
+  assert.throws(() => ItemComponent.setBundleInteraction(65), /1-64/)
+  assert.throws(() => ItemComponent.setCompostable(101), /0-100/)
+  assert.throws(() => ItemComponent.setDamage(40000), /0-32767/)
+  assert.throws(() => ItemComponent.setRarity('legendary'), /rarity/)
+  assert.throws(() => ItemComponent.setRecord({ comparatorSignal: 16, duration: 1, soundEvent: 'x' }), /0-15/)
+  assert.throws(() => ItemComponent.setStorageItem({ maxSlots: 0, allowNestedStorageItems: true }), /1-64/)
+  assert.throws(() => ItemComponent.setStorageWeightModifier(70), /0-64/)
+  assert.throws(() => ItemComponent.setCooldown({ category: '', duration: 1 }), /category/)
+  assert.throws(() => ItemComponent.setShooter({ ammunition: [] }), /ammunition/)
+})
+
+const CATALOG_GOLDEN = {
+  format_version: '1.26.30',
+  'minecraft:crafting_items_catalog': {
+    categories: [
+      {
+        category_name: 'nature',
+        groups: [
+          {
+            group_identifier: { icon: 'wiki:silver_ore', name: 'wiki:itemGroup.name.ore' },
+            items: ['wiki:silver_ore', 'wiki:steel_ore'],
+          },
+        ],
+      },
+      {
+        category_name: 'items',
+        groups: [
+          { items: ['wiki:custom_item'] },
+        ],
+      },
+    ],
+  },
+}
+
+test('ItemCatalog 序列化输出 golden', () => {
+  const catalog = new ItemCatalog()
+    .addGroup('nature', ['wiki:silver_ore', 'wiki:steel_ore'], { icon: 'wiki:silver_ore', name: 'wiki:itemGroup.name.ore' })
+    .addItem('items', 'wiki:custom_item')
+  assert.deepEqual(JSON.parse(JSON.stringify(catalog.toObject())), CATALOG_GOLDEN)
+})
+
+test('ItemCatalog 参数校验', () => {
+  assert.throws(() => new ItemCatalog('').addGroup('nature', ['a:a']), /format_version/)
+  assert.throws(() => new ItemCatalog().addGroup('commands', ['a:a']), /未知的物品目录分类/)
+  assert.throws(() => new ItemCatalog().addGroup('nature', []), /非空字符串数组/)
+  assert.throws(() => new ItemCatalog().addGroup('nature', ['a:a'], { icon: 'x' }), /icon 与 name/)
+  assert.throws(() => new ItemCatalog().addItem('nature', 123), /非空字符串数组/)
+})
+
+test('ItemCatalog 链式注册返回自身', () => {
+  const catalog = new ItemCatalog().addGroup('equipment', ['a:a']).addItem('nature', 'b:b')
+  assert.equal(catalog instanceof ItemCatalog, true)
 })

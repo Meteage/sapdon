@@ -45,6 +45,12 @@ export interface FlipbookItemOptions {
 	 * @default "1.20.0" - 默认使用最新版本
 	 */
 	format_version?: string;
+	
+	/**
+	 * 翻书纹理文件的完整路径（不含 .png 后缀）。
+	 * @default `"textures/blocks/${texture}"` - 默认使用方块纹理目录
+	 */
+	texture_path?: string;
 }
 
 /**
@@ -85,8 +91,7 @@ export class FlipbookItem extends Item {
 		this.addComponent(
 			ItemComponent.setBlockPlacer(
 				identifier + "_block",  // 使用与物品对应的方块标识符,
-				false,
-				[identifier + "_block"]
+				{ replaceBlockItem: false, useOn: [identifier + "_block"] }
 			)
 		);
 
@@ -101,7 +106,7 @@ export class FlipbookItem extends Item {
 					"texture": texture,                     // 应用相同的纹理
 					"render_method": "alpha_test_single_sided", // 单面透明渲染，用于显示带透明度的纹理
 					"face_dimming": false,                  // 禁用面变暗效果，使方块在不同光照下保持相同亮度
-					"ambient_occlusion": false              // 禁用环境光遮蔽，避免在角落产生阴影
+					"ambient_occlusion": 0                  // 禁用环境光遮蔽，避免在角落产生阴影
 				}
 			}
 		);
@@ -110,7 +115,7 @@ export class FlipbookItem extends Item {
 		// 这会使纹理以指定的速度进行帧动画播放，创建翻书效果
 		FlipbookTextures.registerFlipbookTexture(
 			texture,                              // 纹理标识符
-			"textures/blocks/" + texture,         // 纹理文件路径（假设位于blocks文件夹中）
+			options?.texture_path ?? "textures/blocks/" + texture,  // 翻书纹理文件路径
 			options?.ticks_per_frame ?? 8         // 动画速度：每个帧持续的游戏刻数，默认8刻（0.4秒）
 		);
 	}

@@ -4,6 +4,7 @@ import { Food } from "../item/food.js";
 import { Item } from "../item/item.js";
 import { GRegistry } from "../registry.js";
 import { FlipbookItem, type FlipbookItemOptions } from "../item/flipbookItem.js";
+import { ItemCatalog } from "../item/itemCatalog.js";
 import { registerBlock } from "./blockFactory.js";
 import { ItemCategory, type ItemOptions, type FoodOptions } from "../item/types.js";
 
@@ -172,5 +173,17 @@ export const ItemAPI = {
         registerItem(flipbookItem, {});
         registerBlock(flipbookItem.block as any);
         return flipbookItem;
+    },
+
+    /**
+     * 创建物品目录（生成 BP/item_catalog/crafting_item_catalog.json）。
+     * 用于指定物品在创造菜单与配方手册中的分组位置。
+     * @param formatVersion 格式版本，默认 "1.26.30"
+     * @returns 物品目录实例
+     */
+    createItemCatalog(formatVersion?: string): ItemCatalog {
+        const catalog = new ItemCatalog(formatVersion);
+        GRegistry.register('crafting_item_catalog', 'behavior', 'item_catalog/', catalog);
+        return catalog;
     },
 };

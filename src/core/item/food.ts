@@ -41,10 +41,10 @@ export class Food extends Item {
         // 添加组件
         this.addComponent(
             ItemComponent.combineComponents(
-                ItemComponent.setUseModifiers(
-                    movement,
-                    useDuration
-                ),
+                ItemComponent.setUseModifiers({
+                    movementModifier: movement,
+                    useDuration,
+                }),
                 ItemComponent.setFoodComponent({
                     canAlwaysEat,
                     nutrition,

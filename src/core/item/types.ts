@@ -68,3 +68,176 @@ export interface FoodComponentOptions {
     canAlwaysEat?: boolean
     usingConvertsTo?: string
 }
+
+/**
+ * 方块描述符：字符串、带状态的名称对象或标签 Molang 查询对象
+ */
+export type BlockDescriptor =
+    | string
+    | { name: string; states?: Record<string, unknown> }
+    | { tags: string }
+
+/**
+ * 数值范围
+ */
+export interface Range {
+    min: number
+    max: number
+}
+
+/**
+ * 物品稀有度
+ */
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic'
+
+/**
+ * 放置方块组件选项
+ */
+export interface BlockPlacerOptions {
+    replaceBlockItem?: boolean
+    alignedPlacement?: boolean
+    useOn?: BlockDescriptor[]
+}
+
+/**
+ * 使用修饰组件选项
+ */
+export interface UseModifiersOptions {
+    movementModifier?: number
+    useDuration?: number
+    emitVibrations?: boolean
+    startSound?: string
+    startUsing?: 'always' | 'if_first'
+}
+
+/**
+ * 图标纹理（对象格式）
+ */
+export interface IconTextures {
+    default: string
+    dyed?: string
+    iconTrim?: string
+    bundleOpenBack?: string
+    bundleOpenFront?: string
+}
+
+/**
+ * 冷却组件选项
+ */
+export interface CooldownOptions {
+    category: string
+    duration: number
+    type?: 'use' | 'attack'
+}
+
+/**
+ * 挖掘组件选项
+ */
+export interface DiggerOptions {
+    destroySpeeds: { block: BlockDescriptor; speed: number }[]
+    useEfficiency?: boolean
+}
+
+/**
+ * 耐久传感器阈值
+ */
+export interface DurabilityThreshold {
+    durability: number
+    particleType?: string
+    soundEvent?: string
+}
+
+/**
+ * 耐久传感器组件选项
+ */
+export interface DurabilitySensorOptions {
+    durabilityThresholds: DurabilityThreshold[]
+}
+
+/**
+ * 放置实体组件选项
+ */
+export interface EntityPlacerOptions {
+    dispenseOn?: BlockDescriptor[]
+    useOn?: BlockDescriptor[]
+}
+
+/**
+ * 动能武器组件选项
+ */
+export interface KineticWeaponOptions {
+    delay: number
+    hitboxMargin?: number
+    reach?: Range
+    creativeReach?: Range
+    damageMultiplier?: number
+    damageModifier?: number
+    damageConditions?: Record<string, unknown>
+    dismountConditions?: Record<string, unknown>
+    knockbackConditions?: Record<string, unknown>
+}
+
+/**
+ * 穿刺武器组件选项
+ */
+export interface PiercingWeaponOptions {
+    hitboxMargin?: number
+    reach?: Range
+    creativeReach?: Range
+}
+
+/**
+ * 唱片组件选项
+ */
+export interface RecordOptions {
+    comparatorSignal: number
+    duration: number
+    soundEvent: string
+}
+
+/**
+ * 修复条目
+ */
+export interface RepairItem {
+    items: (string | { tags: string })[]
+    repairAmount?: number | string
+}
+
+/**
+ * 射击组件弹药
+ */
+export interface ShooterAmmunition {
+    item: string
+    searchInventory?: boolean
+    useInCreative?: boolean
+    useOffhand?: boolean
+}
+
+/**
+ * 射击组件选项
+ */
+export interface ShooterOptions {
+    ammunition: ShooterAmmunition[]
+    chargeOnDraw?: boolean
+    maxDrawDuration?: number
+    scalePowerByDrawDuration?: boolean
+}
+
+/**
+ * 容器物品组件选项
+ */
+export interface StorageItemOptions {
+    maxSlots: number
+    allowNestedStorageItems: boolean
+    allowedItems?: string[]
+    bannedItems?: string[]
+}
+
+/**
+ * 挥砍音效组件选项
+ */
+export interface SwingSoundsOptions {
+    attackMiss?: string
+    attackHit?: string
+    attackCriticalHit?: string
+}

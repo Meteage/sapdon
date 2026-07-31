@@ -67,9 +67,10 @@ src/core/
 │   ├── index.ts
 │   ├── types.ts                  #   ItemOptions / FoodOptions / ItemComponentMap 等
 │   ├── item.ts                   #   Item 基类
-│   ├── itemComponents.ts         #   ItemComponent 静态工厂 (~20 个组件方法)
+│   ├── itemComponents.ts         #   ItemComponent 静态工厂 (~50 个组件方法)
 │   ├── food.ts                   #   Food extends Item
 │   ├── flipbookItem.ts           #   FlipbookItem (动画纹理物品)
+│   ├── itemCatalog.ts            #   ItemCatalog (生成 item_catalog/crafting_item_catalog.json)
 │   ├── attachable.ts             #   Attachable extends AddonAttachableDescription
 │   └── armor.ts                  #   Armor 数据表驱动 (ArmorType: Chestplate/Helmet/Boots/Leggings)
 │
@@ -243,22 +244,52 @@ Attachable (extends AddonAttachableDescription，独立体系)
 
 | 方法 | 对应 Minecraft 组件 |
 |------|-------------------|
-| `setIcon(texture)` | `minecraft:icon` |
+| `setIcon(texture \| textures)` | `minecraft:icon` |
 | `setMaxStackSize(size)` | `minecraft:max_stack_size` |
 | `setDisplayName(name)` | `minecraft:display_name` |
 | `setFoodComponent(options)` | `minecraft:food` |
-| `setWearable(protection, slot)` | `minecraft:wearable` |
+| `setWearable(protection, slot, hidesPlayerLocation?)` | `minecraft:wearable` |
 | `setFuel(duration)` | `minecraft:fuel` |
 | `setGlint(bool)` | `minecraft:glint` |
 | `setHandEquipped(bool)` | `minecraft:hand_equipped` |
 | `setThrowable(...)` | `minecraft:throwable` |
 | `setProjectile(...)` | `minecraft:projectile` |
-| `setUseModifiers(movement, duration)` | `minecraft:use_modifiers` |
+| `setUseModifiers(options)` | `minecraft:use_modifiers` |
 | `setUseAnimation(animation)` | `minecraft:use_animation` |
 | `setDurability(maxDurability)` | `minecraft:durability` |
-| `setInteractButton(text)` | `minecraft:interact_button` |
-| `setBlockPlacer(block)` | `minecraft:block_placer` |
-| `setCustomComponentV2(id, data)` | `minecraft:custom_components` |
+| `setInteractButton(text \| bool)` | `minecraft:interact_button` |
+| `setBlockPlacer(block, options?)` | `minecraft:block_placer` |
+| `setCustomComponentV2(id, data)` | 自定义组件 |
+| `setCustomComponents(ids)` | 自定义组件数组 |
+| `setAllowOffHand(bool)` | `minecraft:allow_off_hand` |
+| `setBundleInteraction(n)` | `minecraft:bundle_interaction` |
+| `setCanDestroyInCreative(bool)` | `minecraft:can_destroy_in_creative` |
+| `setCompostable(chance)` | `minecraft:compostable` |
+| `setCooldown(options)` | `minecraft:cooldown` |
+| `setDamage(n)` | `minecraft:damage` |
+| `setDamageAbsorption(causes)` | `minecraft:damage_absorption` |
+| `setDigger(options)` | `minecraft:digger` |
+| `setDurabilitySensor(options)` | `minecraft:durability_sensor` |
+| `setDyeable(color)` | `minecraft:dyeable` |
+| `setEnchantable(slot, value)` | `minecraft:enchantable` |
+| `setEntityPlacer(entity, options?)` | `minecraft:entity_placer` |
+| `setFireResistant(bool)` | `minecraft:fire_resistant` |
+| `setHoverTextColor(color)` | `minecraft:hover_text_color` |
+| `setKineticWeapon(options)` | `minecraft:kinetic_weapon` |
+| `setLiquidClipped(bool)` | `minecraft:liquid_clipped` |
+| `setPiercingWeapon(options)` | `minecraft:piercing_weapon` |
+| `setRarity(rarity)` | `minecraft:rarity` |
+| `setRecord(options)` | `minecraft:record` |
+| `setRepairable(repairItems)` | `minecraft:repairable` |
+| `setShooter(options)` | `minecraft:shooter` |
+| `setShouldDespawn(bool)` | `minecraft:should_despawn` |
+| `setStackedByData(bool)` | `minecraft:stacked_by_data` |
+| `setStorageItem(options)` | `minecraft:storage_item` |
+| `setStorageWeightLimit(n)` | `minecraft:storage_weight_limit` |
+| `setStorageWeightModifier(n)` | `minecraft:storage_weight_modifier` |
+| `setSwingDuration(value)` | `minecraft:swing_duration` |
+| `setSwingSounds(options)` | `minecraft:swing_sounds` |
+| `setTags(tags)` | `minecraft:tags` |
 | `combineComponents(...maps)` | 合并多个组件 Map |
 
 #### `Food` (`item/food.ts`)
@@ -283,6 +314,10 @@ extends `AddonAttachableDescription`。管理可附着物品的材质、纹理�
 #### `FlipbookItem` (`item/flipbookItem.ts`)
 
 extends `Item`。动画纹理物品，内部创建 `GeometryBlock` 用于 3D 展示，并通过 `FlipbookTextures` 注册翻书纹理动画。
+
+#### `ItemCatalog` (`item/itemCatalog.ts`)
+
+生成 `BP/item_catalog/crafting_item_catalog.json`，指定物品在创造菜单与配方手册中的分组位置。链式 API：`addGroup(category, items, options?)` / `addItem(category, item, options?)` / `register()`，分类限 `construction`/`equipment`/`items`/`nature`。注册路径为 `behavior` + `item_catalog/` + `crafting_item_catalog`。
 
 ---
 
@@ -463,6 +498,7 @@ RotationTypes.LOG        // minecraft:pillar_axis (轴向旋转)
 | `createBootArmor(id, itemTex, texPath, options)` | 创建靴子 |
 | `createLeggingsArmor(id, itemTex, texPath, options)` | 创建护腿 |
 | `createFlipbookItem(id, category, tex, options)` | 创建翻书动画物品 |
+| `createItemCatalog(formatVersion?)` | 创建物品目录 (item_catalog/crafting_item_catalog.json) |
 
 **内部注册流程：**
 

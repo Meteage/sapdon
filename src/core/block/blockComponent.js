@@ -543,8 +543,8 @@ export class BlockComponent {
         if (value.face_dimming !== undefined && typeof value.face_dimming !== "boolean") {
           throw new Error(`face_dimming in material instance "${key}" must be a boolean`);
         }
-        if (value.render_method && !["opaque", "double_sided", "blend", "alpha_test", "alpha_test_single_sided"].includes(value.render_method)) {
-          throw new Error(`render_method in material instance "${key}" must be one of: opaque, double_sided, blend, alpha_test, alpha_test_single_sided`);
+        if (value.render_method && !["opaque", "double_sided", "blend", "blend_to_opaque", "alpha_test", "alpha_test_to_opaque", "alpha_test_single_side", "alpha_test_single_side_to_opaque", "alpha_test_single_sided"].includes(value.render_method)) {
+          throw new Error(`render_method in material instance "${key}" must be one of: opaque, double_sided, blend, blend_to_opaque, alpha_test, alpha_test_to_opaque, alpha_test_single_side, alpha_test_single_side_to_opaque`);
         }
         if (value.tint_method !== undefined && typeof value.tint_method !== "string") {
           throw new Error(`tint_method in material instance "${key}" must be a string`);

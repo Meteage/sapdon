@@ -14,6 +14,7 @@
 6. [ItemCategory 枚举](#6-itemcategory-枚举)
 7. [Attachable 类](#7-attachable-类)
 8. [注册流程](#8-注册流程)
+9. [ItemCatalog 类](#9-itemcatalog-类)
 
 ---
 
@@ -353,16 +354,19 @@ const json = item.toObject()
 
 ### setIcon(texture)
 
-设置物品图标纹理。
+设置物品图标纹理。支持字符串（默认纹理）或对象（多纹理）两种格式。
 
 ```typescript
 ItemComponent.setIcon('my_texture')
 // → Map { 'minecraft:icon' => 'my_texture' }
+
+ItemComponent.setIcon({ default: 'my_texture', dyed: 'my_texture_dyed' })
+// → Map { 'minecraft:icon' => { textures: { default: 'my_texture', dyed: 'my_texture_dyed' } } }
 ```
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
-| `texture` | string | 纹理名称 |
+| `texture` | string \| object | 纹理名称，或包含 `default`/`dyed`/`iconTrim`/`bundleOpenBack`/`bundleOpenFront` 的纹理对象 |
 
 ---
 
@@ -419,7 +423,7 @@ ItemComponent.setFoodComponent({
 
 ---
 
-### setWearable(slot, protection)
+### setWearable(protection?, slot?, hidesPlayerLocation?)
 
 设置可穿戴组件。
 
@@ -439,6 +443,7 @@ ItemComponent.setWearable(4, 'slot.armor.feet')
 |------|------|--------|------|
 | `protection` | number | `0` | 保护值 |
 | `slot` | string | `undefined` | 装备槽位（如 `'slot.armor.head'`） |
+| `hidesPlayerLocation` | boolean | `undefined` | 穿戴时是否在定位栏与定位地图中隐藏 |
 
 ---
 
@@ -524,19 +529,25 @@ ItemComponent.setProjectile(0.5, 'minecraft:snowball')
 
 ---
 
-### setUseModifiers(movementModifier?, useDuration?)
+### setUseModifiers(options?)
 
 设置使用修饰组件。
 
 ```typescript
-ItemComponent.setUseModifiers(0.5, 1.5)
+ItemComponent.setUseModifiers({
+    movementModifier: 0.5,
+    useDuration: 1.5,
+})
 // → Map { 'minecraft:use_modifiers' => { movement_modifier: 0.5, use_duration: 1.5 } }
 ```
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
-| `movementModifier` | number | 使用物品时玩家移动速度缩放值 |
-| `useDuration` | number | 物品使用所需时间（秒） |
+| `options.movementModifier` | number | 使用物品时玩家移动速度缩放值 |
+| `options.useDuration` | number | 物品使用所需时间（秒） |
+| `options.emitVibrations` | boolean | 是否在开始/停止使用时发出振动 |
+| `options.startSound` | string | 开始使用时触发的原版音效 |
+| `options.startUsing` | string | 使用修饰生效时机（`'always'` 或 `'if_first'`） |
 
 ---
 
@@ -575,37 +586,43 @@ ItemComponent.setDurability(500, 10, 50)
 
 ### setInteractButton(text)
 
-设置交互按钮文本。
+设置交互按钮。支持字符串（自定义文案）或布尔值（通用 "Use Item" 文案）。
 
 ```typescript
 ItemComponent.setInteractButton('打开')
 // → Map { 'minecraft:interact_button' => '打开' }
+ItemComponent.setInteractButton(true)
+// → Map { 'minecraft:interact_button' => true }
 ```
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
-| `text` | string | 交互时显示的文本 |
+| `text` | string \| boolean | 交互时显示的文本，或 `true`/`false` |
 
 ---
 
-### setBlockPlacer(block, replaceBlockItem?, useOn?)
+### setBlockPlacer(block, options?)
 
 设置方块放置器组件。
 
 ```typescript
 ItemComponent.setBlockPlacer(
-    'my_mod:custom_block',    // 要放置的方块 ID
-    false,                    // 是否替换方块物品
-    ['my_mod:custom_block']  // 可以使用的方块列表
+    'my_mod:custom_block',                // 要放置的方块 ID
+    {
+        replaceBlockItem: false,           // 是否替换方块物品（可选）
+        alignedPlacement: true,            // 是否启用对齐放置（可选）
+        useOn: ['minecraft:dirt'],         // 可放置的目标方块列表（可选）
+    }
 )
-// → Map { 'minecraft:block_placer' => { block: '...', replace_block_item: false, use_on: [...] } }
+// → Map { 'minecraft:block_placer' => { block: '...', replace_block_item: false, aligned_placement: true, use_on: [...] } }
 ```
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
 | `block` | string | 要放置的方块标识符 |
-| `replaceBlockItem` | boolean | 是否替换方块物品 |
-| `useOn` | string[] | 可使用此物品的方块列表 |
+| `options.replaceBlockItem` | boolean | 是否替换方块物品 |
+| `options.alignedPlacement` | boolean | 是否启用对齐放置 |
+| `options.useOn` | BlockDescriptor[] | 可使用此物品的方块描述符列表 |
 
 ---
 
@@ -673,12 +690,121 @@ const json = ItemComponent.toJSON(map)
 
 ```typescript
 ItemComponent.setCustomComponents(['my_mod:my_component'])
-// → Map { 'minecraft:custom_components' => ['my_mod:my_component'] }
+// → Map { 'my_mod:my_component' => {} }
 ```
 
 | 参数 | 类型 | 描述 |
 |------|------|------|
 | `customComponents` | string[] | 自定义组件标识符数组 |
+
+---
+
+### 更多组件（对齐 Bedrock Wiki 1.26.30）
+
+以下方法均参考 [Bedrock Wiki Item Components](https://wiki.bedrock.dev/items/item-components)，覆盖 wiki 收录的全部组件。
+
+**布尔/数值/字符串组件：**
+
+| 方法 | JSON 组件 | 描述 |
+|------|-----------|------|
+| `setAllowOffHand(allowed)` | `minecraft:allow_off_hand` | 是否可装备至副手 |
+| `setCanDestroyInCreative(can)` | `minecraft:can_destroy_in_creative` | 创造模式下能否破坏方块 |
+| `setDamage(damage)` | `minecraft:damage` | 额外攻击伤害（0-32767） |
+| `setHoverTextColor(color)` | `minecraft:hover_text_color` | 物品名颜色 |
+| `setLiquidClipped(clipped)` | `minecraft:liquid_clipped` | 是否在液体内部交互 |
+| `setRarity(rarity)` | `minecraft:rarity` | 稀有度（`common`/`uncommon`/`rare`/`epic`） |
+| `setShouldDespawn(should)` | `minecraft:should_despawn` | 掉落物是否最终消失 |
+| `setStackedByData(stacked)` | `minecraft:stacked_by_data` | 不同数据值的物品是否分开堆叠 |
+| `setSwingDuration(value)` | `minecraft:swing_duration` | 挥动动画时长（秒） |
+| `setCompostable(chance)` | `minecraft:compostable` | 堆肥成功率（0-100） |
+| `setBundleInteraction(numSlots)` | `minecraft:bundle_interaction` | Bundle 可查看槽位数（1-64） |
+
+**对象组件：**
+
+```typescript
+// 冷却
+ItemComponent.setCooldown({ category: 'wiki:cd', duration: 0.2, type: 'use' })
+// → { category, duration, type? }
+
+// 伤害吸收（需搭配 durability 与盔甲槽位）
+ItemComponent.setDamageAbsorption(['all'])
+
+// 挖掘
+ItemComponent.setDigger({
+    destroySpeeds: [{ block: 'minecraft:gravel', speed: 0 }, { block: { tags: "q.any_tag('x')" }, speed: 6 }],
+    useEfficiency: true,
+})
+
+// 耐久传感器
+ItemComponent.setDurabilitySensor({
+    durabilityThresholds: [{ durability: 100, particleType: 'minecraft:explosion_manual', soundEvent: 'blast' }],
+})
+
+// 可染色
+ItemComponent.setDyeable('#ffffff')
+
+// 可附魔
+ItemComponent.setEnchantable('sword', 10)
+
+// 放置实体
+ItemComponent.setEntityPlacer('minecraft:spider', { useOn: ['minecraft:dirt'], dispenseOn: ['minecraft:dirt'] })
+
+// 防火
+ItemComponent.setFireResistant(true)
+
+// 动能武器
+ItemComponent.setKineticWeapon({
+    delay: 15,
+    reach: { min: 2.0, max: 4.5 },
+    creativeReach: { min: 2.0, max: 7.5 },
+    hitboxMargin: 0.25,
+    damageMultiplier: 0.7,
+    damageConditions: { max_duration: 300 },
+    knockbackConditions: { min_speed: 5.1 },
+    dismountConditions: { min_speed: 14.0 },
+})
+
+// 穿刺武器
+ItemComponent.setPiercingWeapon({ reach: { min: 2.0, max: 4.5 }, creativeReach: { min: 2.0, max: 7.5 } })
+
+// 唱片
+ItemComponent.setRecord({ comparatorSignal: 1, duration: 5, soundEvent: 'bucket.empty.powder_snow' })
+
+// 可修复
+ItemComponent.setRepairable([
+    { items: ['minecraft:diamond'], repairAmount: 10 },
+    { items: [{ tags: "q.any_tag('minecraft:planks')" }], repairAmount: 'q.max_durability * 0.25' },
+])
+
+// 射击（需搭配 use_modifiers）
+ItemComponent.setShooter({
+    ammunition: [{ item: 'minecraft:arrow', searchInventory: true, useInCreative: true, useOffhand: true }],
+    scalePowerByDrawDuration: true,
+})
+
+// 容器物品（需 max_stack_size 为 1）
+ItemComponent.setStorageItem({
+    maxSlots: 64,
+    allowNestedStorageItems: true,
+    bannedItems: ['minecraft:shulker_box'],
+})
+
+// 容器重量上限（需搭配 storage_item）
+ItemComponent.setStorageWeightLimit(64)
+
+// 容器重量修正（0 表示禁止放入其他容器）
+ItemComponent.setStorageWeightModifier(4)
+
+// 挥砍音效
+ItemComponent.setSwingSounds({
+    attackMiss: 'item.wooden_spear.attack_miss',
+    attackHit: 'item.wooden_spear.attack_hit',
+    attackCriticalHit: 'item.wooden_spear.attack_critical_hit',
+})
+
+// 标签
+ItemComponent.setTags(['wiki:custom_tag'])
+```
 
 ---
 
@@ -906,3 +1032,94 @@ registry.submit()
 ```
 
 > **重要**：`registry.submit()` 必须在所有物品创建完成后调用一次，且通常在文件末尾执行。
+
+---
+
+## 9. ItemCatalog 类
+
+参考 [Bedrock Wiki Item Catalog](https://wiki.bedrock.dev/items/item-catalog)，用于生成行为包 `BP/item_catalog/crafting_item_catalog.json`，指定物品在创造菜单与配方手册中的分组位置。
+
+### 构造与注册
+
+```typescript
+import { ItemAPI, ItemCatalog } from '@sapdon/core'
+
+// 方式一：ItemAPI 工厂（自动注册）
+const catalog = ItemAPI.createItemCatalog()   // 默认 format_version "1.26.30"
+
+// 方式二：直接使用类（需手动 register）
+const catalog2 = new ItemCatalog().register()
+```
+
+### addGroup(category, items, options?)
+
+添加一组物品到指定分类。分类仅支持 `construction` / `equipment` / `items` / `nature`。
+
+```typescript
+catalog.addGroup('nature', ['wiki:silver_ore', 'wiki:steel_ore'], {
+    icon: 'wiki:silver_ore',       // 分组图标（可选）
+    name: 'wiki:itemGroup.name.ore' // 分组本地化键（可选，需同时在 .lang 中定义）
+})
+```
+
+| 参数 | 类型 | 描述 |
+|------|------|------|
+| `category` | string | 创造菜单分类（`construction`/`equipment`/`items`/`nature`） |
+| `items` | string[] | 物品标识符列表 |
+| `options.icon` | string | 分组图标物品 |
+| `options.name` | string | 分组本地化键，可用作物品/方块的 `menu_category.group` |
+
+### addItem(category, item, options?)
+
+添加单个物品到指定分类（内部调用 `addGroup(category, [item], options)`）。
+
+```typescript
+catalog.addItem('items', 'wiki:custom_item')
+```
+
+### register()
+
+将目录注册到行为包 `item_catalog/` 目录，返回当前实例。
+
+### toObject()
+
+```typescript
+ItemAPI.createItemCatalog()
+    .addGroup('nature', ['wiki:silver_ore', 'wiki:steel_ore'], { icon: 'wiki:silver_ore', name: 'wiki:itemGroup.name.ore' })
+    .addItem('items', 'wiki:custom_item')
+    .toObject()
+// → {
+//   format_version: '1.26.30',
+//   'minecraft:crafting_items_catalog': {
+//     categories: [
+//       { category_name: 'nature', groups: [{ group_identifier: { icon: 'wiki:silver_ore', name: 'wiki:itemGroup.name.ore' }, items: ['wiki:silver_ore', 'wiki:steel_ore'] }] },
+//       { category_name: 'items', groups: [{ items: ['wiki:custom_item'] }] },
+//     ],
+//   },
+// }
+```
+
+### 完整示例
+
+```typescript
+import { ItemAPI, registry } from '@sapdon/core'
+
+// 定义物品
+ItemAPI.createItem('wiki:silver_ore', ItemCategory.Nature, 'silver_ore')
+ItemAPI.createItem('wiki:steel_ore', ItemCategory.Nature, 'steel_ore')
+
+// 添加到创造菜单分组
+ItemAPI.createItemCatalog()
+    .addGroup('nature', ['wiki:silver_ore', 'wiki:steel_ore'], {
+        icon: 'wiki:silver_ore',
+        name: 'wiki:itemGroup.name.ore',
+    })
+
+registry.submit()
+```
+
+对应的 `RP/texts/en_US.lang` 需包含本地化文本：
+
+```
+wiki:itemGroup.name.ore=Custom Ores
+```

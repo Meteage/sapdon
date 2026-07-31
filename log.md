@@ -112,6 +112,9 @@ Item 模块重构（破坏性变更，核心库 4.0.0）
 9.引入 node:test 单元测试（tests/item.test.mjs，19 项）
 10.选项支持 camelCase 别名（hideInCommand/maxStackSize/formatVersion）
 11.Item / Food / FlipbookItem / ItemAPI 的 category 参数收紧为严格 ItemCategory 枚举类型，并在构造时做运行时校验（非法分类抛错）
+12.ItemComponent 对齐 Bedrock Wiki 组件清单（目标格式版本 1.26.30），新增 29 个组件方法：allow_off_hand、bundle_interaction、can_destroy_in_creative、compostable、cooldown、damage、damage_absorption、digger、durability_sensor、dyeable、enchantable、entity_placer、fire_resistant、hover_text_color、kinetic_weapon、liquid_clipped、piercing_weapon、rarity、record、repairable、shooter、should_despawn、stacked_by_data、storage_item、storage_weight_limit、storage_weight_modifier、swing_duration、swing_sounds、tags
+13.setIcon 支持对象格式（default/dyed/iconTrim/bundle 纹理）；setBlockPlacer、setUseModifiers 改为选项对象签名；setWearable 增加 hidesPlayerLocation；setInteractButton 支持布尔值
+14.新增 ItemCatalog 类与 ItemAPI.createItemCatalog()，生成 BP/item_catalog/crafting_item_catalog.json，支持按分类/分组（含 group_identifier 可展开分组）组织创造菜单与配方手册中的物品位置
 
 修复
 1.盔甲工厂方法未注册 Item+Attachable 的问题
