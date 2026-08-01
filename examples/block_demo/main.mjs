@@ -51,7 +51,6 @@ customBlock.addComponent(
     BlockComponent.setMapColor('#ffffff'),
     BlockComponent.setLightDampening(0),
     BlockComponent.setLightEmission(4),
-    BlockComponent.setSound('grass'),
     BlockComponent.setDisplayName('Custom Block')
   )
 )

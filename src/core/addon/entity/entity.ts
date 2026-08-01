@@ -11,9 +11,28 @@ export class AddonEntity {
 
     @Serializer
     toObject(): Record<string, any> {
+        const description: Record<string, any> = {
+            identifier: this.definitions.description.identifier,
+            is_spawnable: this.definitions.description.is_spawnable,
+            is_summonable: this.definitions.description.is_summonable,
+        };
+
+        if (this.definitions.description.runtime_identifier) {
+            description.runtime_identifier = this.definitions.description.runtime_identifier;
+        }
+
+        if (this.definitions.description.properties && Object.keys(this.definitions.description.properties).length > 0) {
+            description.properties = this.definitions.description.properties;
+        }
+
         return {
             format_version: this.format_version,
-            ["minecraft:entity"]: this.definitions
+            ["minecraft:entity"]: {
+                description,
+                components: this.definitions.components,
+                component_groups: this.definitions.component_groups,
+                events: this.definitions.events,
+            }
         };
     }
 }

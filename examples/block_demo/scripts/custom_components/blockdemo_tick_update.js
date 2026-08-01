@@ -2,9 +2,10 @@
 import { world } from '@minecraft/server';
 
 const blockdemo_tick_update = {
-  onTick({ block, dimension }) {
-    const ticks = (dimension.getDynamicProperty('blockdemo:ticking_ticks') ?? 0) + 1;
-    dimension.setDynamicProperty('blockdemo:ticking_ticks', ticks);
+  onTick({ block }) {
+    const key = `blockdemo:ticking_ticks:${block.location.x},${block.location.y},${block.location.z}`;
+    const ticks = (world.getDynamicProperty(key) ?? 0) + 1;
+    world.setDynamicProperty(key, ticks);
     if (ticks % 100 === 0) {
       world.sendMessage(`Ticking block at ${block.location} ticked ${ticks} times`);
     }
