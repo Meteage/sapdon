@@ -2,8 +2,11 @@ import { AddonAttachable, AddonAttachableDefinition, AddonAttachableDescription 
 import { Serializer, serialize } from "../../utils/index.js"
 
 export class Attachable extends AddonAttachableDescription {
-    constructor(identifier: string) {
+    #formatVersion: string;
+
+    constructor(identifier: string, formatVersion = "1.8.0") {
         super(identifier);
+        this.#formatVersion = formatVersion;
     }
 
     getId(): string {
@@ -13,7 +16,7 @@ export class Attachable extends AddonAttachableDescription {
     @Serializer
     toObject(): Record<string, any> {
         const entity = new AddonAttachable(
-            "1.8.0",
+            this.#formatVersion,
             new AddonAttachableDefinition(this)
         );
         return serialize(entity) as Record<string, any>;

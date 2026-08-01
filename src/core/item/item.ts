@@ -1,4 +1,5 @@
 import { ItemComponent } from "./itemComponents.js";
+import { Attachable } from "./attachable.js";
 import { AddonItem, AddonItemDefinition, AddonItemDescription } from "../addon/item/item.js";
 import { AddonMenuCategory } from "../addon/menuCategory.js";
 import { Serializer, serialize } from "../../utils/index.js"
@@ -12,6 +13,7 @@ export class Item {
     hide_in_command: boolean;
     format_version: string;
     components: ItemComponentMap;
+    attachable?: Attachable;
 
     /**
      * 物品类
@@ -90,6 +92,10 @@ export class Item {
         }
         this.components.delete(key);
         return this;
+    }
+
+    getAttachable(): Attachable | undefined {
+        return this.attachable;
     }
 
     /**

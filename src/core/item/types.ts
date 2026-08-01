@@ -36,6 +36,39 @@ export interface ItemOptions {
 }
 
 /**
+ * 3D 手持物品骨骼变换（动画中的 position/rotation/scale）
+ */
+export interface ModelBoneTransform {
+    position?: [number, number, number]
+    rotation?: [number, number, number]
+    scale?: number | [number, number, number]
+}
+
+/**
+ * 3D 手持物品选项（Method 2：model binding）
+ */
+export interface CreateModelItemOptions extends ItemOptions {
+    /**
+     * 几何根骨骼名，内置动画将作用于该骨骼；必须与用户 geometry 中带
+     * binding（q.item_slot_to_bone_name）的骨骼名一致。默认 "rightitem"。
+     */
+    boneName?: string
+    /**
+     * 默认材质。默认 "entity"（不透明，同官方示例）；
+     * 模型含透明像素时可用 "entity_alphatest"。
+     */
+    material?: string
+    /**
+     * 覆盖内置第一人称握持姿态（默认参照官方示例）
+     */
+    holdFirstPerson?: ModelBoneTransform
+    /**
+     * 覆盖内置第三人称握持姿态（默认参照官方示例）
+     */
+    holdThirdPerson?: ModelBoneTransform
+}
+
+/**
  * 食物选项
  */
 export interface FoodOptions extends ItemOptions {

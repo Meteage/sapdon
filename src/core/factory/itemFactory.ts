@@ -6,7 +6,7 @@ import { GRegistry } from "../registry.js";
 import { FlipbookItem, type FlipbookItemOptions } from "../item/flipbookItem.js";
 import { ItemCatalog } from "../item/itemCatalog.js";
 import { registerBlock } from "./blockFactory.js";
-import { ItemCategory, type ItemOptions, type FoodOptions } from "../item/types.js";
+import { ItemCategory, type ItemOptions, type FoodOptions, type CreateModelItemOptions } from "../item/types.js";
 
 interface RegistrableData {
     identifier: string;
@@ -68,6 +68,97 @@ export const ItemAPI = {
             .addTexture("enchanted", "textures/misc/enchanted_item_glint")
             .addGeometry("default", "geometry.large_item")
         registerItem(item, attachable);
+        return item;
+    },
+
+    /**
+     * 创建一个 3D 手持物品（Item + Attachable + 内置默认握持动画）。
+     * 采用 Bedrock Wiki "Attachables" 的 Method 2（model binding）：attachable 使用
+     * scripts.animate 按 context.is_first_person 切换首/第三人称动画，并搭配
+     * controller.render.item_default 渲染控制器。内置动画姿态参照官方示例
+     * （首/第三人称各用固定值），骨骼名须与用户 geometry 中的根骨骼一致。
+     * 用户需自行将几何模型放入 RP（geometry 根骨骼应使用
+     * "q.item_slot_to_bone_name(c.item_slot)" 绑定槽位）。
+     * @param identifier 物品的唯一标识符（如 "my_mod:model_sword"）。
+     * @param category 物品在创造菜单中的分类，见 {@link ItemCategory}。
+     * @param icon 物品图标（创造菜单/物品栏显示的短名，需登记在 item_texture.json）。
+     *             与 texture 相互独立，可分别指定。
+     * @param texture attachable 的 3D 贴图路径。传完整路径（如 "textures/entity/skeleton/skeleton"）
+     *                将直接用作贴图；传短名（如 "amethyst_shard"）则自动拼接 "textures/items/" 前缀。
+     * @param geometry 用户几何标识符（如 "geometry.my_model"）。
+     * @param options 额外选项，见 {@link CreateModelItemOptions}。
+     * @returns 创建的物品。
+     */
+    createModelItem(identifier: string, category: ItemCategory, icon: string, texture: string, geometry: string, options: CreateModelItemOptions = {}): Item {
+        if (!identifier || !category || !icon || !texture || !geometry) {
+            throw new Error("必须提供 identifier、category、icon、texture 和 geometry。");
+        }
+
+        const {
+            boneName = "rightitem",
+            material = "entity",
+            holdFirstPerson = {},
+            holdThirdPerson = {},
+        } = options;
+
+        // 贴图路径：完整路径直接用，短名补 textures/items/ 前缀
+        const attachableTexture = texture.includes("/") ? texture : `textures/items/${texture}`;
+
+        const item = new Item(identifier, category, icon, { ...options, icon });
+
+        const animationId = `animation.${identifier.replace(":", ".")}`;
+        const attachable = new Attachable(identifier, "1.10.0")
+            .addMaterial("default", material)
+            .addMaterial("enchanted", "entity_alphatest_glint")
+            .addTexture("default", attachableTexture)
+            .addTexture("enchanted", "textures/misc/enchanted_item_glint")
+            .addGeometry("default", geometry)
+            .addAnimation("hold_first_person", `${animationId}.hold_first_person`)
+            .addAnimation("hold_third_person", `${animationId}.hold_third_person`)
+            .setScript("animate", [
+                { hold_first_person: "context.is_first_person == 1.0" },
+                { hold_third_person: "context.is_first_person == 0.0" },
+            ])
+            .addRenderController("controller.render.item_default");
+        item.attachable = attachable;
+
+        registerItem(item, attachable);
+
+        // 注册内置默认握持动画（首/第三人称，固定值，参照官方 Attachables 示例）
+        const firstPersonBones = {
+            position: holdFirstPerson.position ?? [0, 14.5, 2.4],
+            rotation: holdFirstPerson.rotation ?? [27, -39, -159],
+            ...(holdFirstPerson.scale !== undefined ? { scale: holdFirstPerson.scale } : {}),
+        };
+        const thirdPersonBones = {
+            position: holdThirdPerson.position ?? [0, 19, -4],
+            rotation: holdThirdPerson.rotation ?? [-20, -32.5, 0],
+            scale: holdThirdPerson.scale ?? 0.65,
+        };
+
+        GRegistry.register(
+            `${identifier.replace(":", "_")}_anim`,
+            "resource",
+            "animations/",
+            {
+                format_version: "1.10.0",
+                animations: {
+                    [`${animationId}.hold_first_person`]: {
+                        loop: true,
+                        bones: {
+                            [boneName]: firstPersonBones,
+                        },
+                    },
+                    [`${animationId}.hold_third_person`]: {
+                        loop: true,
+                        bones: {
+                            [boneName]: thirdPersonBones,
+                        },
+                    },
+                },
+            }
+        );
+
         return item;
     },
 

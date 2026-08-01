@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import { Item, Food, Armor, ArmorType, Attachable, ItemComponent, ItemCategory, ItemCatalog } from '../dist/core/item/index.js'
 import { ItemAPI } from '../dist/core/factory/itemFactory.js'
+import { GRegistry } from '../dist/core/registry.js'
 
 const itemGolden = {
   format_version: '1.21.40',
@@ -202,6 +203,83 @@ test('ItemAPI.createLargeItem 生成大型物品', () => {
   const item = ItemAPI.createLargeItem('test:large', ItemCategory.Items, 'tex')
   assert.equal(item instanceof Item, true)
   assert.equal(item.toObject()['minecraft:item'].components['minecraft:icon'], 'tex')
+})
+
+test('ItemAPI.createModelItem 生成 3D 手持物品（Method 2）', () => {
+  const item = ItemAPI.createModelItem('test:model_sword', ItemCategory.Items, 'sword_icon', 'sword_tex', 'geometry.test_model')
+  assert.equal(item instanceof Item, true)
+  assert.equal(item.toObject()['minecraft:item'].components['minecraft:icon'], 'sword_icon')
+  const attachable = item.getAttachable()
+  assert.equal(attachable instanceof Attachable, true)
+  const obj = attachable.toObject()
+  assert.equal(obj.format_version, '1.10.0')
+  const desc = obj['minecraft:attachable'].description
+  assert.equal(desc.animations.hold_first_person, 'animation.test.model_sword.hold_first_person')
+  assert.equal(desc.animations.hold_third_person, 'animation.test.model_sword.hold_third_person')
+  assert.deepEqual(desc.scripts.animate, [
+    { hold_first_person: 'context.is_first_person == 1.0' },
+    { hold_third_person: 'context.is_first_person == 0.0' },
+  ])
+  assert.deepEqual(desc.render_controllers, ['controller.render.item_default'])
+  assert.equal(desc.geometry.default, 'geometry.test_model')
+  assert.equal(desc.materials.default, 'entity')
+  assert.equal(desc.materials.enchanted, 'entity_alphatest_glint')
+  assert.equal(desc.textures.default, 'textures/items/sword_tex')
+  assert.equal(desc.textures.enchanted, 'textures/misc/enchanted_item_glint')
+  assert.throws(() => ItemAPI.createModelItem('', ItemCategory.Items, 'icon', 'tex', 'geometry.x'), /identifier/)
+  assert.throws(() => ItemAPI.createModelItem('test:m', ItemCategory.Items, 'icon', 'tex', ''), /geometry/)
+})
+
+test('ItemAPI.createModelItem 图标与贴图分别指定', () => {
+  const item = ItemAPI.createModelItem('test:model_head', ItemCategory.Items, 'skull_icon', 'textures/entity/skeleton/skeleton', 'geometry.wiki.skeleton_head')
+  assert.equal(item.toObject()['minecraft:item'].components['minecraft:icon'], 'skull_icon')
+  const desc = item.getAttachable().toObject()['minecraft:attachable'].description
+  assert.equal(desc.textures.default, 'textures/entity/skeleton/skeleton')
+
+  const item2 = ItemAPI.createModelItem('test:model_custom_icon', ItemCategory.Items, 'my_icon', 'textures/entity/steve/steve', 'geometry.g')
+  assert.equal(item2.toObject()['minecraft:item'].components['minecraft:icon'], 'my_icon')
+  const desc2 = item2.getAttachable().toObject()['minecraft:attachable'].description
+  assert.equal(desc2.textures.default, 'textures/entity/steve/steve')
+
+  assert.throws(() => ItemAPI.createModelItem('test:m', ItemCategory.Items, '', 'tex', 'geometry.g'), /icon/)
+})
+
+test('ItemAPI.createModelItem 动画按官方姿态生成且可覆盖', () => {
+  const reg = []
+  const origRegister = GRegistry.register
+  GRegistry.register = (name, root, path, data) => reg.push({ name, root, path, data })
+  try {
+    ItemAPI.createModelItem('test:m1', ItemCategory.Items, 'icon1', 'tex', 'geometry.g', {
+      boneName: 'skeleton_head',
+      material: 'entity_alphatest',
+      holdFirstPerson: { position: [0, 1, 2], rotation: [10, 20, 30], scale: 1.5 },
+      holdThirdPerson: { position: [3, 4, 5], rotation: [30, 40, 50], scale: [0.5, 0.5, 0.5] },
+    })
+    ItemAPI.createModelItem('test:m2', ItemCategory.Items, 'icon2', 'tex', 'geometry.g')
+  } finally {
+    GRegistry.register = origRegister
+  }
+  const anim = reg.find(({ name }) => name === 'test_m1_anim')
+  assert.ok(anim, '动画文件应被注册')
+  assert.equal(anim.root, 'resource')
+  assert.equal(anim.path, 'animations/')
+  const anims = anim.data.animations
+  const fp = anims['animation.test.m1.hold_first_person']
+  assert.deepEqual(fp.bones.skeleton_head.position, [0, 1, 2])
+  assert.deepEqual(fp.bones.skeleton_head.rotation, [10, 20, 30])
+  assert.equal(fp.bones.skeleton_head.scale, 1.5)
+  const tp = anims['animation.test.m1.hold_third_person']
+  assert.deepEqual(tp.bones.skeleton_head.position, [3, 4, 5])
+  assert.deepEqual(tp.bones.skeleton_head.rotation, [30, 40, 50])
+  assert.deepEqual(tp.bones.skeleton_head.scale, [0.5, 0.5, 0.5])
+
+  const anim2 = reg.find(({ name }) => name === 'test_m2_anim')
+  const defs = anim2.data.animations
+  assert.deepEqual(defs['animation.test.m2.hold_first_person'].bones.rightitem.position, [0, 14.5, 2.4])
+  assert.deepEqual(defs['animation.test.m2.hold_first_person'].bones.rightitem.rotation, [27, -39, -159])
+  assert.deepEqual(defs['animation.test.m2.hold_third_person'].bones.rightitem.position, [0, 19, -4])
+  assert.deepEqual(defs['animation.test.m2.hold_third_person'].bones.rightitem.rotation, [-20, -32.5, 0])
+  assert.equal(defs['animation.test.m2.hold_third_person'].bones.rightitem.scale, 0.65)
 })
 
 test('ItemAPI 创建各盔甲', () => {

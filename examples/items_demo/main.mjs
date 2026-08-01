@@ -166,7 +166,28 @@ RecipeAPI.registerSimpleShaped(
     }
 )
 
-// ============ 14. 物品目录（创造菜单分组） ============
+// ============ 14. 3D 手持物品（Wiki Attachables Method 2：model binding） ============
+// 生成 Item + Attachable（1.10.0，scripts.animate 首/第三人称切换 + item_default）+ 内置默认握持动画。
+// 几何模型需自行放入 RP（根骨骼带 binding）；boneName 须与 geometry 根骨骼名一致。
+// 参数：icon（物品图标短名）与 texture（attachable 贴图路径）分别指定。
+ItemAPI.createModelItem("items_demo:model_sword", ItemCategory.Equipment, "amethyst_shard", "textures/entity/skeleton/skeleton", "geometry.wiki.skeleton_head", {
+    maxStackSize: 1,
+    boneName: "skeleton_head",
+})
+
+// 对照 1：官方示例（官方 skeleton_head 几何 + 骨骼名）—— 用于验证库输出与官方一致
+ItemAPI.createModelItem("items_demo:model_official", ItemCategory.Equipment, "amethyst_shard", "textures/entity/skeleton/skeleton", "geometry.wiki.skeleton_head", {
+    maxStackSize: 1,
+    boneName: "skeleton_head",
+})
+
+// 对照 2：本地 geometry（res/models/entity/animation/model_sword.geo.json，默认 rightitem 骨骼）
+ItemAPI.createModelItem("items_demo:model_local", ItemCategory.Equipment, "amethyst_shard", "amethyst_shard", "geometry.my_sword", {
+    maxStackSize: 1,
+    boneName: "skeleton_head",
+})
+
+// ============ 15. 物品目录（创造菜单分组） ============
 ItemAPI.createItemCatalog("1.26.30")
     .addGroup("equipment", ["items_demo:obsidian_sword", "items_demo:diamond_pickaxe"], {
         icon: "items_demo:obsidian_sword",
