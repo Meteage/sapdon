@@ -2,6 +2,10 @@ import http from 'http'
 import { devServerConfig } from './config.js'
 import { decode } from '../../utils/index.js'
 
+function isPortInUseError(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && (error as NodeJS.ErrnoException).code === 'EADDRINUSE'
+}
+
 const {
     port
 } = devServerConfig
@@ -49,7 +53,15 @@ class DevelopmentServer {
             }
         }).listen(port, () => console.log(`Dev Server listening on port ${port}`))
     
-        svr.on('error', () => this.listening = false)
+        svr.on('error', (error) => {
+            this.listening = false
+            if (isPortInUseError(error)) {
+                console.error(`[sapdon] Dev Server 端口 ${port} 已被其他 sapdon 进程占用。`)
+                console.error('[sapdon] 请先结束残留的 sapdon 进程，再重新构建，否则本次构建的数据可能被写入错误的包目录。')
+                process.exit(1)
+            }
+            throw error
+        })
     
         return svr
     }
