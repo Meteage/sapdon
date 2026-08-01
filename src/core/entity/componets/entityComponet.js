@@ -735,125 +735,49 @@ export class EntityComponent {
      * @throws {Error} 如果参数无效。
      */
     static setProjectile(options = {}) {
-        // 默认值
-        const {
-            anchor
-            = 0,
-            angleOffset
-            = 0.0,
-            catchFire
-            = false,
-            critParticleOnHurt
-            = false,
-            destroyOnHurt
-            = false,
-            filter
-            = null,
-            fireAffectedByGriefing
-            = false,
-            gravity
-            = 0.05,
-            hitSound
-            = null,
-            hitGroundSound
-            = null,
-            homing
-            = false,
-            inertia
-            = 0.99,
-            isDangerous
-            = false,
-            knockback
-            = true,
-            lightning
-            = false,
-            liquidInertia
-            = 0.6,
-            multipleTargets
-            = true,
-            offset
-            = [0, 0, 0],
-            onFireTime
-            = 0.0,
-            onHit
-            = null,
-            particle
-            = "ironcrack",
-            power
-            = 1.3,
-            reflectImmunity
-            = 0.0,
-            reflectOnHurt
-            = false,
-            shootSound
-            = null,
-            shootTarget
-            = true,
-            shouldBounce
-            = false,
-            splashPotion
-            = false,
-            splashRange
-            = 4,
-            stopOnHurt
-            = false,
-            uncertaintyBase
-            = 0,
-            uncertaintyMultiplier
-            = 0,
-        } = options;
-
-        // 构建组件
-        const projectileComponent = {
-            anchor
-            ,
-            angle_offset: angleOffset,
-            catch_fire: catchFire,
-            crit_particle_on_hurt: critParticleOnHurt,
-            destroy_on_hurt: destroyOnHurt,
-            fire_affected_by_griefing: fireAffectedByGriefing,
-            gravity
-            ,
-            homing
-            ,
-            inertia
-            ,
-            is_dangerous: isDangerous,
-            knockback
-            ,
-            lightning
-            ,
-            liquid_inertia: liquidInertia,
-            multiple_targets: multipleTargets,
-            offset
-            ,
-            on_fire_time: onFireTime,
-            particle
-            ,
-            power
-            ,
-            reflect_immunity: reflectImmunity,
-            reflect_on_hurt: reflectOnHurt,
-            shoot_target: shootTarget,
-            should_bounce: shouldBounce,
-            splash_potion: splashPotion,
-            splash_range: splashRange,
-            stop_on_hurt: stopOnHurt,
-            uncertainty_base: uncertaintyBase,
-            uncertainty_multiplier: uncertaintyMultiplier,
+        const fieldMap = {
+            anchor: 'anchor',
+            angleOffset: 'angle_offset',
+            catchFire: 'catch_fire',
+            critParticleOnHurt: 'crit_particle_on_hurt',
+            destroyOnHurt: 'destroy_on_hurt',
+            filter: 'filter',
+            fireAffectedByGriefing: 'fire_affected_by_griefing',
+            gravity: 'gravity',
+            hitSound: 'hit_sound',
+            hitGroundSound: 'hit_ground_sound',
+            homing: 'homing',
+            inertia: 'inertia',
+            isDangerous: 'is_dangerous',
+            knockback: 'knockback',
+            lightning: 'lightning',
+            liquidInertia: 'liquid_inertia',
+            multipleTargets: 'multiple_targets',
+            offset: 'offset',
+            onFireTime: 'on_fire_time',
+            onHit: 'on_hit',
+            particle: 'particle',
+            power: 'power',
+            reflectImmunity: 'reflect_immunity',
+            reflectOnHurt: 'reflect_on_hurt',
+            shootSound: 'shoot_sound',
+            shootTarget: 'shoot_target',
+            shouldBounce: 'should_bounce',
+            splashPotion: 'splash_potion',
+            splashRange: 'splash_range',
+            stopOnHurt: 'stop_on_hurt',
+            uncertaintyBase: 'uncertainty_base',
+            uncertaintyMultiplier: 'uncertainty_multiplier',
         };
 
-        // 添加可选参数
-        if (filter) projectileComponent.filter = filter;
-        if (hitSound) projectileComponent.hit_sound = hitSound;
-        if (hitGroundSound) projectileComponent.hit_ground_sound = hitGroundSound;
-        if (onHit) projectileComponent.on_hit = onHit;
-        if (shootSound) projectileComponent.shoot_sound = shootSound;
+        const projectileComponent = {};
+        for (const [key, jsonKey] of Object.entries(fieldMap)) {
+            if (options[key] !== undefined) {
+                projectileComponent[jsonKey] = options[key];
+            }
+        }
 
-        // 返回 Map 对象
-        const projectileMap = new Map();
-        projectileMap.set("minecraft:projectile", projectileComponent);
-        return projectileMap;
+        return new Map([["minecraft:projectile", projectileComponent]]);
     }
 
     /**

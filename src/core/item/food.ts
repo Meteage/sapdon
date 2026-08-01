@@ -22,6 +22,9 @@ export class Food extends Item {
             canAlwaysEat = false,
             nutrition = 0,
             saturationModifier = 1,
+            isMeat = false,
+            isFish = false,
+            isCooked = false,
         } = options;
 
         // 参数验证
@@ -38,6 +41,12 @@ export class Food extends Item {
             throw new Error('canAlwaysEat 必须是布尔类型');
         }
 
+        // 参考 Wiki Custom Food：食物带 minecraft:is_food 标签，肉类/鱼类/熟食追加对应标签
+        const foodTags = ["minecraft:is_food"];
+        if (isMeat) foodTags.push("minecraft:is_meat");
+        if (isFish) foodTags.push("minecraft:is_fish");
+        if (isCooked) foodTags.push("minecraft:is_cooked");
+
         // 添加组件
         this.addComponent(
             ItemComponent.combineComponents(
@@ -50,7 +59,8 @@ export class Food extends Item {
                     nutrition,
                     saturationModifier,
                 }),
-                ItemComponent.setUseAnimation(animation)
+                ItemComponent.setUseAnimation(animation),
+                ItemComponent.setTags(foodTags)
             )
         );
     }

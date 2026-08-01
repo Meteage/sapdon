@@ -45,6 +45,18 @@ export interface FoodOptions extends ItemOptions {
     canAlwaysEat?: boolean
     nutrition?: number
     saturationModifier?: number
+    /**
+     * 是否为肉类（自动追加 minecraft:is_meat 标签）
+     */
+    isMeat?: boolean
+    /**
+     * 是否为鱼类（自动追加 minecraft:is_fish 标签）
+     */
+    isFish?: boolean
+    /**
+     * 是否为熟食（自动追加 minecraft:is_cooked 标签）
+     */
+    isCooked?: boolean
 }
 
 /**

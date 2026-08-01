@@ -1,4 +1,4 @@
-import { ItemAPI, ItemCategory, ItemComponent, TerrainTextureManager, registry, RecipeAPI } from '@sapdon/core'
+import { ItemAPI, ItemCategory, ItemComponent, EntityAPI, EntityComponent, TerrainTextureManager, registry, RecipeAPI } from '@sapdon/core'
 
 // 翻书物品的方块贴图注册（翻书条位于 items/flipbook_items/ 下，需登记到方块贴图表）
 TerrainTextureManager.registerTexture("amulet_runic", "textures/items/flipbook_items/amulet_runic")
@@ -83,7 +83,8 @@ ItemAPI.createFood("items_demo:magic_apple", ItemCategory.Nature, "apple_golden"
     movement: 0.5,
 })
 
-// ============ 9. 盔甲（数据驱动，Item + Attachable） ============
+// ============ 9. 盔甲（Wiki Custom Armor 规范：Item + Attachable） ============
+// 每件包含：enchantable、durability、repairable、tags（is_armor/trimmable_armors）
 ItemAPI.createHelmetArmor("items_demo:ruby_helmet", "diamond_helmet", "textures/models/armor/diamond_1", { displayName: "Ruby Helmet" })
 ItemAPI.createChestplateArmor("items_demo:ruby_chestplate", "diamond_chestplate", "textures/models/armor/diamond_1", { displayName: "Ruby Chestplate" })
 ItemAPI.createLeggingsArmor("items_demo:ruby_leggings", "diamond_leggings", "textures/models/armor/diamond_2", { displayName: "Ruby Leggings" })
@@ -95,6 +96,34 @@ ItemAPI.createFlipbookItem("items_demo:flipbook_cube", ItemCategory.Items, "amul
 // ============ 11. 可附着物（手持模型） ============
 ItemAPI.createAttachable("items_demo:masterball_attach", "textures/items/diamond", "entity_alphatest")
     .addGeometry("default", "geometry.large_item")
+
+// ============ 12. 投掷物品 + 投射物实体（Wiki Throwable Items 教程） ============
+ItemAPI.createItem("items_demo:throwable_item", ItemCategory.Items, "ender_pearl", { maxStackSize: 16 })
+    .addComponent(
+        ItemComponent.combineComponents(
+            ItemComponent.setThrowable(true),
+            ItemComponent.setProjectile(undefined, "items_demo:throwable_item_entity")
+        )
+    )
+
+// 投射物实体（基于原版雪球 runtime_identifier，命中时掉落经验并造成 16 点伤害）
+const { behavior } = EntityAPI.createProjectile("items_demo:throwable_item_entity", "textures/items/ender_pearl", {
+    is_spawnable: false,
+    is_summonable: true,
+})
+behavior.addComponent(
+    EntityComponent.setProjectile({
+        onHit: {
+            grant_xp: { minXP: 3, maxXP: 5 },
+            impact_damage: { damage: 16 },
+            remove_on_hit: {},
+        },
+        power: 0.7,
+        gravity: 0.03,
+        angleOffset: -20,
+        hitSound: "glass",
+    })
+)
 
 // ============ 13. 自定义武器（Wiki Custom Weapons 规范） ============
 ItemAPI.createItem("items_demo:my_sword", ItemCategory.Equipment, "my_sword", {

@@ -241,6 +241,12 @@ npm run build
 
 ---
 
+## 致谢
+
+感谢 [Bedrock Wiki](https://wiki.bedrock.dev/) 提供的物品、方块、实体等组件与功能的方法文档，本项目（尤其是 `examples/items_demo` 中的自定义武器、投掷物品等示例）参考了其中的规范实现。
+
+---
+
 ## 社区
 
 - QQ 群：`810904181`

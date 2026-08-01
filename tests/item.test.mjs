@@ -120,6 +120,16 @@ test('Food 序列化输出', () => {
     saturation_modifier: 0.6,
   })
   assert.deepEqual(components['minecraft:use_animation'], 'eat')
+  assert.deepEqual(components['minecraft:tags'], { tags: ['minecraft:is_food'] })
+})
+
+test('Food 自定义标签（肉/鱼/熟食）', () => {
+  const food = new Food('test:food', ItemCategory.Items, 'food_tex', { isMeat: true, isCooked: true })
+  const json = food.toObject()
+  assert.deepEqual(
+    json['minecraft:item'].components['minecraft:tags'],
+    { tags: ['minecraft:is_food', 'minecraft:is_meat', 'minecraft:is_cooked'] }
+  )
 })
 
 test('Food 参数校验', () => {
@@ -128,20 +138,25 @@ test('Food 参数校验', () => {
 })
 
 const ARMOR_EXPECTATIONS = {
-  [ArmorType.Chestplate]: { protection: 5, slot: 'slot.armor.chest', geometry: 'geometry.player.armor.chestplate', group: 'minecraft:itemGroup.name.chestplate' },
-  [ArmorType.Helmet]: { protection: 3, slot: 'slot.armor.head', geometry: 'geometry.player.armor.helmet', group: 'minecraft:itemGroup.name.helmet' },
-  [ArmorType.Boots]: { protection: 4, slot: 'slot.armor.feet', geometry: 'geometry.player.armor.boots', group: 'minecraft:itemGroup.name.boots' },
-  [ArmorType.Leggings]: { protection: 6, slot: 'slot.armor.legs', geometry: 'geometry.player.armor.leggings', group: 'minecraft:itemGroup.name.leggings' },
+  [ArmorType.Chestplate]: { protection: 8, slot: 'slot.armor.chest', enchantSlot: 'armor_torso', maxDurability: 528, geometry: 'geometry.player.armor.chestplate', group: 'minecraft:itemGroup.name.chestplate' },
+  [ArmorType.Helmet]: { protection: 3, slot: 'slot.armor.head', enchantSlot: 'armor_head', maxDurability: 363, geometry: 'geometry.player.armor.helmet', group: 'minecraft:itemGroup.name.helmet' },
+  [ArmorType.Boots]: { protection: 3, slot: 'slot.armor.feet', enchantSlot: 'armor_feet', maxDurability: 429, geometry: 'geometry.player.armor.boots', group: 'minecraft:itemGroup.name.boots' },
+  [ArmorType.Leggings]: { protection: 6, slot: 'slot.armor.legs', enchantSlot: 'armor_legs', maxDurability: 495, geometry: 'geometry.player.armor.leggings', group: 'minecraft:itemGroup.name.leggings' },
 }
 
-test('Armor 各类型规格正确', () => {
+test('Armor 各类型规格正确（Wiki Custom Armor 规范）', () => {
   for (const [type, spec] of Object.entries(ARMOR_EXPECTATIONS)) {
     const armor = new Armor(`test:${type}`, 'tex', 'textures/models/armor/diamond', type)
     const { behavior, resource } = armor.toObject()
+    const components = behavior['minecraft:item'].components
 
     assert.equal(behavior['minecraft:item'].description.menu_category.category, ItemCategory.Equipment)
     assert.equal(behavior['minecraft:item'].description.menu_category.group, spec.group)
-    assert.deepEqual(behavior['minecraft:item'].components['minecraft:wearable'], { protection: spec.protection, slot: spec.slot })
+    assert.deepEqual(components['minecraft:wearable'], { protection: spec.protection, slot: spec.slot })
+    assert.deepEqual(components['minecraft:enchantable'], { slot: spec.enchantSlot, value: 10 })
+    assert.deepEqual(components['minecraft:durability'], { damage_chance: { min: 60, max: 100 }, max_durability: spec.maxDurability })
+    assert.deepEqual(components['minecraft:repairable'].repair_items, [{ items: ['minecraft:stick'], repair_amount: 'q.max_durability * 0.25' }])
+    assert.deepEqual(components['minecraft:tags'], { tags: ['minecraft:is_armor', 'minecraft:trimmable_armors'] })
     assert.equal(resource['minecraft:attachable'].description.geometry.default, spec.geometry)
     assert.equal(resource['minecraft:attachable'].description.render_controllers[0], 'controller.render.armor')
   }
