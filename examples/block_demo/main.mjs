@@ -38,5 +38,33 @@ const head = BlockAPI.createHeadBlock('blockdemo:head', 'construction', 'stone',
 })
 head.addComponent(BlockComponent.setDisplayName('Custom Head Block'))
 
+// ── 7. CustomBlock ── 教程示例：基础方块（全六面同一纹理 + 常用组件）
+// 对应 https://wiki.bedrock.dev/blocks/blocks-intro#adding-components
+// /give @s blockdemo:custom_block
+const customBlock = BlockAPI.createBasicBlock('blockdemo:custom_block', 'construction', [
+  'stone', 'stone', 'stone', 'stone', 'stone', 'stone'
+])
+customBlock.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setDestructibleByMiningCustom(3),
+    BlockComponent.setDestructibleByExplosionCustom(3),
+    BlockComponent.setMapColor('#ffffff'),
+    BlockComponent.setLightDampening(0),
+    BlockComponent.setLightEmission(4),
+    BlockComponent.setSound('grass'),
+    BlockComponent.setDisplayName('Custom Block')
+  )
+)
+
+// ── 8. CompassBlock ── 教程示例：每面独立纹理（Compass Block）
+// 对应 https://wiki.bedrock.dev/blocks/blocks-intro#per-face-textures
+// textures 数组顺序与 BasicBlock.material_instances 映射一致：[下,上,北,东,南,西]
+// /give @s blockdemo:compass_block
+const compassBlock = BlockAPI.createBasicBlock('blockdemo:compass_block', 'construction', [
+  'compass_block_down', 'compass_block_up', 'compass_block_north',
+  'compass_block_east', 'compass_block_south', 'compass_block_west'
+])
+compassBlock.addComponent(BlockComponent.setDisplayName('Compass Block'))
+
 // ── 提交所有注册到构建管线 ──
 registry.submit()
