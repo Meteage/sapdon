@@ -2,7 +2,9 @@
 import { system } from '@minecraft/server';
 
 import { blockdemo_head_rotate } from './blockdemo_head_rotate.js';
+import { blockdemo_tick_update } from './blockdemo_tick_update.js';
 
 system.beforeEvents.startup.subscribe((init) => {
   init.blockComponentRegistry.registerCustomComponent('blockdemo:head_rotate', blockdemo_head_rotate);
+  init.blockComponentRegistry.registerCustomComponent('blockdemo:tick_update', blockdemo_tick_update);
 });

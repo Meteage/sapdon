@@ -66,5 +66,147 @@ const compassBlock = BlockAPI.createBasicBlock('blockdemo:compass_block', 'const
 ])
 compassBlock.addComponent(BlockComponent.setDisplayName('Compass Block'))
 
+// ═══════════════════════════════════════════════════════════════
+// Block Components 教程示例
+// 对应 https://wiki.bedrock.dev/blocks/block-components
+// 全部组件都可通过 BlockComponent 使用，下面演示常用组件组合
+// ═══════════════════════════════════════════════════════════════
+
+// ── 9. LampBlock ── 光源方块（Light Emission / Light Dampening / Map Color）
+// 对应 wiki 的 "Applying Components" 示例
+// /give @s blockdemo:lamp
+const lamp = BlockAPI.createBasicBlock('blockdemo:lamp', 'items', [
+  'stone', 'stone', 'stone', 'stone', 'stone', 'stone'
+])
+lamp.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setLightDampening(0),
+    BlockComponent.setLightEmission(15),
+    BlockComponent.setMapColor([210, 200, 190]),
+    BlockComponent.setDisplayName('Lamp Block')
+  )
+)
+
+// ── 10. HalfSlab ── 自定义碰撞箱/选择箱（Collision Box / Selection Box）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#collision-box
+// /give @s blockdemo:half_slab
+const halfSlab = BlockAPI.createBasicBlock('blockdemo:half_slab', 'construction', [
+  'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak'
+])
+halfSlab.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setCollisionBoxCustom([-8, 0, -8], [16, 8, 16]),
+    BlockComponent.setSelectionBoxCustom([-8, 0, -8], [16, 8, 16]),
+    BlockComponent.setDisplayName('Half Slab')
+  )
+)
+
+// ── 11. Workbench ── 合成台（Crafting Table）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#crafting-table
+// /give @s blockdemo:workbench
+const workbench = BlockAPI.createBasicBlock('blockdemo:workbench', 'construction', [
+  'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak'
+])
+workbench.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setCraftingTable(['crafting_table', 'blockdemo:workbench'], 'Blockdemo Workbench'),
+    BlockComponent.setDisplayName('Blockdemo Workbench')
+  )
+)
+
+// ── 12. Waterlog ── 可含水方块（Liquid Detection）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#liquid-detection
+// /give @s blockdemo:waterlog
+const waterlog = BlockAPI.createBasicBlock('blockdemo:waterlog', 'construction', [
+  'compass_block_up', 'compass_block_up', 'compass_block_up',
+  'compass_block_up', 'compass_block_up', 'compass_block_up'
+])
+waterlog.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setLiquidDetection({
+      detection_rules: [{
+        liquid_type: 'water',
+        can_contain_liquid: true,
+        on_liquid_touches: 'no_reaction'
+      }]
+    }),
+    BlockComponent.setDisplayName('Waterloggable Block')
+  )
+)
+
+// ── 13. RedstoneLamp ── 红石信号源（Redstone Producer / Conductivity）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#redstone-producer
+// /give @s blockdemo:redstone_lamp
+const redstoneLamp = BlockAPI.createBasicBlock('blockdemo:redstone_lamp', 'items', [
+  'stone', 'stone', 'stone', 'stone', 'stone', 'stone'
+])
+redstoneLamp.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setRedstoneConductivity(false, true),
+    BlockComponent.setRedstoneProducer(15, 'north'),
+    BlockComponent.setDisplayName('Redstone Lamp')
+  )
+)
+
+// ── 14. Slippery ── 光滑方块（Friction）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#friction
+// /give @s blockdemo:slippery
+const slippery = BlockAPI.createBasicBlock('blockdemo:slippery', 'construction', [
+  'glass', 'glass', 'glass', 'glass', 'glass', 'glass'
+])
+slippery.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setFriction(0.4),
+    BlockComponent.setDisplayName('Slippery Block')
+  )
+)
+
+// ── 15. Flammable ── 可燃方块（Flammable）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#flammable
+// /give @s blockdemo:flammable
+const flammable = BlockAPI.createBasicBlock('blockdemo:flammable', 'nature', [
+  'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak'
+])
+flammable.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setFlammableCustom(5, 20, 'always'),
+    BlockComponent.setDisplayName('Flammable Block')
+  )
+)
+
+// ── 16. TickingBlock ── 周期性刻方块（Tick + 自定义组件）
+// 对应 https://wiki.bedrock.dev/blocks/block-components#tick
+// 需配合自定义组件 onTick 事件钩子使用
+// /give @s blockdemo:ticking
+const tickComp = new BlockCustomComponentBuilder('blockdemo:tick_update')
+  .onTick()
+
+const ticking = BlockAPI.createBasicBlock('blockdemo:ticking', 'construction', [
+  'compass_block_south', 'compass_block_south', 'compass_block_south',
+  'compass_block_south', 'compass_block_south', 'compass_block_south'
+])
+ticking.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setTick([10, 20], true),
+    BlockComponent.setCustomComponents([tickComp.id()]),
+    BlockComponent.setDisplayName('Ticking Block')
+  )
+)
+
+// ── 17. Leashable / 可替换 / 标签 / 支撑 ── 更多实用组件
+// 对应 https://wiki.bedrock.dev/blocks/block-components#leashable
+// /give @s blockdemo:post
+const post = BlockAPI.createBasicBlock('blockdemo:post', 'construction', [
+  'stone', 'stone', 'stone', 'stone', 'stone', 'stone'
+])
+post.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setLeashable([0, 12, 0]),
+    BlockComponent.setSupport('fence'),
+    BlockComponent.setTags(['blockdemo:post_tag']),
+    BlockComponent.setDisplayName('Post Block')
+  )
+)
+
 // ── 提交所有注册到构建管线 ──
 registry.submit()
