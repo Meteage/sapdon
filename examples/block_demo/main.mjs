@@ -208,5 +208,113 @@ post.addComponent(
   )
 )
 
+// ═══════════════════════════════════════════════════════════════
+// Block Traits 教程示例
+// 对应 https://wiki.bedrock.dev/blocks/block-traits
+// Traits 让引擎按放置情形自动填写 block state，再配合 permutations 生效
+// ═══════════════════════════════════════════════════════════════
+
+// ── 18. CustomSlab ── 放置位置特质（Placement Position → vertical_half）
+// 对应 https://wiki.bedrock.dev/blocks/block-traits#placement-position
+// 放置时引擎自动设置 minecraft:vertical_half（top/bottom），permutations 据此调整碰撞箱
+// /give @s blockdemo:custom_slab
+const customSlab = BlockAPI.createBasicBlock('blockdemo:custom_slab', 'construction', [
+  'compass_block_north', 'compass_block_north', 'compass_block_north',
+  'compass_block_north', 'compass_block_north', 'compass_block_north'
+])
+customSlab.registerTrait('minecraft:placement_position', {
+  enabled_states: ['minecraft:vertical_half']
+})
+customSlab
+  .addPermutation("q.block_state('minecraft:vertical_half') == 'bottom'",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-8, 0, -8], [16, 8, 16]),
+      BlockComponent.setSelectionBoxCustom([-8, 0, -8], [16, 8, 16])
+    )
+  )
+  .addPermutation("q.block_state('minecraft:vertical_half') == 'top'",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-8, 8, -8], [16, 8, 16]),
+      BlockComponent.setSelectionBoxCustom([-8, 8, -8], [16, 8, 16])
+    )
+  )
+customSlab.addComponent(BlockComponent.setDisplayName('Custom Slab (Trait)'))
+
+// ── 19. CustomRotator ── 放置方向特质（Placement Direction → cardinal_direction）
+// 对应 https://wiki.bedrock.dev/blocks/block-traits#placement-direction
+// 按玩家朝向自动设置 minecraft:cardinal_direction，permutations 旋转方块
+// 使用 compass 六面纹理便于观察旋转效果
+// /give @s blockdemo:custom_rotator
+const customRotator = BlockAPI.createBasicBlock('blockdemo:custom_rotator', 'construction', [
+  'compass_block_down', 'compass_block_up', 'compass_block_north',
+  'compass_block_east', 'compass_block_south', 'compass_block_west'
+])
+customRotator.registerTrait('minecraft:placement_direction', {
+  enabled_states: ['minecraft:cardinal_direction'],
+  y_rotation_offset: 180
+})
+customRotator
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'north'",
+    BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 0, 0])
+  )
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'south'",
+    BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 90, 0])
+  )
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'east'",
+    BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 180, 0])
+  )
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'west'",
+    BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, -90, 0])
+  )
+customRotator.addComponent(BlockComponent.setDisplayName('Custom Rotator (Trait)'))
+
+// ── 20. CustomConnector ── 连接特质（Connection → cardinal_connections）
+// 对应 https://wiki.bedrock.dev/blocks/block-traits#connection
+// 引擎自动设置 connection_north/south/east/west 状态，permutations 模拟"栅栏"连接效果
+// /give @s blockdemo:custom_connector
+const customConnector = BlockAPI.createBasicBlock('blockdemo:custom_connector', 'construction', [
+  'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak'
+])
+customConnector.registerTrait('minecraft:connection', {
+  enabled_states: ['minecraft:cardinal_connections']
+})
+customConnector
+  .addPermutation(
+    "!q.block_state('minecraft:connection_north') && !q.block_state('minecraft:connection_south') && !q.block_state('minecraft:connection_east') && !q.block_state('minecraft:connection_west')",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-3, 0, -3], [6, 16, 6]),
+      BlockComponent.setSelectionBoxCustom([-3, 0, -3], [6, 16, 6])
+    )
+  )
+  .addPermutation(
+    "q.block_state('minecraft:connection_north') && !q.block_state('minecraft:connection_south') && !q.block_state('minecraft:connection_east') && !q.block_state('minecraft:connection_west')",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-3, 0, -8], [6, 16, 11]),
+      BlockComponent.setSelectionBoxCustom([-3, 0, -8], [6, 16, 11])
+    )
+  )
+  .addPermutation(
+    "q.block_state('minecraft:connection_south') && !q.block_state('minecraft:connection_north') && !q.block_state('minecraft:connection_east') && !q.block_state('minecraft:connection_west')",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-3, 0, -3], [6, 16, 11]),
+      BlockComponent.setSelectionBoxCustom([-3, 0, -3], [6, 16, 11])
+    )
+  )
+  .addPermutation(
+    "q.block_state('minecraft:connection_east') && !q.block_state('minecraft:connection_west') && !q.block_state('minecraft:connection_north') && !q.block_state('minecraft:connection_south')",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-3, 0, -3], [11, 16, 6]),
+      BlockComponent.setSelectionBoxCustom([-3, 0, -3], [11, 16, 6])
+    )
+  )
+  .addPermutation(
+    "q.block_state('minecraft:connection_west') && !q.block_state('minecraft:connection_east') && !q.block_state('minecraft:connection_north') && !q.block_state('minecraft:connection_south')",
+    BlockComponent.combineComponents(
+      BlockComponent.setCollisionBoxCustom([-8, 0, -3], [11, 16, 6]),
+      BlockComponent.setSelectionBoxCustom([-8, 0, -3], [11, 16, 6])
+    )
+  )
+customConnector.addComponent(BlockComponent.setDisplayName('Custom Connector (Trait)'))
+
 // ── 提交所有注册到构建管线 ──
 registry.submit()
