@@ -13,6 +13,7 @@ export interface BuildConfig {
     formatVersion: number
     buildOptions: {
         useHMR: boolean
+        keepServer?: boolean
         buildMode: 'dev' | 'prod' | 'debug'
         buildEntry: string
         scriptEntry: string

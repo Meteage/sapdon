@@ -67,12 +67,13 @@ export class Block extends BasicBlock {
         
         const material_instances = {};
         const sides = ["*", "up", "down", "north", "south", "east", "west"];
+        const ao = this.options.ambient_occlusion;
         
         textures.forEach((texture, index) => {
             material_instances[sides[index]] = {
                 texture: texture,
-                ambient_occlusion: this.options.ambient_occlusion || true,
-                face_dimming: this.options.face_dimming || true,
+                ambient_occlusion: typeof ao === 'number' ? ao : (ao === false ? 0 : 1),
+                face_dimming: this.options.face_dimming === false ? false : true,
                 render_method: this.options.render_method || "alpha_test"
             }
         });

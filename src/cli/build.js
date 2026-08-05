@@ -165,9 +165,11 @@ async function bundleScripts(useJs=false) {
     const projectPath = getProjectPath()
     const buildConfig = getBuildConfig()
     const { scriptEntry, scriptOutput, buildMode } = buildConfig.buildOptions
-    scriptBundler[elementType](
+    const targetPath = path.join(getBuildDirBp(), scriptOutput)
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true })
+    await scriptBundler[elementType](
         path.join(projectPath, scriptEntry),
-        path.join(getBuildDirBp(), scriptOutput),
+        targetPath,
         buildMode === 'dev' ? true : false
     )
 }
@@ -301,6 +303,13 @@ export const buildProject = async (projectPath, projectName) => {
     // scriptEntry
     await bundleScripts(buildConfig.buildOptions.useJs)
     await syncDevFilesServer(projectPath, projectName)
+
+    // 默认构建完成后自动退出；设置 keepServer: true 则保持开发服务器常开（配合 useHMR 使用）
+    if (!getBuildConfig().buildOptions.keepServer) {
+        console.log('[sapdon] 构建完成，开发服务器已自动退出。')
+        console.log('[sapdon] 如需保持服务器常开（HMR / 热更新），请在 build.config 中设置 "buildOptions.keepServer": true')
+        process.exit(0)
+    }
 }
 
 function versionStringToArray(versionString) {
