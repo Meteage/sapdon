@@ -389,6 +389,8 @@ rollup (打包)
   │  外部化: rollup, typescript, @sapdon/*, @minecraft/*
 ```
 
+> **开发工作流**：修改 `src/` 后运行 `npm run build` 重建 `prod/`，在项目侧通过 `npm i`（触发 `postinstall` → `sapdon lib`）或直接运行 `sapdon lib` 将新库同步到 `node_modules/@sapdon/`，然后使用 `sapdon compile` / `npm run build`。详见 [开发工作流](workflow.md)。
+
 ---
 
 ## 11. 目录输出路径
