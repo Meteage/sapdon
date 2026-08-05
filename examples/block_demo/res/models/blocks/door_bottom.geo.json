@@ -1,0 +1,18 @@
+{
+    "format_version": "1.21.20",
+    "minecraft:geometry": [{
+        "description": {
+            "identifier": "geometry.blockdemo_door_bottom",
+            "texture_width": 16,
+            "texture_height": 16
+        },
+        "bones": [{
+            "name": "door_bottom",
+            "pivot": [0, 0, 0],
+            "cubes": [
+                { "origin": [-8, 0, -8], "size": [16, 16, 3], "uv": [0, 0] },
+                { "origin": [6, 8, -5], "size": [2, 2, 2], "uv": [0, 0] }
+            ]
+        }]
+    }]
+}

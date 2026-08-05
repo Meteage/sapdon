@@ -315,5 +315,40 @@ customConnector
   )
 customConnector.addComponent(BlockComponent.setDisplayName('Custom Connector (Trait)'))
 
+// ═══════════════════════════════════════════════════════════════
+// Multi-Blocks 教程示例（多方块，实验性）
+// 对应 https://wiki.bedrock.dev/blocks/multi-blocks
+// 注意：多方块是实验性功能，需要在世界设置中开启 "Upcoming Creator Features" 实验开关
+// ═══════════════════════════════════════════════════════════════
+
+// ── 21. CustomDoor ── 两格高的门（Multi-Block）
+// 使用 minecraft:multi_block trait：parts=2 向上延伸（part 0 底部、part 1 顶部）
+// 必须定义 minecraft:movable（multi-block 不能缺失该组件，否则无法注册）
+// 每部分用 geometry 展示不同外观（底部带把手、顶部无把手），并在物品栏中显示完整门模型
+// /give @s blockdemo:door
+const door = BlockAPI.createBasicBlock('blockdemo:door', 'construction', [
+  'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak', 'planks_oak'
+])
+door.registerTrait('minecraft:multi_block', {
+  enabled_states: ['minecraft:multi_block_part'],
+  direction: 'up',
+  parts: 2
+})
+door.addComponent(
+  BlockComponent.combineComponents(
+    BlockComponent.setMovable('popped'),
+    BlockComponent.setGeometry('geometry.blockdemo_door_bottom'),
+    BlockComponent.setMaterialInstances({ '*': { texture: 'planks_oak' } }),
+    BlockComponent.setItemVisual('geometry.blockdemo_door_item', { '*': { texture: 'planks_oak' } }),
+    BlockComponent.setDisplayName('Custom Door (Multi-Block)')
+  )
+)
+door.addPermutation(
+  "q.block_state('minecraft:multi_block_part') == 1",
+  BlockComponent.combineComponents(
+    BlockComponent.setGeometry('geometry.blockdemo_door_top')
+  )
+)
+
 // ── 提交所有注册到构建管线 ──
 registry.submit()
