@@ -46,22 +46,22 @@ export class BasicBlock {
         this.addComponent(
             BlockComponent.combineComponents(
                 BlockComponent.setMaterialInstances({
-                    "down": {
-                        "texture": textures_arr[0] 
-                    },
                     "up": {
+                        "texture": textures_arr[0]
+                    },
+                    "down": {
                         "texture": textures_arr[1]
                     },
-                    "north": {
+                    "east": {
                         "texture": textures_arr[2]
                     },
-                    "east": {
+                    "west": {
                         "texture": textures_arr[3]
                     },
                     "south": {
                         "texture": textures_arr[4]
                     },
-                    "west": {
+                    "north": {
                         "texture": textures_arr[5]
                     }
                 }),

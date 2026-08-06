@@ -18,7 +18,7 @@ export class RotatableBlock extends BasicBlock {
      * @param {string} options.group 分组，默认为 "construction"
      * @param {boolean} options.hide_in_command 是否在命令中隐藏，默认为 false
      * @param {string} options.rotationType 旋转类型，默认为 "cardinal"
-     * @param {number} options.yRotationOffset 初始旋转偏移量，默认为 180
+     * @param {number} options.yRotationOffset 初始旋转偏移量，默认为 0
      */
     constructor(identifier, category, textures_arr, options = {}) {
         // 调用父类构造函数
@@ -26,7 +26,7 @@ export class RotatableBlock extends BasicBlock {
 
         const {
             rotationType = RotationTypes.CARDINAL,
-            yRotationOffset = 180
+            yRotationOffset = 0
         } = options;
 
         // 根据旋转类型注册特性和添加变体
@@ -85,13 +85,13 @@ export class RotatableBlock extends BasicBlock {
         this.addPermutation("q.block_state('minecraft:cardinal_direction') == 'north'",
             BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 0, 0])
         )
-        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'south'",
+        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'west'",
             BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 90, 0])
         )
-        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'east'",
+        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'south'",
             BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 180, 0])
         )
-        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'west'",
+        .addPermutation("q.block_state('minecraft:cardinal_direction') == 'east'",
             BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, -90, 0])
         );
     }

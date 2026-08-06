@@ -143,7 +143,7 @@ const pillar = BlockAPI.createRotatableBlock(
   ['oak_log_top', 'oak_log_top', 'oak_log', 'oak_log', 'oak_log', 'oak_log'],
   {
     rotationType: RotationTypes.CARDINAL,
-    yRotationOffset: 180
+    yRotationOffset: 0
   }
 )
 

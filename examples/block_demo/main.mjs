@@ -250,21 +250,22 @@ const customRotator = BlockAPI.createBasicBlock('blockdemo:custom_rotator', 'con
 ])
 customRotator.registerTrait('minecraft:placement_direction', {
   enabled_states: ['minecraft:cardinal_direction'],
-  y_rotation_offset: 180
+  y_rotation_offset: 0
 })
 customRotator
   .addPermutation("q.block_state('minecraft:cardinal_direction') == 'north'",
     BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 0, 0])
   )
-  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'south'",
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'west'",
     BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 90, 0])
   )
-  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'east'",
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'south'",
     BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, 180, 0])
   )
-  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'west'",
+  .addPermutation("q.block_state('minecraft:cardinal_direction') == 'east'",
     BlockComponent.setTransformation([0, 0, 0], [1, 1, 1], [0, 0, 0], [0, -90, 0])
   )
+  
 customRotator.addComponent(BlockComponent.setDisplayName('Custom Rotator (Trait)'))
 
 // ── 20. CustomConnector ── 连接特质（Connection → cardinal_connections）

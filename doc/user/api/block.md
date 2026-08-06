@@ -114,7 +114,7 @@ BlockAPI.createRotatableBlock(
 | `options.group` | `string` | 分组，默认 `"construction"` |
 | `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
 | `options.rotationType` | `RotationTypes` | 旋转类型，默认 `RotationTypes.CARDINAL` |
-| `options.yRotationOffset` | `number` | Y轴旋转偏移，默认 `180` |
+| `options.yRotationOffset` | `number` | Y轴旋转偏移，默认 `0` |
 
 **示例**
 
@@ -524,7 +524,7 @@ block.addPermutation(
 ```typescript
 block.registerTrait('minecraft:placement_direction', {
   enabled_states: ['minecraft:cardinal_direction'],
-  y_rotation_offset: 180
+  y_rotation_offset: 0
 })
 ```
 

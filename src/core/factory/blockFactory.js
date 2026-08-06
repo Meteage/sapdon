@@ -121,7 +121,7 @@ export const BlockAPI = {
      * @param {string} options.group - 分组，默认为 "construction"。
      * @param {boolean} options.hide_in_command - 是否在命令中隐藏，默认为 false。
      * @param {string} options.rotationType - 旋转类型，默认为 "cardinal"。
-     * @param {number} options.yRotationOffset - 初始旋转偏移量，默认为 180。
+     * @param {number} options.yRotationOffset - 初始旋转偏移量，默认为 0。
      * @returns {RotatableBlock} 创建的可旋转方块对象。
      */
     createRotatableBlock: function (identifier, category, textures_arr, options = {}) {
@@ -132,7 +132,7 @@ export const BlockAPI = {
         const block = new RotatableBlock(identifier, category, textures_arr, {
             hide_in_command: false,
             rotationType: "cardinal",
-            yRotationOffset: 180,
+            yRotationOffset: 0,
             ...options, // 用传入的选项覆盖默认值
         });
 
