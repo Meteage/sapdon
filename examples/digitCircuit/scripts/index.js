@@ -1,103 +1,99 @@
-import { Direction, system } from "@minecraft/server";
+import { system, world } from "@minecraft/server";
+import {
+    WIRE_TYPE,
+    SWITCH_TYPE,
+    isCircuit,
+    getAdjacent,
+    oppositeFace,
+    recomputeWire,
+    recomputeAdjacentWires,
+    registerNode,
+    unregisterNode,
+    rebuildAround,
+    propagate,
+    clearNodes,
+} from "./circuit.js";
 
-const wireBlockType = "sapdon:wire";
-const andGateType = "sapdon:and_gate";
-const orGateType = "sapdon:or_gate";
-const notGateType = "sapdon:not_gate";
-
-const FACES = [Direction.North, Direction.South, Direction.East, Direction.West, Direction.Up, Direction.Down];
-
-const LEFT = { [Direction.North]: Direction.West, [Direction.South]: Direction.East, [Direction.East]: Direction.North, [Direction.West]: Direction.South };
-const RIGHT = { [Direction.North]: Direction.East, [Direction.South]: Direction.West, [Direction.East]: Direction.South, [Direction.West]: Direction.North };
-const BACK = { [Direction.North]: Direction.South, [Direction.South]: Direction.North, [Direction.East]: Direction.West, [Direction.West]: Direction.East };
-
-function getSignal(block) {
-    if (!block) return 0;
-    try {
-        return block.permutation.getState("sapdon:signal_strength") ?? 0;
-    } catch {
-        return 0;
-    }
-}
-
-function setSignal(block, strength) {
-    if (!block) return;
-    const value = Math.max(0, Math.min(15, strength));
-    if (getSignal(block) === value) return;
-    block.setPermutation(block.permutation.withState("sapdon:signal_strength", value));
-}
-
-function getFacing(block) {
-    try {
-        return block.permutation.getState("minecraft:cardinal_direction");
-    } catch {
-        return null;
-    }
-}
-
-function getAdjacent(block, direction) {
-    switch (direction) {
-        case Direction.North: return block.north();
-        case Direction.South: return block.south();
-        case Direction.East: return block.east();
-        case Direction.West: return block.west();
-        case Direction.Up: return block.above();
-        case Direction.Down: return block.below();
-        default: return null;
-    }
-}
-
-function propagateWire(wire) {
-    const signal = getSignal(wire);
-    if (signal <= 1) return;
-    for (const face of FACES) {
-        const adjacent = getAdjacent(wire, face);
-        if (adjacent && adjacent.typeId === wireBlockType) {
-            setSignal(adjacent, signal - 1);
-        }
-    }
-}
-
-function updateGate(gate) {
-    const id = gate.typeId;
-    const facing = getFacing(gate);
-    if (!facing) return;
-
-    let output = 0;
-    if (id === andGateType) {
-        const inputA = getSignal(getAdjacent(gate, LEFT[facing]));
-        const inputB = getSignal(getAdjacent(gate, RIGHT[facing]));
-        output = Math.min(inputA, inputB);
-    } else if (id === orGateType) {
-        const inputA = getSignal(getAdjacent(gate, LEFT[facing]));
-        const inputB = getSignal(getAdjacent(gate, RIGHT[facing]));
-        output = Math.max(inputA, inputB);
-    } else if (id === notGateType) {
-        const input = getSignal(getAdjacent(gate, facing));
-        output = input > 0 ? 0 : 15;
-    }
-
-    const outputBlock = getAdjacent(gate, BACK[facing]);
-    if (outputBlock && outputBlock.typeId === wireBlockType) {
-        setSignal(outputBlock, output);
-    }
-}
+const POWER_STATE = "sapdon:powered";
+const FACES = ["North", "South", "East", "West", "Up", "Down"];
 
 system.beforeEvents.startup.subscribe((init) => {
-    init.blockComponentRegistry.registerCustomComponent("sapdon:wire_tick", {
-        onPlayerInteract(event) {
-            if (event.block.typeId === wireBlockType) {
-                setSignal(event.block, 15);
+    init.itemComponentRegistry.registerCustomComponent("sapdon:debug_tool", {
+        onUseOn(event) {
+            const block = event.block;
+            const loc = block.location;
+            const face = event.blockFace;
+
+            world.sendMessage(`[debug] ${block.typeId} @ (${loc.x}, ${loc.y}, ${loc.z}) face:${face}`);
+
+            if (!isCircuit(block.typeId)) return;
+
+            if (block.typeId === SWITCH_TYPE) {
+                const current = block.permutation.getState(POWER_STATE) ?? 0;
+                const next = current ? 0 : 1;
+                block.setPermutation(block.permutation.withState(POWER_STATE, next));
+                world.sendMessage(`[debug] ${POWER_STATE} -> ${next}`);
+                const node = registerNode(block);
+                node.powered = next;
+                propagate();
+                return;
             }
-        },
-        onTick(event) {
-            propagateWire(event.block);
+
+            let wire = null;
+            let wireFace = null;
+
+            if (block.typeId === WIRE_TYPE) {
+                wire = block;
+                wireFace = face.toLowerCase();
+                const neighbor = getAdjacent(block, face);
+                if (!isCircuit(neighbor.typeId)) {
+                    world.sendMessage(`[debug] neighbor on ${wireFace} is not a circuit block, ignored`);
+                    return;
+                }
+            } else {
+                const neighbor = getAdjacent(block, face);
+                if (neighbor.typeId !== WIRE_TYPE) {
+                    world.sendMessage(`[debug] no wire on ${face}, ignored`);
+                    return;
+                }
+                wire = neighbor;
+                wireFace = oppositeFace(face);
+            }
+
+            const stateKey = `wire_connect:${wireFace}`;
+            const current = wire.permutation.getState(stateKey) ?? 0;
+            wire.setPermutation(wire.permutation.withState(stateKey, current ? 0 : 1));
+            world.sendMessage(`[debug] ${stateKey} -> ${current ? 0 : 1}`);
+            registerNode(wire);
+            propagate();
         }
     });
 
-    init.blockComponentRegistry.registerCustomComponent("sapdon:gate_tick", {
-        onTick(event) {
-            updateGate(event.block);
+    world.afterEvents.playerPlaceBlock.subscribe((event) => {
+        const block = event.block;
+        if (!isCircuit(block.typeId)) return;
+        if (block.typeId === WIRE_TYPE) recomputeWire(block);
+        recomputeAdjacentWires(block);
+        rebuildAround(block);
+    });
+
+    world.afterEvents.playerBreakBlock.subscribe((event) => {
+        if (!isCircuit(event.brokenBlockPermutation.type.id)) return;
+        const block = event.block;
+        unregisterNode(block);
+        recomputeAdjacentWires(block);
+        for (const face of FACES) {
+            const nb = getAdjacent(block, face);
+            if (isCircuit(nb.typeId)) rebuildAround(nb);
         }
+    });
+
+    world.afterEvents.playerInteractWithBlock.subscribe((event) => {
+        if (!isCircuit(event.block.typeId)) return;
+        rebuildAround(event.block);
+    });
+
+    world.afterEvents.worldLoad.subscribe(() => {
+        clearNodes();
     });
 });

@@ -1,27 +1,52 @@
-import { BlockComponent, BlockAPI, registry } from '@sapdon/core'
+import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry } from '@sapdon/core'
 import { BlockWire } from "./lib/wire.js";
 
 const wire = new BlockWire("sapdon:wire","construction",[{stateTag:0,textures:["wire"]}]);
 
-const andGate = BlockAPI.createRotatableBlock("sapdon:and_gate","construction",["and_gate"]);
-andGate.registerState("sapdon:signal_strength", { values: { min: 0, max: 15 } });
-andGate.addComponent(BlockComponent.setRedstoneConsumer(0, false));
-andGate.addComponent(BlockComponent.setRedstoneConductivity(false, false));
-andGate.addComponent(BlockComponent.setTick([5, 10], true));
-andGate.addComponent(BlockComponent.setCustomComponents(["sapdon:gate_tick"]));
+const onSignal = BlockAPI.createBlock("sapdon:on_signal","construction",[{stateTag:0,textures:["on"]}])
+onSignal.addComponent(BlockComponent.setTags(["signal_source"]))
 
-const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["or_gate"]);
-orGate.registerState("sapdon:signal_strength", { values: { min: 0, max: 15 } });
-orGate.addComponent(BlockComponent.setRedstoneConsumer(0, false));
-orGate.addComponent(BlockComponent.setRedstoneConductivity(false, false));
-orGate.addComponent(BlockComponent.setTick([5, 10], true));
-orGate.addComponent(BlockComponent.setCustomComponents(["sapdon:gate_tick"]));
+const offSignal = BlockAPI.createBlock("sapdon:off_signal","construction",[{stateTag:0,textures:["off"]}])
+offSignal.addComponent(BlockComponent.setTags(["signal_source"]))
 
-const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not_gate"]);
-notGate.registerState("sapdon:signal_strength", { values: { min: 0, max: 15 } });
-notGate.addComponent(BlockComponent.setRedstoneConsumer(0, false));
-notGate.addComponent(BlockComponent.setRedstoneConductivity(false, false));
-notGate.addComponent(BlockComponent.setTick([5, 10], true));
-notGate.addComponent(BlockComponent.setCustomComponents(["sapdon:gate_tick"]));
+const andGate = BlockAPI.createRotatableBlock("sapdon:and_gate","construction",["and","default","output","input","input","input"]);
+
+const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["or","default","output","input","input","input"]);
+
+const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not","default","output","input","default","default"]);
+
+function facesTex(texture) {
+    const instances = {};
+    for (const side of ["*", "up", "down", "north", "south", "east", "west"]) {
+        instances[side] = {
+            texture,
+            ambient_occlusion: 0,
+            face_dimming: false,
+            render_method: "alpha_test"
+        };
+    }
+    return instances;
+}
+
+const display = BlockAPI.createBlock("sapdon:display","construction",[{stateTag:0,textures:["t0"]}])
+display.registerState("sapdon:powered", [0,1])
+display.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("t0")))
+display.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("t1")))
+
+const switchBlock = BlockAPI.createBlock("sapdon:switch","construction",[{stateTag:0,textures:["s0"]}])
+switchBlock.registerState("sapdon:powered", [0,1])
+switchBlock.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("s0")))
+switchBlock.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("s1")))
+
+ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "stick", {
+    maxStackSize: 1,
+    formatVersion: "1.21.90",
+}).addComponent(
+    ItemComponent.combineComponents(
+        ItemComponent.setDisplayName("Debug Tool"),
+        ItemComponent.setHandEquipped(true),
+        ItemComponent.setCustomComponents(["sapdon:debug_tool"])
+    )
+)
 
 registry.submit()

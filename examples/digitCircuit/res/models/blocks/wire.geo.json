@@ -16,7 +16,7 @@
 					"pivot": [0, 5, 0]
 				},
 				{
-					"name": "top",
+					"name": "up",
 					"parent": "wire",
 					"pivot": [0, 5, 0],
 					"cubes": [
@@ -130,7 +130,7 @@
 					]
 				},
 				{
-					"name": "bottom",
+					"name": "down",
 					"parent": "wire",
 					"pivot": [0, 5, 0],
 					"cubes": [
