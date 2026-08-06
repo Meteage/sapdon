@@ -74,7 +74,7 @@ world.afterEvents.projectileHitEntity.subscribe((event) => {
 
         // 保存实体结构
         try {
-            dimension.runCommand(`structure save masterball_space_${structureName} ${entityRemoveLocation.x} ${entityRemoveLocation.y} ${entityRemoveLocation.z} ${entityRemoveLocation.x + 1} ${entityRemoveLocation.y + 1} ${entityRemoveLocation.z + 1} true memory false`);
+            dimension.runCommand(`structure save masterball_space_${structureName} ${entityRemoveLocation.x} ${entityRemoveLocation.y} ${entityRemoveLocation.z} ${entityRemoveLocation.x + 1} ${entityRemoveLocation.y + 1} ${entityRemoveLocation.z + 1} true disk false`);
         } catch (error) {
             //world.sendMessage(`保存结构失败: ${error}`);
             return;
