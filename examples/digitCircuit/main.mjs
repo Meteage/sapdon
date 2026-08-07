@@ -15,6 +15,8 @@ const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["o
 
 const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not","default","output","input","default","default"]);
 
+const chip = BlockAPI.createRotatableBlock("sapdon:chip","construction",["default","default","output","input","default","default"]);
+
 function facesTex(texture) {
     const instances = {};
     for (const side of ["*", "up", "down", "north", "south", "east", "west"]) {
@@ -38,6 +40,13 @@ switchBlock.registerState("sapdon:powered", [0,1])
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("s0")))
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("s1")))
 
+for (let i = 1; i <= 8; i++) {
+    const inputPort = BlockAPI.createBlock(`sapdon:input_port_${i}`, "construction", [{ stateTag: 0, textures: [`input_port_${i}`] }]);
+    inputPort.addComponent(BlockComponent.setTags(["input_port"]));
+    const outputPort = BlockAPI.createBlock(`sapdon:output_port_${i}`, "construction", [{ stateTag: 0, textures: [`output_port_${i}`] }]);
+    outputPort.addComponent(BlockComponent.setTags(["output_port"]));
+}
+
 ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "stick", {
     maxStackSize: 1,
     formatVersion: "1.21.90",
@@ -46,6 +55,16 @@ ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "stick", {
         ItemComponent.setDisplayName("Debug Tool"),
         ItemComponent.setHandEquipped(true),
         ItemComponent.setCustomComponents(["sapdon:debug_tool"])
+    )
+)
+
+ItemAPI.createItem("sapdon:logic_tool", ItemCategory.Equipment, "iron_ingot", {
+    maxStackSize: 64,
+    formatVersion: "1.21.90",
+}).addComponent(
+    ItemComponent.combineComponents(
+        ItemComponent.setDisplayName("电路存储芯片"),
+        ItemComponent.setCustomComponents(["sapdon:logic_tool"])
     )
 )
 
