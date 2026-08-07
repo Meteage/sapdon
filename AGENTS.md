@@ -24,3 +24,9 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - `build.config` 中 `buildOptions.keepServer` 控制构建后是否保持服务器常开（默认 false 自动退出）
 - `buildOptions.useHMR` 控制热更新
 - `buildOptions.buildMode`：`dev` | `prod` | `debug`
+
+---
+
+## 通用经验
+
+- **粒子**：原版 basic 粒子会引用 `variable.direction`，需用 `new MolangVariableMap().setVector3("variable.direction", v)` 作为 `spawnParticle` 第三参传入，否则报 `unknown variable '.z'`；偏移显示位置直接改传入的 `location`。
