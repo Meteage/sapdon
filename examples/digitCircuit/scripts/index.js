@@ -28,9 +28,15 @@ import {
 } from "./circuit.js";
 import {
     saveLogic,
+    importLogic,
     getLogicByUuid,
     getLogicByName,
     listLogic,
+    deleteLogic,
+    clearLogic,
+    stageAppend,
+    stageRead,
+    stageClear,
 } from "./logicStore.js";
 
 const POWER_STATE = "sapdon:powered";
@@ -148,6 +154,113 @@ function registerLogicCommands(registry) {
         const enable = on === "on";
         setRuntimeLog(enable);
         return { status: CustomCommandStatus.Success, message: `运行期日志已${enable ? "开启" : "关闭"} (sapdon:logic_log on|off)` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_export",
+        description: "导出逻辑记录全文（聊天分块打印，超长同时写 ContentLog）",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+        mandatoryParameters: [{ name: "ref", type: CustomCommandParamType.String }],
+    }, (_origin, ref) => {
+        const rec = resolveLogic(ref);
+        if (!rec) return { status: CustomCommandStatus.Failure, message: "未找到该 uuid/名称" };
+        const json = JSON.stringify(rec);
+        const CHUNK = 240;
+        const parts = [];
+        for (let i = 0; i < json.length; i += CHUNK) parts.push(json.slice(i, i + CHUNK));
+        for (const p of parts) world.sendMessage(p);
+        console.warn(`[logic_export] ${ref} full=${json.length}ch: ${json}`);
+        return { status: CustomCommandStatus.Success, message: `已导出 ${rec.mode} 记录（${json.length} 字符，${parts.length} 块）` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_stage",
+        description: "把复制的记录文本片段追加到导入暂存区（可多次粘贴）",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+        mandatoryParameters: [{ name: "text", type: CustomCommandParamType.String }],
+    }, (origin, text) => {
+        const player = origin.sourceEntity;
+        if (!player) return { status: CustomCommandStatus.Failure, message: "需要玩家身份" };
+        const len = stageAppend(player.id, text);
+        return { status: CustomCommandStatus.Success, message: `暂存区累计 ${len} 字符` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_stage_clear",
+        description: "清空导入暂存区",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+    }, (origin) => {
+        const player = origin.sourceEntity;
+        if (!player) return { status: CustomCommandStatus.Failure, message: "需要玩家身份" };
+        stageClear(player.id);
+        return { status: CustomCommandStatus.Success, message: "暂存区已清空" };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_import",
+        description: "把暂存区合并解析为逻辑记录（保留原 uuid）；name 可选命名",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+        optionalParameters: [{ name: "name", type: CustomCommandParamType.String }],
+    }, (origin, name) => {
+        const player = origin.sourceEntity;
+        if (!player) return { status: CustomCommandStatus.Failure, message: "需要玩家身份" };
+        const text = stageRead(player.id);
+        if (!text) return { status: CustomCommandStatus.Failure, message: "暂存区为空" };
+        let rec;
+        try {
+            rec = JSON.parse(text);
+        } catch (e) {
+            return { status: CustomCommandStatus.Failure, message: `暂存内容不是合法 JSON: ${e.message}` };
+        }
+        if (name) rec.name = name;
+        const saved = importLogic(rec);
+        if (!saved) return { status: CustomCommandStatus.Failure, message: "暂存内容缺 inputs/topo 等关键字段，无法导入" };
+        stageClear(player.id);
+        return { status: CustomCommandStatus.Success, message: `已导入 uuid=${saved.uuid} mode=${saved.mode} in=[${saved.inputs.join(",")}] out=[${saved.outputs.join(",")}]` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_item",
+        description: "把逻辑绑定到手持的 logic_tool 存储物品（然后右键芯片使用）",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+        mandatoryParameters: [{ name: "ref", type: CustomCommandParamType.String }],
+    }, (origin, ref) => {
+        const player = origin.sourceEntity;
+        if (!player) return { status: CustomCommandStatus.Failure, message: "需要玩家身份" };
+        const rec = resolveLogic(ref);
+        if (!rec) return { status: CustomCommandStatus.Failure, message: "未找到该 uuid/名称" };
+        const inventory = player.getComponent("minecraft:inventory");
+        if (!inventory) return { status: CustomCommandStatus.Failure, message: "无法访问物品栏" };
+        const slot = player.selectedSlotIndex ?? 0;
+        const held = inventory.container.getItem(slot);
+        if (!held || held.typeId !== "sapdon:logic_tool") {
+            return { status: CustomCommandStatus.Failure, message: "手持槽不是 sapdon:logic_tool" };
+        }
+        held.setLore(["sapdos:logic", "uuid: " + rec.uuid, "name: " + (rec.name || "-")]);
+        if (rec.name) held.nameTag = rec.name;
+        inventory.container.setItem(slot, held);
+        return { status: CustomCommandStatus.Success, message: `已绑定 uuid=${rec.uuid} 到手持物品，右键芯片即可加载` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_clear",
+        description: "删除逻辑记录：all=清空全部，否则按 uuid/名称删除一条",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+        mandatoryParameters: [{ name: "all_or_ref", type: CustomCommandParamType.String }],
+    }, (_origin, allOrRef) => {
+        if (allOrRef === "all") {
+            const n = clearLogic();
+            return { status: CustomCommandStatus.Success, message: `已清空 ${n} 条逻辑记录` };
+        }
+        return deleteLogic(allOrRef)
+            ? { status: CustomCommandStatus.Success, message: `已删除 ${allOrRef}` }
+            : { status: CustomCommandStatus.Failure, message: "未找到该 uuid/名称" };
     });
 }
 
