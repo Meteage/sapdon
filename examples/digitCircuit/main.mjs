@@ -38,6 +38,9 @@ const splitter = BlockAPI.createRotatableBlock("sapdon:splitter","construction",
 
 const merger = BlockAPI.createRotatableBlock("sapdon:merger","construction",["merger","default","output","input","input","default"], { group: GROUP_BUS });
 
+// 1bit 寄存器：模型朝北时 北=W(写)、西=D(待写值)、东=Q(锁存输出)
+const reg = BlockAPI.createRotatableBlock("sapdon:register","construction",["reg","default","output","input","default","input"], { group: GROUP_CHIP });
+
 function facesTex(texture) {
     const instances = {};
     for (const side of ["*", "up", "down", "north", "south", "east", "west"]) {
@@ -120,6 +123,7 @@ ItemAPI.createItemCatalog()
     ], { icon: "sapdon:input_port_1", name: GROUP_PORT })
     .addGroup("construction", [
         "sapdon:chip",
+        "sapdon:register",
     ], { icon: "sapdon:chip", name: GROUP_CHIP })
     .addGroup("equipment", [
         "sapdon:debug_tool",

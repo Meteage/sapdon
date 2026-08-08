@@ -86,6 +86,12 @@ examples/digitCircuit/
 - 潜行（shift）右键已加载 chip → `unbindChipLogic` 取回逻辑物品（`sapdon:logic_tool`×1，带原 uuid/name lore），方块恢复未加载贴图。
 - 芯片运行时：南面输入数值 → 查逻辑真值表（`inputs` 数位）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
 
+### 3.8b 1bit 寄存器 `sapdon:register`
+- `createRotatableBlock`；`["reg","default","output","input","default","input"]`。
+- `registerFaces(facing)`：模型朝北时 北=W（写使能 1bit）、西=D（待写值 1bit）、东=Q（锁存输出）。
+- 时序（电平锁存，随 `propagate` 推进）：`W=1` 时写入 `store = D`，`W=0` 时 `store` 保持；`Q ≡ store`。
+- `store` 存于组件内存（`comp.store`），随 `saveCircuit` 持久化、`loadCircuit`/`rebuildAround` 恢复，拨动开关前后不丢失。
+
 ### 3.9 创造菜单物品分类（Item Catalog）
 - 全部方块/物品通过 `group` 选项归类 `menu_category.group`，并用 `ItemAPI.createItemCatalog()` 生成 `BP/item_catalog/crafting_item_catalog.json` 定义可折叠分组（`group_identifier.icon` + `name`）。
 - `name` 是本地化键，需在 `RP/texts/*.lang` 定义（zh_CN / en_US 均已提供）。
@@ -97,7 +103,7 @@ examples/digitCircuit/
 | `sapdon:itemGroup.name.gate` | and_gate, or_gate, not_gate | construction |
 | `sapdon:itemGroup.name.bus` | splitter, merger | construction |
 | `sapdon:itemGroup.name.port` | input_port_1~8, output_port_1~8, display | construction |
-| `sapdon:itemGroup.name.chip` | chip | construction |
+| `sapdon:itemGroup.name.chip` | chip, register | construction |
 | `sapdon:itemGroup.name.tool` | debug_tool, logic_tool | equipment |
 
 ## 4. 虚拟电路模型（脚本内存）

@@ -7,6 +7,7 @@ export const DISPLAY_TYPE = "sapdon:display";
 export const CHIP_TYPE = "sapdon:chip";
 export const SPLITTER_TYPE = "sapdon:splitter";
 export const MERGE_TYPE = "sapdon:merger";
+export const REGISTER_TYPE = "sapdon:register";
 
 export const GATE_TYPES = ["sapdon:and_gate", "sapdon:or_gate", "sapdon:not_gate"];
 export const SOURCE_TYPES = ["sapdon:on_signal", "sapdon:off_signal", SWITCH_TYPE];
@@ -29,6 +30,7 @@ export const CIRCUIT_TYPES = [
     CHIP_TYPE,
     SPLITTER_TYPE,
     MERGE_TYPE,
+    REGISTER_TYPE,
 ];
 
 const FACES = ["north", "south", "east", "west", "up", "down"];
@@ -84,6 +86,15 @@ function chipFaces(facing) {
     return {
         output: facing,
         input: oppositeFace(facing),
+    };
+}
+
+// 1bit 寄存器：模型朝北时 北=W(写使能1bit)、西=D(待写值)、东=Q(锁存输出)
+function registerFaces(facing) {
+    return {
+        w: facing,
+        d: oppositeFace(gateOutputFace(facing)),
+        q: gateOutputFace(facing),
     };
 }
 
@@ -396,11 +407,13 @@ export function registerComponent(block) {
         powered: 0,
         // 重建时保留已绑定的芯片逻辑，避免 rebuildAround 重置
         logicUuid: previous && previous.logicUuid ? previous.logicUuid : "",
+        // 重建时保留 1bit 寄存器锁存值
+        store: previous && previous.store ? 1 : 0,
     };
     if (block.typeId === SWITCH_TYPE || block.typeId === DISPLAY_TYPE) {
         comp.powered = block.permutation.getState(POWER_STATE) ?? 0;
     }
-    if (isGate(block.typeId) || block.typeId === SPLITTER_TYPE || block.typeId === MERGE_TYPE || block.typeId === CHIP_TYPE) {
+    if (isGate(block.typeId) || block.typeId === SPLITTER_TYPE || block.typeId === MERGE_TYPE || block.typeId === CHIP_TYPE || block.typeId === REGISTER_TYPE) {
         comp.facing = block.permutation.getState("minecraft:cardinal_direction") ?? "north";
     }
     if (components.has(comp.key)) {
@@ -510,6 +523,9 @@ function isOutputFace(comp, face) {
     if (comp.type === CHIP_TYPE) {
         return face === chipFaces(comp.facing).output;
     }
+    if (comp.type === REGISTER_TYPE) {
+        return face === registerFaces(comp.facing).q;
+    }
     if (isPort(comp.type)) {
         // 端口为透明透传节点：所有面都输出，使相连导线网络能读其 powered
         return true;
@@ -523,6 +539,10 @@ function inputFacesOf(comp) {
     if (comp.type === SPLITTER_TYPE) return [splitterFaces(comp.facing).input];
     if (comp.type === MERGE_TYPE) return [mergeFaces(comp.facing).west, mergeFaces(comp.facing).south];
     if (comp.type === CHIP_TYPE) return [chipFaces(comp.facing).input];
+    if (comp.type === REGISTER_TYPE) {
+        const f = registerFaces(comp.facing);
+        return [f.w, f.d];
+    }
     if (isGate(comp.type)) {
         if (comp.type === "sapdon:not_gate") return [notInputFace(comp.facing)];
         return FACES_HORIZ.filter((f) => f !== gateOutputFace(comp.facing));
@@ -565,6 +585,10 @@ function compValueFor(comp, face) {
             return chipLookup(comp, inv);
         }
         return 0;
+    }
+    if (comp.type === REGISTER_TYPE) {
+        const f = registerFaces(comp.facing);
+        return face === f.q ? (comp.store ? 1 : 0) : 0;
     }
     return comp.powered ? 1 : 0;
 }
@@ -654,6 +678,21 @@ function computePowered(comp) {
         const outVal = chipLookup(comp, inVal);
         const r = outVal ? 1 : 0;
         if (LOG_RUNTIME) rLog(`chip@${comp.key} facing=${comp.facing} input=${f.input}:${inVal} => out=${outVal} powered=${r}`);
+        return r;
+    }
+    if (type === REGISTER_TYPE) {
+        // 1bit 寄存器：北=W 写使能，西=D 待写值，东=Q 锁存输出
+        // W=1 时写入 D（锁存 store），W=0 时保持；Q 恒 = store
+        const f = registerFaces(comp.facing);
+        const wSig = faceNetValue(comp, f.w);
+        const dVal = faceNetValue(comp, f.d);
+        if (wSig) {
+            if (comp.store !== (dVal ? 1 : 0)) {
+                comp.store = dVal ? 1 : 0;
+            }
+        }
+        const r = comp.store ? 1 : 0;
+        if (LOG_RUNTIME) rLog(`reg@${comp.key} facing=${comp.facing} W=${f.w}:${wSig} D=${f.d}:${dVal} => store=${comp.store} Q=${r}`);
         return r;
     }
     if (isGate(type)) {
@@ -1091,7 +1130,7 @@ function freshComponents(blocks, netOfWire) {
         let powered = 0;
         if (b.typeId === SWITCH_TYPE || b.typeId === DISPLAY_TYPE) powered = b.permutation.getState(POWER_STATE) ?? 0;
         if (b.typeId === "sapdon:on_signal") powered = 1;
-        const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
+        const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE || b.typeId === REGISTER_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
         const c = { key: nodeKey(b), type: b.typeId, facing, powered, nets: {}, directs: {} };
         for (const face of FACES) {
             const nb = getAdjacent(b, capitalize(face));
@@ -1115,6 +1154,7 @@ function freshOutputFace(c, face) {
         return face === f.through || face === f.split;
     }
     if (c.type === MERGE_TYPE) return face === mergeFaces(c.facing).out;
+    if (c.type === REGISTER_TYPE) return face === registerFaces(c.facing).q;
     if (isPort(c.type)) return true;
     return false;
 }
@@ -1335,6 +1375,7 @@ export function saveCircuit() {
             nb: comp.netByFace || {},
             db: comp.directByFace || {},
             lu: comp.logicUuid || "",
+            st: comp.store ? 1 : 0,
         });
     }
     const netArr = [];
@@ -1375,6 +1416,7 @@ export function loadCircuit() {
             netByFace: c.nb || {},
             directByFace: c.db || {},
             logicUuid: c.lu || "",
+            store: c.st ? 1 : 0,
         });
     }
     for (const n of data.nets) {
