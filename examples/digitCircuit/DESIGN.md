@@ -67,7 +67,24 @@ examples/digitCircuit/
 
 ### 3.6 调试工具 `sapdon:debug_tool`
 - 木棍物品，自定义组件 `sapdon:debug_tool`（`itemComponentRegistry`，在 `system.beforeEvents.startup` 注册）。
+
+### 3.7 位宽器件
+| 方块 | 类型 | 纹理数组（创建参数） |
+|---|---|---|
+| `sapdon:splitter` | 分线器 | `["splitter","default","output","input","default","output"]` |
+| `sapdon:merger` | 合并器 | `["merger","default","default","default","default","default"]` |
+
+- 同为 `createRotatableBlock`（`minecraft:cardinal_direction`）。
+- `splitterFaces(facing)`：西=输入(N)，东=直通输出(N-1)，北=分出输出(1)。
+- `mergeFaces(facing)`：西=N 输入，南=+1 输入，东=N+1 输出。
 - 功能：切换开关、逐面切换导线连接、打印 `[debug]` 信息。
+
+### 3.8 可编程芯片 `sapdon:chip`
+- `createRotatableBlock`；状态 `sapdon:loaded` ∈ {0,1}：未加载→`["chip-unload","default","default","default","input","output"]`；已加载→`["chip","default","default","default","input","output"]`（仅顶面在两种贴图间切换，其余面均 北=output、南=输入）。
+- `chipFaces(facing)`：输出=`facing`，输入=`oppositeFace(facing)`。
+- 「电路存储芯片」物品（`sapdon:logic_tool`，带 `uuid:` lore）对 chip 右键 → `bindChipLogic` 把该逻辑绑定到 chip、方块置 `sapdon:loaded=1` 并消耗物品一个。
+- 潜行（shift）右键已加载 chip → `unbindChipLogic` 取回逻辑物品（`sapdon:logic_tool`×1，带原 uuid/name lore），方块恢复未加载贴图。
+- 芯片运行时：南面输入数值 → 查逻辑真值表（`inputs` 数位）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
 
 ## 4. 虚拟电路模型（脚本内存）
 
@@ -119,12 +136,29 @@ examples/digitCircuit/
 ### 7.2 导线网络信号（netSignal）
 一个网络的信号 = 挂在其上所有**输出端子**的组件 `powered` 做 **OR**（任一输出为 1 则该网为 1）。
 
+### 7.2b 导线网络数值（netValue）
+每个 net 还携带数值 `net.value`（默认 0），由 `recomputeNetValues()` 固定点迭代求取：取挂在网络上所有输出端子的组件输出数值 `compValueFor(comp, face)` 的**最大值**（单驱动网络即该驱动值）。
+- 门/信号源/开关/端口输出数值 = 1bit（`powered` 0/1）。
+- 分线器：直通=`输入值 >> 1`（N-1 位）、分出=`输入值 & 1`（1 位）。
+- 合并器：输出=`(西值 << 1) | 南值`（把 N 位与 +1 位拼接为 N+1 位新值）。
+- `netSignal(netId)` 现在返回 `netValue`（>0 视为通电），布尔视角与旧逻辑兼容。
+
 ### 7.3 计算规则（computePowered）
 - `on_signal`=1，`off_signal`=0，`switch`→`powered`（由切换写入）。
 - `display`→遍历 6 面 `faceNetSignal` OR。
+- `splitter`→读取输入面（`splitterFaces.input`）数值，有值（>0）则通电（直通/分出输出值由 `compValueFor` 计算）。
+- `merger`→输出 = `(西值 << 1) | 南值`（连同位宽一起由 N 变 N+1）。
+- `chip`→南面输入值查真值表得输出值，输出>0 则通电（输出数值由 `compValueFor` 计算）。
 - `and_gate`→输入面（水平除输出面）全真 → 1。
 - `or_gate`→输入面任一真 → 1。
 - `not_gate`→输入面取反（无输入按 0 → 输出 1）。
+- 任一基础门（and/or/not）的输入面**位宽 >1**（来自分线器直通 N-1 或合并器输出 N+1 等）时：输入按 0 处理，并把错误面记入 `errorFaces`，`propagate` 结束前在其所在导线播放心形粒子（`minecraft:heart_particle`）提示。
+
+### 7.3b 位宽（N-bit 总线）模型
+- 一根导线网络携带位宽数据 `net.width`（默认 1）；`faceNetWidth(comp,face)` 返回某面上的位宽（读 net / 直接相邻组件输出位宽）。
+- 位宽来源：`on/off/switch/门/端口` 输出 1 位；分线器北分出=1、东直通=`max(0, 输入位宽-1)`；合并器东输出=西输入位宽+1；芯片北输出=其逻辑记录输出位数。
+- `recomputeNetWidths()` 每帧固定点迭代求各 net 位宽（上限 nets+2 轮）。
+- 分线器（`splitterFaces`）：西=输入(N)，东=直通(N-1)，北=分出(1)；合并器（`mergeFaces`）：西=N 输入，南=+1 输入，东=N+1 输出。
 
 ### 7.4 门朝向换算
 | facing | 输出面 | NOT 输入面 | AND/OR 输入面 |

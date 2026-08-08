@@ -15,7 +15,20 @@ const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["o
 
 const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not","default","output","input","default","default"]);
 
-const chip = BlockAPI.createRotatableBlock("sapdon:chip","construction",["default","default","output","input","default","default"]);
+const chip = BlockAPI.createRotatableBlock("sapdon:chip","construction",["chip-unload","default","default","default","input","output"]);
+chip.registerState("sapdon:loaded", [0,1])
+chip.addPermutation("q.block_state('sapdon:loaded') == 1", BlockComponent.setMaterialInstances({
+    "up": { "texture": "chip" },
+    "down": { "texture": "default" },
+    "east": { "texture": "default" },
+    "west": { "texture": "default" },
+    "south": { "texture": "input" },
+    "north": { "texture": "output" }
+}))
+
+const splitter = BlockAPI.createRotatableBlock("sapdon:splitter","construction",["splitter","default","output","input","default","output"]);
+
+const merger = BlockAPI.createRotatableBlock("sapdon:merger","construction",["merger","default","output","input","input","default"]);
 
 function facesTex(texture) {
     const instances = {};
