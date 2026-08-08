@@ -1,0 +1,6 @@
+sapdon:itemGroup.name.source=电源/信号源
+sapdon:itemGroup.name.gate=逻辑门
+sapdon:itemGroup.name.bus=位宽总线
+sapdon:itemGroup.name.port=端口
+sapdon:itemGroup.name.chip=可编程芯片
+sapdon:itemGroup.name.tool=工具

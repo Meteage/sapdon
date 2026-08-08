@@ -1,0 +1,6 @@
+sapdon:itemGroup.name.source=Power / Signal Source
+sapdon:itemGroup.name.gate=Logic Gates
+sapdon:itemGroup.name.bus=Bit Width Bus
+sapdon:itemGroup.name.port=Ports
+sapdon:itemGroup.name.chip=Programmable Chip
+sapdon:itemGroup.name.tool=Tools

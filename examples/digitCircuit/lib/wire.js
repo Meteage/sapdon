@@ -13,7 +13,7 @@ export class BlockWire {
         }
 
         block.addComponent(
-BlockComponent.combineComponents(
+            BlockComponent.combineComponents(
                 BlockComponent.setGeometry('geometry.wire', { bone_visibility }),
                 BlockComponent.setSelectionBoxCustom([-2,6,-2],[4,4,4]),
                 BlockComponent.setCollisionBoxCustom([-2,6,-2],[4,4,4])

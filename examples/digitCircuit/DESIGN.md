@@ -86,6 +86,20 @@ examples/digitCircuit/
 - 潜行（shift）右键已加载 chip → `unbindChipLogic` 取回逻辑物品（`sapdon:logic_tool`×1，带原 uuid/name lore），方块恢复未加载贴图。
 - 芯片运行时：南面输入数值 → 查逻辑真值表（`inputs` 数位）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
 
+### 3.9 创造菜单物品分类（Item Catalog）
+- 全部方块/物品通过 `group` 选项归类 `menu_category.group`，并用 `ItemAPI.createItemCatalog()` 生成 `BP/item_catalog/crafting_item_catalog.json` 定义可折叠分组（`group_identifier.icon` + `name`）。
+- `name` 是本地化键，需在 `RP/texts/*.lang` 定义（zh_CN / en_US 均已提供）。
+- 分组一览（均在 `main.mjs`）：
+
+| 本地化键 | 内容 | 分类 |
+|---|---|---|
+| `sapdon:itemGroup.name.source` | wire, on_signal, off_signal, switch | construction |
+| `sapdon:itemGroup.name.gate` | and_gate, or_gate, not_gate | construction |
+| `sapdon:itemGroup.name.bus` | splitter, merger | construction |
+| `sapdon:itemGroup.name.port` | input_port_1~8, output_port_1~8, display | construction |
+| `sapdon:itemGroup.name.chip` | chip | construction |
+| `sapdon:itemGroup.name.tool` | debug_tool, logic_tool | equipment |
+
 ## 4. 虚拟电路模型（脚本内存）
 
 脚本不依赖方块实体逐 tick 运算，而维护三张内存表（均在 `circuit.js`）：

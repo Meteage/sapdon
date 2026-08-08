@@ -1,21 +1,29 @@
 import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry } from '@sapdon/core'
 import { BlockWire } from "./lib/wire.js";
 
-const wire = new BlockWire("sapdon:wire","construction",[{stateTag:0,textures:["wire"]}]);
+// === item_group 分割 ===
+const GROUP_SOURCE = "sapdon:itemGroup.name.source"; // 电源/信号源
+const GROUP_GATE = "sapdon:itemGroup.name.gate";     // 逻辑门
+const GROUP_BUS = "sapdon:itemGroup.name.bus";       // 位宽总线
+const GROUP_PORT = "sapdon:itemGroup.name.port";     // 端口
+const GROUP_CHIP = "sapdon:itemGroup.name.chip";     // 可编程芯片
+const GROUP_TOOL = "sapdon:itemGroup.name.tool";     // 工具
 
-const onSignal = BlockAPI.createBlock("sapdon:on_signal","construction",[{stateTag:0,textures:["on"]}])
+const wire = new BlockWire("sapdon:wire","construction",[{stateTag:0,textures:["wire"]}], { group: GROUP_SOURCE });
+
+const onSignal = BlockAPI.createBlock("sapdon:on_signal","construction",[{stateTag:0,textures:["on"]}], { group: GROUP_SOURCE })
 onSignal.addComponent(BlockComponent.setTags(["signal_source"]))
 
-const offSignal = BlockAPI.createBlock("sapdon:off_signal","construction",[{stateTag:0,textures:["off"]}])
+const offSignal = BlockAPI.createBlock("sapdon:off_signal","construction",[{stateTag:0,textures:["off"]}], { group: GROUP_SOURCE })
 offSignal.addComponent(BlockComponent.setTags(["signal_source"]))
 
-const andGate = BlockAPI.createRotatableBlock("sapdon:and_gate","construction",["and","default","output","input","input","input"]);
+const andGate = BlockAPI.createRotatableBlock("sapdon:and_gate","construction",["and","default","output","input","input","input"], { group: GROUP_GATE });
 
-const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["or","default","output","input","input","input"]);
+const orGate = BlockAPI.createRotatableBlock("sapdon:or_gate","construction",["or","default","output","input","input","input"], { group: GROUP_GATE });
 
-const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not","default","output","input","default","default"]);
+const notGate = BlockAPI.createRotatableBlock("sapdon:not_gate","construction",["not","default","output","input","default","default"], { group: GROUP_GATE });
 
-const chip = BlockAPI.createRotatableBlock("sapdon:chip","construction",["chip-unload","default","default","default","input","output"]);
+const chip = BlockAPI.createRotatableBlock("sapdon:chip","construction",["chip-unload","default","default","default","input","output"], { group: GROUP_CHIP });
 chip.registerState("sapdon:loaded", [0,1])
 chip.addPermutation("q.block_state('sapdon:loaded') == 1", BlockComponent.setMaterialInstances({
     "up": { "texture": "chip" },
@@ -26,9 +34,9 @@ chip.addPermutation("q.block_state('sapdon:loaded') == 1", BlockComponent.setMat
     "north": { "texture": "output" }
 }))
 
-const splitter = BlockAPI.createRotatableBlock("sapdon:splitter","construction",["splitter","default","output","input","default","output"]);
+const splitter = BlockAPI.createRotatableBlock("sapdon:splitter","construction",["splitter","default","output","input","default","output"], { group: GROUP_BUS });
 
-const merger = BlockAPI.createRotatableBlock("sapdon:merger","construction",["merger","default","output","input","input","default"]);
+const merger = BlockAPI.createRotatableBlock("sapdon:merger","construction",["merger","default","output","input","input","default"], { group: GROUP_BUS });
 
 function facesTex(texture) {
     const instances = {};
@@ -43,25 +51,26 @@ function facesTex(texture) {
     return instances;
 }
 
-const display = BlockAPI.createBlock("sapdon:display","construction",[{stateTag:0,textures:["t0"]}])
+const display = BlockAPI.createBlock("sapdon:display","construction",[{stateTag:0,textures:["t0"]}], { group: GROUP_PORT })
 display.registerState("sapdon:powered", [0,1])
 display.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("t0")))
 display.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("t1")))
 
-const switchBlock = BlockAPI.createBlock("sapdon:switch","construction",[{stateTag:0,textures:["s0"]}])
+const switchBlock = BlockAPI.createBlock("sapdon:switch","construction",[{stateTag:0,textures:["s0"]}], { group: GROUP_SOURCE })
 switchBlock.registerState("sapdon:powered", [0,1])
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("s0")))
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("s1")))
 
 for (let i = 1; i <= 8; i++) {
-    const inputPort = BlockAPI.createBlock(`sapdon:input_port_${i}`, "construction", [{ stateTag: 0, textures: [`input_port_${i}`] }]);
+    const inputPort = BlockAPI.createBlock(`sapdon:input_port_${i}`, "construction", [{ stateTag: 0, textures: [`input_port_${i}`] }], { group: GROUP_PORT });
     inputPort.addComponent(BlockComponent.setTags(["input_port"]));
-    const outputPort = BlockAPI.createBlock(`sapdon:output_port_${i}`, "construction", [{ stateTag: 0, textures: [`output_port_${i}`] }]);
+    const outputPort = BlockAPI.createBlock(`sapdon:output_port_${i}`, "construction", [{ stateTag: 0, textures: [`output_port_${i}`] }], { group: GROUP_PORT });
     outputPort.addComponent(BlockComponent.setTags(["output_port"]));
 }
 
 ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "stick", {
     maxStackSize: 1,
+    group: GROUP_TOOL,
     formatVersion: "1.21.90",
 }).addComponent(
     ItemComponent.combineComponents(
@@ -73,6 +82,7 @@ ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "stick", {
 
 ItemAPI.createItem("sapdon:logic_tool", ItemCategory.Equipment, "iron_ingot", {
     maxStackSize: 64,
+    group: GROUP_TOOL,
     formatVersion: "1.21.90",
 }).addComponent(
     ItemComponent.combineComponents(
@@ -80,5 +90,41 @@ ItemAPI.createItem("sapdon:logic_tool", ItemCategory.Equipment, "iron_ingot", {
         ItemComponent.setCustomComponents(["sapdon:logic_tool"])
     )
 )
+
+// === 创造菜单物品分类（group + item_catalog）===
+const inputPorts = [];
+for (let i = 1; i <= 8; i++) inputPorts.push(`sapdon:input_port_${i}`);
+const outputPorts = [];
+for (let i = 1; i <= 8; i++) outputPorts.push(`sapdon:output_port_${i}`);
+
+ItemAPI.createItemCatalog()
+    .addGroup("construction", [
+        "sapdon:wire",
+        "sapdon:on_signal",
+        "sapdon:off_signal",
+        "sapdon:switch",
+    ], { icon: "sapdon:switch", name: GROUP_SOURCE })
+    .addGroup("construction", [
+        "sapdon:and_gate",
+        "sapdon:or_gate",
+        "sapdon:not_gate",
+    ], { icon: "sapdon:and_gate", name: GROUP_GATE })
+    .addGroup("construction", [
+        "sapdon:splitter",
+        "sapdon:merger",
+    ], { icon: "sapdon:splitter", name: GROUP_BUS })
+    .addGroup("construction", [
+        ...inputPorts,
+        ...outputPorts,
+        "sapdon:display",
+    ], { icon: "sapdon:input_port_1", name: GROUP_PORT })
+    .addGroup("construction", [
+        "sapdon:chip",
+    ], { icon: "sapdon:chip", name: GROUP_CHIP })
+    .addGroup("equipment", [
+        "sapdon:debug_tool",
+        "sapdon:logic_tool",
+    ], { icon: "sapdon:logic_tool", name: GROUP_TOOL })
+    .register()
 
 registry.submit()
