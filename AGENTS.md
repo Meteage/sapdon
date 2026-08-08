@@ -66,6 +66,11 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - 持久化：`saveCircuit` → 动态属性完整内存模型；`loadCircuit` 原样还原，**不**重新推导、不碰方块、不 propagate。
 - 时序器件（1bit 寄存器）：`comp.store` 电平锁存，`W=1 写 D，W=0 保持`；`registerComponent` 重建时保留 `store`，save/load 各自持久化（`st` 字段）。Minecraft 无自动 tick，时钟靠开关等交互触发 `propagate` 推进帧。
 
+### 芯片两种编译模式（compileLogic）
+- 输入端子数 `≤ MAX_LOGIC_INPUTS(8)`：真值表法（`mode=table`，记录 `inputs`/`outputs` 端口序号 + `table`）；端子 `>8`：**不启动 2^n 查表**，直接改存电路拓扑 `mode=topo`（`topo` 字段 = 相对坐标 comps+nets+端子映射，chip 运行时 `evalTopo` 逐 bit 驱动做固定点仿真，初始 store=0）。
+- 端口方块现支持 `input_port_0~9` / `output_port_0~9`（作排列编号，非逻辑位权）；真值表模式下编译时按 `freshPortDist`（端子距电路距离）排序——最远=bit0，同距再按端口数字升序。
+- 拓扑仿真求值（`evalTopo`/`topoCompute`）依赖 `@minecraft/server`，Node 无法直接 import；`test/topo.test.mjs` 复制了 engine 核心（AND/NOT/寄存器写&保持/固定点共 16 断言）。**改 engine 这些函数须同步该测试副本**，运行 `node test/topo.test.mjs`。
+
 ### 创造菜单分组（Item Catalog）
 - 方块/物品 `options.group` → `menu_category.group`；`ItemAPI.createItemCatalog().addGroup(category, items, {icon, name})` 生成 `BP/item_catalog/crafting_item_catalog.json`。
 - `group_identifier.name` 是本地化键，必须在 `RP/texts/*.lang` 定义（zh_CN+en_US 双份），否则分组显示原名空白。

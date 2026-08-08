@@ -64,10 +64,14 @@ switchBlock.registerState("sapdon:powered", [0,1])
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("s0")))
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("s1")))
 
-for (let i = 1; i <= 8; i++) {
-    const inputPort = BlockAPI.createBlock(`sapdon:input_port_${i}`, "construction", [{ stateTag: 0, textures: [`input_port_${i}`] }], { group: GROUP_PORT });
+// 端口方块：0-9 数字标记，可旋转（朝向对应数字，便于组合出多数字端口号）
+const PORT_DIGITS = Array.from({ length: 10 }, (_, i) => i);
+for (const i of PORT_DIGITS) {
+    const tex = [`input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`];
+    const inputPort = BlockAPI.createRotatableBlock(`sapdon:input_port_${i}`, "construction", tex, { group: GROUP_PORT });
     inputPort.addComponent(BlockComponent.setTags(["input_port"]));
-    const outputPort = BlockAPI.createBlock(`sapdon:output_port_${i}`, "construction", [{ stateTag: 0, textures: [`output_port_${i}`] }], { group: GROUP_PORT });
+    const outTex = [`output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`];
+    const outputPort = BlockAPI.createRotatableBlock(`sapdon:output_port_${i}`, "construction", outTex, { group: GROUP_PORT });
     outputPort.addComponent(BlockComponent.setTags(["output_port"]));
 }
 
@@ -96,9 +100,9 @@ ItemAPI.createItem("sapdon:logic_tool", ItemCategory.Equipment, "iron_ingot", {
 
 // === 创造菜单物品分类（group + item_catalog）===
 const inputPorts = [];
-for (let i = 1; i <= 8; i++) inputPorts.push(`sapdon:input_port_${i}`);
+for (let i = 0; i <= 9; i++) inputPorts.push(`sapdon:input_port_${i}`);
 const outputPorts = [];
-for (let i = 1; i <= 8; i++) outputPorts.push(`sapdon:output_port_${i}`);
+for (let i = 0; i <= 9; i++) outputPorts.push(`sapdon:output_port_${i}`);
 
 ItemAPI.createItemCatalog()
     .addGroup("construction", [

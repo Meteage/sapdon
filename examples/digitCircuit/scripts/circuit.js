@@ -14,7 +14,7 @@ export const SOURCE_TYPES = ["sapdon:on_signal", "sapdon:off_signal", SWITCH_TYP
 
 export const INPUT_PORT_PREFIX = "sapdon:input_port_";
 export const OUTPUT_PORT_PREFIX = "sapdon:output_port_";
-const PORT_RANGE = Array.from({ length: 8 }, (_, i) => i + 1);
+const PORT_RANGE = Array.from({ length: 10 }, (_, i) => i);
 export const INPUT_PORT_TYPES = PORT_RANGE.map((i) => `${INPUT_PORT_PREFIX}${i}`);
 export const OUTPUT_PORT_TYPES = PORT_RANGE.map((i) => `${OUTPUT_PORT_PREFIX}${i}`);
 
@@ -98,11 +98,14 @@ function registerFaces(facing) {
     };
 }
 
-// 芯片记录：{ inputs:[端口序号], outputs:[端口序号], table:[[inNum,outMask],...] }
-// 输入数值 → 表内匹配行 → 输出 outMask；无匹配行输出 0
+// 芯片记录：{ inputs:[端口序号], outputs:[端口序号], mode, table | topo }
+// 真值表模式：输入数值 → 表内匹配行 → 输出 outMask；无匹配行输出 0
+// 拓扑模式：按拓扑结构实时仿真（含寄存器），输出 outMask
 function chipLookup(comp, inVal) {
     const rec = comp.logicUuid ? getLogicByUuid(comp.logicUuid) : null;
-    if (!rec || !Array.isArray(rec.table)) return 0;
+    if (!rec) return 0;
+    if (rec.mode === "topo") return evalTopo(comp, rec.topo, inVal);
+    if (!Array.isArray(rec.table)) return 0;
     const row = rec.table.find((r) => r[0] === inVal);
     return row ? (row[1] || 0) : 0;
 }
@@ -409,6 +412,8 @@ export function registerComponent(block) {
         logicUuid: previous && previous.logicUuid ? previous.logicUuid : "",
         // 重建时保留 1bit 寄存器锁存值
         store: previous && previous.store ? 1 : 0,
+        // 重建时保留拓扑模式芯片的寄存器状态
+        _topoStore: previous && previous._topoStore ? previous._topoStore : undefined,
     };
     if (block.typeId === SWITCH_TYPE || block.typeId === DISPLAY_TYPE) {
         comp.powered = block.permutation.getState(POWER_STATE) ?? 0;
@@ -1028,6 +1033,8 @@ const MAX_LOGIC_INPUTS = 8;
 // 编译调试开关：设为 true 可在真值表生成时打印每一步
 let LOG_COMPILE = false;
 export function setCompileLog(on) { LOG_COMPILE = !!on; }
+// 测试辅助：导出拓扑求值核心（供 Node 单测）
+export const TEST = { buildTopoModel, topoCompute, evalTopo };
 function cLog(...args) {
     if (LOG_COMPILE) {
         const msg = args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ");
@@ -1144,6 +1151,28 @@ function freshComponents(blocks, netOfWire) {
     }
     cLog(`components built: ${comps.size}`, [...comps.values()].map((cp) => `${cp.type}@${cp.key} nets=${JSON.stringify(cp.nets)} directs=${JSON.stringify(cp.directs)} powered=${cp.powered}`).join(" | "));
     return comps;
+}
+
+// 端口端子到电路的距离：BFS 沿连通电路方块，遇到"非端口"方块即返回层数。
+// 远离电路的一端 dist 更大 → 作为低位（bit0）。
+function freshPortDist(comp, blocks) {
+    const start = getBlockByKey(comp.key);
+    if (!start) return 0;
+    const seen = new Set([comp.key]);
+    const q = [[start, 0]];
+    while (q.length) {
+        const [b, d] = q.shift();
+        for (const face of FACES) {
+            const nb = getAdjacent(b, capitalize(face));
+            if (!nb || !isCircuit(nb.typeId)) continue;
+            const k = nodeKey(nb);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            if (!isPort(nb.typeId)) return d + 1;
+            q.push([nb, d + 1]);
+        }
+    }
+    return 0;
 }
 
 function freshOutputFace(c, face) {
@@ -1291,14 +1320,15 @@ export function compileLogic(clickedInputPort) {
     for (const c of comps.values()) {
         const num = portNumber(c.type);
         if (num === null) continue;
-        (isInputPort(c.type) ? inputs : outputs).push({ c, num });
+        (isInputPort(c.type) ? inputs : outputs).push({ c, num, dist: freshPortDist(c, blocks) });
     }
-    inputs.sort((a, b) => a.num - b.num);
+    // 输入端子序号：从远离电路的一端开始取（最远=最低位/bit0），向电路方向递增
+    // 距离相同（并列连同一 net）时按方块数字升序，保证确定性
+    inputs.sort((a, b) => (b.dist - a.dist) || (a.num - b.num));
     outputs.sort((a, b) => a.num - b.num);
-    cLog(`inputs=[${inputs.map((p) => p.num).join(",")}] outputs=[${outputs.map((p) => p.num).join(",")}]`);
+    cLog(`inputs=[${inputs.map((p) => p.num).join(",")}] dist=[${inputs.map((p) => p.dist).join(",")}] outputs=[${outputs.map((p) => p.num).join(",")}]`);
 
     if (!inputs.length) return { error: "«no input port in circuit»" };
-    if (inputs.length > MAX_LOGIC_INPUTS) return { error: `«too many inputs (>${MAX_LOGIC_INPUTS})»` };
 
     recomputeFreshNetWidths(netsMap, comps);
     cLog("net widths:", [...netsMap.values()].map((n) => `${n.id}=${n.width}`).join(" "));
@@ -1309,35 +1339,214 @@ export function compileLogic(clickedInputPort) {
         cLog(`  !!! ${c.type}@${loc} input face ${bad} width>1 -> error (输入按0处理)`);
     }
 
-    const table = [];
-    const total = 1 << inputs.length;
-    for (let mask = 0; mask < total; mask++) {
-        for (let i = 0; i < inputs.length; i++) inputs[i].c.powered = (mask >> i) & 1;
-        let changed = true;
-        let it = 0;
-        while (changed && it < 32) {
-            changed = false;
-            for (const c of comps.values()) {
-                if (isInputPort(c.type)) continue;
-                const before = c.powered;
-                const v = freshCompute(c, netsMap, comps);
-                if (v !== c.powered) { c.powered = v; changed = true; }
-                cLog(`  iter${it} mask${mask} ${c.type}@${c.key} ${before}->${v}`);
+    // 输入 ≤8：真值表法；输入 >8：直接记录电路拓扑（运行时按拓扑仿真）
+    if (inputs.length <= MAX_LOGIC_INPUTS) {
+        const table = [];
+        const total = 1 << inputs.length;
+        for (let mask = 0; mask < total; mask++) {
+            for (let i = 0; i < inputs.length; i++) inputs[i].c.powered = (mask >> i) & 1;
+            let changed = true;
+            let it = 0;
+            while (changed && it < 32) {
+                changed = false;
+                for (const c of comps.values()) {
+                    if (isInputPort(c.type)) continue;
+                    const before = c.powered;
+                    const v = freshCompute(c, netsMap, comps);
+                    if (v !== c.powered) { c.powered = v; changed = true; }
+                    cLog(`  iter${it} mask${mask} ${c.type}@${c.key} ${before}->${v}`);
+                }
+                it++;
             }
-            it++;
+            let outMask = 0;
+            for (let j = 0; j < outputs.length; j++) if (outputs[j].c.powered) outMask |= 1 << j;
+            table.push([mask, outMask]);
+            cLog(`mask=${mask} => outMask=${outMask}`);
         }
-        let outMask = 0;
-        for (let j = 0; j < outputs.length; j++) if (outputs[j].c.powered) outMask |= 1 << j;
-        table.push([mask, outMask]);
-        cLog(`mask=${mask} => outMask=${outMask}`);
+        cLog("=== table:", JSON.stringify(table), "===");
+        return {
+            mode: "table",
+            inputs: inputs.map((p) => p.num),
+            outputs: outputs.map((p) => p.num),
+            table,
+        };
     }
-    cLog("=== table:", JSON.stringify(table), "===");
 
+    const topo = serializeTopology(clickedInputPort.location, comps, netsMap, inputs, outputs);
+    cLog("=== topo:", JSON.stringify(topo), "===");
     return {
+        mode: "topo",
         inputs: inputs.map((p) => p.num),
         outputs: outputs.map((p) => p.num),
-        table,
+        topo,
     };
+}
+
+// 拓扑序列化：以 clicked 端口为原点，把 fresh 模型（comps+nets）转成相对坐标记录。
+// inputs/outputs 按 bit 序给出端子序号与其相对 key，供运行时按 inVal 逐位驱动。
+function serializeTopology(origin, comps, netsMap, inputs, outputs) {
+    const toRel = (loc) => ({ x: loc.x - origin.x, y: loc.y - origin.y, z: loc.z - origin.z });
+    const relKeyOf = (loc) => {
+        const r = toRel(loc);
+        return `${r.x},${r.y},${r.z}`;
+    };
+    const compKeyToRel = (key) => {
+        const m = /^-?\d+,-?\d+,-?\d+$/.exec(key);
+        if (m) return key;
+        const mm = /^(.*):(-?\d+),(-?\d+),(-?\d+)$/.exec(key);
+        return mm ? relKeyOf({ x: +mm[2], y: +mm[3], z: +mm[4] }) : key;
+    };
+
+    const netIdToIdx = new Map();
+    const netArr = [];
+    for (const net of netsMap.values()) {
+        netIdToIdx.set(net.id, netArr.length);
+        netArr.push({
+            wires: [...net.wires].map((k) => {
+                const mm = /^(.*):(-?\d+),(-?\d+),(-?\d+)$/.exec(k);
+                const r = mm ? relKeyOf({ x: +mm[2], y: +mm[3], z: +mm[4] }) : null;
+                return r || compKeyToRel(k);
+            }),
+            terms: [...net.terms.values()].map((t) => [compKeyToRel(t.compKey), t.face]),
+            width: net.width ?? 1,
+        });
+    }
+
+    const compArr = [];
+    for (const c of comps.values()) {
+        compArr.push({
+            k: relKeyOf(c.loc),
+            t: c.type,
+            x: c.loc.x - origin.x,
+            y: c.loc.y - origin.y,
+            z: c.loc.z - origin.z,
+            f: c.facing || "north",
+            p: c.powered ? 1 : 0,
+            nets: Object.fromEntries(Object.entries(c.nets || {}).map(([face, id]) => [face, id != null ? netIdToIdx.get(id) : null])),
+            directs: Object.fromEntries(Object.entries(c.directs || {}).map(([face, k]) => [face, k ? compKeyToRel(k) : null])),
+        });
+    }
+
+    return {
+        origin: { x: origin.x, y: origin.y, z: origin.z },
+        inputs: inputs.map((p) => ({ num: p.num, k: relKeyOf(p.c.loc) })),
+        outputs: outputs.map((p) => ({ num: p.num, k: relKeyOf(p.c.loc) })),
+        comps: compArr,
+        nets: netArr,
+    };
+}
+
+// 拓扑运行时仿真：按 inVal 逐位驱动输入端口，固定点求各组件，读输出端口拼 outMask
+function evalTopo(comp, topo, inVal) {
+    if (!topo || !Array.isArray(topo.comps)) return 0;
+    if (!comp._topoModel) comp._topoModel = buildTopoModel(topo);
+    const { comps, netsMap, inputOf, outputOf } = comp._topoModel;
+    const store = comp._topoStore || (comp._topoStore = {});
+    const orig = topo.origin || { x: 0, y: 0, z: 0 };
+
+    for (let i = 0; i < topo.inputs.length; i++) {
+        const c = inputOf.get(topo.inputs[i].k);
+        if (c) c.powered = (inVal >> i) & 1;
+    }
+    let changed = true;
+    let it = 0;
+    while (changed && it < 32) {
+        changed = false;
+        for (const c of comps.values()) {
+            if (isInputPort(c.type)) continue;
+            const before = c.powered;
+            const v = topoCompute(c, netsMap, comps, store);
+            if (v !== c.powered) { c.powered = v; changed = true; }
+        }
+        it++;
+    }
+    let outMask = 0;
+    for (let j = 0; j < topo.outputs.length; j++) {
+        const c = outputOf.get(topo.outputs[j].k);
+        if (c && c.powered) outMask |= 1 << j;
+    }
+    return outMask;
+}
+
+// 从拓扑记录重建内存模型（相对坐标 key），缓存到 chip 组件上
+function buildTopoModel(topo) {
+    const comps = new Map();
+    const relToLoc = (k) => {
+        const m = /^(-?\d+),(-?\d+),(-?\d+)$/.exec(k);
+        return m ? { x: +m[1], y: +m[2], z: +m[3] } : { x: 0, y: 0, z: 0 };
+    };
+    for (const c of topo.comps) {
+        comps.set(c.k, {
+            key: c.k,
+            type: c.t,
+            facing: c.f || "north",
+            powered: c.p || 0,
+            loc: relToLoc(c.k),
+            nets: {},
+            directs: {},
+        });
+    }
+    const netsMap = new Map();
+    (topo.nets || []).forEach((n, i) => {
+        const net = {
+            id: `tn${i}`,
+            wires: new Set((n.wires || []).map((w) => (Array.isArray(w) ? `${w[0]},${w[1]},${w[2]}` : w))),
+            terms: new Map(),
+            width: n.width ?? 1,
+            value: 0,
+        };
+        for (const [ck, face] of n.terms || []) net.terms.set(`${ck}|${face}`, { compKey: ck, face });
+        netsMap.set(net.id, net);
+    });
+    for (const c of topo.comps) {
+        const comp = comps.get(c.k);
+        for (const [face, idx] of Object.entries(c.nets || {})) {
+            comp.nets[face] = idx != null && netsMap.has(`tn${idx}`) ? `tn${idx}` : null;
+        }
+        for (const [face, dk] of Object.entries(c.directs || {})) {
+            comp.directs[face] = dk || null;
+        }
+    }
+    const inputOf = new Map((topo.inputs || []).map((p) => [p.k, comps.get(p.k)]));
+    const outputOf = new Map((topo.outputs || []).map((p) => [p.k, comps.get(p.k)]));
+    return { comps, netsMap, inputOf, outputOf };
+}
+
+// 拓扑求值（含寄存器：初始 store=0，W=1 时写 D，W=0 保持）
+function topoCompute(c, netsMap, comps, store) {
+    const t = c.type;
+    if (t === "sapdon:on_signal") return 1;
+    if (t === "sapdon:off_signal") return 0;
+    if (t === SWITCH_TYPE) return c.powered;
+    if (t === DISPLAY_TYPE || isPort(t)) {
+        let v = 0;
+        for (const face of FACES) v = v || freshFaceSignal(c, face, netsMap, comps);
+        return v ? 1 : 0;
+    }
+    if (t === SPLITTER_TYPE) {
+        const f = splitterFaces(c.facing);
+        return freshFaceSignal(c, f.input, netsMap, comps) ? 1 : 0;
+    }
+    if (t === MERGE_TYPE) {
+        const m = mergeFaces(c.facing);
+        return (freshFaceSignal(c, m.west, netsMap, comps) || freshFaceSignal(c, m.south, netsMap, comps)) ? 1 : 0;
+    }
+    if (t === REGISTER_TYPE) {
+        const f = registerFaces(c.facing);
+        const wSig = freshFaceSignal(c, f.w, netsMap, comps);
+        const dVal = freshFaceSignal(c, f.d, netsMap, comps);
+        let cur = store[c.key] || 0;
+        if (wSig) cur = store[c.key] = dVal ? 1 : 0;
+        return cur;
+    }
+    if (isGate(t)) {
+        const ins = freshGateInputs(c).map((f) => freshFaceSignal(c, f, netsMap, comps));
+        if (freshGateWidthError(c, netsMap, comps)) return 0;
+        if (t === "sapdon:and_gate") return ins.every(Boolean) ? 1 : 0;
+        if (t === "sapdon:or_gate") return ins.some(Boolean) ? 1 : 0;
+        if (t === "sapdon:not_gate") return ins[0] ? 0 : 1;
+    }
+    return 0;
 }
 
 // 从端口 typeId 解析出端口序号（null 表示非端口）
@@ -1376,6 +1585,7 @@ export function saveCircuit() {
             db: comp.directByFace || {},
             lu: comp.logicUuid || "",
             st: comp.store ? 1 : 0,
+            tr: comp._topoStore && Object.keys(comp._topoStore).length ? comp._topoStore : undefined,
         });
     }
     const netArr = [];
@@ -1418,6 +1628,9 @@ export function loadCircuit() {
             logicUuid: c.lu || "",
             store: c.st ? 1 : 0,
         });
+        if (c.tr && typeof c.tr === "object") {
+            components.get(c.k)._topoStore = c.tr;
+        }
     }
     for (const n of data.nets) {
         const net = { id: n.k, wires: new Set(n.w), terms: new Map(), width: 1, value: 0 };

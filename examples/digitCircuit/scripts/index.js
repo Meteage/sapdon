@@ -278,7 +278,7 @@ system.beforeEvents.startup.subscribe((init) => {
             if (name) bound.nameTag = name;
             container.addItem(bound);
 
-            world.sendMessage(`[电路] 已保存逻辑 uuid=${record.uuid} in=[${record.inputs.join(",")}] out=[${record.outputs.join(",")}]`);
+            world.sendMessage(`[电路] 已保存逻辑 uuid=${record.uuid} mode=${record.mode || "table"} in=[${record.inputs.join(",")}] out=[${record.outputs.join(",")}]`);
         }
     });
 

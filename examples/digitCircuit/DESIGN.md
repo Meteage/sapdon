@@ -84,7 +84,9 @@ examples/digitCircuit/
 - `chipFaces(facing)`：输出=`facing`，输入=`oppositeFace(facing)`。
 - 「电路存储芯片」物品（`sapdon:logic_tool`，带 `uuid:` lore）对 chip 右键 → `bindChipLogic` 把该逻辑绑定到 chip、方块置 `sapdon:loaded=1` 并消耗物品一个。
 - 潜行（shift）右键已加载 chip → `unbindChipLogic` 取回逻辑物品（`sapdon:logic_tool`×1，带原 uuid/name lore），方块恢复未加载贴图。
-- 芯片运行时：南面输入数值 → 查逻辑真值表（`inputs` 数位）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
+- 芯片运行时：南面输入数值 → 查逻辑记录（`mode`）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
+  - `mode=table`（输入端子 ≤8）：查真值表 `inputs` 数位。
+  - `mode=topo`（输入端子 >8）：直接记录原电路拓扑（`topo` 字段，相对坐标的 comps+nets+端子映射），芯片按输入数值逐位驱动拓扑做固定点仿真（`evalTopo`，支持寄存器，初始 store=0）。这使端子数量可任意拓展，不受真值表 2^n 限制。
 
 ### 3.8b 1bit 寄存器 `sapdon:register`
 - `createRotatableBlock`；`["reg","default","output","input","default","input"]`。
@@ -102,7 +104,7 @@ examples/digitCircuit/
 | `sapdon:itemGroup.name.source` | wire, on_signal, off_signal, switch | construction |
 | `sapdon:itemGroup.name.gate` | and_gate, or_gate, not_gate | construction |
 | `sapdon:itemGroup.name.bus` | splitter, merger | construction |
-| `sapdon:itemGroup.name.port` | input_port_1~8, output_port_1~8, display | construction |
+| `sapdon:itemGroup.name.port` | input_port_0~9, output_port_0~9, display | construction |
 | `sapdon:itemGroup.name.chip` | chip, register | construction |
 | `sapdon:itemGroup.name.tool` | debug_tool, logic_tool | equipment |
 

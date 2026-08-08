@@ -40,9 +40,11 @@ export function saveLogic(data) {
     const record = {
         uuid,
         version: LOGIC_VERSION,
+        mode: data.mode || "table",
         inputs: data.inputs || [],
         outputs: data.outputs || [],
         table: data.table || [],
+        topo: data.topo || null,
         name: data.name ? String(data.name) : undefined,
         createdAt: Date.now(),
     };
