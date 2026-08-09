@@ -4,3 +4,4 @@ sapdon:itemGroup.name.bus=Bit Width Bus
 sapdon:itemGroup.name.port=Ports
 sapdon:itemGroup.name.chip=Programmable Chip
 sapdon:itemGroup.name.tool=Tools
+sapdon:wire_item.name=Wire
