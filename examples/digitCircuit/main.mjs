@@ -101,13 +101,15 @@ ItemAPI.createItem("sapdon:logic_tool", ItemCategory.Equipment, "iron_ingot", {
 )
 
 // === 游戏内指导手册（sapdon:guidebook）===
-ItemAPI.createItem("sapdon:guidebook", ItemCategory.Equipment, "book", {
+ItemAPI.createItem("sapdon:guidebook", ItemCategory.Equipment, "book_writable", {
     maxStackSize: 1,
     group: GROUP_TOOL,
     formatVersion: "1.21.90",
 }).addComponent(
     ItemComponent.combineComponents(
         ItemComponent.setDisplayName("digitCircuit 指导手册"),
+        ItemComponent.setInteractButton("打开手册"),
+        ItemComponent.setHandEquipped(true),
         ItemComponent.setCustomComponents(["sapdon:guidebook"])
     )
 )
