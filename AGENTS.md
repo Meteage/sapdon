@@ -84,6 +84,8 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - 自定义控件：`NeoGuidebookPage` 有 `addControl(control)` / `addStack(size, control, debug?)` 透传内部 StackPanel，可放任意 `UIElement`（Label/Image/Button…）或原生 JSON 控件对象；底层控件类（`Label/Text/Control/Image/Sprite/StackPanel/Layout` 等）在 `@sapdon/core` 的 UI 导出里。
 - 框架侧改完 `src/core/ui/systems/neoGuibook/*` 后：root `npm run build` 重建 prod，再进示例项目 `sapdon lib` 同步 node_modules；同步后验证 `node_modules/@sapdon/core/index.d.ts` 里有对应方法声明。
 - 运行时 `scripts/index.js` 里物品自定义组件 `onUse` → `new ActionFormData().title(书名不带命名空间).body(pageId)`；书名 = identifier 的 name 部分（`sapdon:guidebook` → title `"guidebook"`）。按钮文字是 JSON UI 绑定键名（`prev_button`/`next_button`/`home_button`/`item_0_button`…），非显示文本。
+- 多级目录/返回：子目录页用 `buildChapterList(prefix)` 指定不同前缀（如 `"sub"` → `sub_N_button`），避免 JSON UI 按钮 id 全局冲突；子分类页返回**用原生 prev**，不放自定义按钮，prev 目标由 `PAGE_PREV` 覆盖（`{ "page_source": pageIds.indexOf("page_index1"), ... }`，未列出的页走线性 `current-1`）。运行时跳转需数据驱动：`guide_pages.js` 同时导出 `PAGE_IDS`（index 顺序）、`PAGE_NAV`（每页 `[{key, target}]`，target 存 `pageIds.indexOf(page_id)` index）、`PAGE_PREV`；`openGuidebook` 按当前页查 `PAGE_NAV[page_id]` 渲染按钮。切勿直接存页 id 字符串作为 goto 目标。
+- 手册文本排版：中文一行约 16 汉字，超长手动 `\n` 拆行；子分类页 list 每行「图标+名字+一句话」，用 `addStack` 把 `iconRow`（StackPanel+Image+Label）铺进左页，比重排按钮更简洁。
 - 物品要能触发 `onUse` 必须加 `minecraft:interact_button`（如"打开"）——否则右键无反应。
 - 加了新 `@minecraft/server-ui` 依赖后，**必须删掉 `dev/<proj>_BP/manifest.json` 再 build**，否则 manifest 只在首次构建生成、不会自动追加依赖（表现为 `Module [@minecraft/server-ui] is unrecognized` / version conflict，脚本 context 创建失败、整包脚本不运行）。
 - `@minecraft/server` 2.6.0 需配 `@minecraft/server-ui` 2.x（1.x 会报 version conflict）。

@@ -277,11 +277,14 @@ page.addStack(
 )
 ```
 
-#### buildChapterList()
+#### buildChapterList(prefix?)
 
 ```typescript
-page.buildChapterList()
+page.buildChapterList()          // 默认前缀 "item"，生成 item_N_button
+page.buildChapterList("sub")     // 多级目录：生成 sub_N_button，避免按钮 id 全局冲突
 ```
+
+`prefix` 决定目录按钮的绑定键名：`${prefix}_${index}_button`。单本书只有一个目录页时用默认值；要加子目录/二级目录，不同级别传不同前缀。
 
 #### getPanel()
 

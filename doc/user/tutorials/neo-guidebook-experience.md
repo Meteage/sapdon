@@ -57,12 +57,12 @@ const book = new NeoGuidebook("my_mod:guidebook", "ui/", [320, 207], {
 | `addRecipeGrid(row, col, items, size?)` | `["100%","30%"]` | 配方网格（纹理路径数组） |
 | `addBookCategory(title, row, col, buttons, size?)` | — | 物品分类网格 |
 | `addChapter(name, texture)` / `addChapters([...])` | — | 章节目录项 |
-| `buildChapterList()` | — | 生成"Chapters"目录块 |
+| `buildChapterList(prefix?)` | — | 生成"Chapters"目录块（`prefix` 默认 `"item"`，多级目录换前缀避免按钮 id 冲突） |
 | `addControl(control)` | — | 添加任意自定义 UI 控件（透传 panel） |
 | `addStack(size, control, debug?)` | — | 自定义控件 + 占位尺寸（透传 StackPanel.addStack） |
 | `getPanel(): Panel` | — | 交给 `addDoublePageStack` 用 |
 
-> **注意**：`NeoGuidebookPage.addChapter/addChapters` 只是**声明数据**，必须再调 `buildChapterList()` 才会渲染成目录块。
+> **注意**：`NeoGuidebookPage.addChapter/addChapters` 只是**声明数据**，必须再调 `buildChapterList()` 才会渲染成目录块。每页可调多次 `buildChapterList(prefix)`，不同 prefix 生成不同前缀的按钮键（如目录页 `item_0_button`、子目录页 `sub_0_button`），避免 JSON UI 元素 id 全局冲突。
 
 ---
 
@@ -186,7 +186,7 @@ fs.writeFileSync(
 
 ```js
 import { ActionFormData } from "@minecraft/server-ui"
-import { PAGE_IDS } from "./guide_pages.js"
+import { PAGE_IDS, PAGE_NAV } from "./guide_pages.js"
 
 // startup 回调内：
 init.itemComponentRegistry.registerCustomComponent("my_mod:guidebook", {
@@ -207,15 +207,17 @@ function openGuidebook(player, index) {
         .body(pageId)              // ← 必须是 addDoublePageStack 的 page_id
 
     const actions = []
+    // 数据驱动的页面跳转按钮（PAGE_NAV：binding 键 -> 目标页）
+    const nav = PAGE_NAV && PAGE_NAV[pageId]
+    if (Array.isArray(nav)) {
+        for (const item of nav) {
+            form.button(item.key)
+            actions.push(`goto:${item.target}`)
+        }
+    }
     if (current > 0) { form.button("prev_button"); actions.push("prev") }
     if (current < ids.length - 1) { form.button("next_button"); actions.push("next") }
     if (current !== 0) { form.button("home_button"); actions.push("home") }
-    if (current === 0) {
-        for (let i = 1; i < ids.length; i++) {
-            form.button(`item_${i - 1}_button`)   // 目录跳转按钮
-            actions.push(`goto:${i}`)
-        }
-    }
 
     form.show(player).then((response) => {
         if (response.canceled) return
@@ -238,7 +240,70 @@ function openGuidebook(player, index) {
 | `prev_button` | 上一页 |
 | `next_button` | 下一页 |
 | `home_button` | 回首页 |
-| `item_<N>_button` | 目录跳转到第 N+1 页 |
+| `item_<N>_button` | 目录跳转（`page_index0` 章节按钮，目标由 `PAGE_NAV` 决定） |
+| `sub_<N>_button` | 子目录跳转（`buildChapterList("sub")` 生成的分类按钮） |
+
+### 多级目录/返回上一级（以 digitCircuit 方块总览为例）
+
+核心是**任意页都能有跳转按钮**：UI 侧用 `buildChapterList(prefix)` 生成章节按钮（键名 `item_*`/`sub_*`），运行时用 `PAGE_NAV` 把键名映射到目标页 index。子分类页**不再放自定义 `back_button`**，直接用原生 `prev_button`，并用 `PAGE_PREV` 把 prev 的目标指向上一级（方块总览分类页），少一层按钮更简洁。
+
+```js
+// main.mjs 构建时
+import { NeoGuidebook, NeoGuidebookPage, ServerFormButton } from '@sapdon/core'
+
+// 1) 方块总览分类页：子目录用 sub 前缀，避免与目录页 item_* id 冲突
+const nav = new NeoGuidebookPage("blocksNavRight")
+    .addChapters([
+        { chapter_name: "信号源", chapter_texture: "textures/blocks/on" },
+        { chapter_name: "逻辑门", chapter_texture: "textures/blocks/and" },
+        // ...
+    ])
+    .buildChapterList("sub")                      // ← 生成 sub_0_button..
+
+// 2) 子分类页（如信号源）：左页静态 list 展示（图标+名字+一句话），不加返回按钮
+//    iconRow 用 StackPanel + Image/Sprite/Label 拼一行，addStack 铺到左页
+function iconRow(tex, name, desc) {
+    return new StackPanel(undefined, undefined)
+        .setOrientation("horizontal")
+        .addStack(["16%", "100%"], new Image("icon", undefined)
+            .setSprite(new Sprite().setTexture(`textures/blocks/${tex}`)))
+        .addStack(["84%", "100%"], new Label("row_text", undefined)
+            .setText(new Text().setText(`${name}\n${desc}`).setColor([0, 0, 0])))
+}
+const pageSourceL = new NeoGuidebookPage("pageSourceL")
+    .addEmptySpace(["100%", "3%"])
+    .addCategoryTitle("信号源", ["100%", "10%"])
+    .addDivider(["100%", "2%"])
+pageSourceL.addStack(["100%", "14%"], iconRow("on", "on_signal", "恒输出 1"))
+pageSourceL.addStack(["100%", "14%"], iconRow("off", "off_signal", "恒输出 0"))
+// ...每行一个 addStack；右页放"输入/输出面"说明文字
+
+// 3) 导航数据：生成 guide_pages.js 时附上 PAGE_NAV + PAGE_PREV（目标存 index）
+fs.writeFileSync(path.join(process.cwd(), "scripts", "guide_pages.js"),
+    "export const PAGE_IDS = " + JSON.stringify(pageIds, null, 2) + ";\n" +
+    "export const PAGE_NAV = " + JSON.stringify({
+        page_index0: [ // 目录页：item_0 → 方块总览分类页
+            { key: "item_0_button", target: pageIds.indexOf("page_index1") },
+            { key: "item_1_button", target: pageIds.indexOf("page_index2") },
+            // ...
+        ],
+        page_index1: [ // 方块总览分类页：sub_0 → 信号源
+            { key: "sub_0_button", target: pageIds.indexOf("page_source") },
+            // ...
+        ],
+        // 子分类页无需 PAGE_NAV，返回交给 prev
+    }, null, 2) + ";\n" +
+    "export const PAGE_PREV = " + JSON.stringify({
+        // 子分类页的 prev 一律回方块总览分类页；不在此表的页走线性 prev
+        page_source: pageIds.indexOf("page_index1"),
+        page_gate: pageIds.indexOf("page_index1"),
+        // ...
+    }, null, 2) + ";\n")
+```
+
+`openGuidebook` 打开任意页时会查 `PAGE_NAV[page_id]`，渲染页面对应的跳转按钮；没有配置的页只显示 prev/next/home。`prev_button` 按下时：若 `PAGE_PREV[page_id]` 有值就跳转到它，否则 `current - 1`。
+
+> 文本排版：中文一行约 16 汉字，超长应手动用 `\n` 拆行；子分类页 list 每行「图标 + 名称 + 一句话」最省空间，避免文字溢出按钮/越界。
 
 ---
 
@@ -286,6 +351,12 @@ npm run build
 
 游戏 dev 包同步后需重新进入世界让 addon 重载；`manifest.json` 变更（如新增依赖）尤其如此，否则仍在跑旧上下文。
 
+JSON UI 里元素 id 全局唯一。目录页若已用默认 `item_N_button`，再在子目录页用 `addChapter...buildChapterList()`（不带前缀）会生成重复 id → UI 报错/按钮错乱。子目录页务必传不同前缀：`buildChapterList("sub")` 生成 `sub_N_button`。子分类页返回直接用 `prev_button`（配 `PAGE_PREV`），一般不需要自定义按钮。
+
+### 坑 11：`goto:` 目标必须是 `PAGE_IDS` 的 index
+
+`PAGE_NAV` 的 `target` 存的是页在 `PAGE_IDS` 数组里的下标（`pageIds.indexOf(page_id)`），运行时 `openGuidebook(player, target)` 按 index 定位。切勿直接存页 id 字符串。同理 `PAGE_PREV` 的 value 也是 index。
+
 ---
 
 ## 6. 验证清单
@@ -298,7 +369,7 @@ dev/<proj>_BP/items/sapdon_guidebook.json
 dev/<proj>_RP/ui/guidebook.json        # 含 page_index0..N_page_panel
 dev/<proj>_RP/ui/server_form.json      # 含 source_property_name: ((#title_text - 'guidebook') = #title_text)
 dev/<proj>_RP/ui/_ui_defs.json         # ui_defs 含 ui/guidebook.json
-scripts/guide_pages.js                 # export const PAGE_IDS
+scripts/guide_pages.js                 # export const PAGE_IDS + PAGE_NAV + PAGE_PREV
 dev/<proj>_BP/scripts/index.js         # 含 openGuidebook + registerCustomComponent("...guidebook")
 ```
 

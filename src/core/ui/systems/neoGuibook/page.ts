@@ -163,14 +163,14 @@ export class BookRecipeGrid extends StackPanel {
 
 // 章节项组件
 export class ChapterItem extends Panel {
-    constructor(index: number, chapterName: string, texture: string) {
-        super(`item_panel${index}`, undefined);
+    constructor(index: number, chapterName: string, texture: string, prefix: string = "item") {
+        super(`${prefix}_panel${index}`, undefined);
         
-        const contentStack = new StackPanel(`item_${index}`, undefined)
+        const contentStack = new StackPanel(`${prefix}_${index}`, undefined)
             .setOrientation("horizontal")
             .addStack(["15%", "100%"], new EmptySpace("left_space"))
             .addStack(["10%", "100%"], 
-                new Image(`image_${index}`, undefined)
+                new Image(`${prefix}_image_${index}`, undefined)
                     .setSprite(new Sprite().setTexture(texture))
             )
             .addStack(["60%", "100%"],
@@ -182,12 +182,12 @@ export class ChapterItem extends Panel {
                     )
             )
             .addStack(["15%", "60%"],
-                new ServerFormButton(`item_${index}_warning`, `item_${index}_button`)
+                new ServerFormButton(`${prefix}_${index}_warning`, `${prefix}_${index}_button`)
                     .setDefaultTexture("textures/ui/ErrorGlyph")
                     .setHoverTexture("textures/ui/ErrorGlyph")
             );
         
-        const backgroundButton = new ServerFormButton(`item_${index}_button`, `item_${index}_button`)
+        const backgroundButton = new ServerFormButton(`${prefix}_${index}_button`, `${prefix}_${index}_button`)
             .setDefaultTexture("")
             .setHoverTexture("textures/ui/promotion_slot");
         
@@ -282,8 +282,8 @@ export class NeoGuidebookPage {
         return this;
     }
 
-    // 构建章节目录部分
-    buildChapterList(): this {
+    // 构建章节目录部分（prefix 用于区分多级目录的按钮绑定键，如 sub_0_button）
+    buildChapterList(prefix: string = "item"): this {
         if (this.chapters.length === 0) return this;
 
         // 添加空占位
@@ -300,7 +300,7 @@ export class NeoGuidebookPage {
         // 添加章节列表
         this.chapters.forEach(({chapter_name, chapter_texture}, index) => {
             this.panel.addStack(["100%", "10%"], 
-                new ChapterItem(index, chapter_name, chapter_texture)
+                new ChapterItem(index, chapter_name, chapter_texture, prefix)
             );
         });
 
