@@ -1137,8 +1137,12 @@ function freshComponents(blocks, netOfWire) {
         let powered = 0;
         if (b.typeId === SWITCH_TYPE || b.typeId === DISPLAY_TYPE) powered = b.permutation.getState(POWER_STATE) ?? 0;
         if (b.typeId === "sapdon:on_signal") powered = 1;
-        const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE || b.typeId === REGISTER_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
+        const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE || b.typeId === REGISTER_TYPE || b.typeId === CHIP_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
         const c = { key: nodeKey(b), type: b.typeId, facing, powered, nets: {}, directs: {} };
+        if (b.typeId === CHIP_TYPE) {
+            const prev = components.get(c.key);
+            if (prev && prev.logicUuid) c.logicUuid = prev.logicUuid;
+        }
         for (const face of FACES) {
             const nb = getAdjacent(b, capitalize(face));
             if (nb && nb.typeId === WIRE_TYPE && wireConnectState(nb, oppositeFace(face))) {
@@ -1183,6 +1187,7 @@ function freshOutputFace(c, face) {
         return face === f.through || face === f.split;
     }
     if (c.type === MERGE_TYPE) return face === mergeFaces(c.facing).out;
+    if (c.type === CHIP_TYPE) return face === chipFaces(c.facing).output;
     if (c.type === REGISTER_TYPE) return face === registerFaces(c.facing).q;
     if (isPort(c.type)) return true;
     return false;
@@ -1194,22 +1199,83 @@ function freshGateInputs(c) {
 }
 
 function freshNetSignal(netId, netsMap, comps) {
+    return freshNetValue(netId, netsMap, comps) ? 1 : 0;
+}
+
+// 递归求 net 数值时的防环守卫：反馈接线时被再次求值的 net 视为 0（对齐运行时固定点不收敛⇒0）
+const _freshNetStack = new Set();
+function freshNetValue(netId, netsMap, comps) {
+    if (_freshNetStack.has(netId)) return 0;
+    _freshNetStack.add(netId);
     const net = netsMap.get(netId);
-    if (!net) return 0;
+    if (!net) { _freshNetStack.delete(netId); return 0; }
+    let v = 0;
     for (const { compKey, face } of net.terms.values()) {
         const c = comps.get(compKey);
-        if (!c || !c.powered) continue;
+        if (!c) continue;
         if (isOutputPort(c.type)) continue;
-        if (freshOutputFace(c, face)) return 1;
+        if (!freshOutputFace(c, face)) continue;
+        const nv = freshCompValue(c, face, netsMap, comps);
+        if (nv > v) v = nv;
     }
-    return 0;
+    _freshNetStack.delete(netId);
+    return v;
+}
+
+// 镜像运行时 compValueFor：组件在 face（输出面）上输出的数值（多 bit 保留，不做布尔裁剪）
+function freshCompValue(c, face, netsMap, comps) {
+    if (!c) return 0;
+    if (c.type === SPLITTER_TYPE) {
+        const f = splitterFaces(c.facing);
+        const inv = freshFaceValue(c, f.input, netsMap, comps);
+        if (face === f.through) return inv >> 1;
+        if (face === f.split) return inv & 1;
+        return 0;
+    }
+    if (c.type === MERGE_TYPE) {
+        const m = mergeFaces(c.facing);
+        if (face === m.out) {
+            const w = freshFaceValue(c, m.west, netsMap, comps);
+            const s = freshFaceValue(c, m.south, netsMap, comps);
+            return (w << 1) | s;
+        }
+        return 0;
+    }
+    if (c.type === CHIP_TYPE) {
+        const f = chipFaces(c.facing);
+        if (face === f.output) {
+            const inv = freshFaceValue(c, f.input, netsMap, comps);
+            return chipLookup(c, inv);
+        }
+        return 0;
+    }
+    if (c.type === REGISTER_TYPE) {
+        const f = registerFaces(c.facing);
+        return face === f.q ? (c.store ?? 0) : 0;
+    }
+    return c.powered ? 1 : 0;
+}
+
+function freshFaceValue(c, face, netsMap, comps) {
+    if (c.type === MERGE_TYPE) {
+        const m = mergeFaces(c.facing);
+        if (face === m.out) { const w = freshFaceValue(c, m.west, netsMap, comps); const s = freshFaceValue(c, m.south, netsMap, comps); return (w << 1) | s; }
+    }
+    const dk = c.directs[face];
+    if (dk) {
+        const d = comps.get(dk);
+        if (d && freshOutputFace(d, oppositeFace(face))) return freshCompValue(d, oppositeFace(face), netsMap, comps);
+    }
+    const netId = c.nets[face];
+    if (!netId) return 0;
+    return freshNetValue(netId, netsMap, comps);
 }
 
 function freshFaceSignal(c, face, netsMap, comps) {
     const dk = c.directs[face];
     if (dk) {
         const d = comps.get(dk);
-        if (d && freshOutputFace(d, oppositeFace(face))) return d.powered;
+        if (d && freshOutputFace(d, oppositeFace(face))) return freshCompValue(d, oppositeFace(face), netsMap, comps) ? 1 : 0;
     }
     const netId = c.nets[face];
     if (!netId) return 0;
@@ -1228,6 +1294,10 @@ function freshOutputWidth(c, face, netsMap, comps) {
         const m = mergeFaces(c.facing);
         if (face === m.out) return freshFaceWidth(c, m.west, netsMap, comps) + 1;
         return 1;
+    }
+    if (c.type === CHIP_TYPE) {
+        const rec = c.logicUuid ? getLogicByUuid(c.logicUuid) : null;
+        return rec && Array.isArray(rec.outputs) ? (rec.outputs.length || 1) : 1;
     }
     return 1;
 }
@@ -1289,6 +1359,12 @@ function freshCompute(c, netsMap, comps) {
     if (t === MERGE_TYPE) {
         const m = mergeFaces(c.facing);
         return (freshFaceSignal(c, m.west, netsMap, comps) || freshFaceSignal(c, m.south, netsMap, comps)) ? 1 : 0;
+    }
+    if (t === CHIP_TYPE) {
+        const f = chipFaces(c.facing);
+        const inv = freshFaceValue(c, f.input, netsMap, comps);
+        const result = chipLookup(c, inv);
+        return result ? 1 : 0;
     }
     if (isGate(t)) {
         const ins = freshGateInputs(c).map((f) => freshFaceSignal(c, f, netsMap, comps));
