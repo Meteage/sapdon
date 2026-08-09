@@ -28,7 +28,8 @@ examples/digitCircuit/
 ├── digit/                  # 贴图源文件
 ├── res/textures/blocks/    # 构建所需的方块贴图
 ├── dev/                    # 构建产物（BP / RP），同步到游戏 dev 包
-└── DESIGN.md               # 本文档
+├── README.md               # 使用指导手册（怎么用）
+└── DESIGN.md               # 本文档（怎么实现）
 ```
 
 ## 3. 方块与物品定义（main.mjs）
