@@ -211,6 +211,8 @@ RecipeAPI.registerSimpleFurnace('my:smelted', 'my:ore')
 | [实体教程](./doc/user/tutorials/entity.md) | 创建实体 → 组件 → AI 行为 |
 | [方块教程](./doc/user/tutorials/block.md) | 基础方块 → 旋转 → 作物 |
 | [配方教程](./doc/user/tutorials/recipe.md) | 有序/无序/熔炉配方 |
+| [指南书教程](./doc/user/tutorials/neo-guidebook.md) | NeoGuidebook API 用法 |
+| [指南书实战经验](./doc/user/tutorials/neo-guidebook-experience.md) | 接入流程与踩坑清单 |
 | [物品 API](./doc/user/api/item.md) | ItemAPI、Item、ItemComponent |
 | [实体 API](./doc/user/api/entity.md) | EntityAPI、EntityComponent、AI |
 | [方块 API](./doc/user/api/block.md) | BlockAPI、BlockComponent |
