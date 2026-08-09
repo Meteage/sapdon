@@ -58,9 +58,50 @@ const book = new NeoGuidebook("my_mod:guidebook", "ui/", [320, 207], {
 | `addBookCategory(title, row, col, buttons, size?)` | — | 物品分类网格 |
 | `addChapter(name, texture)` / `addChapters([...])` | — | 章节目录项 |
 | `buildChapterList()` | — | 生成"Chapters"目录块 |
+| `addControl(control)` | — | 添加任意自定义 UI 控件（透传 panel） |
+| `addStack(size, control, debug?)` | — | 自定义控件 + 占位尺寸（透传 StackPanel.addStack） |
 | `getPanel(): Panel` | — | 交给 `addDoublePageStack` 用 |
 
 > **注意**：`NeoGuidebookPage.addChapter/addChapters` 只是**声明数据**，必须再调 `buildChapterList()` 才会渲染成目录块。
+
+---
+
+## 3.5 添加自定义控件
+
+内置的 `addBookText/addCategoryTitle` 等只覆盖常用布局。要放任意自定义控件，用 `addControl`（无尺寸包裹）或 `addStack`（指定占位尺寸）：
+
+```js
+// main.mjs 构建时
+import { NeoGuidebookPage, Label, Text, Control, Image, Sprite, Layout } from '@sapdon/core'
+
+const page = new NeoGuidebookPage("customPage")
+    .addCategoryTitle("自定义控件", ["100%", "12%"])
+
+// 1) addControl：直接加一个控件
+page.addControl(
+    new Label("my_label", undefined)
+        .setText(new Text().setText("这是一段自定义文字").setColor([0, 0, 0]))
+        .setControl(new Control().setLayer(5))
+)
+
+// 2) addStack：控件 + 占位尺寸（推荐，可控制位置）
+page.addStack(["100%", "20%"],
+    new Image("my_img", undefined).setSprite(new Sprite().setTexture("textures/items/iron_ingot"))
+)
+
+// 3) 或直接拿到底层 panel 操作
+page.getPanel().addStack(["100%", "15%"], someControl)
+```
+
+`addControl`/`addStack` 是 `NeoGuidebookPage` 直接透传给内部 StackPanel 的，所以能放任何 `UIElement`（Label/Image/Button/StackPanel…），也支持原生 JSON 控件对象：
+
+```js
+page.addControl({
+    "my_raw_control@common.some_template": { "size": ["50%", "30%"] }
+})
+```
+
+> 自定义控件同样会被 `addDoublePageStack(page_id, panel, ...)` 正确渲染；`addControl` 紧跟在封装方法后面即可，顺序就是渲染顺序。
 
 ---
 

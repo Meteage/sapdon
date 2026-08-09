@@ -22,9 +22,9 @@ export class BookTitle extends Label {
 export class BookText extends Label {
     constructor(id: string, text: string, size: [string, string] = ["100%", "100%"]) {
         super(id, undefined);
-        this.setText(new Text().setText(text).setColor([0, 0, 0]))
+        this.setText(new Text().setText(text).setColor([0, 0, 0]).setTextAlignment("center"))
             .setControl(new Control().setLayer(5))
-            .setLayout(new Layout().setAnchorFrom("left").setAnchorTo("left").setOffset([4, 0]));
+            .setLayout(new Layout().setAnchorTo("center"));
     }
 }
 
@@ -304,6 +304,18 @@ export class NeoGuidebookPage {
             );
         });
 
+        return this;
+    }
+
+    // 添加任意自定义控件（透传给内部 StackPanel）
+    addControl(control: UIElement): this {
+        this.panel.addControl(control);
+        return this;
+    }
+
+    // 添加自定义控件并指定占位尺寸（透传 StackPanel.addStack）
+    addStack(size: [string, string], control: UIElement, debug: boolean = false): this {
+        this.panel.addStack(size, control, debug);
         return this;
     }
 

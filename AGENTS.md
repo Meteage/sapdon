@@ -81,6 +81,8 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 
 ### NeoGuidebook 手册（游戏内书）接入要点
 - 构建时 `main.mjs` 用 `NeoGuidebook(identifier, "ui/", [320,207], {buttons,textures})` + `NeoGuidebookPage(...).addBookText/addCategoryTitle/addDoublePageStack`；自动生成 `dev/<proj>_RP/ui/<name>.json` 并写入 `server_form.json` 的 title 绑定；页面清单须写成 `scripts/guide_pages.js`（`export const PAGE_IDS = [...]`），因 dev server 是**模块拼接打包**，`import("./x.json")` 不会被处理，只能拼接 JS。
+- 自定义控件：`NeoGuidebookPage` 有 `addControl(control)` / `addStack(size, control, debug?)` 透传内部 StackPanel，可放任意 `UIElement`（Label/Image/Button…）或原生 JSON 控件对象；底层控件类（`Label/Text/Control/Image/Sprite/StackPanel/Layout` 等）在 `@sapdon/core` 的 UI 导出里。
+- 框架侧改完 `src/core/ui/systems/neoGuibook/*` 后：root `npm run build` 重建 prod，再进示例项目 `sapdon lib` 同步 node_modules；同步后验证 `node_modules/@sapdon/core/index.d.ts` 里有对应方法声明。
 - 运行时 `scripts/index.js` 里物品自定义组件 `onUse` → `new ActionFormData().title(书名不带命名空间).body(pageId)`；书名 = identifier 的 name 部分（`sapdon:guidebook` → title `"guidebook"`）。按钮文字是 JSON UI 绑定键名（`prev_button`/`next_button`/`home_button`/`item_0_button`…），非显示文本。
 - 物品要能触发 `onUse` 必须加 `minecraft:interact_button`（如"打开"）——否则右键无反应。
 - 加了新 `@minecraft/server-ui` 依赖后，**必须删掉 `dev/<proj>_BP/manifest.json` 再 build**，否则 manifest 只在首次构建生成、不会自动追加依赖（表现为 `Module [@minecraft/server-ui] is unrecognized` / version conflict，脚本 context 创建失败、整包脚本不运行）。

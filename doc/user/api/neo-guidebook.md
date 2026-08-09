@@ -255,6 +255,28 @@ page.addChapters([
 ])
 ```
 
+#### addControl(control)
+
+添加任意自定义 UI 控件（透传内部 StackPanel，可放任何 `UIElement` 或原生 JSON 控件对象）。
+
+```typescript
+page.addControl(
+    new Label('my_label', undefined)
+        .setText(new Text().setText('自定义文字').setColor([0, 0, 0]))
+)
+```
+
+#### addStack(size, control, debug?)
+
+添加自定义控件并指定占位尺寸（透传 `StackPanel.addStack`）。
+
+```typescript
+page.addStack(
+    ['100%', '20%'],
+    new Image('my_img', undefined).setSprite(new Sprite().setTexture('textures/items/iron_ingot'))
+)
+```
+
 #### buildChapterList()
 
 ```typescript

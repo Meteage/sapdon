@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry, NeoGuidebook, NeoGuidebookPage } from '@sapdon/core'
+import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry, NeoGuidebook, NeoGuidebookPage, Label, Layout, Text, Control } from '@sapdon/core'
 import { BlockWire } from "./lib/wire.js";
 
 // === item_group 分割 ===
@@ -127,9 +127,9 @@ const guidebook = new NeoGuidebook("sapdon:guidebook", "ui/", [320, 207], {
 // 封面（左）+ 目录（右）
 const cover = new NeoGuidebookPage("cover")
     .addEmptySpace(["100%", "8%"])
-    .addBookTitleBar("digitCircuit\n    使用指导手册", ["100%", "18%"])
+    .addBookTitleBar("digitCircuit\n    使用指导手册 by Meteage", ["100%", "18%"])
     .addEmptySpace(["100%", "4%"])
-    .addBookText("Minecraft 基岩版数字电路 Addon（sapdon 框架示例）。\n\n涵盖：导线、逻辑门、位宽总线、可编程芯片、寄存器。", ["100%", "46%"])
+    .addBookText("Minecraft 基岩版数字电路 Addon。\n\n涵盖：导线、逻辑门、位宽总线、可编\n\n程芯片、寄存器。", ["100%", "46%"])
 
 const toc = new NeoGuidebookPage("toc")
     .addChapters([
@@ -139,8 +139,6 @@ const toc = new NeoGuidebookPage("toc")
         { chapter_name: "可编程芯片", chapter_texture: "textures/items/repeater" },
         { chapter_name: "命令与分享", chapter_texture: "textures/items/writable_book" },
         { chapter_name: "位宽与寄存器", chapter_texture: "textures/items/redstone" },
-        { chapter_name: "调试排障", chapter_texture: "textures/items/iron_pickaxe" },
-        { chapter_name: "示例：4 位全加器", chapter_texture: "textures/items/redstone_torch_on" },
     ])
     .buildChapterList()
 
@@ -174,7 +172,11 @@ const toolsLeft = new NeoGuidebookPage("toolsLeft")
     .addDivider(["100%", "3%"])
     .addBookText(
         "debug_tool（木棍）：点击开关切换、点击导线查看网络、点击门查看各面信号、点击线/方块间切换连接面。\n\nlogic_tool（铁锭）：点输入端口=保存逻辑；点芯片=装载逻辑。",
-        ["100%", "70%"]
+        ["100%", "55%"]
+    )
+    .addStack(["100%", "15%"], new Label("guidebook_custom_label", undefined)
+        .setText(new Text().setText("· 自定义控件：用 addStack 添加").setColor([0, 0, 0]))
+        .setControl(new Control().setLayer(5))
     )
 
 const toolsRight = new NeoGuidebookPage("toolsRight")

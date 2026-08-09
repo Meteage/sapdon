@@ -24,6 +24,8 @@ export * from "./systems/chest.js"
 export * from "./systems/containerUISystem.js"
 export * from "./systems/serverForm.js"
 export * from "./systems/guidebook.js"
+export * from "./systems/neoGuibook/book.js"
+export * from "./systems/neoGuibook/page.js"
 export * from "./systems/system.js"
 
 export * from "./buttonMapping.js"
