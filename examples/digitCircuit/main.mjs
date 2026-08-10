@@ -66,15 +66,33 @@ switchBlock.registerState("sapdon:powered", [0,1])
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 0", BlockComponent.setMaterialInstances(facesTex("s0")))
 switchBlock.addPermutation("q.block_state('sapdon:powered') == 1", BlockComponent.setMaterialInstances(facesTex("s1")))
 
-// 端口方块：0-9 数字标记，可旋转（朝向对应数字，便于组合出多数字端口号）
-const PORT_DIGITS = Array.from({ length: 10 }, (_, i) => i);
-for (const i of PORT_DIGITS) {
-    const tex = [`input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`, `input_port_${i}`];
-    const inputPort = BlockAPI.createRotatableBlock(`sapdon:input_port_${i}`, "construction", tex, { group: GROUP_PORT });
-    inputPort.addComponent(BlockComponent.setTags(["input_port"]));
-    const outTex = [`output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`, `output_port_${i}`];
-    const outputPort = BlockAPI.createRotatableBlock(`sapdon:output_port_${i}`, "construction", outTex, { group: GROUP_PORT });
-    outputPort.addComponent(BlockComponent.setTags(["output_port"]));
+// 端口贴图：保留 alpha_test（数字有透明留白），但关闭 face_dimming/ambient_occlusion=0 的自发光，
+// 使终端不带"发光"效果、随环境光照正常明暗。
+function portFacesTex(texture) {
+    const instances = {};
+    for (const side of ["*", "up", "down", "north", "south", "east", "west"]) {
+        instances[side] = {
+            texture,
+            render_method: "alpha_test"
+        };
+    }
+    return instances;
+}
+
+// 端口方块：单一方块 + sapdon:num 状态(0~9) 控制数字贴图，方块可旋转。
+// 端口号由 debug_tool 点按循环切换（0→1→…→9→0）。
+const inputPort = BlockAPI.createRotatableBlock("sapdon:input_port", "construction", Array(6).fill("input_port_0"), { group: GROUP_PORT });
+inputPort.addComponent(BlockComponent.setTags(["input_port"]));
+inputPort.registerState("sapdon:num", { values: { min: 0, max: 9 } });
+for (let i = 1; i <= 9; i++) {
+    inputPort.addPermutation(`q.block_state('sapdon:num') == ${i}`, BlockComponent.setMaterialInstances(portFacesTex(`input_port_${i}`)));
+}
+
+const outputPort = BlockAPI.createRotatableBlock("sapdon:output_port", "construction", Array(6).fill("output_port_0"), { group: GROUP_PORT });
+outputPort.addComponent(BlockComponent.setTags(["output_port"]));
+outputPort.registerState("sapdon:num", { values: { min: 0, max: 9 } });
+for (let i = 1; i <= 9; i++) {
+    outputPort.addPermutation(`q.block_state('sapdon:num') == ${i}`, BlockComponent.setMaterialInstances(portFacesTex(`output_port_${i}`)));
 }
 
 ItemAPI.createItem("sapdon:debug_tool", ItemCategory.Equipment, "degtool", {
@@ -246,7 +264,7 @@ makeSubCategory("page_port", "端口与显示", [
     { tex: "input_port_1", name: "input_port", desc: "外部输入 1bit" },
     { tex: "output_port_1", name: "output_port", desc: "外部输出 1bit" },
     { tex: "t0", name: "display", desc: "有信号即亮" },
-], "端口：透明透传，\n所有面皆输出。\n\n数字(0~9)标示方向，\n可旋转组合多位数。\n\ndisplay：全面输入。")
+], "端口：透明透传，\n所有面皆输出。\n\n端口号 0~9：手持\ndebug_tool 点击循环\n切换，方块可旋转。\n\ndisplay：全面输入。")
 
 // 工具与门朝向（双页）
 const toolsLeft = new NeoGuidebookPage("toolsLeft")
@@ -363,16 +381,7 @@ const debugLeft = new NeoGuidebookPage("debugLeft")
         ["100%", "80%"]
     )
 
-const exRight = new NeoGuidebookPage("exRight")
-    .addEmptySpace(["100%", "4%"])
-    .addCategoryTitle("示例：4 位全加器", ["100%", "12%"])
-    .addDivider(["100%", "3%"])
-    .addBookText(
-        "tools/ 下含\n完整记录 JSON\n导入指令+生成器\n\n接口：\nin = A | (B<<4)\nout = S | (Cout<<4)\n\nmode=topo\n行波进位，含进位输出",
-        ["100%", "80%"]
-    )
-
-guidebook.addDoublePageStack("page_index7", debugLeft.getPanel(), exRight.getPanel())
+guidebook.addSinglePageStack("page_index7", debugLeft.getPanel())
 
 // 生成页面 id 清单 + 导航映射供运行时（构建器拼接 JS，因此输出 .js 而非 .json）
 const pageIds = guidebook.getPageIds()
@@ -411,10 +420,8 @@ fs.writeFileSync(
 )
 
 // === 创造菜单物品分类（group + item_catalog）===
-const inputPorts = [];
-for (let i = 0; i <= 9; i++) inputPorts.push(`sapdon:input_port_${i}`);
-const outputPorts = [];
-for (let i = 0; i <= 9; i++) outputPorts.push(`sapdon:output_port_${i}`);
+const inputPorts = ["sapdon:input_port"];
+const outputPorts = ["sapdon:output_port"];
 
 ItemAPI.createItemCatalog()
     .addGroup("construction", [
@@ -436,7 +443,7 @@ ItemAPI.createItemCatalog()
         ...inputPorts,
         ...outputPorts,
         "sapdon:display",
-    ], { icon: "sapdon:input_port_1", name: GROUP_PORT })
+    ], { icon: "sapdon:input_port", name: GROUP_PORT })
     .addGroup("construction", [
         "sapdon:chip",
         "sapdon:register",
