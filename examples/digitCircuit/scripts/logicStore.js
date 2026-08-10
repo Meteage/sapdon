@@ -71,7 +71,7 @@ export function importLogic(record) {
     const rec = {
         uuid,
         version: record.version || LOGIC_VERSION,
-        mode: record.mode === "topo" ? "topo" : "table",
+        mode: record.mode === "topo" ? "topo" : record.mode === "expr" ? "expr" : "table",
         inputs: Array.isArray(record.inputs) ? record.inputs : [],
         outputs: Array.isArray(record.outputs) ? record.outputs : [],
         table: Array.isArray(record.table) ? record.table : [],

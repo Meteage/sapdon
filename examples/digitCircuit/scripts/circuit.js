@@ -96,13 +96,15 @@ function registerFaces(facing) {
     };
 }
 
-// 芯片记录：{ inputs:[端口序号], outputs:[端口序号], mode, table | topo }
+// 芯片记录：{ inputs:[端口序号], outputs:[端口序号], mode, table | topo | expr }
 // 真值表模式：输入数值 → 表内匹配行 → 输出 outMask；无匹配行输出 0
 // 拓扑模式：按拓扑结构实时仿真（含寄存器），输出 outMask
+// 表达式模式：按 AND/OR/NOT 表达式树直接求值（纯逻辑，无物理拓扑）
 function chipLookup(comp, inVal) {
     const rec = comp.logicUuid ? getLogicByUuid(comp.logicUuid) : null;
     if (!rec) return 0;
     if (rec.mode === "topo") return evalTopo(comp, rec.topo, inVal);
+    if (rec.mode === "expr") return evalExprNodes(rec.expr, inVal);
     if (!Array.isArray(rec.table)) return 0;
     const row = rec.table.find((r) => r[0] === inVal);
     return row ? (row[1] || 0) : 0;
@@ -1521,6 +1523,19 @@ export function compileLogic(clickedInputPort) {
         };
     }
 
+    // 输入 >8：优先提取"纯逻辑表达式"（AND/OR/NOT 树），体积远小于物理拓扑；
+    // 遇到无法表达的部分（寄存器/芯片/环）则回退记录物理拓扑（topo）。
+    const expr = tryBuildExprModel(comps, netsMap, inputs, outputs);
+    if (expr) {
+        cLog("=== expr:", JSON.stringify(expr), "===");
+        return {
+            mode: "expr",
+            inputs: inputs.map((p) => p.num),
+            outputs: outputs.map((p) => p.num),
+            expr,
+        };
+    }
+
     const topo = serializeTopology(clickedInputPort.location, comps, netsMap, inputs, outputs);
     cLog("=== topo:", JSON.stringify(topo), "===");
     return {
@@ -1529,6 +1544,139 @@ export function compileLogic(clickedInputPort) {
         outputs: outputs.map((p) => p.num),
         topo,
     };
+}
+
+// ============ 纯逻辑表达式提取（替代物理拓扑存储） ============
+// 把组合逻辑电路按"输出位"反向回溯成 AND/OR/NOT 表达式树：
+//   叶子 = ["in", bitIdx]（引用输入掩码的第 bitIdx 位）或 ["c", 0|1]（常量）
+//   一元 = ["not", a]
+//   二元 = ["and"|"or", a, b]
+// 分线器按位宽语义转换（直通=输入>>1 → 输出 bit j 取输入 bit j+1；分出=输入&1 → 只取 bit0）；
+// 合并器（(西<<1)|南）→ 输出 bit0=南 bit0，输出 bit j=西 bit j-1。
+// 遇到寄存器/芯片/无法单值表达的组件或反馈环 → 返回 null（调用方回退 topo）。
+
+// 反向求组件输出面上"第 bit 位"的表达式。outFace 必须是 c 的输出面。
+function exprForOutput(c, outFace, bit, ctx) {
+    if (!c) return null;
+    if (c.type === "sapdon:on_signal") return ["c", 1];
+    if (c.type === "sapdon:off_signal") return ["c", 0];
+    if (c.type === SWITCH_TYPE) return ["c", c.powered ? 1 : 0];
+    if (isInputPort(c.type)) {
+        const idx = ctx.inputBitOf.get(c.key);
+        if (idx === undefined) return null;
+        return ["in", idx];
+    }
+    // 输入端口反向被引用时（透传），与输入端口一致
+    if (isOutputPort(c.type)) return null;
+    const ck = c.key;
+    if (ctx.stack.has(ck)) return null; // 反馈环
+    ctx.stack.add(ck);
+    let node = null;
+    if (isGate(c.type)) {
+        const ins = freshGateInputs(c);
+        if (c.type === "sapdon:not_gate") {
+            node = ["not", exprForFace(c, ins[0], bit, ctx)];
+        } else {
+            node = ["or", ["c", 0], ["c", 0]]; // 占位，下面重建
+            const parts = [];
+            for (const f of ins) {
+                const sub = exprForFace(c, f, bit, ctx);
+                if (sub === null) { node = null; break; }
+                parts.push(sub);
+            }
+            node = null;
+            if (parts.length) {
+                node = parts[0];
+                for (let i = 1; i < parts.length; i++) node = [c.type === "sapdon:and_gate" ? "and" : "or", node, parts[i]];
+            }
+        }
+    } else if (c.type === SPLITTER_TYPE) {
+        const f = splitterFaces(c.facing);
+        if (outFace === f.through) node = exprForFace(c, f.input, bit + 1, ctx);
+        else if (outFace === f.split) node = exprForFace(c, f.input, 0, ctx);
+    } else if (c.type === MERGE_TYPE) {
+        const m = mergeFaces(c.facing);
+        if (outFace === m.out) {
+            node = bit === 0 ? exprForFace(c, m.south, 0, ctx) : exprForFace(c, m.west, bit - 1, ctx);
+        }
+    }
+    ctx.stack.delete(ck);
+    return node;
+}
+
+// 反向求组件某输入面"第 bit 位"的信号表达式：直连邻件输出 / 网驱动；空面按 0
+function exprForFace(c, face, bit, ctx) {
+    if (!c) return ["c", 0];
+    const dk = c.directs ? c.directs[face] : null;
+    if (dk) {
+        const d = ctx.comps.get(dk);
+        if (d && freshOutputFace(d, oppositeFace(face))) {
+            return exprForOutput(d, oppositeFace(face), bit, ctx);
+        }
+        return null;
+    }
+    const netId = c.nets ? c.nets[face] : null;
+    if (!netId) return ["c", 0];
+    if (ctx.netStack.has(netId)) return null; // 反馈环
+    ctx.netStack.add(netId);
+    const net = ctx.netsMap.get(netId);
+    if (!net) { ctx.netStack.delete(netId); return ["c", 0]; }
+    let node = null;
+    for (const { compKey, face: tf } of net.terms.values()) {
+        const d = ctx.comps.get(compKey);
+        if (!d || !freshOutputFace(d, tf)) continue;
+        if (isOutputPort(d.type)) continue;
+        const sub = exprForOutput(d, tf, bit, ctx);
+        if (sub !== null) {
+            node = node === null ? sub : ["or", node, sub]; // 多驱动取 OR（max）
+        }
+    }
+    ctx.netStack.delete(netId);
+    return node === null ? ["c", 0] : node;
+}
+
+// 尝试为全部输出端口建立位级表达式；任一输出位失败返回 null
+function tryBuildExprModel(comps, netsMap, inputs, outputs) {
+    const inputBitOf = new Map();
+    for (let i = 0; i < inputs.length; i++) inputBitOf.set(inputs[i].c.key, i);
+    const ctx = { comps, netsMap, inputBitOf, stack: new Set(), netStack: new Set() };
+
+    const expr = [];
+    for (const p of outputs) {
+        const c = p.c;
+        // 输出端口：从它的任一有信号的面反向提取（直连邻件或网）
+        let node = null;
+        for (const face of FACES) {
+            const dk = c.directs ? c.directs[face] : null;
+            const netId = c.nets ? c.nets[face] : null;
+            if (!dk && !netId) continue;
+            node = exprForFace(c, face, 0, ctx);
+            if (node !== null) break;
+        }
+        if (node === null) return null;
+        expr.push(node);
+        ctx.stack.clear();
+        ctx.netStack.clear();
+    }
+    return expr;
+}
+
+// 运行时求值：表达式节点 + 输入掩码 → 输出掩码
+function evalExprNodes(expr, inVal) {
+    const ev = (node) => {
+        if (!node) return 0;
+        switch (node[0]) {
+            case "c": return node[1];
+            case "in": return (inVal >> node[1]) & 1;
+            case "not": return ev(node[1]) ? 0 : 1;
+            case "and": return ev(node[1]) && ev(node[2]) ? 1 : 0;
+            case "or": return ev(node[1]) || ev(node[2]) ? 1 : 0;
+        }
+        return 0;
+    };
+    let outMask = 0;
+    for (let j = 0; j < expr.length; j++) if (ev(expr[j])) outMask |= 1 << j;
+    return outMask;
 }
 
 // 拓扑序列化：以 clicked 端口为原点，把 fresh 模型（comps+nets）转成相对坐标记录。

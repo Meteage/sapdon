@@ -87,7 +87,8 @@ examples/digitCircuit/
 - 潜行（shift）右键已加载 chip → `unbindChipLogic` 取回逻辑物品（`sapdon:logic_tool`×1，带原 uuid/name lore），方块恢复未加载贴图。
 - 芯片运行时：南面输入数值 → 查逻辑记录（`mode`）→ 北面输出 `outMask`；未绑定逻辑时输出全 0。
   - `mode=table`（输入端子 ≤8）：查真值表 `inputs` 数位。
-  - `mode=topo`（输入端子 >8）：直接记录原电路拓扑（`topo` 字段，相对坐标的 comps+nets+端子映射），芯片按输入数值逐位驱动拓扑做固定点仿真（`evalTopo`，支持寄存器，初始 store=0）。这使端子数量可任意拓展，不受真值表 2^n 限制。
+  - `mode=expr`（输入端子 >8 的**纯组合**电路）：编译时把每个输出位**反向回溯**成 AND/OR/NOT 表达式树（`tryBuildExprModel`：叶子 `["in",bit]`/`["c",0|1]`，一元 `["not",a]`，二元 `["and"|"or",a,b]`；分线器按位宽语义转换直通=`in>>1`、分出=`in&1`，合并器输出 bit0=南面 bit0、bit j=西面 bit j-1；空输入面按 0）。运行时 `evalExprNodes` 直接求值，**只存逻辑不存物理拓扑**，体积比 topo 小约 20 倍。
+  - `mode=topo`（>8 输入且含寄存器/芯片/反馈环等无法用组合表达式表达时）：回退记录原电路拓扑（`topo` 字段，相对坐标的 comps+nets+端子映射），芯片按输入数值逐位驱动拓扑做固定点仿真（`evalTopo`，支持寄存器，初始 store=0）。这使端子数量可任意拓展，不受真值表 2^n 限制。
 
 ### 3.8b 1bit 寄存器 `sapdon:register`
 - `createRotatableBlock`；`["reg","default","output","input","default","input"]`。

@@ -93,6 +93,119 @@ function freshGateWidthError(c, netsMap, comps) {
     return null;
 }
 
+// ===== 纯逻辑表达式求值副本（对齐 circuit.js evalExprNodes） =====
+function evalExprNodes(expr, inVal) {
+    const ev = (node) => {
+        if (!node) return 0;
+        switch (node[0]) {
+            case "c": return node[1];
+            case "in": return (inVal >> node[1]) & 1;
+            case "not": return ev(node[1]) ? 0 : 1;
+            case "and": return ev(node[1]) && ev(node[2]) ? 1 : 0;
+            case "or": return ev(node[1]) || ev(node[2]) ? 1 : 0;
+        }
+        return 0;
+    };
+    let outMask = 0;
+    for (let j = 0; j < expr.length; j++) if (ev(expr[j])) outMask |= 1 << j;
+    return outMask;
+}
+function exprForOutput(c, outFace, bit, ctx) {
+    if (!c) return null;
+    if (c.type === "sapdon:on_signal") return ["c", 1];
+    if (c.type === "sapdon:off_signal") return ["c", 0];
+    if (c.type === SWITCH_TYPE) return ["c", c.powered ? 1 : 0];
+    if (isInputPort(c.type)) {
+        const idx = ctx.inputBitOf.get(c.key);
+        if (idx === undefined) return null;
+        return ["in", idx];
+    }
+    if (isOutputPort(c.type)) return null;
+    const ck = c.key;
+    if (ctx.stack.has(ck)) return null;
+    ctx.stack.add(ck);
+    let node = null;
+    if (isGate(c.type)) {
+        const ins = freshGateInputs(c);
+        if (c.type === "sapdon:not_gate") {
+            node = ["not", exprForFace(c, ins[0], bit, ctx)];
+        } else {
+            const parts = [];
+            for (const f of ins) {
+                const sub = exprForFace(c, f, bit, ctx);
+                if (sub === null) { node = null; break; }
+                parts.push(sub);
+            }
+            if (parts.length) {
+                node = parts[0];
+                for (let i = 1; i < parts.length; i++) node = [c.type === "sapdon:and_gate" ? "and" : "or", node, parts[i]];
+            }
+        }
+    } else if (c.type === SPLITTER_TYPE) {
+        const f = splitterFaces(c.facing);
+        if (outFace === f.through) node = exprForFace(c, f.input, bit + 1, ctx);
+        else if (outFace === f.split) node = exprForFace(c, f.input, 0, ctx);
+    } else if (c.type === MERGE_TYPE) {
+        const m = mergeFaces(c.facing);
+        if (outFace === m.out) {
+            node = bit === 0 ? exprForFace(c, m.south, 0, ctx) : exprForFace(c, m.west, bit - 1, ctx);
+        }
+    }
+    ctx.stack.delete(ck);
+    return node;
+}
+function exprForFace(c, face, bit, ctx) {
+    if (!c) return ["c", 0];
+    const dk = c.directs ? c.directs[face] : null;
+    if (dk) {
+        const d = ctx.comps.get(dk);
+        if (d && freshOutputFace(d, oppositeFace(face))) {
+            return exprForOutput(d, oppositeFace(face), bit, ctx);
+        }
+        return null;
+    }
+    const netId = c.nets ? c.nets[face] : null;
+    if (!netId) return ["c", 0];
+    if (ctx.netStack.has(netId)) return null;
+    ctx.netStack.add(netId);
+    const net = ctx.netsMap.get(netId);
+    if (!net) { ctx.netStack.delete(netId); return ["c", 0]; }
+    let node = null;
+    for (const { compKey, face: tf } of net.terms.values()) {
+        const d = ctx.comps.get(compKey);
+        if (!d || !freshOutputFace(d, tf)) continue;
+        if (isOutputPort(d.type)) continue;
+        const sub = exprForOutput(d, tf, bit, ctx);
+        if (sub !== null) {
+            node = node === null ? sub : ["or", node, sub];
+        }
+    }
+    ctx.netStack.delete(netId);
+    return node === null ? ["c", 0] : node;
+}
+function tryBuildExprModel(comps, netsMap, inputs, outputs) {
+    const inputBitOf = new Map();
+    for (let i = 0; i < inputs.length; i++) inputBitOf.set(inputs[i].c.key, i);
+    const ctx = { comps, netsMap, inputBitOf, stack: new Set(), netStack: new Set() };
+    const expr = [];
+    for (const p of outputs) {
+        const c = p.c;
+        let node = null;
+        for (const face of FACES) {
+            const dk = c.directs ? c.directs[face] : null;
+            const netId = c.nets ? c.nets[face] : null;
+            if (!dk && !netId) continue;
+            node = exprForFace(c, face, 0, ctx);
+            if (node !== null) break;
+        }
+        if (node === null) return null;
+        expr.push(node);
+        ctx.stack.clear();
+        ctx.netStack.clear();
+    }
+    return expr;
+}
+
 function buildTopoModel(topo) {
     const comps = new Map();
     const relToLoc = (k) => { const m = /^(-?\d+),(-?\d+),(-?\d+)$/.exec(k); return m ? { x: +m[1], y: +m[2], z: +m[3] } : { x: 0, y: 0, z: 0 }; };
@@ -292,6 +405,36 @@ function assert(cond, msg) {
     assert(evalTopo({ _dbg: false }, topo, 0) === 0, `PORT-PASSTHROUGH(0)=0`);
     // mask=1：input 驱动 net0 → 输出端口读到 1
     assert(evalTopo({ _dbg: false }, topo, 1) === 1, `PORT-PASSTHROUGH(1)=1`);
+}
+
+// 用例5: 纯逻辑表达式提取 + 求值（expr 模式，>8 输入替代 topo）
+{
+    const mk = (key, type, facing, nets, directs) => ({ key, type, facing, powered: 0, nets, directs });
+    // 半加器：S=XOR, C=AND（输入位：in0=bit0, in1=bit1）
+    const comps = new Map();
+    comps.set("0,0,0", mk("0,0,0", "sapdon:input_port", "north", {}, { east: "2,0,1" }));
+    comps.set("0,0,2", mk("0,0,2", "sapdon:input_port", "north", {}, { south: "2,0,1" }));
+    comps.set("2,0,1", mk("2,0,1", "sapdon:and_gate", "north", {}, { west: "0,0,0", south: "0,0,2", north: "9,9,9" }));
+    comps.set("9,9,9", mk("9,9,9", "sapdon:on_signal", "north", {}, {}));
+    comps.set("3,0,1", mk("3,0,1", "sapdon:output_port", "north", {}, { west: "2,0,1" }));
+    const netsMap = new Map();
+    const inputs = [{ c: comps.get("0,0,0"), num: 0 }, { c: comps.get("0,0,2"), num: 1 }];
+    const outputs = [{ c: comps.get("3,0,1"), num: 0 }];
+    const expr = tryBuildExprModel(comps, netsMap, inputs, outputs);
+    assert(expr !== null, "EXPR half-adder extract");
+    assert(evalExprNodes(expr, 0) === 0 && evalExprNodes(expr, 1) === 0 && evalExprNodes(expr, 2) === 0 && evalExprNodes(expr, 3) === 1, "EXPR AND truth table 0,0,0,1");
+    // 多输出：AND + NOT 组合
+    comps.set("4,0,1", mk("4,0,1", "sapdon:not_gate", "north", {}, { west: "2,0,1" }));
+    comps.set("5,0,1", mk("5,0,1", "sapdon:output_port", "north", {}, { west: "4,0,1" }));
+    const outputs2 = [
+        { c: comps.get("3,0,1"), num: 0 },
+        { c: comps.get("5,0,1"), num: 1 },
+    ];
+    const expr2 = tryBuildExprModel(comps, netsMap, inputs, outputs2);
+    assert(expr2 !== null && expr2.length === 2, "EXPR two outputs");
+    // out0 = A&B, out1 = NOT(A&B)；mask=3 -> out0=1, out1=0 -> outMask = 1|(0<<1)=1
+    assert(evalExprNodes(expr2, 3) === 1, "EXPR multi-out mask=3 => 1");
+    assert(evalExprNodes(expr2, 0) === 2, "EXPR multi-out mask=0 => 2 (0, NOT0=1 << 1)");
 }
 
 console.log(`\n${pass} passed, ${fail} fail`);
