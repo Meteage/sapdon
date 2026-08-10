@@ -6,6 +6,8 @@ import {
     isCircuit,
     isInputPort,
     isOutputPort,
+    isPort,
+    PORT_STATE,
     getAdjacent,
     oppositeFace,
     connectWireOnPlacement,
@@ -26,6 +28,7 @@ import {
     describeWireNet,
     bindChipLogic,
     unbindChipLogic,
+    circuitPersistDiag,
 } from "./circuit.js";
 import {
     saveLogic,
@@ -127,6 +130,20 @@ function registerLogicCommands(registry) {
         }
         const row = rec.table.find(([m]) => m === mask);
         return { status: CustomCommandStatus.Success, message: `in=${mask} -> out=${row ? row[1] : "?"}` };
+    });
+
+    registry.registerCommand({
+        name: "sapdon:logic_diag",
+        description: "持久化/内存绑定诊断（circuit_data 大小、chip 绑定数）",
+        permissionLevel: CommandPermissionLevel.GameDirectors,
+        cheatsRequired: false,
+    }, () => {
+        const diag = circuitPersistDiag();
+        console.warn("[diag] " + JSON.stringify(diag));
+        return {
+            status: CustomCommandStatus.Success,
+            message: `circuitData=${diag.circuitData} | comps=${diag.comps} nets=${diag.nets} chips=${diag.chips} 已绑定=${diag.chipsBound} | 例: ${JSON.stringify(diag.chipExample)}`,
+        };
     });
 
     registry.registerCommand({
@@ -299,8 +316,20 @@ system.beforeEvents.startup.subscribe((init) => {
                 return;
             }
 
+            // 端子：debug_tool 点按循环切换端口号 0→1→…→9→0
+            if (isPort(block.typeId)) {
+                const cur = block.permutation.getState(PORT_STATE) ?? 0;
+                const next = (cur + 1) % 10;
+                block.setPermutation(block.permutation.withState(PORT_STATE, next));
+                const comp = registerComponent(block);
+                if (comp) comp.num = next;
+                propagate();
+                saveCircuit();
+                world.sendMessage(`[port] ${block.typeId.split(":")[1]} 端口号 -> ${next}`);
+                return;
+            }
+
             // 分线器/合并器/门：打印各面信号与位宽
-            if (isInputPort(block.typeId) || isOutputPort(block.typeId)) return;
             if (block.typeId === "sapdon:splitter" || block.typeId === "sapdon:merger" || block.typeId === "sapdon:and_gate" || block.typeId === "sapdon:or_gate" || block.typeId === "sapdon:not_gate") {
                 const info = debugComponent(`${block.dimension.id}:${loc.x},${loc.y},${loc.z}`);
                 if (info) world.sendMessage(`[comp] ${info.type} facing=${info.facing} out=${info.powered} :: ${info.faces}`);
@@ -445,9 +474,11 @@ system.beforeEvents.startup.subscribe((init) => {
     // 手动测试/管理命令：官方自定义命令（斜杠命令，无需 chatSend）
     registerLogicCommands(init.customCommandRegistry);
 
-    // 前置事件：拿导线点击方块时记录其目标面
+    // 前置事件：手持电路类的物品（导线/门/端口等）点击方块时记录目标面与方块，
+    // 供放置时按"点击面"建立导线连接（导线连被点击方块 / 器件连被点击导线）。
     world.beforeEvents.playerInteractWithBlock.subscribe((event) => {
-        if (event.itemStack && event.itemStack.typeId === WIRE_TYPE) {
+        const item = event.itemStack;
+        if (item && (isCircuit(item.typeId) || isCircuit(event.block.typeId))) {
             pendingPlace.set(event.player.id, { block: event.block, blockFace: event.blockFace });
         }
     });
@@ -467,12 +498,21 @@ system.beforeEvents.startup.subscribe((init) => {
                         nb.location.y === rec.block.location.y &&
                         nb.location.z === rec.block.location.z) {
                         connectWireOnPlacement(block, wireFace);
-                    } else {
-                        pendingPlace.delete(event.player.id);
                     }
                 }
-                pendingPlace.delete(event.player.id);
+            } else {
+                // 非导线器件：若被点击的方块是导线，则该导线指向新器件的手臂应置 1（否则导线不导通到器件）
+                const rec = pendingPlace.get(event.player.id);
+                if (rec && rec.block && rec.block.typeId === WIRE_TYPE) {
+                    const nb = getAdjacent(rec.block, rec.blockFace[0].toUpperCase() + rec.blockFace.slice(1));
+                    if (nb.location.x === block.location.x &&
+                        nb.location.y === block.location.y &&
+                        nb.location.z === block.location.z) {
+                        setWireEdge(rec.block, rec.blockFace, 1);
+                    }
+                }
             }
+            pendingPlace.delete(event.player.id);
             rebuildAround(block);
             saveCircuit();
         } catch (e) {
@@ -529,7 +569,20 @@ system.beforeEvents.startup.subscribe((init) => {
     world.afterEvents.worldLoad.subscribe(() => {
         dbg(`[evt] worldLoad -> loadCircuit`);
         // 动态属性保存的是完整内存模型，加载时原样恢复即可，不依赖区块加载
+        // 诊断：加载前 circuit_data 原始状态 + 加载后内存恢复情况（写 ContentLog）
+        try {
+            const raw = world.getDynamicProperty("sapdos:circuit_data");
+            console.warn(`[diag] worldLoad pre: circuit_data=${typeof raw === "string" ? `len=${raw.length}` : String(raw)}`);
+        } catch (e) {
+            console.warn(`[diag] worldLoad pre read error: ${e.message || e}`);
+        }
         loadCircuit();
+        try {
+            const d = circuitPersistDiag();
+            console.warn(`[diag] worldLoad post: ${JSON.stringify(d)}`);
+        } catch (e) {
+            console.warn(`[diag] worldLoad post error: ${e.message || e}`);
+        }
         dbg(`[evt] worldLoad loadCircuit done`);
     });
 });

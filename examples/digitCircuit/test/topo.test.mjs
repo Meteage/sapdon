@@ -1,4 +1,4 @@
-// 拓扑求值核心单测（node test/topo.test.mjs）
+﻿// 拓扑求值核心单测（node test/topo.test.mjs）
 // 复制自 circuit.js 的 buildTopoModel / topoCompute / evalTopo（含 freshFaceSignal 等辅助），
 // 因后者依赖 @minecraft/server 无法在 Node 直接 import。改动 engine 这些函数时须同步本文件。
 const FACES = ["north", "south", "east", "west", "up", "down"];
@@ -9,11 +9,11 @@ const SPLITTER_TYPE = "sapdon:splitter";
 const MERGE_TYPE = "sapdon:merger";
 const REGISTER_TYPE = "sapdon:register";
 const GATE_TYPES = ["sapdon:and_gate", "sapdon:or_gate", "sapdon:not_gate"];
-const INPUT_PORT_PREFIX = "sapdon:input_port_";
-const OUTPUT_PORT_PREFIX = "sapdon:output_port_";
+const INPUT_PORT_TYPE = "sapdon:input_port";
+const OUTPUT_PORT_TYPE = "sapdon:output_port";
 
-function isInputPort(t) { return t.startsWith(INPUT_PORT_PREFIX); }
-function isOutputPort(t) { return t.startsWith(OUTPUT_PORT_PREFIX); }
+function isInputPort(t) { return t === INPUT_PORT_TYPE; }
+function isOutputPort(t) { return t === OUTPUT_PORT_TYPE; }
 function isPort(t) { return isInputPort(t) || isOutputPort(t); }
 function isGate(t) { return GATE_TYPES.includes(t); }
 function oppositeFace(face) {
@@ -50,8 +50,15 @@ function freshNetSignal(netId, netsMap, comps) {
     if (!net) return 0;
     for (const { compKey, face } of net.terms.values()) {
         const c = comps.get(compKey);
-        if (!c || !c.powered) continue;
-        if (isOutputPort(c.type)) continue;
+        if (!c) continue;
+        if (isPort(c.type)) {
+            // 输出端口不贡献网络值（网络已跨过端口连通，值由真驱动提供）；
+            // 输入端口是外部源，照常以 powered 驱动。
+            if (isOutputPort(c.type)) continue;
+            if (c.powered) return 1;
+            continue;
+        }
+        if (!c.powered) continue;
         if (freshOutputFace(c, face)) return 1;
     }
     return 0;
@@ -197,11 +204,11 @@ function assert(cond, msg) {
         inputs: [{ num: 0, k: "0,0,0" }, { num: 1, k: "1,0,1" }, { num: 2, k: "1,0,-1" }],
         outputs: [{ num: 2, k: "2,0,0" }],
         comps: [
-            { k: "0,0,0", t: "sapdon:input_port_0", x: 0, y: 0, z: 0, f: "north", nets: {}, directs: { east: "1,0,0" } },
-            { k: "1,0,1", t: "sapdon:input_port_1", x: 1, y: 0, z: 1, f: "north", nets: {}, directs: { south: "1,0,0" } },
-            { k: "1,0,-1", t: "sapdon:input_port_2", x: 1, y: 0, z: -1, f: "north", nets: {}, directs: { north: "1,0,0" } },
+            { k: "0,0,0", t: "sapdon:input_port", x: 0, y: 0, z: 0, f: "north", nets: {}, directs: { east: "1,0,0" } },
+            { k: "1,0,1", t: "sapdon:input_port", x: 1, y: 0, z: 1, f: "north", nets: {}, directs: { south: "1,0,0" } },
+            { k: "1,0,-1", t: "sapdon:input_port", x: 1, y: 0, z: -1, f: "north", nets: {}, directs: { north: "1,0,0" } },
             { k: "1,0,0", t: "sapdon:and_gate", x: 1, y: 0, z: 0, f: "north", p: 0, nets: {}, directs: { west: "0,0,0", north: "1,0,1", south: "1,0,-1", east: "2,0,0" } },
-            { k: "2,0,0", t: "sapdon:output_port_2", x: 2, y: 0, z: 0, f: "north", nets: {}, directs: { west: "1,0,0" } },
+            { k: "2,0,0", t: "sapdon:output_port", x: 2, y: 0, z: 0, f: "north", nets: {}, directs: { west: "1,0,0" } },
         ],
         nets: [],
     };
@@ -223,9 +230,9 @@ function assert(cond, msg) {
         inputs: [{ num: 5, k: "0,0,0" }],
         outputs: [{ num: 1, k: "2,0,0" }],
         comps: [
-            { k: "0,0,0", t: "sapdon:input_port_5", x: 0, y: 0, z: 0, f: "north", nets: {}, directs: { east: "1,0,0" } },
+            { k: "0,0,0", t: "sapdon:input_port", x: 0, y: 0, z: 0, f: "north", nets: {}, directs: { east: "1,0,0" } },
             { k: "1,0,0", t: "sapdon:not_gate", x: 1, y: 0, z: 0, f: "north", p: 0, nets: {}, directs: { west: "0,0,0", east: "2,0,0" } },
-            { k: "2,0,0", t: "sapdon:output_port_1", x: 2, y: 0, z: 0, f: "north", nets: {}, directs: { west: "1,0,0" } },
+            { k: "2,0,0", t: "sapdon:output_port", x: 2, y: 0, z: 0, f: "north", nets: {}, directs: { west: "1,0,0" } },
         ],
         nets: [],
     };
@@ -242,10 +249,10 @@ function assert(cond, msg) {
         inputs: [{ num: 0, k: "2,0,3" }, { num: 1, k: "1,0,2" }],
         outputs: [{ num: 3, k: "3,0,2" }],
         comps: [
-            { k: "2,0,3", t: "sapdon:input_port_0", x: 2, y: 0, z: 3, f: "north", nets: {}, directs: { south: "2,0,2" } },
-            { k: "1,0,2", t: "sapdon:input_port_1", x: 1, y: 0, z: 2, f: "north", nets: {}, directs: { east: "2,0,2" } },
+            { k: "2,0,3", t: "sapdon:input_port", x: 2, y: 0, z: 3, f: "north", nets: {}, directs: { south: "2,0,2" } },
+            { k: "1,0,2", t: "sapdon:input_port", x: 1, y: 0, z: 2, f: "north", nets: {}, directs: { east: "2,0,2" } },
             { k: "2,0,2", t: "sapdon:register", x: 2, y: 0, z: 2, f: "north", p: 0, nets: {}, directs: { north: "2,0,3", west: "1,0,2", east: "3,0,2" } },
-            { k: "3,0,2", t: "sapdon:output_port_3", x: 3, y: 0, z: 2, f: "north", nets: {}, directs: { west: "2,0,2" } },
+            { k: "3,0,2", t: "sapdon:output_port", x: 3, y: 0, z: 2, f: "north", nets: {}, directs: { west: "2,0,2" } },
         ],
         nets: [],
     };
@@ -263,6 +270,28 @@ function assert(cond, msg) {
     assert(evalTopo(comp, topo, 3) === 1, `REG, W1D1 write back 1 => 1`);
     // store 在 W=0 时持续保持
     assert(evalTopo(comp, topo, 2) === 1, `REG, W0D1 keep 1 => 1`);
+}
+
+// 用例4: 输出端口透传（输出端子不传导回归）—— input_port→net0(跨端口连通)→output_port
+// 端口穿透后两侧导线属于同一个 net，net 由 input_port 驱动；output_port 读该 net 得值
+{
+    const topo = {
+        origin: { x: 0, y: 0, z: 0 },
+        inputs: [{ num: 0, k: "0,0,0" }],
+        outputs: [{ num: 1, k: "2,0,0" }],
+        comps: [
+            { k: "0,0,0", t: "sapdon:input_port", x: 0, y: 0, z: 0, f: "north", p: 0, nets: { east: 0 }, directs: {} },
+            { k: "1,0,0", t: "sapdon:output_port", x: 1, y: 0, z: 0, f: "north", p: 0, nets: { west: 0, east: 0 }, directs: {} },
+            { k: "2,0,0", t: "sapdon:output_port", x: 2, y: 0, z: 0, f: "north", p: 0, nets: { west: 0 }, directs: {} },
+        ],
+        nets: [
+            { wires: ["0,0,1", "1,0,1"], terms: [["0,0,0", "east"], ["1,0,0", "west"], ["1,0,0", "east"], ["2,0,0", "west"]], width: 1 },
+        ],
+    };
+    // mask=0：input 不驱动 → 输出端口应 0（无自锁残留）
+    assert(evalTopo({ _dbg: false }, topo, 0) === 0, `PORT-PASSTHROUGH(0)=0`);
+    // mask=1：input 驱动 net0 → 输出端口读到 1
+    assert(evalTopo({ _dbg: false }, topo, 1) === 1, `PORT-PASSTHROUGH(1)=1`);
 }
 
 console.log(`\n${pass} passed, ${fail} fail`);

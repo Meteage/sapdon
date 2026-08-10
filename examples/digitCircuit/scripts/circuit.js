@@ -12,11 +12,9 @@ export const REGISTER_TYPE = "sapdon:register";
 export const GATE_TYPES = ["sapdon:and_gate", "sapdon:or_gate", "sapdon:not_gate"];
 export const SOURCE_TYPES = ["sapdon:on_signal", "sapdon:off_signal", SWITCH_TYPE];
 
-export const INPUT_PORT_PREFIX = "sapdon:input_port_";
-export const OUTPUT_PORT_PREFIX = "sapdon:output_port_";
-const PORT_RANGE = Array.from({ length: 10 }, (_, i) => i);
-export const INPUT_PORT_TYPES = PORT_RANGE.map((i) => `${INPUT_PORT_PREFIX}${i}`);
-export const OUTPUT_PORT_TYPES = PORT_RANGE.map((i) => `${OUTPUT_PORT_PREFIX}${i}`);
+export const INPUT_PORT_TYPE = "sapdon:input_port";
+export const OUTPUT_PORT_TYPE = "sapdon:output_port";
+export const PORT_STATE = "sapdon:num";
 
 export const CIRCUIT_TYPES = [
     WIRE_TYPE,
@@ -25,8 +23,8 @@ export const CIRCUIT_TYPES = [
     ...GATE_TYPES,
     "sapdon:on_signal",
     "sapdon:off_signal",
-    ...INPUT_PORT_TYPES,
-    ...OUTPUT_PORT_TYPES,
+    INPUT_PORT_TYPE,
+    OUTPUT_PORT_TYPE,
     CHIP_TYPE,
     SPLITTER_TYPE,
     MERGE_TYPE,
@@ -161,13 +159,13 @@ export function isSource(typeId) {
     return SOURCE_TYPES.includes(typeId);
 }
 
-// 端口方块：边界标识 + 信号透传（按 typeId 前缀区分输入/输出）
+// 端口方块：边界标识 + 信号透传（单一方块，端口号存方块状态 sapdon:num）
 export function isInputPort(typeId) {
-    return typeId.startsWith(INPUT_PORT_PREFIX);
+    return typeId === INPUT_PORT_TYPE;
 }
 
 export function isOutputPort(typeId) {
-    return typeId.startsWith(OUTPUT_PORT_PREFIX);
+    return typeId === OUTPUT_PORT_TYPE;
 }
 
 export function isPort(typeId) {
@@ -296,6 +294,21 @@ function collectWireCluster(anchor) {
     return cluster;
 }
 
+// 导线是否"透过端口"与对侧导线导通：导线 arm 指向端口 P，P 对侧导线 arm 也指向 P。
+// 输出端口/输入端口是透明透传节点（同导线），把两侧网络连成同一个 net。
+function wireThroughPort(b, face) {
+    const nb = getAdjacent(b, capitalize(face));
+    if (!nb || !isPort(nb.typeId)) return null;
+    if (!wireConnectState(b, face)) return null;
+    // 穿过端口继续同方向：b --face--> 端口 --同face--> 对侧导线；
+    // 对侧导线指向端口的面 = oppositeFace(face)
+    const nb2 = getAdjacent(nb, capitalize(face));
+    if (!nb2 || nb2.typeId !== WIRE_TYPE) return null;
+    const opp = oppositeFace(face);
+    if (!wireConnectState(nb2, opp)) return null;
+    return nb2;
+}
+
 // 从某导线按导通状态洪水填充，得到一个 Net 的导线集合
 function floodWireNet(startBlock) {
     const result = new Set();
@@ -310,6 +323,11 @@ function floodWireNet(startBlock) {
             if (!nb || nb.typeId !== WIRE_TYPE) continue;
             if (!wiresConnected(b, face)) continue;
             queue.push(nb);
+        }
+        // 端口透传：导线经端口到达对侧导线，并入同一 net
+        for (const face of FACES) {
+            const thru = wireThroughPort(b, face);
+            if (thru) queue.push(thru);
         }
     }
     return result;
@@ -420,6 +438,9 @@ export function registerComponent(block) {
     }
     if (isGate(block.typeId) || block.typeId === SPLITTER_TYPE || block.typeId === MERGE_TYPE || block.typeId === CHIP_TYPE || block.typeId === REGISTER_TYPE) {
         comp.facing = block.permutation.getState("minecraft:cardinal_direction") ?? "north";
+    }
+    if (isPort(block.typeId)) {
+        comp.num = block.permutation.getState(PORT_STATE) ?? 0;
     }
     if (components.has(comp.key)) {
         dbg(`[reg] +dup ${block.typeId.split(":")[1]}@(${loc.x},${loc.y},${loc.z})`);
@@ -631,6 +652,9 @@ function recomputeNetValues() {
             for (const { compKey, face } of net.terms.values()) {
                 const comp = components.get(compKey);
                 if (!comp || !isOutputFace(comp, face)) continue;
+                // 输出端口不贡献网络值：网络已通过 floodWireNet 的"端口透传"跨过端口连通，
+                // 值由真正的驱动组件提供（避免端口自锁/陈旧值反灌）。
+                // 输入端口是外部源（direct 开关/外部置位），照常以 powered 驱动。
                 if (isOutputPort(comp.type)) continue;
                 const nv = compValueFor(comp, face);
                 if (nv > v) v = nv;
@@ -1033,6 +1057,45 @@ const MAX_LOGIC_INPUTS = 8;
 // 编译调试开关：设为 true 可在真值表生成时打印每一步
 let LOG_COMPILE = false;
 export function setCompileLog(on) { LOG_COMPILE = !!on; }
+
+// 持久化诊断：circuit_data 动态属性 + 内存组件统计（供 sapdon:logic_diag 命令）
+export function circuitPersistDiag() {
+    const raw = world.getDynamicProperty(CIRCUIT_PROP);
+    let propInfo = "无";
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object" && typeof parsed._chunks === "number") {
+                let joined = "";
+                for (let i = 0; i < parsed._chunks; i++) {
+                    const part = world.getDynamicProperty(`${CIRCUIT_CHUNK_PREFIX}${i}`);
+                    if (typeof part === "string") joined += part;
+                }
+                propInfo = `分块 ${parsed._chunks} 块, 拼接 ${joined.length} 字符`;
+            } else {
+                propInfo = `单块 ${raw.length} 字符`;
+            }
+        } catch (e) {
+            propInfo = "解析失败";
+        }
+    }
+    let chipBound = 0, chipTotal = 0;
+    for (const comp of components.values()) {
+        if (comp.type === CHIP_TYPE) {
+            chipTotal++;
+            if (comp.logicUuid) chipBound++;
+        }
+    }
+    return {
+        circuitData: propInfo,
+        comps: components.size,
+        nets: nets.size,
+        chips: chipTotal,
+        chipsBound: chipBound,
+        chipExample: [...components.values()].filter((c) => c.type === CHIP_TYPE).slice(0, 3).map((c) => `${c.key} lu=${c.logicUuid || "空"}`),
+    };
+}
+
 // 测试辅助：导出拓扑求值核心（供 Node 单测）
 export const TEST = { buildTopoModel, topoCompute, evalTopo };
 function cLog(...args) {
@@ -1091,6 +1154,11 @@ function freshFloodNet(startWire) {
             if (!nb || !isWireBlock(nb)) continue;
             if (wireConnectState(w, face) && wireConnectState(nb, oppositeFace(face))) q.push(nb);
         }
+        // 端口透传：导线经端口到达对侧导线，并入同一 net
+        for (const face of FACES) {
+            const thru = wireThroughPort(w, face);
+            if (thru) q.push(thru);
+        }
     }
     cLog(`floodNet from ${nodeKey(startWire)} => ${out.size} wires:`, [...out].join(","));
     return out;
@@ -1139,6 +1207,9 @@ function freshComponents(blocks, netOfWire) {
         if (b.typeId === "sapdon:on_signal") powered = 1;
         const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE || b.typeId === REGISTER_TYPE || b.typeId === CHIP_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
         const c = { key: nodeKey(b), type: b.typeId, facing, powered, nets: {}, directs: {} };
+        if (isPort(b.typeId)) {
+            c.num = b.permutation.getState(PORT_STATE) ?? 0;
+        }
         if (b.typeId === CHIP_TYPE) {
             const prev = components.get(c.key);
             if (prev && prev.logicUuid) c.logicUuid = prev.logicUuid;
@@ -1213,8 +1284,10 @@ function freshNetValue(netId, netsMap, comps) {
     for (const { compKey, face } of net.terms.values()) {
         const c = comps.get(compKey);
         if (!c) continue;
-        if (isOutputPort(c.type)) continue;
         if (!freshOutputFace(c, face)) continue;
+        // 输出端口不贡献网络值（网络已通过 freshFloodNet 的端口透传跨过端口连通，值由真驱动提供）；
+        // 输入端口是外部源，照常以 powered 驱动。
+        if (isOutputPort(c.type)) continue;
         const nv = freshCompValue(c, face, netsMap, comps);
         if (nv > v) v = nv;
     }
@@ -1394,7 +1467,7 @@ export function compileLogic(clickedInputPort) {
     const inputs = [];
     const outputs = [];
     for (const c of comps.values()) {
-        const num = portNumber(c.type);
+        const num = portNumber(c);
         if (num === null) continue;
         (isInputPort(c.type) ? inputs : outputs).push({ c, num, dist: freshPortDist(c, blocks) });
     }
@@ -1625,16 +1698,9 @@ function topoCompute(c, netsMap, comps, store) {
     return 0;
 }
 
-// 从端口 typeId 解析出端口序号（null 表示非端口）
-function portNumber(typeId) {
-    if (isInputPort(typeId)) {
-        const v = /_(\d+)$/.exec(typeId);
-        return v ? Number(v[1]) : null;
-    }
-    if (isOutputPort(typeId)) {
-        const v = /_(\d+)$/.exec(typeId);
-        return v ? Number(v[1]) : null;
-    }
+// 端口号来自组件（方块状态 sapdon:num），非端口返回 null
+function portNumber(c) {
+    if (isInputPort(c.type) || isOutputPort(c.type)) return c.num ?? 0;
     return null;
 }
 
@@ -1642,9 +1708,13 @@ function portNumber(typeId) {
 
 const CIRCUIT_PROP = "sapdos:circuit_data";
 const CIRCUIT_VER = 2;
+// 单块动态属性大小上限（Bedrock 对单个动态属性值限制严格，超大电路 JSON 需分块存储）
+const CIRCUIT_CHUNK = 24000;
+// 块 key 前缀；若用多块则 key 为 sapdos:circuit_data#0..#N-1
+const CIRCUIT_CHUNK_PREFIX = "sapdos:circuit_data#";
 
-// 保存"已求解的内存模型"（components/nets/netLookup）到世界动态属性
-
+// 保存"已求解的内存模型"（components/nets/netLookup）到世界动态属性。
+// JSON 超过单块上限时分块写入（loadCircuit 按序拼接），避免 setDynamicProperty 超限静默失败。
 export function saveCircuit() {
     const comps = [];
     for (const comp of components.values()) {
@@ -1661,6 +1731,7 @@ export function saveCircuit() {
             db: comp.directByFace || {},
             lu: comp.logicUuid || "",
             st: comp.store ? 1 : 0,
+            nm: comp.num ?? 0,
             tr: comp._topoStore && Object.keys(comp._topoStore).length ? comp._topoStore : undefined,
         });
     }
@@ -1673,18 +1744,62 @@ export function saveCircuit() {
         });
     }
     const data = { v: CIRCUIT_VER, netSeq, comps, nets: netArr };
+    const json = JSON.stringify(data);
     try {
-        world.setDynamicProperty(CIRCUIT_PROP, JSON.stringify(data));
-    } catch (e) {}
+        if (json.length <= CIRCUIT_CHUNK) {
+            // 单块：直接写主 key，并清理历史分块
+            world.setDynamicProperty(CIRCUIT_PROP, json);
+            world.setDynamicProperty(CIRCUIT_CHUNK_PREFIX + "0", undefined);
+            world.setDynamicProperty(CIRCUIT_CHUNK_PREFIX + "1", undefined);
+            world.setDynamicProperty(CIRCUIT_CHUNK_PREFIX + "2", undefined);
+            world.setDynamicProperty(CIRCUIT_CHUNK_PREFIX + "3", undefined);
+            world.setDynamicProperty(CIRCUIT_CHUNK_PREFIX + "4", undefined);
+            return;
+        }
+        // 分块写入：主 key 存总块数，其余 key 存数据块
+        const chunks = [];
+        for (let i = 0; i < json.length; i += CIRCUIT_CHUNK) {
+            chunks.push(json.slice(i, i + CIRCUIT_CHUNK));
+        }
+        world.setDynamicProperty(CIRCUIT_PROP, JSON.stringify({ _chunks: chunks.length }));
+        for (let i = 0; i < chunks.length; i++) {
+            world.setDynamicProperty(`${CIRCUIT_CHUNK_PREFIX}${i}`, chunks[i]);
+        }
+        // 清理多余的历史块
+        for (let i = chunks.length; i <= chunks.length + 4; i++) {
+            world.setDynamicProperty(`${CIRCUIT_CHUNK_PREFIX}${i}`, undefined);
+        }
+    } catch (e) {
+        dbg(`[save] chunked save failed: ${e.message || e}`);
+    }
 }
 
 export function loadCircuit() {
     clearNodes();
-    const raw = world.getDynamicProperty(CIRCUIT_PROP);
+    let raw = world.getDynamicProperty(CIRCUIT_PROP);
     if (!raw) return;
+    let json = null;
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && typeof parsed._chunks === "number" && parsed._chunks > 0) {
+            // 分块存储：按序拼接各块
+            let joined = "";
+            for (let i = 0; i < parsed._chunks; i++) {
+                const part = world.getDynamicProperty(`${CIRCUIT_CHUNK_PREFIX}${i}`);
+                if (typeof part !== "string") { joined = null; break; }
+                joined += part;
+            }
+            json = joined;
+        } else {
+            json = raw; // 单块存储
+        }
+    } catch (e) {
+        return;
+    }
+    if (!json) return;
     let data;
     try {
-        data = JSON.parse(raw);
+        data = JSON.parse(json);
     } catch (e) {
         return;
     }
@@ -1703,6 +1818,7 @@ export function loadCircuit() {
             directByFace: c.db || {},
             logicUuid: c.lu || "",
             store: c.st ? 1 : 0,
+            num: c.nm ?? 0,
         });
         if (c.tr && typeof c.tr === "object") {
             components.get(c.k)._topoStore = c.tr;
