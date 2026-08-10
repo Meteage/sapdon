@@ -1206,7 +1206,7 @@ function freshComponents(blocks, netOfWire) {
         if (b.typeId === SWITCH_TYPE || b.typeId === DISPLAY_TYPE) powered = b.permutation.getState(POWER_STATE) ?? 0;
         if (b.typeId === "sapdon:on_signal") powered = 1;
         const facing = isGate(b.typeId) || b.typeId === SPLITTER_TYPE || b.typeId === MERGE_TYPE || b.typeId === REGISTER_TYPE || b.typeId === CHIP_TYPE ? (b.permutation.getState("minecraft:cardinal_direction") ?? "north") : undefined;
-        const c = { key: nodeKey(b), type: b.typeId, facing, powered, nets: {}, directs: {} };
+        const c = { key: nodeKey(b), type: b.typeId, facing, powered, nets: {}, directs: {}, loc: { x: b.location.x, y: b.location.y, z: b.location.z } };
         if (isPort(b.typeId)) {
             c.num = b.permutation.getState(PORT_STATE) ?? 0;
         }
