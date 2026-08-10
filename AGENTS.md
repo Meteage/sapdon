@@ -68,8 +68,13 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 
 ### 芯片两种编译模式（compileLogic）
 - 输入端子数 `≤ MAX_LOGIC_INPUTS(8)`：真值表法（`mode=table`，记录 `inputs`/`outputs` 端口序号 + `table`）；端子 `>8`：**不启动 2^n 查表**，直接改存电路拓扑 `mode=topo`（`topo` 字段 = 相对坐标 comps+nets+端子映射，chip 运行时 `evalTopo` 逐 bit 驱动做固定点仿真，初始 store=0）。
-- 端口方块现支持 `input_port_0~9` / `output_port_0~9`（作排列编号，非逻辑位权）；真值表模式下编译时按 `freshPortDist`（端子距电路距离）排序——最远=bit0，同距再按端口数字升序。
+- 端口方块为单一方块 `sapdon:input_port` / `sapdon:output_port`，端口号(0~9) 存方块状态 `sapdon:num` 控制数字贴图（仅编号，非逻辑位权），由 `debug_tool` 点击循环切换；真值表模式下编译时按 `freshPortDist`（端子距电路距离）排序——最远=bit0，同距再按端口数字升序。
+- 端口贴图带透明像素须配 `render_method: alpha_test`；**不要**再加 `face_dimming: false`/`ambient_occlusion: 0`，否则端口自发光（用户要求端口不发光）。
+- 摆放非导线电路方块时若点击的是导线，`playerPlaceBlock` 里必须 `setWireEdge(被点击导线, 点击面, 1)` 让导线手臂指向新器件，否则「先铺线再点线放器件」的场景导线不导通到器件。相关的 `beforeEvents.playerInteractWithBlock` 记录条件是「手持电路物品 **或** 被点击方块是电路方块」。
 - 拓扑仿真求值（`evalTopo`/`topoCompute`）依赖 `@minecraft/server`，Node 无法直接 import；`test/topo.test.mjs` 复制了 engine 核心（AND/NOT/寄存器写&保持/固定点共 16 断言）。**改 engine 这些函数须同步该测试副本**，运行 `node test/topo.test.mjs`。
+- **端口导电语义**：输出端口不贡献网络值（`recomputeNetValues`/`freshNetValue` 里 `isOutputPort` 被跳过），网络靠 `floodWireNet`/`freshFloodNet` 的 `wireThroughPort` 穿透端口连通——导线 arm 指向端口且对侧导线 arm 也指向端口时，两侧导线并入同一 net。改这三处（runtime floodWireNet、compile freshFloodNet、wireThroughPort）须三处同步 + stub 副本 + topo 测试副本。
+- **动态属性持久化分块**：Bedrock 单个动态属性值长度受限（约 32KB 量级），大电路 JSON 超限时 `setDynamicProperty` 抛错——**若被 try-catch 吞掉会静默丢存档**（症状：重进世界后电路/chip 绑定消失，因为存档一直是早期小快照）。`saveCircuit` 已按 `CIRCUIT_CHUNK=24000` 分块（主 key 存 `{"_chunks":N}`，数据块 `sapdos:circuit_data#0..N-1`），`loadCircuit` 拼接还原。排查"重进丢数据"先看 `[diag] worldLoad` 日志（存档大小/组件数/chip 绑定数）。
+- **ContentLog 诊断陷阱**：ContentLog 在游戏进程内可能停止追加（文件停在某个时间戳），且 `world.sendMessage` 不进日志。需要运行时证据时用 `console.warn` + 游戏内 `logic_diag` 命令（输出同时写 ContentLog 和聊天框）；日志冻结时让玩家完全退出进程重开。
 
 ### 创造菜单分组（Item Catalog）
 - 方块/物品 `options.group` → `menu_category.group`；`ItemAPI.createItemCatalog().addGroup(category, items, {icon, name})` 生成 `BP/item_catalog/crafting_item_catalog.json`。

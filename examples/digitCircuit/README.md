@@ -18,7 +18,7 @@ Minecraft 基岩版数字电路 Addon（sapdon 框架示例）。实现导线、
 | 位宽器件 | `sapdon:splitter` / `sapdon:merger` | 分线（N→N-1 直通 + 1 分出）/ 合并（N+1） |
 | 寄存器 | `sapdon:register` | 1bit 电平锁存（W=1 写 D，W=0 保持） |
 | 可编程芯片 | `sapdon:chip` | 装载逻辑记录后按输入数值输出结果 |
-| 端口 | `sapdon:input_port_0~9` / `output_port_0~9` | 电路对外接口（数字标记，可旋转组合） |
+| 端口 | `sapdon:input_port` / `sapdon:output_port` | 电路对外接口（`sapdon:num` 状态 0~9 控制数字贴图，可旋转组合多位端口号） |
 
 ## 2. 工具
 
@@ -37,7 +37,7 @@ Minecraft 基岩版数字电路 Addon（sapdon 框架示例）。实现导线、
 ## 4. 电路搭建步骤
 
 1. **布线**：放导线、信号源/开关/门，导线会自动连通（点击放置会按点击面连接）。
-2. **接端口**：电路的每个外部输入/输出接 `input_port_*` / `output_port_*` 方块（数字只作编号，可旋转朝向拼出多位端口号）。
+2. **接端口**：电路的每个外部输入/输出接 `sapdon:input_port` / `sapdon:output_port` 方块（手持 `debug_tool` 点击循环切换端口号 0~9），可旋转朝向拼出多位端口号。
 3. **调试**：用 `debug_tool` 点击各器件查看信号与位宽。
 4. **保存为逻辑**：手持 `logic_tool` 点**任意一个输入端口** → 自动编译电路 → 消耗工具并返还一个绑定 `uuid` 的新工具（携带真值表/拓扑）。
 5. **装入芯片**：手持已绑定的 `logic_tool` 右键 `sapdon:chip` → 芯片按逻辑工作（**南=输入，北=输出**）。
@@ -77,12 +77,10 @@ sapdon:logic_export <ref>            # 拿到分块打印的 JSON
 sapdon:logic_stage <第1段>           # 逐段粘贴（可多条）
 sapdon:logic_stage <第2段>
 ...
-sapdon:logic_import 4bit-adder       # 合并成记录，保留原 uuid
+sapdon:logic_import <name>          # 合并成记录，保留原 uuid
 sapdon:logic_item <uuid>             # 绑到手持 logic_tool
 # 右键 chip 即可装载
 ```
-
-预生成示例：`tools/` 下已有 4 位全加器的完整记录与导入指令（见 `tools/README.md`）。
 
 ## 7. 位宽与数值语义
 
@@ -103,7 +101,7 @@ sapdon:logic_item <uuid>             # 绑到手持 logic_tool
 - 常见问题：
   - 门输出恒 0/恒 1 → 检查 AND/OR 未用输入面是否接常数（topo 记录中 AND 第三面须接 `on_signal`、OR 接 `off_signal`）。
   - 芯片输出恒 0 → 先确认记录存在（`logic_info`）、输入值、输出三分离排查。
-  - 端口不识别 → 确认用的是 `input_port_*`/`output_port_*` 方块而非普通方块。
+  - 端口不识别 → 确认用的是 `sapdon:input_port`/`sapdon:output_port` 方块而非普通方块。
 
 ## 10. 构建与部署
 
@@ -113,8 +111,3 @@ npm run build        # 输出到 dev/
 ```
 
 部署：把 `dev/digitCircuit_BP`、`dev/digitCircuit_RP` 拷贝到游戏 dev 包目录（`%LOCALAPPDATA%\Packages\Microsoft.MinecraftUWP_8wekyb3d8bbwe\LocalState\games\com.mojang\`）。
-
-## 11. 已生成示例（tools/）
-
-- 4 位全加器（`mode=topo`，行波进位，含进位输出）：完整 JSON + 导入指令序列 + 生成器脚本，见 `tools/README.md`。
-- 接口：`in = A | (B<<4)`，`out = S | (Cout<<4)`。

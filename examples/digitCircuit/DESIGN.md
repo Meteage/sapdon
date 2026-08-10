@@ -105,7 +105,7 @@ examples/digitCircuit/
 | `sapdon:itemGroup.name.source` | wire, on_signal, off_signal, switch | construction |
 | `sapdon:itemGroup.name.gate` | and_gate, or_gate, not_gate | construction |
 | `sapdon:itemGroup.name.bus` | splitter, merger | construction |
-| `sapdon:itemGroup.name.port` | input_port_0~9, output_port_0~9, display | construction |
+| `sapdon:itemGroup.name.port` | input_port, output_port, display | construction |
 | `sapdon:itemGroup.name.chip` | chip, register | construction |
 | `sapdon:itemGroup.name.tool` | debug_tool, logic_tool | equipment |
 
@@ -131,8 +131,9 @@ examples/digitCircuit/
 - 因此一条连接由两端共同决定，切换必须**两端同步**（`setWireEdge` 同时改本导线与邻线反向手臂）。
 
 ### 5.2 放置（不自动连）
-- 2.6.0 的 `playerPlaceBlock` **没有** `blockFace`，故用 `beforeEvents.playerInteractWithBlock`（拿 `block`+`blockFace`）在放置前记录进 `pendingPlace`。
+- 2.6.0 的 `playerPlaceBlock` **没有** `blockFace`，故用 `beforeEvents.playerInteractWithBlock`（拿 `block`+`blockFace`）在放置前记录进 `pendingPlace`。记录条件为「手持电路物品 **或** 被点击方块是电路方块」，保证「先铺电线再点电线放器件」也能命中。
 - 放置导线时取 `rec.blockFace` 的反面作为连接面，仅当该面相邻确为被点击方块且可连（`isCircuit`）才连 → `connectWireOnPlacement`（内部走 `setWireEdge`）。**其余面默认不连。**
+- 放置**非导线**电路方块时：若被点击方块是导线，则把该导线朝向新方块的手臂置 1（`setWireEdge(rec.block, rec.blockFace, 1)`），否则该导线不导通到器件（表现为「电路接线但不传导」）。
 
 ### 5.3 破坏
 - `playerBreakBlock` 用 `event.brokenBlockPermutation.type.id` 取原类型；after 时方块已变空气。
@@ -147,6 +148,7 @@ examples/digitCircuit/
 - `collectWireCluster`：从 anchor 向 6 邻 BFS 收集导线连通区（**不看导通状态）**，作为局部重分区范围。
 - 把受影响网络从 `nets`/`netLookup` 摘除；对仍剩余导线的老网络重挂端子。
 - 对集群中未挂网络的导线，用 `floodWireNet` 按导通规则洪水填充重建新 Net，并 `attachTermsForNet` 挂端子。
+- **端口透传**：`floodWireNet`/`freshFloodNet` 的 BFS 经 `wireThroughPort` 跳过端口方块——导线 arm 指向端口且端口对侧导线 arm 也指向端口时，两侧导线并入**同一个 net**（端口像导线一样导电）。这使「输出端口 → 导线 → 显示灯」的显示侧网与电路侧网连成一体，信号自然传导。
 - 对受影响组件 `refreshComponentNetFaces`（重建 `netByFace`/`directByFace`）。
 
 ## 7. 信号求解
@@ -161,7 +163,8 @@ examples/digitCircuit/
 
 ### 7.2b 导线网络数值（netValue）
 每个 net 还携带数值 `net.value`（默认 0），由 `recomputeNetValues()` 固定点迭代求取：取挂在网络上所有输出端子的组件输出数值 `compValueFor(comp, face)` 的**最大值**（单驱动网络即该驱动值）。
-- 门/信号源/开关/端口输出数值 = 1bit（`powered` 0/1）。
+- 门/信号源/开关/输入端口输出数值 = 1bit（`powered` 0/1）。
+- **输出端口不贡献网络值**（`isOutputPort` 在 net 值求解中被跳过）：网络已通过端口透传跨过端口连通，值由真正的驱动组件提供，输出端口只作为边界标识读取。这样避免端口自锁/陈旧值反灌（历史 b038716 曾因端口参与驱动产生陈旧值自锁）。
 - 分线器：直通=`输入值 >> 1`（N-1 位）、分出=`输入值 & 1`（1 位）。
 - 合并器：输出=`(西值 << 1) | 南值`（把 N 位与 +1 位拼接为 N+1 位新值）。
 - `netSignal(netId)` 现在返回 `netValue`（>0 视为通电），布尔视角与旧逻辑兼容。
@@ -208,17 +211,19 @@ examples/digitCircuit/
 
 方块 block_state 虽随存档保存，但脚本内存的 `components/nets/netLookup` 不会。为在重进世界后还原状态，直接把**已求解的内存模型**写进动态属性：
 
-- `saveCircuit()`：把全部组件（含 `powered`/`facing`/`netByFace`/`directByFace`）与全部网络（`wires`/`terms`）以及 `netSeq` 序列化为 JSON，写入世界动态属性 `sapdos:circuit_data`（版本 `CIRCUIT_VER=2`）。
-- `loadCircuit()`：读取并**原样重建**三张表 + 保留 `netSeq`。**不做任何重新推导、不 `getBlock`、不写方块状态、不调用 `propagate`** —— 纯逻辑不进，方块只是渲染载体。
-- `index.js` 在 `worldLoad` 直接 `loadCircuit()`（不依赖区块加载，无需重试）。
+- `saveCircuit()`：把全部组件（含 `powered`/`facing`/`netByFace`/`directByFace`/`logicUuid`/`store`）与全部网络（`wires`/`terms`）以及 `netSeq` 序列化为 JSON，写入世界动态属性 `sapdos:circuit_data`（版本 `CIRCUIT_VER=2`）。
+- **分块存储**：单个动态属性值有长度上限（Bedrock 实际限制严格，约 32KB 量级；`setDynamicProperty` 超限会抛错且不落盘）。`saveCircuit` 把 JSON 按 `CIRCUIT_CHUNK=24000` 字符分块：主 key `sapdos:circuit_data` 存 `{"_chunks":N}`，数据块存 `sapdos:circuit_data#0..#N-1`；单块可容纳时直接存主 key 并清理历史块。`loadCircuit` 按 `_chunks` 拼接还原。
+- **教训**：超限时 `setDynamicProperty` 抛错，若被 try-catch 吞掉则**静默丢存档**——表现为"重进世界后电路/chip 绑定消失"。任何写动态属性的代码不得吞掉异常，且必须考虑分块。
+- `loadCircuit()`：读取并**原样重建**三张表 + 保留 `netSeq`。**不做任何重新推导、不 `getBlock`、不写方块状态、不调用 `propagate`** —— 纯逻辑不进，方块只是渲染载体。**注意**：存档只含"保存那一刻内存里的组件"；若某区域从未被触碰重建（不在存档），重进后需玩家触碰该区域才重新入内存。
+- `index.js` 在 `worldLoad` 直接 `loadCircuit()`（不依赖区块加载，无需重试），并打印 `[diag] worldLoad pre/post` 诊断（存档大小 + 恢复统计 + chip 绑定数）到 ContentLog。
 - 每次放置/破坏/工具操作后都会 `saveCircuit()`。
-- 注意：单个动态属性 key 的 JSON 长度有限，超大电路可考虑按方块拆分 key。
+- `logic_diag` 命令可手动查看当前 `circuit_data` 状态与 chip 绑定情况（写 ContentLog + 聊天框）。
 
 ## 10. 事件接入点（scripts/index.js）
 
 | 事件 | 动作 |
 |---|---|
-| `beforeEvents.playerInteractWithBlock` | 拿导线点击时记录目标面（供放置连接） |
+| `beforeEvents.playerInteractWithBlock` | 手持电路物品或被点击方块是电路方块时，记录目标面（供放置连接） |
 | `afterEvents.playerPlaceBlock` | 按点击面连导线 + `rebuildAround` + `saveCircuit` |
 | `afterEvents.playerBreakBlock` | 注销 + 断邻线 + 邻居 `rebuildAround` + `saveCircuit` |
 | `afterEvents.playerInteractWithBlock` | 对电路方块 `rebuildAround`（作为无 blockLoad 的手动刷新） |
