@@ -1,0 +1,60 @@
+{
+  "pass_score": 90,
+  "study_first": "tools/MC_PIXEL_GUIDE.md",
+  "answer_dir": "exam/answers",
+  "samples_root": "D:/Projects/bedrock-samples-1.21.130.26-preview/bedrock-samples-1.21.130.26-preview",
+  "instructions": "考试流程：1) 先完整阅读 tools/MC_PIXEL_GUIDE.md 教程；2) 用 tools/exam.ps1 -List 看题目；3) 用 tools/exam.ps1 -Show <id> 看题面；4) 用 make_noise_texture.ps1（噪声题）或 draw_textures.ps1（形状题）作答，输出 16x16 PNG 到 exam/answers/<id>.png；5) 用 tools/exam.ps1 -Grade <id> 评分，总分 >= 90 过关。",
+  "weights_default": { "hue": 30, "sat": 10, "contrast": 20, "rough": 20, "levels": 10, "shape": 10 },
+  "questions": [
+    {
+      "id": "q1_stone",
+      "type": "noise",
+      "title": "石头（stone）",
+      "desc": "生成一块原版风格的石头方块面纹理：不透明、平滑灰、低对比、单一灰色相、明暗 4~6 个台阶、无描边。参考：samples 的 stone.png。",
+      "ref": "samples/resource_pack/textures/blocks/stone.png"
+    },
+    {
+      "id": "q2_cobblestone",
+      "type": "noise",
+      "title": "圆石（cobblestone）",
+      "desc": "生成一块原版风格的圆石方块面纹理：不透明、灰、粗噪声（对比度约为石头的 2~3 倍）、6 级左右明暗。参考：samples 的 cobblestone.png。",
+      "ref": "samples/resource_pack/textures/blocks/cobblestone.png"
+    },
+    {
+      "id": "q3_dirt",
+      "type": "noise",
+      "title": "泥土（dirt）",
+      "desc": "生成一块原版风格的泥土方块面纹理：不透明、橙棕色（单一色相）、高对比粗噪、带零星颗粒亮/暗点。参考：samples 的 dirt.png。",
+      "ref": "samples/resource_pack/textures/blocks/dirt.png"
+    },
+    {
+      "id": "q4_water",
+      "type": "noise",
+      "title": "水（water）",
+      "desc": "生成一帧原版风格的水纹：不透明、高饱和蓝（单一蓝色相）、高频细噪（像素级抖动）、中低对比。参考：samples 的 water_still.png。",
+      "ref": "samples/resource_pack/textures/blocks/water_still.png"
+    },
+    {
+      "id": "q5_iron",
+      "type": "noise",
+      "title": "铁块（iron_block）",
+      "desc": "生成一块原版风格的铁块方块面纹理：不透明、很亮的浅灰（V 高）、非常平滑低对比、同色相。参考：samples 的 iron_block.png。",
+      "ref": "samples/resource_pack/textures/blocks/iron_block.png"
+    },
+    {
+      "id": "q6_redstone_lamp",
+      "type": "noise",
+      "title": "红石灯（亮）",
+      "desc": "生成原版风格的点亮红石灯方块面纹理：不透明、深褐到亮橙的发光渐变、高对比（4 倍以上跨度）、低饱和噪点。参考：samples 的 redstone_lamp_on.png。",
+      "ref": "samples/resource_pack/textures/blocks/redstone_lamp_on.png"
+    },
+    {
+      "id": "q7_wrench",
+      "type": "shape",
+      "title": "扳手物品图标",
+      "desc": "用手绘法画一个 MC 物品图标风格的扳手：透明背景、深色描边、左上高光、C 形开口环头（缺口朝侧面）+ 渐细手柄 + 金属三阶明暗。参考形状：tools/draw_textures.ps1 的 wrench 地图语义。",
+      "ref": "res/textures/items/wrench.png",
+      "weights": { "hue": 15, "sat": 5, "contrast": 15, "rough": 10, "levels": 5, "shape": 50 }
+    }
+  ]
+}

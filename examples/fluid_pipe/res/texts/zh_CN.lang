@@ -1,0 +1,9 @@
+fluid_pipe:itemGroup.name.fluid=流体管道
+fluid_pipe:itemGroup.name.tools=管道工具
+fluid_pipe:pipe_item.name=流体管道
+fluid_pipe:pump_item.name=泵
+fluid_pipe:tank_item.name=储液罐
+fluid_pipe:valve_item.name=管道阀门
+fluid_pipe:wrench.name=管道扳手
+
+fluid_pipe:valve3_item.name=三通阀

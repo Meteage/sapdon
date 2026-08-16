@@ -1,0 +1,9 @@
+fluid_pipe:itemGroup.name.fluid=Fluid Pipe
+fluid_pipe:itemGroup.name.tools=Pipe Tools
+fluid_pipe:pipe_item.name=Fluid Pipe
+fluid_pipe:pump_item.name=Pump
+fluid_pipe:tank_item.name=Storage Tank
+fluid_pipe:valve_item.name=Pipe Valve
+fluid_pipe:wrench.name=Pipe Wrench
+
+fluid_pipe:valve3_item.name=Three-way Valve
