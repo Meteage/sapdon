@@ -8,27 +8,6 @@ const LORE_NAME = "mb_name:"; // Lore 键：实体的名称
 const LORE_TYPE = "mb_type:"; // Lore 键：实体的类型
 const LORE_HEALTH = "mb_health:"; // Lore 键：实体的血量
 
-// 不可捕捉目标（精确匹配）
-const UNCATCHABLE_EXACT = new Set([
-    "minecraft:player",
-    "minecraft:armor_stand",
-    "minecraft:item",
-    "minecraft:xp_orb",
-]);
-
-// 不可捕捉目标（前缀匹配：各种抛掷物 / 箭）
-const UNCATCHABLE_PREFIXES = [
-    "minecraft:arrow",
-    "minecraft:snowball",
-    "minecraft:egg",
-    "minecraft:ender_pearl",
-    "minecraft:ender_eye",
-    "minecraft:fireball",
-    "minecraft:llama_spit",
-    "minecraft:shulker_bullet",
-    "minecraft:trident",
-];
-
 // ---- 状态 ----
 // 玩家 -> 待释放实体 ID 的 FIFO 队列。
 // 入队发生在 beforeEvents.itemUse（先于抛掷物生成/命中，贴脸投掷也不丢时序）；
@@ -95,11 +74,9 @@ function resolveTarget(sourceId: string, projectile: Entity): string | undefined
     return takePendingRelease(sourceId);
 }
 
-// 是否可被捕捉：排除黑名单，且必须带血量组件
+// 是否可被捕捉：除玩家外的一切实体均可收服
 function isCatchable(entity: Entity): boolean {
-    if (UNCATCHABLE_EXACT.has(entity.typeId)) return false;
-    if (UNCATCHABLE_PREFIXES.some((prefix) => entity.typeId.startsWith(prefix))) return false;
-    return entity.getComponent("health") !== undefined;
+    return entity.typeId !== "minecraft:player";
 }
 
 // 生成掉落的大师球
