@@ -34,7 +34,7 @@
 				"rotation": "variable.spin * variable.particle_age"
 			},
 			"minecraft:particle_appearance_tinting": {
-				"color": ["variable.color_r", "variable.color_g", "variable.color_b", "min(variable.particle_age * 5.0, (variable.particle_lifetime - variable.particle_age) * 5.0, 1.0)"]
+				"color": ["variable.color_r", "variable.color_g", "variable.color_b", "math.sin(3.14159 * variable.particle_age / variable.particle_lifetime)"]
 			}
 		}
 	}
