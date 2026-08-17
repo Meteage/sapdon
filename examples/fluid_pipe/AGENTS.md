@@ -13,7 +13,7 @@ Minecraft 基岩版流体管道 Addon（sapdon 框架 TS 项目，`@minecraft/se
 
 ## 常用命令
 - `npm run build` — 构建（输出 dev/ 并同步游戏开发包）
-- `node --test test/fluid.test.mjs` — 引擎核心逻辑测试（20 断言）
+- `node --test test/fluid.test.mjs` — 引擎核心逻辑测试（25 断言）
 - `powershell -ExecutionPolicy Bypass -File tools/make_water_texture.ps1` — 重新合成翻书贴图（改 glass/water 源图后执行）
 - `powershell -ExecutionPolicy Bypass -File tools/view_texture.ps1 <png> [-Palette]` — 贴图 ASCII 查看器
 - `powershell -ExecutionPolicy Bypass -File tools/draw_textures.ps1` — 重画设备像素贴图（泵/罐/阀门/扳手）
@@ -55,13 +55,15 @@ Minecraft 基岩版流体管道 Addon（sapdon 框架 TS 项目，`@minecraft/se
 - **manifest 只在首次构建生成**：改 build.config 依赖（如 server-ui 版本）后，先删 `dev/<proj>_BP/manifest.json` 再 build。
 - **PS 5.1 脚本坑合集见上文"贴图查看与绘制工作流"**（ANSI 解析/param 首句/workdir/`$var:` 插值）。
 - **ContentLog 是唯一可靠的运行时诊断渠道**：用 `console.warn` 写日志（`<APPDATA>\Minecraft Bedrock\logs\ContentLog*.txt`，此路径文件不可用 Grep 搜索，用 PowerShell Select-String 抓）；游戏内 `fluid_pipe:fluid_log on` 开启 `[rt]` 行。
+- **排障流程（铁律）**：① 先读代码，沿事件流/数据流定位（playerBreak/Place → rebuildAround → flood → computePotential → tickFlow → renderAll）；② 代码看不出问题时**做实验**——先在 Node mock（提取 `test/fluid.test.mjs` 镜像 + 自定义场景）复现核心层，再让玩家在游戏里按最小步骤复现，用 `fluid_log on` 抓运行证据；③ 实验前先**把日志打印清楚**：每行必须带坐标/端点完整列表/关键状态，能还原玩家每一步操作与系统状态。目前调试日志已具备：`[fluid][evt] break/place/valve toggle @(x,y,z)`（玩家操作）、`[rt] rebuild: affected=.. @x,y,z;..`（重建锚点）、`[rt] seg=.. ends=[面:端点#设备..] @起->止`（段端点+坐标）、`[rt] link ..(valveIn=势)->..(valveOut)`（阀门透传链，valveIn=-1 即断链）、`[rt] pump @.. on=.. soaked=.. in/out=..`（泵状态）。**新增调试日志时保持同样的"一行可还原"风格**。复盘案例：`rebuildAround` 曾因 flood 循环里 `pipeSeg` 未及时更新产生**重叠段**（同一管道落入多个段 → 势复制、link 爆炸、"断口后水仍涌过来"），修复为 flood 后立即登记 `flooded` 集合——这种只在真实世界"放置管道"时触发的问题，mock 若用"循环内立即登记"的写法就会漏掉，mock 必须与真实引擎逐行对齐。
 - **worldLoad 早期 getBlock 可能取不到**：加载只恢复设备小状态 + 管道位置（pendingPipes），不写方块；连接图由 `rebuildPending` 按区块渐进洪水重建（每 tick 批 64 个，`restoreFrontMode` 从方块 `fluid_pipe:core` 状态恢复前沿）；`pumpEnds` 靠 tick 周期刷新补偿；`loaded` 门闩防空表覆盖存档。
 - **持久化 v2 只存小状态**：设备表（泵/罐）+ 管道位置 ≈ 24KB（769 管道），**绝不存段图**（旧版存 ends/adj/front/pass 单次 488KB、每 2 tick 一次 → 103MB/分钟 爆 10MB 阈值）。阀开/关与三通方向均为方块状态（世界存档自动持久化，不入库）。保存触发：结构事件走 `saveFluid()`（立即、小载荷）；**无周期保存**，液位流动等运行态只存内存（方块状态自带视觉持久化），常态运行不写盘。写动态属性异常不可吞（吞掉 = 重进静默丢存档）。
 - **连接图重建靠事件 + 加载扫描**：放置/破坏/扳手/阀门切换 → `rebuildAround`（事件响应重建）；区块边界洪水停在边界，对侧区块加载后由该侧 pending 重建并自动合并（洪水会卷入已入段区域重分）。
 - **管道渲染为双命名材质方案**：`fluid_pipe.geo.json` 每个 cube 面 UV 带 `material_instance`（外层骨=`pipe`、内层骨=`fluid`）；方块用 `createGeometryBlock`（无 variant permutation，否则 permutation 的材质实例会覆盖命名材质）定义 `pipe`→`pipe_glass`、`fluid`→`fluid_water32`（翻书只动画水）。几何 UV 按 32x32 空间设计，材质贴图必须 32x32（`tools/make_water_texture.ps1` 把 16x16 源图放大 2 倍）。
-- **v2 势模型**：水=1 / 空气=-1 / 向上每格-1 / 泵Δ=4（顶出底入）/ 罐 0~32 格（未满-1吸、满0停、弱源 level/32）—— 常量在 `scripts/core/potential.ts` 顶部，调参记得同步测试副本。
+- **v2 势模型（供水只来自泵）**：空气=-1 / 向上每格-1 / 泵Δ=4（顶出底入，**入水口底面接触水**或输入侧有水才吐）/ 罐 0~32 格纯吸收（未满-1吸、满停吸，不排水）—— **水块相邻=墙不供水、罐不能当源、水浸管道不是源**（管道可含水只是方块层存水，已删 `END_SOURCE`/`FULL_TANK_POT`/`segHasOpenDrain`/`hasTankWater`）。**水为存量**：断源/关阀后 `front`/`covered` 保留不退（水停流但保留），拆管道方块即清空。常量在 `scripts/core/potential.ts` 顶部，调参记得同步测试副本。
 - **v3 方块语义**：泵顶=输出底=输入（侧面不参与）；单方向阀自身参考系西入东出，开/关=`fluid_pipe:open` 状态（扳手只切换顶面箭头 →开/↑关，**方块朝向不动**，放置时可旋转）；三通阀自身参考系西入三出（dir: east/south/west/north 顺时针循环，west=指向输入=全关，顶面单箭头指示）。**阀顶面箭头统一用 v3t_* 单箭头贴图**（单阀开= v3t_east、关= v3t_north）。**阀开/关与三通 dir 均为方块状态，引擎 describeEnd 必须读旋转（`minecraft:cardinal_direction`）做局部→世界面映射（ROT_FACE），不入持久化表**。
-- **有效管道（渲染前提）**：段必须同时有输入端点（泵输出/阀门输出）与输出端点（罐/阀门输入/泵输入）才渲染水（`segValid`）；孤立段、仅泡水段（`END_SOURCE` 不算输入）无效；**泵泡水**（`pump.soaked`，泵自身含水或相邻 6 面任一为水块，每 5 tick 刷新）→ 泵直接吐水给输出段；`potCovered` 只含势 > -1 的管道，且经**叶剥除**只留连接所有输入/输出端点的最小子树——**死胡同支路不渲染水**。**水覆盖是逻辑层状态**：`tickFlow` 每 20 tick 把路径/顺序/前沿算进 `seg.front` 与 `seg.covered`（含水管道集合），引擎 `renderAll` 只读 `seg.covered` 同步写方块（存在才写，不存在记失效）。
+- **阀门链 + 级联填充**：`FloodGraph.describeEnd` 返回 `SegEnd[]`，开阀可沿链穿越（阀门直接首尾相连无需管道：输入侧链上每级补 valveIn、终端挂源/汇；关阀=墙断链）。渲染**级联推进**：阀门喂水段（无独立源端点）等上游段充满才进水（`tickFlow` 两遍：先算 paths/targets/upstreamOf，再按闸门推进 front）。**罐吸水按可见水**：吸水须 `seg.covered.has(罐端 pipeKey)`（前沿到罐端才加）；罐纯吸收（满停吸，不排水）。改这两处须同步 `test/fluid.test.mjs` 镜像。
+- **有效管道（渲染前提）**：段必须同时有输入端点（泵输出/阀门输出）与输出端点（罐/阀门输入/泵输入）才渲染水（`segValid`）；孤立段、仅空气端段无效；**泵泡水**（`pump.soaked`，泵**输入口底面**接触水块或自身被水浸，每 5 tick 刷新；侧/顶面接触水不算，入水口断开即停水）→ 泵直接吐水给输出段（唯一水源）；`potCovered` 只含势 > -1 的管道，且经**叶剥除**只留连接所有输入/输出端点的最小子树——**死胡同支路不渲染水**。**水覆盖是逻辑层状态**：`tickFlow` 每 20 tick 把路径/顺序/前沿算进 `seg.front` 与 `seg.covered`（含水管道集合）；**水为存量**——断源后 `front`/`covered` 保留（`target >= front` 才重算覆盖），拆管道即清空；引擎 `renderAll` 只读 `seg.covered` 同步写方块（存在才写，不存在记失效）。
 - 势传播场每 20 tick 全量重算（computePotential + tickFlow），L/R 分离：R=段管道坐标列表按组批量更新。
 
 - **方块状态最多 16 个有效值**：整数范围状态 max 最多比 min 大 15（0..16 共 17 值会报 expected an array）；数组形式同样限 16。多档状态（如罐 16 层水位）用 0..15 + 末档合并显隐。

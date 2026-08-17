@@ -2,14 +2,13 @@
 // 流动结算见 flow.ts；改这里须同步 test/fluid.test.mjs 副本。
 //
 // 势模型（设计文档）：
-//   - 源：水中端子=1；泵输出口=输入侧势+Δ；罐(level>0)=弱源 level/32
-//   - 汇：空气端子=-1（流失）；未满罐=-1（吸入）；满罐=0（停吸）
+//   - 源：仅泵输出口（泵泡水或输入侧有水才吐，势 +Δ）；管道不吸水、水块不供水、罐为纯吸收汇
+//   - 汇：空气端子=-1（流失）；罐恒 -1（未满吸入、满停吸）
 //   - 传播：沿连接图 BFS，向上每格势 -1，水平/向下不变
 //   - 流动判定：可用势 > 目标所需势
 //   - 罐：0..32 格液位
 
 import {
-    END_SOURCE,
     END_OPEN,
     END_WALL,
     END_TANK,
@@ -24,9 +23,7 @@ import {
     type PumpState,
 } from "./graph.js";
 
-export const WATER_POT = 1;      // 水中端子初始势
-export const SINK_POT = -1;      // 空气端子 / 未满罐端口势
-export const FULL_TANK_POT = 0;  // 满罐端口势
+export const SINK_POT = -1;      // 空气端子 / 罐端口势（未满吸入、满停吸）
 export const PUMP_DELTA = 4;     // 泵造势（可抬 4 格高度）
 export const TANK_MAX = 32;      // 罐满格数
 export const UP_COST = 1;        // 向上每格势损失
@@ -35,13 +32,9 @@ export const EPS = 0.02;         // 势差阈值
 // 端点的可用势（供流动判定）
 export function endPortPot(end: SegEnd, tanks: Map<string, TankState>, pumps: Map<string, PumpState>): number {
     switch (end.kind) {
-        case END_SOURCE: return WATER_POT;
         case END_OPEN: return SINK_POT;
         case END_WALL: return 0;
-        case END_TANK: {
-            const t = tanks.get(end.deviceKey!);
-            return (t && t.level >= TANK_MAX) ? FULL_TANK_POT : SINK_POT; // 满=0（源，重力排水）/ 未满=-1（汇，吸入）
-        }
+        case END_TANK: return SINK_POT; // 罐纯吸收汇：未满吸入、满停吸（不排水）
         case END_PUMP_IN: return pumps.get(end.deviceKey!)?.on ? -PUMP_DELTA : 0;
         case END_PUMP_OUT: return pumps.get(end.deviceKey!)?.on ? PUMP_DELTA : 0;
         default: return 0; // valveIn / valveOut 由耦合传播决定
@@ -110,31 +103,12 @@ export function computePotential(
         if (P > SINK_POT) spreadInSegment(seg, seedKey, P);
     };
 
-    // 固定点迭代：水/满罐源传播 → 泵输出造势（输入侧有水才吐）→ 三通透传
+    // 固定点迭代：泵输出造势（输入侧有水或泵泡水才吐）→ 三通透传
     const maxIter = segments.size + 2;
     for (let iter = 0; iter < maxIter; iter++) {
         let changed = false;
 
-        // 1) 源：水中端子=1、满罐=0（重力排水源）
-        for (const seg of segments.values()) {
-            for (const e of seg.ends) {
-                if (e.kind === END_SOURCE) {
-                    const before = seg.pot.get(e.pipeKey);
-                    spreadFrom(seg, e.pipeKey, WATER_POT);
-                    if (before !== seg.pot.get(e.pipeKey)) changed = true;
-                }
-                if (e.kind === END_TANK) {
-                    const t = tanks.get(e.deviceKey!);
-                    if (t && t.level >= TANK_MAX) {
-                        const before = seg.pot.get(e.pipeKey);
-                        spreadFrom(seg, e.pipeKey, FULL_TANK_POT);
-                        if (before !== seg.pot.get(e.pipeKey)) changed = true;
-                    }
-                }
-            }
-        }
-
-        // 2) 泵输出口造势 +Δ（独立势源；输入侧有水 或 泵自身泡水才吐，防凭空造水）
+        // 1) 泵输出口造势 +Δ（唯一独立势源；输入侧有水 或 泵自身泡水才吐，防凭空造水）
         for (const out of pumpOuts) {
             const pump = pumps.get(out.pumpKey);
             if (!pump?.on) continue;
@@ -150,7 +124,7 @@ export function computePotential(
             }
         }
 
-        // 3) 三通阀：输入侧势 → 输出侧（不衰减）
+        // 2) 三通阀：输入侧势 → 输出侧（不衰减）
         for (const link of valveLinks) {
             let inPot = -Infinity;
             for (const e of link.inSeg.ends) {

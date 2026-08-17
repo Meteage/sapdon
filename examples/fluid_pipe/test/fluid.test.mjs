@@ -4,16 +4,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 // === 镜像 constants ===
-const WATER_POT = 1;
 const SINK_POT = -1;
-const FULL_TANK_POT = 0;
 const PUMP_DELTA = 4;
 const TANK_MAX = 32;
 const UP_COST = 1;
 const FRONT_SPEED = 2;
 const EPS = 0.02;
 
-const END_SOURCE = "source";
 const END_OPEN = "open";
 const END_WALL = "wall";
 const END_TANK = "tank";
@@ -54,10 +51,6 @@ function floodSegment(anchor, graph, segId) {
         const isPipe = graph.isPipe(key);
         if (isPipe) pipes.push(key);
         pass.push(key);
-        if (isPipe) {
-            const soak = graph.soaked(key);
-            if (soak) ends.push(soak);
-        }
         const nbrs = [];
         for (const face of ["north", "south", "east", "west", "up", "down"]) {
             const nb = graph.neighborKey(key, face);
@@ -66,8 +59,8 @@ function floodSegment(anchor, graph, segId) {
             if (graph.isPipe(nb)) { nbrs.push(nb); queue.push(nb); continue; }
             if (graph.isValveOpen(nb)) { nbrs.push(nb); queue.push(nb); continue; }
             if (isPipe) {
-                const end = graph.describeEnd(key, face);
-                if (end) ends.push(end);
+                const es = graph.describeEnd(key, face);
+                if (es) for (const e of es) ends.push(e);
             }
         }
         adj.set(key, nbrs);
@@ -123,23 +116,6 @@ function computePotential(segments, tanks, pumps) {
     const maxIter = segments.size + 2;
     for (let iter = 0; iter < maxIter; iter++) {
         let changed = false;
-        for (const seg of segments.values()) {
-            for (const e of seg.ends) {
-                if (e.kind === END_SOURCE) {
-                    const before = seg.pot.get(e.pipeKey);
-                    spreadFrom(seg, e.pipeKey, WATER_POT);
-                    if (before !== seg.pot.get(e.pipeKey)) changed = true;
-                }
-                if (e.kind === END_TANK) {
-                    const t = tanks.get(e.deviceKey);
-                    if (t && t.level >= TANK_MAX) {
-                        const before = seg.pot.get(e.pipeKey);
-                        spreadFrom(seg, e.pipeKey, FULL_TANK_POT);
-                        if (before !== seg.pot.get(e.pipeKey)) changed = true;
-                    }
-                }
-            }
-        }
         for (const out of pumpOuts) {
             const pump = pumps.get(out.pumpKey);
             if (!pump?.on) continue;
@@ -182,16 +158,6 @@ function computePotential(segments, tanks, pumps) {
             if (p < loP) { loP = p; seg.lo = e; }
         }
     }
-}
-
-function segHasOpenDrain(seg) {
-    for (const e of seg.ends) {
-        if (e.kind === END_OPEN) {
-            const p = seg.pot.get(e.pipeKey) ?? SINK_POT;
-            if (p > SINK_POT + EPS) return true;
-        }
-    }
-    return false;
 }
 
 function bfsOrder(anchor, seg) {
@@ -257,46 +223,78 @@ function coveredOf(seg, front) {
     return new Set(seg.order.slice(0, Math.ceil(front)));
 }
 
+const SOURCE_ENDS = [END_PUMP_OUT, END_VALVE_OUT];
+
+function sourceAnchorKey(seg) {
+    let best = null;
+    let bestP = -Infinity;
+    for (const e of seg.ends) {
+        if (!SOURCE_ENDS.includes(e.kind)) continue;
+        const p = seg.pot.get(e.pipeKey) ?? SINK_POT;
+        if (p > bestP) { bestP = p; best = e; }
+    }
+    return best ? best.pipeKey : null;
+}
+
 function tickFlow(segments, tanks, pumps) {
     const tankDeltas = new Map();
     let drain = 0;
+    // pass 1：路径 + 段间上游关系（级联闸门用）
+    const paths = new Map();
+    const targets = new Map();
+    const upstreamOf = new Map();
+    for (const seg of segments.values()) {
+        const path = potCovered(seg);
+        paths.set(seg.id, path);
+        targets.set(seg.id, path.size);
+    }
+    for (const [sid, seg] of segments) {
+        for (const e of seg.ends) {
+            if (e.kind !== END_VALVE_OUT) continue;
+            for (const [usid, useg] of segments) {
+                if (usid === sid) continue;
+                if (useg.ends.some((oe) => oe.kind === END_VALVE_IN && oe.deviceKey === e.deviceKey)) {
+                    (upstreamOf.get(sid) ?? upstreamOf.set(sid, []).get(sid)).push(usid);
+                }
+            }
+        }
+    }
+    // pass 2：主结算
     for (const seg of segments.values()) {
         // 水覆盖：路径 + 路径顺序 + 前沿渐进逼近势覆盖（写入 seg 逻辑状态）
-        const path = potCovered(seg);
-        const anchor = seg.hi ? seg.hi.pipeKey : (seg.pipes[0] ?? null);
+        const path = paths.get(seg.id);
+        const anchor = sourceAnchorKey(seg) ?? (seg.hi ? seg.hi.pipeKey : (seg.pipes[0] ?? null));
         if (anchor) seg.order = bfsPathOrder(anchor, seg, path);
         const target = path.size;
+        // 级联闸门：无独立源且存在未充满的上游段 → 不进水
+        const independent = seg.ends.some((e) => e.kind === END_PUMP_OUT);
+        const gated = !independent && (upstreamOf.get(seg.id) ?? []).some((usid) => {
+            const u = segments.get(usid);
+            return !!u && u.front < (targets.get(usid) ?? 0);
+        });
         let front = seg.front;
-        if (target > front) front = Math.min(target, front + FRONT_SPEED);
-        else if (target < front) front = Math.max(target, front - FRONT_SPEED);
+        if (!gated && target > front) front = Math.min(target, front + FRONT_SPEED);
+        // 水为存量：target 变小（断源/势消失/关阀）时 front 保留不自动退水，
+        // covered 同样保留（水不消失，仅停止流动）；能推进/保持满时按路径重算覆盖
         seg.front = front;
-        seg.covered = coveredOf(seg, front);
+        if (target >= front && seg.order.length) {
+            seg.covered = coveredOf(seg, front);
+        }
         for (const e of seg.ends) {
             const p = seg.pot.get(e.pipeKey) ?? SINK_POT;
             if (e.kind === END_OPEN && p > SINK_POT + EPS) drain++;
             if (e.kind === END_TANK) {
                 const t = tanks.get(e.deviceKey);
                 if (!t) continue;
-                const port = t.level >= TANK_MAX ? FULL_TANK_POT : SINK_POT;
-                if (t.level < TANK_MAX && p > port + EPS) {
+                // 罐纯吸收：未满且段势高于罐端口势(-1) 且 水前沿已到罐端管道（按可见水）→ 吸入
+                if (t.level < TANK_MAX && p > SINK_POT + EPS && seg.covered.has(e.pipeKey)) {
                     tankDeltas.set(e.deviceKey, (tankDeltas.get(e.deviceKey) ?? 0) + 1);
-                } else if (t.level >= TANK_MAX && segHasOpenDrain(seg)) {
-                    tankDeltas.set(e.deviceKey, (tankDeltas.get(e.deviceKey) ?? 0) - 1);
                 }
             }
             if (e.kind === END_PUMP_IN && pumps.get(e.deviceKey)?.on) {
                 const pIn = seg.pot.get(e.pipeKey);
-                const hasTankWater = seg.ends.some((te) => te.kind === END_TANK && (tanks.get(te.deviceKey)?.level ?? 0) > 0);
-                if (pIn != null || hasTankWater) {
-                    drain++;
-                    for (const te of seg.ends) {
-                        if (te.kind === END_TANK && te.deviceKey !== e.deviceKey) {
-                            const t = tanks.get(te.deviceKey);
-                            if (t && t.level > 0) {
-                                tankDeltas.set(te.deviceKey, (tankDeltas.get(te.deviceKey) ?? 0) - 1);
-                            }
-                        }
-                    }
+                if (pIn != null) {
+                    drain++; // 泵吸水
                 }
             }
         }
@@ -328,53 +326,59 @@ function makeSegTopo(id, pipes, adj, ends) {
 }
 
 // === 势传播 ===
-test("水=1，水平传播不衰减", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE)]);
+test("泵势水平传播不衰减", () => {
+    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_PUMP_OUT, "pump")]);
     const segments = new Map([["s1", seg]]);
-    computePotential(segments, new Map(), new Map());
-    assert.equal(seg.pot.get("0,10,0"), 1);
-    assert.equal(seg.pot.get("0,10,1"), 1);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    assert.equal(seg.pot.get("0,10,0"), PUMP_DELTA);
+    assert.equal(seg.pot.get("0,10,1"), PUMP_DELTA);
 });
 
 test("向上每格势 -1", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,11,0", "0,12,0"], [endOf("0,10,0", END_SOURCE)]);
-    computePotential(new Map([["s1", seg]]), new Map(), new Map());
-    assert.equal(seg.pot.get("0,10,0"), 1);
-    assert.equal(seg.pot.get("0,11,0"), 0);
-    assert.equal(seg.pot.get("0,12,0"), -1);
+    const seg = makeSeg("s1", ["0,10,0", "0,11,0", "0,12,0"], [endOf("0,10,0", END_PUMP_OUT, "pump")]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(new Map([["s1", seg]]), new Map(), pumps);
+    assert.equal(seg.pot.get("0,10,0"), PUMP_DELTA);
+    assert.equal(seg.pot.get("0,11,0"), PUMP_DELTA - 1);
+    assert.equal(seg.pot.get("0,12,0"), PUMP_DELTA - 2);
 });
 
 test("向下/水平传播不减势", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,9,0", "0,8,0"], [endOf("0,10,0", END_SOURCE)]);
-    computePotential(new Map([["s1", seg]]), new Map(), new Map());
-    assert.equal(seg.pot.get("0,9,0"), 1);
-    assert.equal(seg.pot.get("0,8,0"), 1);
+    const seg = makeSeg("s1", ["0,10,0", "0,9,0", "0,8,0"], [endOf("0,10,0", END_PUMP_OUT, "pump")]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(new Map([["s1", seg]]), new Map(), pumps);
+    assert.equal(seg.pot.get("0,9,0"), PUMP_DELTA);
+    assert.equal(seg.pot.get("0,8,0"), PUMP_DELTA);
 });
 
 test("空气端子 -1 汇：势> -1 流失", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE), endOf("0,10,1", END_OPEN)]);
+    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_PUMP_OUT, "pump"), endOf("0,10,1", END_OPEN)]);
     const segments = new Map([["s1", seg]]);
-    computePotential(segments, new Map(), new Map());
-    const r = tickFlow(segments, new Map(), new Map());
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    const r = tickFlow(segments, new Map(), pumps);
     assert.equal(r.drain, 1);
-    assert.equal(seg.front, 0); // 仅泡水+空气端 → 段无效，不渲染
+    assert.equal(seg.front, 0); // 仅泵输出+空气端 → 段无效（空气不算输出），不渲染
 });
 
 test("墙端不流失", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE), endOf("0,10,1", END_WALL)]);
+    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_PUMP_OUT, "pump"), endOf("0,10,1", END_WALL)]);
     const segments = new Map([["s1", seg]]);
-    computePotential(segments, new Map(), new Map());
-    const r = tickFlow(segments, new Map(), new Map());
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    const r = tickFlow(segments, new Map(), pumps);
     assert.equal(r.drain, 0);
 });
 
-test("泵造势：输出段势 = 固定 +Δ（并联，输入侧有水才吐）", () => {
-    const inSeg = makeSeg("in", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE), endOf("0,10,1", END_PUMP_IN, "pump")]);
+test("泵造势：输出段势 = 固定 +Δ（输入侧有水才吐）", () => {
+    // 泵A 泡水吐水 → inSeg 有势 → 泵 输入侧有水 → 泵 吐水给 outSeg
+    const inSeg = makeSeg("in", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_PUMP_OUT, "pumpA"), endOf("0,10,1", END_PUMP_IN, "pump")]);
     const outSeg = makeSeg("out", ["0,10,2", "0,10,3"], [endOf("0,10,2", END_PUMP_OUT, "pump"), endOf("0,10,3", END_OPEN)]);
     const segments = new Map([["in", inSeg], ["out", outSeg]]);
-    const pumps = new Map([["pump", { on: true }]]);
+    const pumps = new Map([["pumpA", { on: true, soaked: true }], ["pump", { on: true }]]);
     computePotential(segments, new Map(), pumps);
-    assert.equal(inSeg.pot.get("0,10,1"), 1);
+    assert.equal(inSeg.pot.get("0,10,1"), PUMP_DELTA);
     assert.equal(outSeg.pot.get("0,10,2"), PUMP_DELTA); // 独立势源 +Δ
     assert.equal(outSeg.pot.get("0,10,3"), PUMP_DELTA);
 });
@@ -389,44 +393,40 @@ test("泵不凭空造水：输入侧无源不吐", () => {
     assert.equal(outSeg.pot.get("0,10,2"), undefined); // 泵不吐
 });
 
-test("泵抽罐：输入段罐液位下降、输出段流失", () => {
-    const inSeg = makeSeg("in", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_TANK, "tank"), endOf("0,10,1", END_PUMP_IN, "pump")]);
-    const outSeg = makeSeg("out", ["0,10,2", "0,10,3"], [endOf("0,10,2", END_PUMP_OUT, "pump"), endOf("0,10,3", END_OPEN)]);
-    const segments = new Map([["in", inSeg], ["out", outSeg]]);
-    const tanks = new Map([["tank", { level: 10 }]]);
-    const pumps = new Map([["pump", { on: true }]]);
-    computePotential(segments, tanks, pumps);
-    const r = tickFlow(segments, tanks, pumps);
-    assert.equal(r.tankDeltas.get("tank"), -1); // 泵抽罐
-    assert.ok(r.drain >= 1); // 泵吸水 + 输出流失
-});
-
-test("罐 32 格：未满吸入、满停止、满罐重力排水", () => {
-    // 未满：水源灌入
-    const seg1 = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE), endOf("0,10,1", END_TANK, "tank")]);
+test("罐 32 格：未满吸入须水前沿到罐端、满停止（纯吸收，不排水）", () => {
+    // 有效段（泵输出 → 4 管 → 罐）：吸水须等水前沿到达罐端管道（严格按可见水）
+    const seg = makeSeg("s1", ["0,10,0", "0,10,1", "0,10,2", "0,10,3"], [
+        endOf("0,10,0", END_PUMP_OUT, "pump"),
+        endOf("0,10,3", END_TANK, "tank"),
+    ]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
     let tanks = new Map([["tank", { level: 10 }]]);
-    let segments = new Map([["s1", seg1]]);
-    computePotential(segments, tanks, new Map());
-    let r = tickFlow(segments, tanks, new Map());
-    assert.equal(r.tankDeltas.get("tank"), 1);
+    let segments = new Map([["s1", seg]]);
+    computePotential(segments, tanks, pumps);
+    let r = tickFlow(segments, tanks, pumps);
+    assert.equal(seg.front, 2); // 前沿未到罐端
+    assert.equal(r.tankDeltas.get("tank"), undefined); // 不吸水
+    r = tickFlow(segments, tanks, pumps);
+    assert.equal(seg.front, 4); // 前沿到罐端
+    assert.equal(r.tankDeltas.get("tank"), 1); // 开始吸水
 
-    // 满：停止吸入（level=32 不吸）
+    // 满：停止吸入（level=32 不吸也不排）
     tanks = new Map([["tank", { level: TANK_MAX }]]);
-    segments = new Map([["s1", seg1]]);
-    computePotential(segments, tanks, new Map());
-    r = tickFlow(segments, tanks, new Map());
+    segments = new Map([["s1", seg]]);
+    computePotential(segments, tanks, pumps);
+    r = tickFlow(segments, tanks, pumps);
     assert.equal(r.tankDeltas.get("tank"), undefined);
 
-    // 满罐 + 空气：重力排水（满罐势 0 传播，空气 -1 流失 → 罐 -1）
+    // 满罐 + 空气：罐纯吸收不排水（罐恒为汇，势不传播 → 空气端不流失）
     const seg2 = makeSeg("s2", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_TANK, "tank"), endOf("0,10,1", END_OPEN)]);
     tanks = new Map([["tank", { level: TANK_MAX }]]);
     segments = new Map([["s2", seg2]]);
     computePotential(segments, tanks, new Map());
     r = tickFlow(segments, tanks, new Map());
-    assert.equal(r.tankDeltas.get("tank"), -1);
-    assert.equal(r.drain, 1);
+    assert.equal(r.tankDeltas.get("tank"), undefined);
+    assert.equal(r.drain, 0);
 
-    // 未满罐 + 空气：罐是汇(-1) 不传播 → 空气端势 -1 不流失、罐不吸不排
+    // 未满罐 + 空气：罐是汇(-1) 不传播 → 空气端势 -1 不流失、罐不吸（段无效无覆盖）
     const seg3 = makeSeg("s3", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_TANK, "tank"), endOf("0,10,1", END_OPEN)]);
     tanks = new Map([["tank", { level: 16 }]]);
     segments = new Map([["s3", seg3]]);
@@ -437,12 +437,13 @@ test("罐 32 格：未满吸入、满停止、满罐重力排水", () => {
 });
 
 test("三通阀透传：输入侧势 → 输出侧", () => {
-    const inSeg = makeSeg("in", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE), endOf("0,10,1", END_VALVE_IN, "v3")]);
+    const inSeg = makeSeg("in", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_PUMP_OUT, "pump"), endOf("0,10,1", END_VALVE_IN, "v3")]);
     const outSeg = makeSeg("out", ["0,10,2", "0,10,3"], [endOf("0,10,2", END_VALVE_OUT, "v3"), endOf("0,10,3", END_OPEN)]);
     const segments = new Map([["in", inSeg], ["out", outSeg]]);
-    computePotential(segments, new Map(), new Map());
-    assert.equal(outSeg.pot.get("0,10,2"), 1);
-    assert.equal(outSeg.pot.get("0,10,3"), 1);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    assert.equal(outSeg.pot.get("0,10,2"), PUMP_DELTA);
+    assert.equal(outSeg.pot.get("0,10,3"), PUMP_DELTA);
 });
 
 test("前沿推进：每 tick +FRONT_SPEED，封顶势覆盖数", () => {
@@ -461,21 +462,75 @@ test("前沿推进：每 tick +FRONT_SPEED，封顶势覆盖数", () => {
     assert.equal(seg.front, 5); // 封顶段长
 });
 
-test("前沿回落：势消失后水渐渐退干（势驱动）", () => {
+test("填充方向：从源向目标（水平段平局不取目标端作锚点）", () => {
+    // 水平 泵→管→罐：源/目标端势相同（PUMP_DELTA）。ends 里罐端排第一（目标在前）——
+    // 若锚点取 hi 会因平局顺序从罐侧起填（目标→源）。修复后必须从泵（源）侧起填。
+    const seg = makeSeg("s1", ["0,10,0", "0,10,1", "0,10,2"], [
+        endOf("0,10,2", END_TANK, "tank"),
+        endOf("0,10,0", END_PUMP_OUT, "pump"),
+    ]);
+    const segments = new Map([["s1", seg]]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    assert.equal(sourceAnchorKey(seg), "0,10,0"); // 锚点=泵输出（源）
+    tickFlow(segments, new Map(), pumps);
+    // 首轮 front=2：覆盖应为源侧 0,10,0 / 0,10,1，而不是目标侧 0,10,2
+    assert.deepEqual([...seg.covered].sort(), ["0,10,0", "0,10,1"]);
+});
+
+test("级联：上一级充满后下一级才进水（三段两阀，从源到目标依次传递）", () => {
+    const s1 = makeSeg("s1", ["0,10,0", "0,10,1", "0,10,2", "0,10,3", "0,10,4"], [
+        endOf("0,10,0", END_PUMP_OUT, "pump"),
+        endOf("0,10,4", END_VALVE_IN, "v1"),
+    ]);
+    const s2 = makeSeg("s2", ["0,10,5", "0,10,6", "0,10,7"], [
+        endOf("0,10,5", END_VALVE_OUT, "v1"),
+        endOf("0,10,7", END_VALVE_IN, "v2"),
+    ]);
+    const s3 = makeSeg("s3", ["0,10,8", "0,10,9"], [
+        endOf("0,10,8", END_VALVE_OUT, "v2"),
+        endOf("0,10,9", END_TANK, "tank"),
+    ]);
+    const segments = new Map([["s1", s1], ["s2", s2], ["s3", s3]]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    tickFlow(segments, new Map(), pumps);
+    assert.deepEqual([s1.front, s2.front, s3.front], [2, 0, 0]); // 上游未满，下游闸门关闭
+    tickFlow(segments, new Map(), pumps);
+    assert.deepEqual([s1.front, s2.front, s3.front], [4, 0, 0]);
+    tickFlow(segments, new Map(), pumps);
+    assert.deepEqual([s1.front, s2.front, s3.front], [5, 2, 0]); // s1 满 → s2 开始进
+    // s2 从源侧（阀 v1 侧）起填，未达目标端
+    assert.deepEqual([...s2.covered].sort(), ["0,10,5", "0,10,6"]);
+    tickFlow(segments, new Map(), pumps);
+    assert.deepEqual([s1.front, s2.front, s3.front], [5, 3, 2]); // s2 满 → s3 开始进
+});
+
+test("断源后水保留：front 不变、covered 保持（水为存量）", () => {
     const seg = makeSeg("s1", ["0,10,0", "0,10,1", "0,10,2", "0,10,3", "0,10,4"], [endOf("0,10,0", END_PUMP_OUT, "pump"), endOf("0,10,4", END_TANK, "tank")]);
     const segments = new Map([["s1", seg]]);
     const pumps = new Map([["pump", { on: true, soaked: true }]]);
     computePotential(segments, new Map(), pumps);
     let r = tickFlow(segments, new Map(), pumps);
     assert.equal(seg.front, 2);
+    r = tickFlow(segments, new Map(), pumps);
+    r = tickFlow(segments, new Map(), pumps);
+    assert.equal(seg.front, 5); // 满水
 
-    // 泵停（势消失）→ 前沿每 tick -FRONT_SPEED 直到 0
+    // 泵停（势消失）→ 水保留不退（front 不变、covered 保持）
     pumps.set("pump", { on: false, soaked: true });
     computePotential(segments, new Map(), pumps);
     r = tickFlow(segments, new Map(), pumps);
-    assert.equal(seg.front, 0);
+    assert.equal(seg.front, 5);
+    assert.equal(seg.covered.size, 5);
     r = tickFlow(segments, new Map(), pumps);
-    assert.equal(seg.front, 0);
+    assert.equal(seg.front, 5); // 仍保留
+
+    // 泵恢复（重新接源）→ 水保持满（已满无需再推进）
+    pumps.set("pump", { on: true, soaked: true });
+    computePotential(segments, new Map(), pumps);
+    r = tickFlow(segments, new Map(), pumps);
+    assert.equal(seg.front, 5);
 });
 
 test("potCovered：只含势 > -1 的管道（有效段）", () => {
@@ -486,12 +541,9 @@ test("potCovered：只含势 > -1 的管道（有效段）", () => {
     assert.deepEqual([...potCovered(seg)].sort(), ["0,10,0", "0,13,0"]); // 0,16 势=-2 不含
 });
 
-test("有效管道判定：孤立/仅泡水/仅空气端段无效", () => {
+test("有效管道判定：孤立/仅空气端段无效", () => {
     const iso = makeSeg("s1", ["0,10,0"], [endOf("0,10,0", END_OPEN)]);
     assert.equal(segValid(iso), false);
-
-    const soak = makeSeg("s2", ["0,10,0"], [endOf("0,10,0", END_SOURCE)]);
-    assert.equal(segValid(soak), false); // 泡水不算输入
 
     const airEnd = makeSeg("s3", ["0,10,0"], [endOf("0,10,0", END_PUMP_OUT, "pump"), endOf("0,10,0", END_OPEN)]);
     assert.equal(segValid(airEnd), false); // 空气不算输出
@@ -501,14 +553,6 @@ test("有效管道判定：孤立/仅泡水/仅空气端段无效", () => {
 
     const valv = makeSeg("s5", ["0,10,0"], [endOf("0,10,0", END_VALVE_OUT, "v3"), endOf("0,10,0", END_TANK, "tank")]);
     assert.equal(segValid(valv), true);
-});
-
-test("仅泡水段：势场有水但 potCovered 为空（不渲染）", () => {
-    const seg = makeSeg("s1", ["0,10,0", "0,10,1"], [endOf("0,10,0", END_SOURCE)]);
-    const segments = new Map([["s1", seg]]);
-    computePotential(segments, new Map(), new Map());
-    assert.equal(seg.pot.get("0,10,1"), 1); // 势确实传播
-    assert.equal(potCovered(seg).size, 0);   // 但段无效 → 不渲染
 });
 
 test("水流通路径：死胡同支路不渲染（泵→主管→闭合支路/阀门支路）", () => {
@@ -579,10 +623,9 @@ function makeGraph(layout) {
         isPipe(key) { return layout[key]?.type === "pipe"; },
         isValveOpen(key) { return layout[key]?.type === "valve" && !!layout[key].open; },
         neighborKey(key, face) { return layout[key]?.links?.[face] ?? null; },
-        soaked() { return null; },
         describeEnd(pipeKey, face) {
             const nb = this.neighborKey(pipeKey, face);
-            if (!nb) return null;
+            if (!nb) return [];
             const end = { key: `${pipeKey}#${face}`, pipeKey, face, kind: END_WALL };
             const t = layout[nb]?.type ?? nb;
             if (t === "tank") { end.kind = END_TANK; end.deviceKey = nb; }
@@ -591,8 +634,8 @@ function makeGraph(layout) {
                 const side = oppositeFace(face); // 泵的哪一面朝管道
                 end.kind = side === "up" ? END_PUMP_OUT : (side === "down" ? END_PUMP_IN : END_WALL);
                 end.deviceKey = nb;
-            } else if (t === "source") end.kind = END_SOURCE;
-            return end;
+            }
+            return [end];
         },
     };
 }
@@ -604,9 +647,9 @@ test("洪水：泵顶=输出/底=输入、侧=墙", () => {
         pBot: { type: "pipe", links: { up: "pump" } },
         pSide: { type: "pipe", links: { north: "pump" } },
     });
-    assert.equal(g.describeEnd("pTop", "down").kind, END_PUMP_OUT);
-    assert.equal(g.describeEnd("pBot", "up").kind, END_PUMP_IN);
-    assert.equal(g.describeEnd("pSide", "north").kind, END_WALL);
+    assert.equal(g.describeEnd("pTop", "down")[0].kind, END_PUMP_OUT);
+    assert.equal(g.describeEnd("pBot", "up")[0].kind, END_PUMP_IN);
+    assert.equal(g.describeEnd("pSide", "north")[0].kind, END_WALL);
 });
 
 test("洪水：开阀透传 / 关阀断段", () => {
@@ -629,6 +672,48 @@ test("洪水：开阀透传 / 关阀断段", () => {
     const segB = floodSegment("p2", gClosed, "s2");
     assert.deepEqual(segA.pass, ["p1"]);
     assert.deepEqual(segB.pass, ["p2"]);
+});
+
+test("阀门链直接相连：flood 收集链上多端点 + 势跨链贯通", () => {
+    // A—v1—v2—C：v1 输出面贴着 v2 输入面（中间无管道）。引擎 describeEnd 链穿越 →
+    // A 段收集 [valveIn(v1), valveIn(v2)]，C 段收集 [valveOut(v2)]，v2 的 link 配对成立。
+    const g = {
+        isPipe: (k) => ["A", "C"].includes(k),
+        isValveOpen: () => false,
+        neighborKey(k, face) {
+            return { A: { south: "v1" }, v1: { north: "A", south: "v2" }, v2: { north: "v1", south: "C" }, C: { north: "v2", south: "tank" } }[k]?.[face] ?? null;
+        },
+        describeEnd(pipeKey, face) {
+            const nb = this.neighborKey(pipeKey, face);
+            if (!nb) return [];
+            if (nb === "v1") return [endOf(pipeKey, END_VALVE_IN, "v1"), endOf(pipeKey, END_VALVE_IN, "v2")];
+            if (nb === "v2") return [endOf(pipeKey, END_VALVE_OUT, "v2")];
+            if (nb === "tank") return [endOf(pipeKey, END_TANK, "tank")];
+            return [];
+        },
+    };
+    const segA = floodSegment("A", g, "sA");
+    assert.deepEqual(segA.ends.map((e) => `${e.kind}:${e.deviceKey}`).sort(), ["valveIn:v1", "valveIn:v2"]);
+    const segC = floodSegment("C", g, "sC");
+    assert.deepEqual(segC.ends.map((e) => `${e.kind}:${e.deviceKey}`).sort(), ["tank:tank", "valveOut:v2"]);
+
+    // 势跨链贯通：泵 → A 段 → 罐 C 段
+    const pumpSeg = makeSeg("sA", ["A1", "A2", "A3"], [
+        endOf("A1", END_PUMP_OUT, "pump"),
+        endOf("A3", END_VALVE_IN, "v1"),
+        endOf("A3", END_VALVE_IN, "v2"),
+    ]);
+    const tankSeg = makeSeg("sC", ["C"], [
+        endOf("C", END_VALVE_OUT, "v2"),
+        endOf("C", END_TANK, "tank"),
+    ]);
+    const segments = new Map([["sA", pumpSeg], ["sC", tankSeg]]);
+    const pumps = new Map([["pump", { on: true, soaked: true }]]);
+    computePotential(segments, new Map(), pumps);
+    assert.equal(tankSeg.pot.get("C"), PUMP_DELTA); // 链上最末阀 v2 的 link 贯通
+    tickFlow(segments, new Map(), pumps);
+    assert.equal(pumpSeg.front, 2); // 上游 3 管未满
+    assert.equal(tankSeg.front, 0); // 闸门关闭
 });
 
 test("oppositeFace", () => {

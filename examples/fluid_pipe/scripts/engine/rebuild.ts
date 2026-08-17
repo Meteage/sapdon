@@ -1,7 +1,7 @@
 // 引擎层 R — 结构重建：放置/破坏/阀门切换时重分段 + 写回连接状态 + 加载后渐进重建
 import { Block } from "@minecraft/server";
 import { PIPE_TYPE, VALVE_TYPE, VALVE3_TYPE, FLUID_TYPES, CONNECT, FLUID_STATE, PENDING_BATCH } from "./const.js";
-import { getBlockByKey, getAdjacent, blockKey } from "./world.js";
+import { getBlockByKey, getAdjacent, blockKey, keyParts } from "./world.js";
 import { segments, pipeSeg, pumps, pumpEnds, pendingPipes, staleKeys, nextSegId } from "./state.js";
 import { graph } from "./graph.js";
 import { rlog, logErr } from "./log.js";
@@ -46,20 +46,26 @@ export function rebuildAround(anchor: Block | string) {
     }
 
     // 4) 重新 flood（管道可通行；阀门为端点设备，经 describeEnd 收边）
+    // flooded 集合：同一批 affected 里相邻的管道会被前一次 flood 吞并，
+    // 立即登记避免重复 flood（否则同一管道落入多个重叠段 → 势复制/水异常）
     const newSegs: Segment[] = [];
+    const flooded = new Set<string>();
     for (const key of affected) {
-        if (pipeSeg.has(key)) continue;
+        if (pipeSeg.has(key) || flooded.has(key)) continue;
         const b = getBlockByKey(key);
         if (!b) continue;
         if (b.typeId === PIPE_TYPE) {
             const seg = floodSegment(key, graph, nextSegId());
             if (restoreFrontMode) {
-                // 加载重建：从方块持久化的 fluid_pipe:core 状态恢复水前沿（mid-game 重建仍走 covered 迁移）
+                // 加载重建：从方块持久化的 fluid_pipe:core 状态恢复水前沿与覆盖（mid-game 重建仍走 covered 迁移）
                 seg.front = frontFromBlockStates(seg);
+                seg.covered = coveredFromBlockStates(seg);
             } else {
                 seg.front = frontFromCovered(seg, covered);
+                seg.covered = new Set(seg.pipes.filter((k) => covered.has(k)));
             }
             newSegs.push(seg);
+            for (const k of seg.pass) flooded.add(k);
         }
     }
     for (const seg of newSegs) {
@@ -70,7 +76,8 @@ export function rebuildAround(anchor: Block | string) {
     // 5) 泵端点重挂 + 结构状态写回
     rebuildPumpEnds();
     writePipeStates(newSegs);
-    rlog(`rebuild: affected=${affected.size} newSegs=${newSegs.length} segs=${segments.size}`);
+    const at = [...affected].slice(0, 4).map((k) => { const p = keyParts(k); return p ? `${p.x},${p.y},${p.z}` : "?"; }).join(";");
+    rlog(`rebuild: affected=${affected.size} newSegs=${newSegs.length} segs=${segments.size} @${at}`);
 }
 
 // 加载重建时：段的水前沿 = 方块上已持久化的 fluid_pipe:core==1 成员数（块状态随世界存档，无需入库）
@@ -81,6 +88,16 @@ function frontFromBlockStates(seg: Segment): number {
         if (b && (b.permutation.getState(FLUID_STATE as any) as number ?? 0) === 1) c++;
     }
     return c;
+}
+
+// 加载重建时：段含水管道集合 = 方块 fluid_pipe:core==1 的管道（与 frontFromBlockStates 一致）
+function coveredFromBlockStates(seg: Segment): Set<string> {
+    const out = new Set<string>();
+    for (const k of seg.pipes) {
+        const b = getBlockByKey(k);
+        if (b && (b.permutation.getState(FLUID_STATE as any) as number ?? 0) === 1) out.add(k);
+    }
+    return out;
 }
 
 function writePipeStates(segList: Segment[]) {

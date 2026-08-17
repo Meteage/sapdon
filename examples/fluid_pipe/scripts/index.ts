@@ -87,6 +87,7 @@ system.beforeEvents.startup.subscribe((init) => {
                     const open = toggleValve(block);
                     rebuildAround(block);
                     saveFluid();
+                    console.warn(`[fluid][evt] valve toggle -> ${open ? "open" : "closed"} @(${block.location.x},${block.location.y},${block.location.z})`);
                     world.sendMessage(`[阀门] 已${open ? "打开" : "关闭"} @(${block.location.x},${block.location.y},${block.location.z})`);
                     return;
                 }
@@ -94,12 +95,14 @@ system.beforeEvents.startup.subscribe((init) => {
                     const dir = cycleValve3(block);
                     rebuildAround(block);
                     saveFluid();
+                    console.warn(`[fluid][evt] valve3 cycle -> ${dir} @(${block.location.x},${block.location.y},${block.location.z})`);
                     world.sendMessage(`[三通阀] ${dir === "west" ? "已关闭（指向输入）" : `输出方向 -> ${dir}`} @(${block.location.x},${block.location.y},${block.location.z})`);
                     return;
                 }
                 if (block.typeId === PUMP_TYPE) {
                     const on = togglePump(block);
                     saveFluid();
+                    console.warn(`[fluid][evt] pump toggle -> ${on ? "on" : "off"} @(${block.location.x},${block.location.y},${block.location.z})`);
                     world.sendMessage(`[泵] 已${on ? "启动" : "停止"} @(${block.location.x},${block.location.y},${block.location.z})`);
                     return;
                 }
@@ -127,6 +130,7 @@ system.beforeEvents.startup.subscribe((init) => {
         try {
             const block = event.block;
             if (!isFluidType(block.typeId)) return;
+            console.warn(`[fluid][evt] place ${block.typeId} @(${block.location.x},${block.location.y},${block.location.z})`);
             if (block.typeId === PUMP_TYPE) registerPump(block);
             else if (block.typeId === TANK_TYPE) registerTank(block);
             rebuildAround(block);
@@ -142,6 +146,7 @@ system.beforeEvents.startup.subscribe((init) => {
             const brokenId = event.brokenBlockPermutation.type.id;
             if (!isFluidType(brokenId)) return;
             const block = event.block;
+            console.warn(`[fluid][evt] break ${brokenId} @(${block.location.x},${block.location.y},${block.location.z})`);
             // 用破坏前的 permutation 判断是否含水（破坏后 event.block 已是空气，读不到状态）；
             // 兜底：段内存 front>0 说明该段有水流过（覆盖"仅浸水未流动"场景）
             const key = blockKey(block);
@@ -169,7 +174,7 @@ system.beforeEvents.startup.subscribe((init) => {
         }
     });
 
-    // === 泵右键切换开/关 + 管道注水/舀水后重建（手持放置类物品/扳手时跳过）===
+    // === 泵右键切换开/关（手持放置类物品/扳手时跳过；管道不再吸水，无需注水重建）===
     world.afterEvents.playerInteractWithBlock.subscribe((event) => {
         try {
             const b = event.block;
@@ -180,10 +185,6 @@ system.beforeEvents.startup.subscribe((init) => {
                 const on = togglePump(b);
                 saveFluid();
                 world.sendMessage(`[泵] 已${on ? "启动" : "停止"} @(${b.location.x},${b.location.y},${b.location.z})`);
-            } else if (b.typeId === PIPE_TYPE) {
-                // 用水桶向管道注水/舀水后，重新判定浸润源
-                rebuildAround(b);
-                saveFluid();
             }
         } catch (e: any) {
             console.warn(`[fluid][err] playerInteract: ${e && e.message || e}`);

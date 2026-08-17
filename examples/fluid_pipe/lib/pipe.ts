@@ -53,7 +53,9 @@ export class BlockPipe {
                 .set("minecraft:collision_box", { origin, size }));
         }
 
-        // 覆盖 GeometryBlock 默认 geometry 组件（补 bone_visibility）；判定箱 + 可含水（waterlogging）
+        // 覆盖 GeometryBlock 默认 geometry 组件（补 bone_visibility）；判定箱 + 可含水（waterlogging）。
+        // 管道可含水只是方块层面的存水（水浸入管道，原版液位显示）；引擎不再把水浸当供水源——
+        // 供水只来自泵（泵泡水吐水）。
         block.addComponent(
             BlockComponent.combineComponents(
                 BlockComponent.setGeometry('geometry.fluid_pipe', { bone_visibility }),

@@ -2,16 +2,15 @@
 // 势模型常量与传播场见 potential.ts；流动结算与前沿见 flow.ts。
 // Node 测试镜像见 test/fluid.test.mjs（改这里须同步测试副本）
 
-export const END_SOURCE = "source";   // 浸润水源
 export const END_OPEN = "open";       // 对空气（汇 -1）
 export const END_WALL = "wall";       // 封闭端
-export const END_TANK = "tank";       // 储液罐（端口势按液位）
+export const END_TANK = "tank";       // 储液罐（纯吸收汇，未满吸入/满停吸）
 export const END_PUMP_IN = "pumpIn";  // 泵输入口（底面）
 export const END_PUMP_OUT = "pumpOut"; // 泵输出口（顶面）
-export const END_VALVE_IN = "valveIn";  // 三通阀输入（南面）
-export const END_VALVE_OUT = "valveOut"; // 三通阀输出（东/北/西，状态选择）
+export const END_VALVE_IN = "valveIn";  // 单阀输入（西面）
+export const END_VALVE_OUT = "valveOut"; // 单阀输出（东面）
 
-export type EndKind = typeof END_SOURCE | typeof END_OPEN | typeof END_WALL | typeof END_TANK
+export type EndKind = typeof END_OPEN | typeof END_WALL | typeof END_TANK
     | typeof END_PUMP_IN | typeof END_PUMP_OUT | typeof END_VALVE_IN | typeof END_VALVE_OUT;
 
 export interface SegEnd {
@@ -46,8 +45,7 @@ export interface FloodGraph {
     isPipe(key: string): boolean;
     isValveOpen(key: string): boolean;
     neighborKey(key: string, face: string): string | null;
-    describeEnd(pipeKey: string, face: string): SegEnd | null;
-    soaked(pipeKey: string): SegEnd | null;
+    describeEnd(pipeKey: string, face: string): SegEnd[]; // 一个管道面可产生多个端点（阀门链穿越）
 }
 
 export function oppositeFace(face: string): string {
@@ -80,10 +78,6 @@ export function floodSegment(anchor: string, graph: FloodGraph, segId: string): 
         const isPipe = graph.isPipe(key);
         if (isPipe) pipes.push(key);
         pass.push(key);
-        if (isPipe) {
-            const soak = graph.soaked(key);
-            if (soak) ends.push(soak);
-        }
         const nbrs: string[] = [];
         for (const face of FACES) {
             const nb = graph.neighborKey(key, face);
@@ -95,8 +89,8 @@ export function floodSegment(anchor: string, graph: FloodGraph, segId: string): 
             if (graph.isPipe(nb)) { nbrs.push(nb); queue.push(nb); continue; }
             if (graph.isValveOpen(nb)) { nbrs.push(nb); queue.push(nb); continue; }
             if (isPipe) {
-                const end = graph.describeEnd(key, face);
-                if (end) ends.push(end);
+                const es = graph.describeEnd(key, face);
+                if (es) for (const e of es) ends.push(e);
             }
         }
         adj.set(key, nbrs);
