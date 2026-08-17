@@ -191,7 +191,7 @@ world.afterEvents.itemUse.subscribe((event) => {
 
     switch (item) {
         // 方案 A（spawnParticle）+ 缩放动画
-        case "minecraft:diamond": {
+        case "sapdon:demo_scale_sp": {
             ColorParticleManager.clearAll();
             ColorParticleManager.spawn(player.dimension, center, CUBE, BLUE, {
                 duration: 10, trail: 0.5, spin: 0.8,
@@ -200,7 +200,7 @@ world.afterEvents.itemUse.subscribe((event) => {
             break;
         }
         // 方案 A（spawnParticle）+ 绕 Y 旋转动画
-        case "minecraft:gold_ingot": {
+        case "sapdon:demo_spin_sp": {
             ColorParticleManager.clearAll();
             ColorParticleManager.spawn(player.dimension, center, CUBE, ORANGE, {
                 duration: 10, trail: 0.5, spin: 0,
@@ -209,7 +209,7 @@ world.afterEvents.itemUse.subscribe((event) => {
             break;
         }
         // 方案 B（实体）+ 缩放动画
-        case "minecraft:emerald": {
+        case "sapdon:demo_scale_ent": {
             EntityParticleManager.clearAllEntities();
             for (const bp of CUBE) {
                 EntityParticleManager.spawn(
@@ -222,7 +222,7 @@ world.afterEvents.itemUse.subscribe((event) => {
             break;
         }
         // 方案 B（实体）+ 绕 Y 旋转动画
-        case "minecraft:iron_ingot": {
+        case "sapdon:demo_spin_ent": {
             EntityParticleManager.clearAllEntities();
             for (const bp of CUBE) {
                 EntityParticleManager.spawn(
