@@ -188,6 +188,7 @@ world.afterEvents.itemUse.subscribe((event) => {
     const item = event.itemStack.typeId;
     const player = event.source;
     const center = player.location;
+    console.warn(`[colorparticle] itemUse: ${item} @(${center.x.toFixed(1)},${center.y.toFixed(1)},${center.z.toFixed(1)})`);
 
     switch (item) {
         // 方案 A（spawnParticle）+ 缩放动画
