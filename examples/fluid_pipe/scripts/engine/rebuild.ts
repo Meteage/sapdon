@@ -3,7 +3,7 @@ import { Block } from "@minecraft/server";
 import { PIPE_TYPE, VALVE_TYPE, VALVE3_TYPE, FLUID_TYPES, CONNECT, FLUID_STATE, PENDING_BATCH } from "./const.js";
 import { getBlockByKey, getAdjacent, blockKey, keyParts } from "./world.js";
 import { segments, pipeSeg, pumps, pumpEnds, pendingPipes, staleKeys, nextSegId } from "./state.js";
-import { graph } from "./graph.js";
+import { graph, rotFace, facingOf } from "./graph.js";
 import { rlog, logErr } from "./log.js";
 import { FACES, floodSegment, type Segment } from "../core/graph.js";
 import { coveredOf, frontFromCovered } from "../core/flow.js";
@@ -128,9 +128,11 @@ export function rebuildPumpEnds() {
     for (const [pumpKey] of pumps) {
         const b = getBlockByKey(pumpKey);
         if (!b) continue;
-        // v2：泵顶面=输出口、底面=输入口
-        const inNb = getAdjacent(b, "down");
-        const outNb = getAdjacent(b, "up");
+        // 泵局部参考系：顶面=输出口、底面=输入口（随 facing 旋转映射到世界面）
+        const inFace = rotFace(facingOf(b), "down");
+        const outFace = rotFace(facingOf(b), "up");
+        const inNb = getAdjacent(b, inFace);
+        const outNb = getAdjacent(b, outFace);
         pumpEnds.set(pumpKey, {
             in: inNb && inNb.typeId === PIPE_TYPE ? { segId: pipeSeg.get(blockKey(inNb))!, end: null } : null,
             out: outNb && outNb.typeId === PIPE_TYPE ? { segId: pipeSeg.get(blockKey(outNb))!, end: null } : null,

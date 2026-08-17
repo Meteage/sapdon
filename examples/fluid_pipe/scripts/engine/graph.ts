@@ -1,6 +1,6 @@
 // 引擎层 R — 洪水分段图（读世界方块）：实现 core/graph 的 FloodGraph 接口
 import { Block } from "@minecraft/server";
-import { PIPE_TYPE, PUMP_TYPE, TANK_TYPE, VALVE_TYPE, VALVE3_TYPE, CARDINAL_STATE, VALVE_OPEN_STATE, VALVE3_DIR_STATE } from "./const.js";
+import { PIPE_TYPE, PUMP_TYPE, TANK_TYPE, VALVE_TYPE, VALVE3_TYPE, CARDINAL_STATE, FACING_STATE, VALVE_OPEN_STATE, VALVE3_DIR_STATE } from "./const.js";
 import { getBlockByKey, getAdjacent, blockKey } from "./world.js";
 import {
     oppositeFace,
@@ -14,20 +14,24 @@ import {
     type SegEnd,
 } from "../core/graph.js";
 
-// 旋转方块局部参考系面 → 世界面（模型旋转：north=0°、west=+90°、south=180°、east=-90°）
+// 旋转方块局部参考系面 → 世界面（模型"北"面朝 facing 方向；水平 4 向 + 上/下 6 向）
 const ROT_FACE: Record<string, Record<string, string>> = {
-    north: { north: "north", south: "south", east: "east", west: "west" },
-    west: { north: "west", south: "east", east: "north", west: "south" },
-    south: { north: "south", south: "north", east: "west", west: "east" },
-    east: { north: "east", south: "west", east: "south", west: "north" },
+    north: { north: "north", south: "south", east: "east", west: "west", up: "up", down: "down" },
+    west: { north: "west", south: "east", east: "north", west: "south", up: "up", down: "down" },
+    south: { north: "south", south: "north", east: "west", west: "east", up: "up", down: "down" },
+    east: { north: "east", south: "west", east: "south", west: "north", up: "up", down: "down" },
+    up: { north: "up", south: "down", east: "east", west: "west", up: "south", down: "north" },
+    down: { north: "down", south: "up", east: "east", west: "west", up: "north", down: "south" },
 };
 
-function rotFace(facing: string, local: string): string {
+export function rotFace(facing: string, local: string): string {
     return (ROT_FACE[facing] ?? ROT_FACE.north)[local] ?? local;
 }
 
-function facingOf(nb: Block): string {
-    return (nb.permutation.getState(CARDINAL_STATE as any) as string) ?? "north";
+export function facingOf(nb: Block): string {
+    return (nb.permutation.getState(FACING_STATE as any) as string)
+        ?? (nb.permutation.getState(CARDINAL_STATE as any) as string)
+        ?? "north";
 }
 
 // 开阀自身参考系输入/输出 局部面（单阀：西入东出；三通：西入 dir 出）；关/指向输入 → null（墙）
@@ -62,7 +66,10 @@ function terminalEnd(pipeKey: string, face: string, nb: Block): SegEnd | null {
     if (t === "minecraft:air") {
         end.kind = END_OPEN;
     } else if (t === PUMP_TYPE) {
-        end.kind = side === "up" ? END_PUMP_OUT : (side === "down" ? END_PUMP_IN : END_WALL);
+        // 泵局部参考系：顶=输出、底=输入（随 facing 旋转映射到世界面）
+        const out = rotFace(facingOf(nb), "up");
+        const inn = rotFace(facingOf(nb), "down");
+        end.kind = side === out ? END_PUMP_OUT : (side === inn ? END_PUMP_IN : END_WALL);
         end.deviceKey = blockKey(nb);
     } else if (t === TANK_TYPE) {
         if (side === "up") { end.kind = END_TANK; end.deviceKey = blockKey(nb); }
@@ -95,8 +102,10 @@ export const graph = {
         const side = oppositeFace(face); // 设备/外界朝向管道的那一面
 
         if (t === PUMP_TYPE) {
-            // v2：泵顶面=输出口（高压）、底面=输入口（低压），侧面不参与
-            end.kind = side === "up" ? END_PUMP_OUT : (side === "down" ? END_PUMP_IN : END_WALL);
+            // 泵局部参考系：顶=输出、底=输入（随 facing 旋转映射到世界面）
+            const out = rotFace(facingOf(nb), "up");
+            const inn = rotFace(facingOf(nb), "down");
+            end.kind = side === out ? END_PUMP_OUT : (side === inn ? END_PUMP_IN : END_WALL);
             end.deviceKey = blockKey(nb);
             return [end];
         }

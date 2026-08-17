@@ -28,7 +28,7 @@ function pumpFaces(body: string) {
     return f;
 }
 
-const pump = BlockAPI.createRotatableBlock("fluid_pipe:pump", "construction", ["output", "input", "off", "off", "off", "off"], { group: GROUP_FLUID } as any);
+const pump = BlockAPI.createRotatableBlock("fluid_pipe:pump", "construction", ["output", "input", "off", "off", "off", "off"], { group: GROUP_FLUID, rotationType: "facing" } as any);
 pump.registerState("fluid_pipe:on", [0, 1]);
 // 覆盖基础材质（补 render_method alpha_test）+ 顶=输出/底=输入指示
 pump.addComponent(BlockComponent.setMaterialInstances(pumpFaces("off")));
@@ -66,7 +66,7 @@ function valveFaces(top: string) {
     return f;
 }
 
-const valve = BlockAPI.createRotatableBlock("fluid_pipe:valve", "construction", ["v3t_east", "v_body", "output", "input", "v_body", "v_body"], { group: GROUP_FLUID } as any);
+const valve = BlockAPI.createRotatableBlock("fluid_pipe:valve", "construction", ["v3t_east", "v_body", "output", "input", "v_body", "v_body"], { group: GROUP_FLUID, rotationType: "facing" } as any);
 valve.registerState("fluid_pipe:open", [1, 0]);
 valve.addComponent(BlockComponent.setMaterialInstances(valveFaces("v3t_east")));
 valve.addPermutation("q.block_state('fluid_pipe:open') == 0", BlockComponent.setMaterialInstances(valveFaces("v3t_north")));
@@ -88,7 +88,7 @@ function v3Mi(faces: Record<string, string>) {
     return mi;
 }
 
-const valve3 = BlockAPI.createRotatableBlock("fluid_pipe:valve3", "construction", ["v3t_east", "off", "output", "input", "output", "output"], { group: GROUP_FLUID } as any);
+const valve3 = BlockAPI.createRotatableBlock("fluid_pipe:valve3", "construction", ["v3t_east", "off", "output", "input", "output", "output"], { group: GROUP_FLUID, rotationType: "facing" } as any);
 valve3.registerState("fluid_pipe:dir", ["east", "south", "west", "north"]);
 // 基础材质 = 默认 dir=east 配置（东=输出口），保证默认状态正确显示 output 贴图
 valve3.addComponent(BlockComponent.setMaterialInstances(v3Mi(v3Faces.east)));

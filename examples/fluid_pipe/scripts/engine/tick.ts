@@ -1,6 +1,7 @@
 // 引擎层 R — 主循环：每 20 tick 势求解 + 流动 + 渲染 + 设备存活检查
-import { PUMP_TYPE, TANK_TYPE } from "./const.js";
-import { getBlockByKey, getAdjacent, isWaterlogged, keyParts } from "./world.js";
+import { MolangVariableMap } from "@minecraft/server";
+import { PUMP_TYPE, TANK_TYPE, VALVE3_TYPE, VALVE3_DIR_STATE } from "./const.js";
+import { getBlockByKey, getAdjacent, isWaterlogged, keyParts, isFluidType } from "./world.js";
 import { segments, tanks, pumps, pumpEnds, unregisterDevice, staleKeys, tickCount, incTick } from "./state.js";
 import { rebuildPending, rebuildAround, rebuildStale, rebuildPumpEnds } from "./rebuild.js";
 import { renderAll } from "./render.js";
@@ -8,6 +9,46 @@ import { rlog, isRuntimeLog } from "./log.js";
 import { computePotential, TANK_MAX } from "../core/potential.js";
 import { tickFlow } from "../core/flow.js";
 import { END_VALVE_IN, END_VALVE_OUT } from "../core/graph.js";
+import { rotFace, facingOf } from "./graph.js";
+
+const FACE_VEC: Record<string, { x: number; y: number; z: number }> = {
+    north: { x: 0, y: 0, z: -1 },
+    south: { x: 0, y: 0, z: 1 },
+    east: { x: 1, y: 0, z: 0 },
+    west: { x: -1, y: 0, z: 0 },
+    up: { x: 0, y: 1, z: 0 },
+    down: { x: 0, y: -1, z: 0 },
+};
+
+// 三通阀出水口喷水粒子：输入面管道有水 + 开通面没有连接（管道/设备）→ 水从出口喷出
+function sprayValve3() {
+    for (const seg of segments.values()) {
+        if (seg.covered.size === 0) continue;
+        for (const e of seg.ends) {
+            if (e.kind !== END_VALVE_IN || !e.deviceKey) continue;
+            if (!seg.covered.has(e.pipeKey)) continue; // 输入面管道需有水
+            const v = getBlockByKey(e.deviceKey);
+            if (!v || v.typeId !== VALVE3_TYPE) continue;
+            const dir = (v.permutation.getState(VALVE3_DIR_STATE as any) as string) ?? "east";
+            if (dir === "west") continue; // 指向输入 = 全关
+            const outFace = rotFace(facingOf(v), dir);
+            const outNb = getAdjacent(v, outFace);
+            if (!outNb) continue; // 区块未加载
+            if (isFluidType(outNb.typeId)) continue; // 有管道/设备连接不喷
+            const vec = FACE_VEC[outFace] ?? { x: 0, y: 0, z: 0 };
+            const vars = new MolangVariableMap();
+            vars.setVector3("variable.direction", vec);
+            const ox = v.location.x + 0.5, oy = v.location.y + 0.5, oz = v.location.z + 0.5;
+            for (let i = 0; i < 4; i++) {
+                v.dimension.spawnParticle("minecraft:water_splash_particle", {
+                    x: ox + vec.x * (0.65 + i * 0.35),
+                    y: oy + vec.y * (0.65 + i * 0.35),
+                    z: oz + vec.z * (0.65 + i * 0.35),
+                }, vars);
+            }
+        }
+    }
+}
 
 function applyTankDelta(key: string, d: number) {
     const t = tanks.get(key);
@@ -21,6 +62,9 @@ function applyTankDelta(key: string, d: number) {
 export function tick() {
     // 0) 加载后渐进重建连接图：pending 管道/阀门按区块逐个洪水（连接图不持久化，靠这里 + 事件重建）
     rebuildPending();
+
+    // 0b) 三通阀出水口喷水粒子（输入面有水 + 出口无连接）
+    sprayValve3();
 
     // 1) v2 势传播场（唯一独立源：泵输出 +Δ；空气/罐为汇；向上-1；三通透传）
     computePotential(segments, tanks, pumps);
@@ -64,10 +108,11 @@ export function tick() {
         for (const [key, p] of [...pumps]) {
             const b = getBlockByKey(key);
             if (!b || b.typeId !== PUMP_TYPE) { unregisterDevice(key); staleKeys.add(key); continue; }
-            // 泵供水源：输入口（底面）接触水块（泵自身被水浸也算）→ 直接吐水给输出段；
-            // 侧/顶面接触水不算——入水口断开（底面无水）即停水
+            // 泵供水源：输入口（局部底面，随 facing 映射）接触水块（泵自身被水浸也算）→ 直接吐水给输出段；
+            // 其他面接触水不算——入水口断开即停水
+            const inFace = rotFace(facingOf(b), "down");
             p.soaked = isWaterlogged(key)
-                || getAdjacent(b, "down")?.typeId === "minecraft:water";
+                || getAdjacent(b, inFace)?.typeId === "minecraft:water";
         }
         for (const [key] of [...tanks]) {
             const b = getBlockByKey(key);

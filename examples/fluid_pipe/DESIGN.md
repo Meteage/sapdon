@@ -103,8 +103,8 @@ scripts/
 
 ### 3.6 通断状态
 
-- 单方向阀门：可旋转（放置时玩家可转，西/东为自身参考系）；开/关=`fluid_pipe:open` 状态（扳手只切换顶面箭头 →开/↑关，与三通统一箭头，方块朝向不动）；开=单向透传（valveIn→valveOut 耦合），关=全墙
-- 三通阀：可旋转，**自身参考系** 西=输入、北/东/南=输出；`fluid_pipe:dir` ∈ {east,south,west,north}（顺时针循环），dir=west（指向输入）=全关；顶面单箭头指示当前方向
+- 单方向阀门：可 6 面旋转（放置时按玩家朝向，`minecraft:facing_direction`）；自身参考系 西/东=输入/输出（随旋转映射到世界面）；开/关=`fluid_pipe:open` 状态（扳手只切换顶面箭头 →开/↑关，与三通统一箭头，方块朝向不动）；开=单向透传（valveIn→valveOut 耦合），关=全墙
+- 三通阀：可 6 面旋转（`minecraft:facing_direction`），**自身参考系** 西=输入、北/东/南=输出（随旋转映射）；`fluid_pipe:dir` ∈ {east,south,west,north}（顺时针循环），dir=west（指向输入）=全关；顶面单箭头指示当前方向。**出水口喷水**：输入面管道有水（`seg.covered` 含输入管道）且开通面没有管道/设备连接时，每 20 tick 在出水口喷 `minecraft:water_splash_particle`
 - **阀门可直接首尾相连（中间无需管道）**：`describeEnd` 沿开阀链穿越——管道面向开阀输入面时，链上每级开阀向本段补 `valveIn` 端点、链尾终端（空气/设备）挂对应端点；面向开阀输出面时沿输入面反向走到源/汇。关阀=墙，链断。
 - 管道必须形成完整通路（所有途经端子均开）才流动
 
@@ -128,9 +128,9 @@ scripts/
 | 方块 | 规格 |
 |------|------|
 | 流体管道 | 连接单元；6 面 `pipe_connect` + `fluid_pipe:core`；可含水（方块层存水，水浸不是供水源——供水只来自泵） |
-| 泵 | 可旋转；**顶=输出/底=输入**；右键开关；贴图：顶/底 digitCircuit 风格 input/output 符号（白标于噪声底）、侧面 on/off 机身 |
-| 单方向阀门 | 可旋转（放置时）；`fluid_pipe:open` 开/关（扳手只切顶面箭头 →/↑）；西=输入、东=输出（自身参考系）；关=全墙 |
-| 三通阀 | 可旋转；`fluid_pipe:dir` ∈ {east,south,west,north}；西=输入、dir 面=输出；dir=west=全关；顶面单箭头指示 |
+| 泵 | 可 6 面旋转（`minecraft:facing_direction`）；自身参考系 **顶=输出/底=输入**（随旋转映射到世界面）；右键开关；贴图：顶/底 digitCircuit 风格 input/output 符号（白标于噪声底）、侧面 on/off 机身 |
+| 单方向阀门 | 可 6 面旋转（放置时）；`fluid_pipe:open` 开/关（扳手只切顶面箭头 →/↑）；自身参考系 西=输入、东=输出（随旋转映射）；关=全墙 |
+| 三通阀 | 可 6 面旋转；`fluid_pipe:dir` ∈ {east,south,west,north}；自身参考系 西=输入、dir 面=输出（随旋转映射）；dir=west=全关；顶面单箭头指示；出水口可喷水粒子 |
 | 储液罐 | 不可旋转；**仅顶面可连管道**；液位 0~32 格；filled 0/1 渲染 |
 
 ## 5. 渲染与更新（势驱动）
@@ -170,7 +170,7 @@ scripts/
 
 ## 8. 持久化
 
-- 只存小状态：设备表（泵 on / 罐 level 0~32）+ 管道位置；阀开/关与三通 dir 均为方块状态（`minecraft:cardinal_direction` / `fluid_pipe:dir`），世界存档自动持久化，不入库
+- 只存小状态：设备表（泵 on / 罐 level 0~32）+ 管道位置；阀开/关、三通 dir 与朝向（`minecraft:facing_direction` / `fluid_pipe:dir`）均为方块状态，世界存档自动持久化，不入库
 - 势场/段图不落盘：加载后 `rebuildPending` 按区块渐进洪水重建，`restoreFrontMode` 从方块状态恢复前沿
 - 仅结构事件保存；运行态液位流动不落盘；写动态属性异常不可吞；loaded 门闩防覆盖
 

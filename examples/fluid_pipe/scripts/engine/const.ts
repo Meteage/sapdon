@@ -14,6 +14,7 @@ export const PUMP_ON_STATE = "fluid_pipe:on";
 export const TANK_LEVEL_STATE = "fluid_pipe:level";
 export const TANK_LEVEL_MAX = 15; // 渲染水块级数（状态最多 16 值 0..15；内存液位 0..32 映射）
 export const CARDINAL_STATE = "minecraft:cardinal_direction"; // 旋转方块朝向（north/south/east/west）
+export const FACING_STATE = "minecraft:facing_direction";     // 6 面旋转朝向（north/south/east/west/up/down）
 export const VALVE_OPEN_STATE = "fluid_pipe:open"; // 单方向阀门开/关（扳手只切顶面箭头，方块朝向不动）
 export const VALVE3_DIR_STATE = "fluid_pipe:dir"; // 三通阀输出方向（east/south/west/north，west=全关）
 
