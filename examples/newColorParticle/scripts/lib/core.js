@@ -287,10 +287,11 @@ export class Calculator {
     /**
      * @remarks 计算圆边缘点的相对坐标
      * @param {Array} center 中心点的相对坐标数组[x,y,z]
+     * @param {number} r 半径
      * @param {number} da 计算精度
      * @returns 圆边缘点的相对坐标组
      */
-    static calculateCirclePoints(center, da) {
+    static calculateCirclePoints(center, r, da) {
         const arr = [];
         for (let a = 0; a < 2 * Math.PI; a += da) {
             const point = [
@@ -316,9 +317,9 @@ export class Calculator {
             //角度计算
             angle += 2 * Math.PI / n;
             const point = [
-                center[0] + Math.cos(a) * r,
+                center[0] + Math.cos(angle) * r,
                 center[1] + 0,
-                center[2] + Math.sin(a) * r
+                center[2] + Math.sin(angle) * r
             ];
             arr.push(point);
         }
@@ -338,24 +339,24 @@ export class Calculator {
         const Lines = edges.map((_, i) => {
             return Calculator.Line(edges[i], edges[(i + s) % n], d);
         });
-        return edges.concat(edges);
+        return edges.concat(Lines);
     }
     /**
-     * @remarks 计算球体边缘点的相对坐标
+     * @remarks 计算球体表面点的相对坐标
      * @param {Array} center 中心点的相对坐标数组[x,y,z]
      * @param {number} r 半径
-     * @param {number} da 计算精度
-     * @param {number} db 计算精度
-     * @returns 球体边缘点的相对坐标组
+     * @param {number} da 纬度采样精度
+     * @param {number} db 经度采样精度
+     * @returns 球体表面点的相对坐标组
      */
     static calculateSpherePoints(center, r, da, db) {
         const arr = [];
-        for (let a = 0; a < 2 * Math.PI; a += da) {
+        for (let a = 0; a < Math.PI; a += da) {
             for (let b = 0; b < 2 * Math.PI; b += db) {
                 const point = [
-                    center[0] + Math.cos(a) * r,
-                    center[1] + 0,
-                    center[2] + Math.sin(a) * r
+                    center[0] + Math.sin(a) * Math.cos(b) * r,
+                    center[1] + Math.cos(a) * r,
+                    center[2] + Math.sin(a) * Math.sin(b) * r
                 ];
                 arr.push(point);
             }
