@@ -28,8 +28,7 @@ export class Matrix {
      */
     initialize(arr) {
         if (arr.length > this.row || arr[0].length > this.column) {
-            console.log('the Array not meet requit!');
-            return;
+            throw new Error(`Matrix.initialize: 数组尺寸(${arr.length}x${arr[0].length})超出矩阵(${this.row}x${this.column})`);
         }
         arr.forEach((row, m) => {
             row.forEach((v, n) => {
@@ -53,8 +52,7 @@ export class Matrix {
      */
     multiply(matrix) {
         if (this.column != matrix.row) {
-            console.log('Matrix dimensions do not match for multiplication');
-            return;
+            throw new Error(`Matrix.multiply: 维度不匹配，左矩阵${this.row}x${this.column}，右矩阵${matrix.row}x${matrix.column}`);
         }
         const matrixT = matrix.transpose();
         const arr = this.matrix.map(A_row => matrixT.matrix.map(B_row => this.vectorDot(A_row, B_row)));
@@ -85,6 +83,9 @@ export class Transformation {
      * @returns 齐次矩阵
      */
     static toHomogeneous(coordinates) {
+        if (coordinates.length === 0) {
+            throw new Error('toHomogeneous: 坐标组不能为空');
+        }
         const arr = coordinates.map(coord => [...coord, 1]);
         return new Matrix(arr.length, arr[0].length, 0, arr);
     }
@@ -96,9 +97,12 @@ export class Transformation {
      * @returns 按比例向量缩放后的相对坐标组
      */
     static scaleTransformation(coordinates, scaleVector) {
-        const coordMatrix = this.toHomogeneous(coordinates).transpose();
-        const scaleMatrix = this.scaleMatrix(scaleVector);
-        return scaleMatrix.multiply(coordMatrix).transpose().toArray();
+        const [sx, sy, sz] = scaleVector;
+        const result = [];
+        for (const p of coordinates) {
+            result.push([p[0] * sx, p[1] * sy, p[2] * sz]);
+        }
+        return result;
     }
 
     /**
@@ -162,29 +166,36 @@ export class Transformation {
     }
 
     /**
-     * @remarks 对相对坐标组进行旋转
+     * @remarks 对相对坐标组进行旋转（直接向量公式，无矩阵分配）
      * @param {Array} coordinates 相对坐标组
      * @param {string} axis 旋转轴
      * @param {number} angle 旋转角度
      * @returns 进行旋转后的相对坐标组
      */
     static rotationTransformation(coordinates, axis, angle) {
-        const coordMatrix = this.toHomogeneous(coordinates).transpose();
-        let rotationMatrix;
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        const result = [];
         switch (axis) {
             case 'x':
-                rotationMatrix = this.xRotationMatrix(angle);
+                for (const p of coordinates) {
+                    result.push([p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c]);
+                }
                 break;
             case 'y':
-                rotationMatrix = this.yRotationMatrix(angle);
+                for (const p of coordinates) {
+                    result.push([p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c]);
+                }
                 break;
             case 'z':
-                rotationMatrix = this.zRotationMatrix(angle);
+                for (const p of coordinates) {
+                    result.push([p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]]);
+                }
                 break;
             default:
                 throw new Error("Invalid axis. Must be 'x', 'y', or 'z'.");
         }
-        return rotationMatrix.multiply(coordMatrix).transpose().toArray();
+        return result;
     }
 
     /**
@@ -194,9 +205,12 @@ export class Transformation {
      * @returns 进行平移变换的相对坐标组
      */
     static translationTransformation(coordinates, translationVector) {
-        const coordMatrix = this.toHomogeneous(coordinates).transpose();
-        const translationMatrix = this.translationMatrix(translationVector);
-        return translationMatrix.multiply(coordMatrix).transpose().toArray();
+        const [tx, ty, tz] = translationVector;
+        const result = [];
+        for (const p of coordinates) {
+            result.push([p[0] + tx, p[1] + ty, p[2] + tz]);
+        }
+        return result;
     }
 
     /**
@@ -237,11 +251,16 @@ export class Calculator {
             y: vector.y / length,
             z: vector.z / length
         };
-        for (let i = 0; i < length; i += d) {
+        if (d <= 0) {
+            throw new Error(`Calculator.Line: 采样间距 d 必须为正数，当前为 ${d}`);
+        }
+        const steps = Math.ceil(length / d);
+        for (let k = 0; k <= steps; k++) {
+            const t = Math.min(k * d, length);
             const point = [
-                arr1[0] + dv.x * i,
-                arr1[1] + dv.y * i,
-                arr1[2] + dv.z * i
+                arr1[0] + dv.x * t,
+                arr1[1] + dv.y * t,
+                arr1[2] + dv.z * t
             ];
             arr.push(point);
         }
@@ -310,7 +329,7 @@ export class Calculator {
      * @param {number} r 半径
      * @returns 计算n边形顶点的相对坐标组
      */
-    static calculatePoygonEdges(center, n, r) {
+    static calculatePolygonEdges(center, n, r) {
         const arr = [];
         let angle = 0;
         for (let i = 1; i <= n; i++) {
@@ -330,12 +349,12 @@ export class Calculator {
      * @param {Array} center 中心点的相对坐标数组[x,y,z]
      * @param {number} n 顶点数
      * @param {number} r 半径
-     * @param {number} s 连接模式
+     * @param {number} s 连接模式（连线步长：1 为逐边相连，>1 为星形多边形）
      * @param {number} d 计算精度
      * @returns  计算n边形边缘点的相对坐标组
      */
-    static calculatePoygonPoints(center, n, r, s, d) {
-        const edges = Calculator.calculatePoygonEdges(center, n, r);
+    static calculatePolygonPoints(center, n, r, s, d) {
+        const edges = Calculator.calculatePolygonEdges(center, n, r);
         const Lines = edges.map((_, i) => {
             return Calculator.Line(edges[i], edges[(i + s) % n], d);
         });
@@ -367,7 +386,7 @@ export class Calculator {
      * @remarks 
      * 计算极坐标系下自定义图形的相对坐标
      * @param {Function} callback (t)={}
-     * @param {Object} option {strat:number,end:number,d:number}
+     * @param {Object} option {start:number,end:number,dt:number}
      * @returns 极坐标系下自定义图形的相对坐标组
      */
     static calculatePoints(callback, option) {

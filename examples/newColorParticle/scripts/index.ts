@@ -1,239 +1,177 @@
-import { world, system, Dimension, Vector3, MolangVariableMap, Entity } from "@minecraft/server";
-import { Calculator, Transformation } from "./lib/core.js";
-
-const PARTICLE_ID = "sapdon:color_particle";
-
-// ============================================================
-// 方案 A：spawnParticle 直出（推荐，无实体开销）
-// 共享调度器：1 个 runInterval 遍历活跃粒子组，空则暂停（无泄漏）
-// ============================================================
-interface ParticleGroup {
-    dimension: Dimension;
-    center: Vector3;
-    basePoints: number[][];                                  // 相对基准点（形状定义）
-    color: { r: number; g: number; b: number };
-    spin: number;                                            // 粒子自身旋转角速度（rad/tick）
-    trail: number;                                           // 单个粒子存留秒数（拖尾长度）
-    totalTicks: number;                                      // 总持续游戏刻
-    elapsed: number;
-    movementFn: (basePoint: number[], elapsedTick: number, totalTicks: number) => Vector3;
-}
-
-class ColorParticleManager {
-    private static groups: ParticleGroup[] = [];
-    private static handle: number | null = null;
-
-    /**
-     * 生成一组沿轨迹运动的彩色粒子（每 tick 在轨迹点 spawnParticle 一个短命粒子）
-     */
-    static spawn(
-        dimension: Dimension,
-        center: Vector3,
-        basePoints: number[][],
-        color: { r: number; g: number; b: number },
-        opts: {
-            duration?: number;                                 // 总持续秒数（默认 10）
-            trail?: number;                                    // 单粒子存留秒数（默认 0.5）
-            spin?: number;                                     // 粒子自身旋转（rad/tick，默认 0）
-            tick?: number;                                     // 发射间隔游戏刻（默认 1）
-            movementFn: (basePoint: number[], elapsedTick: number, totalTicks: number) => Vector3;
-        },
-    ) {
-        ColorParticleManager.groups.push({
-            dimension,
-            center,
-            basePoints,
-            color,
-            spin: opts.spin ?? 0,
-            trail: opts.trail ?? 0.5,
-            totalTicks: Math.round((opts.duration ?? 10) * 20),
-            elapsed: 0,
-            movementFn: opts.movementFn,
-        });
-        ColorParticleManager.ensureScheduler(opts.tick ?? 1);
-    }
-
-    static clearAll() {
-        ColorParticleManager.groups = [];
-        if (ColorParticleManager.handle !== null) {
-            system.clearRun(ColorParticleManager.handle);
-            ColorParticleManager.handle = null;
-        }
-    }
-
-    private static ensureScheduler(tick: number) {
-        if (ColorParticleManager.handle !== null) return;
-        ColorParticleManager.handle = system.runInterval(() => {
-            const groups = ColorParticleManager.groups;
-            for (let i = groups.length - 1; i >= 0; i--) {
-                const g = groups[i];
-                g.elapsed++;
-                if (g.elapsed > g.totalTicks) { groups.splice(i, 1); continue; }
-                const vars = new MolangVariableMap();
-                vars.setFloat("variable.color_r", g.color.r);
-                vars.setFloat("variable.color_g", g.color.g);
-                vars.setFloat("variable.color_b", g.color.b);
-                vars.setFloat("variable.lifetime", g.trail);
-                vars.setFloat("variable.spin", g.spin);
-                for (const bp of g.basePoints) {
-                    const pos = g.movementFn(bp, g.elapsed, g.totalTicks);
-                    try {
-                        g.dimension.spawnParticle(PARTICLE_ID, pos, vars);
-                    } catch {
-                        // 位置在未加载区块/世界外时忽略本次发射
-                    }
-                }
-            }
-            if (groups.length === 0 && ColorParticleManager.handle !== null) {
-                system.clearRun(ColorParticleManager.handle);
-                ColorParticleManager.handle = null;
-            }
-        }, tick);
-    }
-}
+import { world, system, Dimension, Vector3, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, CustomCommandSource } from "@minecraft/server";
+import { ColorParticleManager, COLORS } from "./particles.js";
+import {
+    spawnEffect, spawnShape,
+    PRESETS, PRESET_IDS, ALL_SHAPE_IDS, MOTION_IDS,
+} from "./effects.js";
 
 // ============================================================
-// 方案 B：DummyEntity 实体（备选路线，保留）
-// 每点一个隐形实体 + 动画触发粒子 + 每 tick teleport；已加固生命周期
+// 物品 → 预设映射
 // ============================================================
-interface EntityParticleData {
-    entity: Entity;
-    handle: number;
-    remaining: number;
-    totalTicks: number;
-    basePoint: number[];
-    center: Vector3;
-    movementFn: (basePoint: number[], elapsedTick: number, totalTicks: number) => Vector3;
-}
-
-class EntityParticleManager {
-    private static data = new Map<string, EntityParticleData>();
-
-    static spawn(
-        dimension: Dimension,
-        location: Vector3,
-        lifetime: number,                                     // 总持续秒数
-        color: { r: number; g: number; b: number },
-        basePoint: number[],
-        center: Vector3,
-        movementFn: (basePoint: number[], elapsedTick: number, totalTicks: number) => Vector3,
-        tick = 1,
-    ) {
-        const entity = dimension.spawnEntity("sapdon:color_particle", location);
-        entity.setProperty("sapdon:float_lifetime", Math.min(0.5, lifetime)); // 单粒子存留（动画粒子寿命）
-        entity.setProperty("sapdon:float_color_red", color.r);
-        entity.setProperty("sapdon:float_color_green", color.g);
-        entity.setProperty("sapdon:float_color_blue", color.b);
-
-        const totalTicks = Math.round(lifetime * 20);
-        const handle = system.runInterval(() => {
-            const d = EntityParticleManager.data.get(entity.id);
-            if (!d) { system.clearRun(handle); return; }
-            d.remaining--;
-            if (d.remaining <= 0) {
-                system.clearRun(d.handle);
-                EntityParticleManager.data.delete(entity.id);
-                try { entity.remove(); } catch { /* 已被移除 */ }
-                return;
-            }
-            try {
-                const target = d.movementFn(d.basePoint, d.totalTicks - d.remaining, d.totalTicks);
-                entity.teleport(target, { facingLocation: entity.location });
-            } catch {
-                system.clearRun(d.handle);
-                EntityParticleManager.data.delete(entity.id);
-                try { entity.remove(); } catch { /* 已被移除 */ }
-            }
-        }, tick);
-
-        EntityParticleManager.data.set(entity.id, {
-            entity, handle, remaining: totalTicks, totalTicks, basePoint, center, movementFn,
-        });
-    }
-
-    static clearAllEntities() {
-        for (const [, d] of EntityParticleManager.data) {
-            system.clearRun(d.handle);
-            try { d.entity.remove(); } catch { /* 已被移除 */ }
-        }
-        EntityParticleManager.data.clear();
-    }
-}
-
-// ============================================================
-// 演示：正方体（只有边） × 缩放/绕Y旋转 × 两方案
-// ============================================================
-const CUBE = Calculator.calculateCubePoints([0, 0, 0], 2, 0.5); // 8 顶点 + 12 边采样
-const BLUE = { r: 0.101, g: 0.501, b: 0.001 };   // 蓝色
-const ORANGE = { r: 0.999, g: 0.501, b: 0.001 }; // 橙色
-const GREEN = { r: 0.101, g: 0.999, b: 0.001 };  // 绿色
-const YELLOW = { r: 0.999, g: 0.999, b: 0.001 }; // 黄色
-
-// 缩放动画：脉冲呼吸（0.3 ~ 1.0，周期 40 tick）
-function scalePulse(base: number[], tick: number, _total: number): number {
-    return 0.3 + 0.7 * (0.5 + 0.5 * Math.sin((2 * Math.PI * tick) / 40));
-}
-
-function cubePulseFn(center: Vector3, base: number[], tick: number, total: number): Vector3 {
-    const s = scalePulse(base, tick, total);
-    return { x: center.x + base[0] * s, y: center.y + base[1] * s, z: center.z + base[2] * s };
-}
-
-function cubeSpinFn(center: Vector3, base: number[], tick: number, total: number): Vector3 {
-    const r = Transformation.rotationTransformation([base], "y", (2 * Math.PI * tick) / total)[0];
-    return { x: center.x + r[0], y: center.y + r[1], z: center.z + r[2] };
-}
+const ITEM_TO_PRESET: Record<string, string> = {
+    "sapdon:demo_scale_sp": "scale_sp",
+    "sapdon:demo_spin_sp":  "spin_sp",
+    "sapdon:demo_ring":     "ring",
+    "sapdon:demo_helix":    "helix",
+    "sapdon:demo_sphere":   "sphere",
+    "sapdon:demo_heart":    "heart",
+    "sapdon:demo_galaxy":   "galaxy",
+};
 
 world.afterEvents.itemUse.subscribe((event) => {
-    const item = event.itemStack.typeId;
+    const presetId = ITEM_TO_PRESET[event.itemStack.typeId];
+    if (!presetId) return;
     const player = event.source;
-    const center = player.location;
-    console.warn(`[colorparticle] itemUse: ${item} @(${center.x.toFixed(1)},${center.y.toFixed(1)},${center.z.toFixed(1)})`);
-
-    switch (item) {
-        // 方案 A（spawnParticle）+ 缩放动画
-        case "sapdon:demo_scale_sp": {
-            ColorParticleManager.clearAll();
-            ColorParticleManager.spawn(player.dimension, center, CUBE, BLUE, {
-                duration: 10, trail: 0.5, spin: 0.8,
-                movementFn: (bp, t, total) => cubePulseFn(center, bp, t, total),
-            });
-            break;
-        }
-        // 方案 A（spawnParticle）+ 绕 Y 旋转动画
-        case "sapdon:demo_spin_sp": {
-            ColorParticleManager.clearAll();
-            ColorParticleManager.spawn(player.dimension, center, CUBE, ORANGE, {
-                duration: 10, trail: 0.5, spin: 0,
-                movementFn: (bp, t, total) => cubeSpinFn(center, bp, t, total),
-            });
-            break;
-        }
-        // 方案 B（实体）+ 缩放动画
-        case "sapdon:demo_scale_ent": {
-            EntityParticleManager.clearAllEntities();
-            for (const bp of CUBE) {
-                EntityParticleManager.spawn(
-                    player.dimension,
-                    { x: center.x + bp[0], y: center.y + bp[1], z: center.z + bp[2] },
-                    10, GREEN, bp, center,
-                    (b, t, total) => cubePulseFn(center, b, t, total),
-                );
-            }
-            break;
-        }
-        // 方案 B（实体）+ 绕 Y 旋转动画
-        case "sapdon:demo_spin_ent": {
-            EntityParticleManager.clearAllEntities();
-            for (const bp of CUBE) {
-                EntityParticleManager.spawn(
-                    player.dimension,
-                    { x: center.x + bp[0], y: center.y + bp[1], z: center.z + bp[2] },
-                    10, YELLOW, bp, center,
-                    (b, t, total) => cubeSpinFn(center, b, t, total),
-                );
-            }
-            break;
-        }
+    const loc = player.location;
+    const result = spawnEffect(player.dimension, loc, presetId);
+    if (result.ok) {
+        console.warn(`[colorparticle] itemUse: ${presetId} @(${loc.x.toFixed(1)},${loc.y.toFixed(1)},${loc.z.toFixed(1)})`);
+        player.sendMessage(result.message);
     }
+});
+
+// ============================================================
+// 指令来源解析：支持玩家/实体与命令方块（sourceType=Block）
+// ============================================================
+function resolveOrigin(origin: { sourceType: string; sourceEntity?: { dimension: Dimension; location: Vector3 } | null; sourceBlock?: { dimension: Dimension; location: Vector3 } | null }, pos?: Vector3 | null): { dimension: Dimension; loc: Vector3 } | null {
+    if (origin.sourceType === CustomCommandSource.Block && origin.sourceBlock) {
+        const b = origin.sourceBlock.location;
+        return { dimension: origin.sourceBlock.dimension, loc: pos ?? { x: b.x + 0.5, y: b.y + 0.5, z: b.z + 0.5 } };
+    }
+    if (origin.sourceEntity) {
+        return { dimension: origin.sourceEntity.dimension, loc: pos ?? origin.sourceEntity.location };
+    }
+    return null;
+}
+
+// ============================================================
+// 指令注册
+// ============================================================
+system.beforeEvents.startup.subscribe((init) => {
+    const reg = init.customCommandRegistry;
+
+    // 注册枚举（指令输入自动补全）。注意：Enum 类型参数的 name 必须等于枚举名，
+    // 否则游戏端报 EnumDependencyMissing，registerCommand 抛错中断全部注册。
+    // shape 因支持 path:xxx 任意形状，用 String 类型（不依赖枚举）。
+    const safe = (label: string, fn: () => void) => {
+        try {
+            fn();
+        } catch (e) {
+            console.warn(`[particle-cmd] ${label} 注册失败: ${e}`);
+        }
+    };
+    safe("registerEnum(preset)", () => reg.registerEnum("sapdon:preset_enum", PRESET_IDS));
+    safe("registerEnum(motion)", () => reg.registerEnum("sapdon:motion_enum", MOTION_IDS));
+    safe("registerEnum(color)", () => reg.registerEnum("sapdon:color_enum", Object.keys(COLORS)));
+
+    // ----------------------------------------------------------
+    // /sapdon:particle <effect> [color] [duration] [trail] [spin] [radius] [pos]
+    // ----------------------------------------------------------
+    safe("registerCommand(particle)", () => reg.registerCommand({
+        name: "sapdon:particle",
+        description: "生成预设粒子效果",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        mandatoryParameters: [
+            { name: "sapdon:preset_enum", type: CustomCommandParamType.Enum },
+        ],
+        optionalParameters: [
+            { name: "color",   type: CustomCommandParamType.String },
+            { name: "duration", type: CustomCommandParamType.Float },
+            { name: "trail",   type: CustomCommandParamType.Integer },
+            { name: "spin",    type: CustomCommandParamType.Float },
+            { name: "radius",  type: CustomCommandParamType.Float },
+            { name: "pos",     type: CustomCommandParamType.Location },
+        ],
+    }, (origin, effectId, color?, duration?, trail?, spin?, radius?, pos?) => {
+        const src = resolveOrigin(origin, pos);
+        if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
+        const result = spawnEffect(src.dimension, src.loc, effectId as string, {
+            color1: color,
+            duration,
+            trail,
+            spin,
+            radius,
+        });
+        return { status: result.ok ? CustomCommandStatus.Success : CustomCommandStatus.Failure, message: result.message };
+    }));
+
+    // ----------------------------------------------------------
+    // /sapdon:particle_shape <shape> <motion> [color] [color2] [duration] [trail] [spin] [radius] [turns] [p1] [p2] [pos]
+    // p1/p2：形状高级参数（knot: p/q；rose: k；lissajous: ax/ay；superflower: m/n1）
+    // shape 为 String：支持 path:lorenz 等任意形状 id
+    // ----------------------------------------------------------
+    safe("registerCommand(particle_shape)", () => reg.registerCommand({
+        name: "sapdon:particle_shape",
+        description: "自由组合形状×运动生成粒子",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        mandatoryParameters: [
+            { name: "shape",  type: CustomCommandParamType.String },
+            { name: "sapdon:motion_enum", type: CustomCommandParamType.Enum },
+        ],
+        optionalParameters: [
+            { name: "color",   type: CustomCommandParamType.String },
+            { name: "color2",  type: CustomCommandParamType.String },
+            { name: "duration", type: CustomCommandParamType.Float },
+            { name: "trail",   type: CustomCommandParamType.Integer },
+            { name: "spin",    type: CustomCommandParamType.Float },
+            { name: "radius",  type: CustomCommandParamType.Float },
+            { name: "turns",   type: CustomCommandParamType.Float },
+            { name: "p1",      type: CustomCommandParamType.Float },
+            { name: "p2",      type: CustomCommandParamType.Float },
+            { name: "pos",     type: CustomCommandParamType.Location },
+        ],
+    }, (origin, shapeId, motionId, color?, color2?, duration?, trail?, spin?, radius?, turns?, p1?, p2?, pos?) => {
+        const src = resolveOrigin(origin, pos);
+        if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
+        const result = spawnShape(src.dimension, src.loc, shapeId as string, motionId as string, {
+            color1: color,
+            color2,
+            duration,
+            trail,
+            spin,
+            radius,
+            turns,
+            p1,
+            p2,
+        });
+        return { status: result.ok ? CustomCommandStatus.Success : CustomCommandStatus.Failure, message: result.message };
+    }));
+
+    // ----------------------------------------------------------
+    // /sapdon:particle_list
+    // ----------------------------------------------------------
+    safe("registerCommand(particle_list)", () => reg.registerCommand({
+        name: "sapdon:particle_list",
+        description: "列出所有可用的预设/形状/运动/颜色",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+    }, () => {
+        const shapeList = ALL_SHAPE_IDS.join(", ");
+        const presetList = PRESET_IDS.map((id) => `${id}(${PRESETS[id].label})`).join(", ");
+        const lines = [
+            `[预设] ${presetList}`,
+            `[形状] ${shapeList}`,
+            `[运动] ${MOTION_IDS.join(", ")}`,
+            `[颜色] ${Object.keys(COLORS).join(", ")}`,
+        ];
+        return { status: CustomCommandStatus.Success, message: lines.join("\n") };
+    }));
+
+    // ----------------------------------------------------------
+    // /sapdon:particle_clear
+    // ----------------------------------------------------------
+    safe("registerCommand(particle_clear)", () => reg.registerCommand({
+        name: "sapdon:particle_clear",
+        description: "清除所有当前粒子",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+    }, () => {
+        const before = ColorParticleManager.activeCount;
+        ColorParticleManager.clearAll();
+        return { status: CustomCommandStatus.Success, message: `已清除 ${before} 个粒子组` };
+    }));
+
+    console.warn(`[particle-cmd] 指令注册完成：preset=${PRESET_IDS.length} motion=${MOTION_IDS.length} shape=${ALL_SHAPE_IDS.length}`);
 });
