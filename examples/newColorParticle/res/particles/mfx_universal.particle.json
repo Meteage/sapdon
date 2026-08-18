@@ -1,4 +1,4 @@
-﻿{
+{
 	"format_version": "1.21.0",
 	"particle_effect": {
 		"description": {
@@ -19,9 +19,9 @@
 			},
 			"minecraft:particle_motion_parametric": {
 				"relative_position": [
-					"(variable.motion == 0) ? variable.px : (variable.motion == 1) ? (variable.px * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 2) ? variable.px : (variable.motion == 3) ? (variable.px * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 4) ? (variable.px * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : variable.px",
-					"(variable.motion == 0) ? variable.py : (variable.motion == 1) ? variable.py : (variable.motion == 2) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 3) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 4) ? (variable.py * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : (variable.py + variable.radius * math.sin(variable.phase*6.2831853 + 6.2831853*(variable.particle_age/variable.particle_lifetime)))",
-					"(variable.motion == 0) ? variable.pz : (variable.motion == 1) ? (-variable.px * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 2) ? variable.pz : (variable.motion == 3) ? (-variable.px * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 4) ? (variable.pz * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : variable.pz"
+					"(variable.motion == 0) ? variable.px : (variable.motion == 1) ? (variable.px * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 2) ? variable.px : (variable.motion == 3) ? (variable.px * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 4) ? (variable.px * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : (variable.motion == 5) ? variable.px : (variable.motion == 6) ? (variable.px * (1.0 + variable.radius*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.px + variable.radius*0.3*math.sin(12.5663706*(variable.particle_age/variable.particle_lifetime) + variable.phase)) : (variable.motion == 8) ? variable.px : variable.radius*math.cos(variable.phase*6.2831853 + 6.2831853*variable.turns*(variable.particle_age/variable.particle_lifetime))",
+					"(variable.motion == 0) ? variable.py : (variable.motion == 1) ? variable.py : (variable.motion == 2) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 3) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 4) ? (variable.py * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : (variable.motion == 5) ? (variable.py + variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 6) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 7) ? variable.py : (variable.motion == 8) ? (variable.py + variable.radius*math.abs(math.sin(12.5663706*(variable.particle_age/variable.particle_lifetime)))) : (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime))",
+					"(variable.motion == 0) ? variable.pz : (variable.motion == 1) ? (-variable.px * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 2) ? variable.pz : (variable.motion == 3) ? (-variable.px * math.sin(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime)) + variable.pz * math.cos(variable.turns*6.2831853*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 4) ? (variable.pz * (0.8 + 0.2 * math.sin(18.849555*(variable.particle_age/variable.particle_lifetime)))) : (variable.motion == 5) ? variable.pz : (variable.motion == 6) ? (variable.pz * (1.0 + variable.radius*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.pz + variable.radius*0.3*math.cos(12.5663706*(variable.particle_age/variable.particle_lifetime) + variable.phase)) : (variable.motion == 8) ? variable.pz : variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*variable.turns*(variable.particle_age/variable.particle_lifetime))"
 				],
 				"rotation": "variable.spin * variable.particle_age"
 			},
@@ -34,16 +34,22 @@
 				"uv": {
 					"texture_width": 128,
 					"texture_height": 128,
-					"uv": [49, 88],
-					"uv_size": [8, 8]
+					"flipbook": {
+						"base_UV": ["variable.uvx", "variable.uvy"],
+						"size_UV": [8, 8],
+						"step_UV": [8, 0],
+						"frames_per_second": 8,
+						"max_frame": "variable.maxframe",
+						"loop": true
+					}
 				}
 			},
 			"minecraft:particle_appearance_tinting": {
 				"color": [
-					"(variable.colormode == 0) ? variable.cr : (variable.colormode == 1) ? math.lerp(variable.cr, variable.c2r, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1) : math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1)",
-					"(variable.colormode == 0) ? variable.cg : (variable.colormode == 1) ? math.lerp(variable.cg, variable.c2g, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1) : math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1)",
-					"(variable.colormode == 0) ? variable.cb : (variable.colormode == 1) ? math.lerp(variable.cb, variable.c2b, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1)",
-					"math.clamp(1.0 - 0.5*(variable.particle_age/variable.particle_lifetime), 0.0, 1.0)"
+					"(variable.colormode == 0) ? variable.cr : (variable.colormode == 1) ? math.lerp(variable.cr, variable.c2r, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1) : math.clamp(1.0 - 1.5*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.colormode == 0) ? variable.cg : (variable.colormode == 1) ? math.lerp(variable.cg, variable.c2g, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1) : math.clamp(1.0 - 3.0*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.colormode == 0) ? variable.cb : (variable.colormode == 1) ? math.lerp(variable.cb, variable.c2b, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : math.clamp(1.0 - 5.0*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.fadeMode == 0) ? math.clamp(1.0 - variable.particle_age/variable.particle_lifetime, 0, 1) : (variable.fadeMode == 1) ? math.clamp(4.0*(variable.particle_age/variable.particle_lifetime)*(1.0 - variable.particle_age/variable.particle_lifetime), 0, 1) : 1.0"
 				]
 			}
 		}

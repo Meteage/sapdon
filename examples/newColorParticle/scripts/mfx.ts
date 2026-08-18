@@ -13,24 +13,29 @@ export const MFX_PARTICLE_ID = "sapdon:mfx_universal";
 
 // 运动分支（对应 JSON 里 variable.motion 的 if 链）
 export const MFX_MOTIONS = ["still", "spin", "rise", "spiral", "breathe", "wave"];
-// 颜色分支（variable.colorMode）
-export const MFX_COLORMODES = ["solid", "gradient", "cycle", "rainbow"];
+// 颜色分支（variable.colormode）
+export const MFX_COLORMODES = ["solid", "gradient", "cycle", "rainbow", "heat"];
 // 大小分支（variable.sizemode）
 export const MFX_SIZEMODES = ["const", "bloom", "fade"];
+// 淡出分支（variable.fadeMode）
+export const MFX_FADEMODES = ["out", "inout", "none"];
 
 export interface MfxRecipe {
     id: string;
     label: string;
     shape: string;
-    motion: number;
-    colorMode: number;
+    motion: number;      // 0 still 1 spin 2 rise 3 spiral 4 breathe 5 wave 6 cone 7 wobble 8 bounce 9 orbit
+    colorMode: number;   // 0 solid 1 gradient 2 cycle 3 rainbow 4 heat
     color: string;
     color2?: string;
-    sizeMode: number;
+    sizeMode: number;    // 0 const 1 bloom 2 fade
     size: number;
     turns: number;
     rise: number;
     spin: number;
+    fade?: number;       // 0 out 1 inout 2 none
+    maxframe?: number;   // 序列帧数；1=静态
+    uv?: [number, number]; // 序列帧起始 UV
 }
 
 // 「全能表」内置配方：给配方名 + 可选参数覆盖 = 完全定义一次效果
@@ -42,6 +47,12 @@ export const MFX_PRESETS: Record<string, MfxRecipe> = {
     lissajous:{ id: "lissajous", label: "3D 利萨如", shape: "lissajous", motion: 1, colorMode: 3, color: "green", color2: "cyan", sizeMode: 0, size: 0.12, turns: 1, rise: 0, spin: 0.5 },
     rose:     { id: "rose", label: "玫瑰线",     shape: "rose",   motion: 1, colorMode: 2, color: "pink",   color2: "purple", sizeMode: 0, size: 0.12, turns: 1, rise: 0, spin: 0.5 },
     torus:    { id: "torus", label: "参数环面",   shape: "torus",  motion: 1, colorMode: 1, color: "cyan",   color2: "blue",    sizeMode: 0, size: 0.1, turns: 1, rise: 0, spin: 0 },
+    // ---- A-1 新增：用新轨迹分支 / 热色 / 淡出 / 序列帧 ----
+    cone:     { id: "cone", label: "喷锥",       shape: "sphere", motion: 6, colorMode: 2, color: "orange", color2: "yellow", sizeMode: 1, size: 0.1, turns: 0, rise: 2.5, spin: 0.4, fade: 2, maxframe: 1 },
+    bounce:   { id: "bounce", label: "弹跳盘",   shape: "ring",   motion: 8, colorMode: 0, color: "gold",   sizeMode: 0, size: 0.14, turns: 0, rise: 0, spin: 0, fade: 0, maxframe: 1 },
+    orbit:    { id: "orbit", label: "流转轨道",  shape: "ring",   motion: 9, colorMode: 3, color: "cyan",   color2: "purple", sizeMode: 0, size: 0.12, turns: 2, rise: 0, spin: 0, fade: 0, maxframe: 1 },
+    heat:     { id: "heat", label: "余烬",       shape: "sphere", motion: 2, colorMode: 4, color: "red",    sizeMode: 1, size: 0.16, turns: 0, rise: 1.2, spin: 0.6, fade: 1, maxframe: 1 },
+    sprite:   { id: "sprite", label: "序列帧火苗", shape: "sphere", motion: 0, colorMode: 0, color: "white", sizeMode: 0, size: 0.22, turns: 0, rise: 0, spin: 0, fade: 0, maxframe: 8, uv: [0, 0] },
 };
 
 export const MFX_PRESET_IDS = Object.keys(MFX_PRESETS);
@@ -114,6 +125,12 @@ export function spawnMfx(
     map.setFloat("variable.sizemode", recipe.sizeMode);
     map.setFloat("variable.size0", size0);
     map.setFloat("variable.life", life);
+    // A-1 新增：淡出模式 / 序列帧 / 起始 UV（默认保持现有配方外观）
+    map.setFloat("variable.fadeMode", recipe.fade ?? 0);
+    map.setFloat("variable.maxframe", recipe.maxframe ?? 1);
+    const uv = recipe.uv ?? [49, 88];
+    map.setFloat("variable.uvx", uv[0]);
+    map.setFloat("variable.uvy", uv[1]);
 
     const n = pts.length;
     let spawned = 0;

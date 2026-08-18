@@ -174,16 +174,30 @@ dev/newColorParticle_RP/   资源包
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `preset` | 枚举（必填） | — | 配方名（`/sapdon:mfx_list` 查看） |
-| `radius` | 数值 | 配方默认 | 半径（也用作 wave 振幅） |
-| `turns` | 数值 | 配方默认 | 旋转圈数（spin/spiral） |
-| `life` | 整数 | `60` | 粒子寿命（游戏刻） |
+| `radius` | 数值 | 配方默认 | 半径（也用作 wave/cone 振幅） |
+| `turns` | 数值 | 配方默认 | 旋转圈数（spin/spiral/orbit） |
+| `life` | 整数 | `120` | 粒子寿命（游戏刻，20=1 秒） |
 | `count` | 整数 | 全部 | 抽样粒子数（超过则均匀抽稀） |
-| `color` | 字符串 | 配方默认 | 覆盖主色（命名色 / RGB） |
+| `color` | 字符串 | 配方默认 | 覆盖主色（命名色 / `R,G,B`） |
 | `pos` | 坐标 | 施法者位置 | 中心落点 |
 
-**内置配方（7 个）**：`ring`(旋转光环)、`sphere`(呼吸球体)、`spiral`(上升螺旋)、`heart`(心动爱心)、`lissajous`(3D利萨如)、`rose`(玫瑰线)、`torus`(参数环面)。
+**内置配方（12 个）**：
+- 基础：`ring`(旋转光环)、`sphere`(呼吸球体)、`spiral`(上升螺旋)、`heart`(心动爱心)、`lissajous`(3D利萨如)、`rose`(玫瑰线)、`torus`(参数环面)
+- A-1 新增：`cone`(喷锥)、`bounce`(弹跳盘)、`orbit`(流转轨道)、`heat`(余烬/白热)、`sprite`(序列帧火苗)
 
-> **与 `particle_math` 的关系（双方案）**：`mfx` = 作者期把公式烘焙进 Molang，数学在粒子内、性能最好，适合成品特效；`particle_math` = 运行期任意表达式，数学在脚本，最灵活。日常用 `mfx`，要完全自定义形状再上 `particle_math`。
+**配方驱动的能力矩阵**（差异靠 `variable.*` 分支选择）：
+
+| 能力轴 | 可选分支（Molang 三元） |
+|--------|------------------------|
+| 轨迹 `motion` | `0`still `1`spin `2`rise `3`spiral `4`breathe `5`wave `6`cone `7`wobble `8`bounce `9`orbit |
+| 颜色 `colormode` | `0`solid `1`gradient `2`cycle `3`rainbow `4`heat |
+| 大小 `sizemode` | `0`const `1`bloom `2`fade |
+| 淡出 `fadeMode` | `0`out `1`inout `2`none |
+| 序列帧 `maxframe` | `1`=静态；`N`=N 帧动画（配合起始 UV） |
+
+> 现有 `billboard.uv` 已改为 flipbook 驱动：`maxframe=1` 时等价静态帧（现有配方外观不变），`maxframe>1` 时做序列帧动画。
+
+> **与 `particle_math` 的关系（双方案）**：`mfx` = 作者期把公式烘焙进 Molang，数学在粒子内、性能最好，适合成品特效；`particle_math` = 运行期任意表达式，数学在脚本，最灵活。日常用 `mfx`，要完全自定义形状再上 `particle_math`。重力/碰撞/原生随机分布/持续发射属互斥模型，将由后续伴生粒子（`mfx_dynamic`/`mfx_shape_*`/`mfx_stream`）补齐。
 
 ### 5.4 数学表达式（DSL）语法
 
