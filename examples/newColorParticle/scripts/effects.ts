@@ -328,8 +328,8 @@ function layerDefaults(layer: EffectLayer, params: EffectParams): EffectLayer {
         color1: params.color1 ?? layer.color1,
         color2: params.color2 ?? layer.color2,
         radius: params.radius ?? layer.radius ?? 1.5,
-        duration: params.duration ?? layer.duration ?? 10,
-        trail: params.trail ?? layer.trail ?? 2,
+        duration: params.duration ?? layer.duration ?? 60,
+        trail: params.trail ?? layer.trail ?? 1,
         spin: params.spin ?? layer.spin ?? 0,
         tick: params.tick ?? layer.tick ?? 1,
         turns: params.turns ?? layer.turns ?? 1,
@@ -352,7 +352,7 @@ function spawnLayer(dimension: Dimension, center: Vector3, L: EffectLayer): void
     if (!motionFactory) return;
     const color = resolveColorOrGradient(L.color1, L.color2, COLORS.blue, COLORS.purple);
     ColorParticleManager.spawn(dimension, center, points, color, {
-        duration: L.duration,
+        durationTicks: L.duration,
         trail: L.trail,
         spin: L.spin,
         tick: L.tick,
@@ -382,7 +382,7 @@ export function spawnEffect(
         }
         const color = resolveColorOrGradient(L.color1, L.color2, COLORS.blue, COLORS.purple);
         ColorParticleManager.spawn(dimension, center, points, color, {
-            duration: L.duration,
+            durationTicks: L.duration,
             trail: L.trail,
             spin: L.spin,
             tick: L.tick,
@@ -409,8 +409,8 @@ export function spawnShape(
     }
     const color = resolveColorOrGradient(params.color1, params.color2, COLORS.blue, COLORS.purple);
     ColorParticleManager.spawn(dimension, center, points, color, {
-        duration: params.duration ?? 10,
-        trail: params.trail ?? 2,
+        durationTicks: params.duration ?? 60,
+        trail: params.trail ?? 1,
         spin: params.spin ?? 0,
         tick: params.tick ?? 1,
         movementFn: motionFactory(points),

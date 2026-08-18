@@ -1,9 +1,11 @@
 import { world, system, Dimension, Vector3, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, CustomCommandSource } from "@minecraft/server";
 import { ColorParticleManager, COLORS } from "./particles.js";
 import {
-    spawnEffect, spawnShape,
+    spawnEffect,
     PRESETS, PRESET_IDS, ALL_SHAPE_IDS, MOTION_IDS,
 } from "./effects.js";
+import { buildMathSpawn, MATH_MODE_IDS } from "./mathexpress.js";
+import { spawnMfx, MFX_PRESETS, MFX_PRESET_IDS } from "./mfx.js";
 
 // ============================================================
 // 物品 → 预设映射
@@ -66,6 +68,7 @@ system.beforeEvents.startup.subscribe((init) => {
 
     // ----------------------------------------------------------
     // /sapdon:particle <effect> [color] [duration] [trail] [spin] [radius] [pos]
+    // duration：游戏刻（默认 60）；trail：残影刻数（默认 1）
     // ----------------------------------------------------------
     safe("registerCommand(particle)", () => reg.registerCommand({
         name: "sapdon:particle",
@@ -77,7 +80,7 @@ system.beforeEvents.startup.subscribe((init) => {
         ],
         optionalParameters: [
             { name: "color",   type: CustomCommandParamType.String },
-            { name: "duration", type: CustomCommandParamType.Float },
+            { name: "duration", type: CustomCommandParamType.Integer },
             { name: "trail",   type: CustomCommandParamType.Integer },
             { name: "spin",    type: CustomCommandParamType.Float },
             { name: "radius",  type: CustomCommandParamType.Float },
@@ -97,46 +100,109 @@ system.beforeEvents.startup.subscribe((init) => {
     }));
 
     // ----------------------------------------------------------
-    // /sapdon:particle_shape <shape> <motion> [color] [color2] [duration] [trail] [spin] [radius] [turns] [p1] [p2] [pos]
-    // p1/p2：形状高级参数（knot: p/q；rose: k；lissajous: ax/ay；superflower: m/n1）
-    // shape 为 String：支持 path:lorenz 等任意形状 id
+    // /sapdon:particle_math <expr> [mode] [count] [duration] [trail] [dt] [radius] [color]
+    // expr：按 ';' 分隔的赋值式数学表达式（参考 Java 模组 AnotherColorBlock）。
+    //   自变量：t(0..1) i(序号) n(总数)；常量 PI/E/TAU；半径常量 r。
+    //   输出：位置 x,y,z；可选逐粒子色 red,green,blue。
+    //   mode：param(缺省，沿 t 铺曲线) | surface(用 i/n 铺曲面)
+    //   duration：游戏刻（默认 60）；trail：残影刻数（默认 1）
     // ----------------------------------------------------------
-    safe("registerCommand(particle_shape)", () => reg.registerCommand({
-        name: "sapdon:particle_shape",
-        description: "自由组合形状×运动生成粒子",
+    safe("registerEnum(math_mode)", () => reg.registerEnum("sapdon:math_mode_enum", MATH_MODE_IDS));
+
+    safe("registerCommand(particle_math)", () => reg.registerCommand({
+        name: "sapdon:particle_math",
+        description: "用数学表达式生成粒子",
         permissionLevel: CommandPermissionLevel.Any,
         cheatsRequired: false,
         mandatoryParameters: [
-            { name: "shape",  type: CustomCommandParamType.String },
-            { name: "sapdon:motion_enum", type: CustomCommandParamType.Enum },
+            { name: "expr", type: CustomCommandParamType.String },
         ],
         optionalParameters: [
-            { name: "color",   type: CustomCommandParamType.String },
-            { name: "color2",  type: CustomCommandParamType.String },
-            { name: "duration", type: CustomCommandParamType.Float },
-            { name: "trail",   type: CustomCommandParamType.Integer },
-            { name: "spin",    type: CustomCommandParamType.Float },
-            { name: "radius",  type: CustomCommandParamType.Float },
-            { name: "turns",   type: CustomCommandParamType.Float },
-            { name: "p1",      type: CustomCommandParamType.Float },
-            { name: "p2",      type: CustomCommandParamType.Float },
-            { name: "pos",     type: CustomCommandParamType.Location },
+            { name: "sapdon:math_mode_enum", type: CustomCommandParamType.Enum },
+            { name: "count",    type: CustomCommandParamType.Integer },
+            { name: "duration", type: CustomCommandParamType.Integer },
+            { name: "trail",    type: CustomCommandParamType.Integer },
+            { name: "dt",       type: CustomCommandParamType.Float },
+            { name: "radius",   type: CustomCommandParamType.Float },
+            { name: "color",    type: CustomCommandParamType.String },
         ],
-    }, (origin, shapeId, motionId, color?, color2?, duration?, trail?, spin?, radius?, turns?, p1?, p2?, pos?) => {
-        const src = resolveOrigin(origin, pos);
+    }, (origin, expr, mode?, count?, duration?, trail?, dt?, radius?, color?) => {
+        const src = resolveOrigin(origin);
         if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
-        const result = spawnShape(src.dimension, src.loc, shapeId as string, motionId as string, {
-            color1: color,
-            color2,
+        const res = buildMathSpawn(expr as string, {
+            mode: mode as any,
+            count,
             duration,
             trail,
-            spin,
+            dt,
             radius,
-            turns,
-            p1,
-            p2,
+            color,
         });
-        return { status: result.ok ? CustomCommandStatus.Success : CustomCommandStatus.Failure, message: result.message };
+        if (!res.ok) return { status: CustomCommandStatus.Failure, message: res.message };
+        const basePoints = res.points.map((p) => p.pos);
+        const hasPerPointColor = res.points.some((p) => p.color);
+        ColorParticleManager.spawn(src.dimension, src.loc, basePoints, res.groupColor, {
+            durationTicks: duration ?? 60,
+            trail: trail ?? 1,
+            tick: 1,
+            perPointColor: hasPerPointColor ? (i) => res.points[i]?.color : undefined,
+            movementFn: (c, b) => ({ x: c.x + b[0], y: c.y + b[1], z: c.z + b[2] }),
+        });
+        return { status: CustomCommandStatus.Success, message: res.message };
+    }));
+
+    // ----------------------------------------------------------
+    // /sapdon:mfx <preset> [radius] [turns] [life] [count] [color] [pos]
+    // Molang 全能粒子：脚本只算初始位置并传参，数学由粒子 Molang 演化。
+    // ----------------------------------------------------------
+    safe("registerEnum(mfx_preset)", () => reg.registerEnum("sapdon:mfx_preset_enum", MFX_PRESET_IDS));
+
+    safe("registerCommand(mfx)", () => reg.registerCommand({
+        name: "sapdon:mfx",
+        description: "用 Molang 全能粒子生成效果",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        mandatoryParameters: [
+            { name: "sapdon:mfx_preset_enum", type: CustomCommandParamType.Enum },
+        ],
+        optionalParameters: [
+            { name: "radius", type: CustomCommandParamType.Float },
+            { name: "turns",  type: CustomCommandParamType.Float },
+            { name: "life",   type: CustomCommandParamType.Integer },
+            { name: "count",  type: CustomCommandParamType.Integer },
+            { name: "color",  type: CustomCommandParamType.String },
+            { name: "pos",    type: CustomCommandParamType.Location },
+        ],
+    }, (origin, presetId, radius?, turns?, life?, count?, color?, pos?) => {
+        const src = resolveOrigin(origin, pos);
+        if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
+        if (!(presetId in MFX_PRESETS)) return { status: CustomCommandStatus.Failure, message: `未知配方 "${presetId}"，可用：${MFX_PRESET_IDS.join(", ")}` };
+        // 自定义命令回调处于 restricted execution，无法直接 spawnParticle；
+        // 用 system.run 延后到普通 tick 执行，避免 Unrestricted API 被拒。
+        system.run(() => {
+            const result = spawnMfx(src.dimension, src.loc, presetId as string, {
+                radius,
+                turns,
+                lifeTicks: life,
+                count,
+                color,
+            });
+            if (!result.ok) console.warn(`[mfx] fail=${result.message}`);
+        });
+        return { status: CustomCommandStatus.Success, message: `[mfx] 已调度 ${MFX_PRESETS[presetId as string].label}` };
+    }));
+
+    // ----------------------------------------------------------
+    // /sapdon:mfx_list
+    // ----------------------------------------------------------
+    safe("registerCommand(mfx_list)", () => reg.registerCommand({
+        name: "sapdon:mfx_list",
+        description: "列出所有 Molang 全能粒子配方",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+    }, () => {
+        const list = MFX_PRESET_IDS.map((id) => `${id}(${MFX_PRESETS[id].label})`).join(", ");
+        return { status: CustomCommandStatus.Success, message: `[mfx 配方] ${list}` };
     }));
 
     // ----------------------------------------------------------
@@ -154,6 +220,7 @@ system.beforeEvents.startup.subscribe((init) => {
             `[预设] ${presetList}`,
             `[形状] ${shapeList}`,
             `[运动] ${MOTION_IDS.join(", ")}`,
+            `[数学模式] ${MATH_MODE_IDS.join(", ")}`,
             `[颜色] ${Object.keys(COLORS).join(", ")}`,
         ];
         return { status: CustomCommandStatus.Success, message: lines.join("\n") };

@@ -94,8 +94,10 @@ dev/newColorParticle_RP/   资源包
 | 指令 | 作用 |
 |------|------|
 | `/sapdon:particle <预设> [参数...]` | 播放一个预设效果 |
-| `/sapdon:particle_shape <形状> <运动> [参数...]` | 自由组合「形状 × 运动」生成粒子 |
-| `/sapdon:particle_list` | 列出所有预设 / 形状 / 运动 / 颜色 |
+| `/sapdon:particle_math <数学表达式> [参数...]` | 用一条数学表达式自由生成粒子（最灵活） |
+| `/sapdon:mfx <配方> [参数...]` | Molang 全能粒子（数学在粒子内，性能最好） |
+| `/sapdon:particle_list` | 列出所有预设 / 形状 / 运动 / 颜色 / 数学模式 |
+| `/sapdon:mfx_list` | 列出所有 Molang 配方 |
 | `/sapdon:particle_clear` | 清除当前所有粒子 |
 
 ### 4.2 完整签名
@@ -105,7 +107,7 @@ dev/newColorParticle_RP/   资源包
 ```
 
 ```
-/sapdon:particle_shape <shape> <motion> [color] [color2] [duration] [trail] [spin] [radius] [turns] [p1] [p2] [pos]
+/sapdon:particle_math <expr> [mode] [count] [duration] [trail] [dt] [radius] [color]
 ```
 
 ### 4.3 基础示例
@@ -113,11 +115,20 @@ dev/newColorParticle_RP/   资源包
 ```text
 /sapdon:particle galaxy                          # 播放"星系"预设
 /sapdon:particle heart red pink                  # 心动爱心，改成红→粉渐变
-/sapdon:particle sphere 60 20                    # 呼吸球体，时长60秒、残影20刻
-/sapdon:particle_shape superflower spin_breathe pink purple   # 超公式花 呼吸旋转 粉紫渐变
-/sapdon:particle_shape knot spin_turns gold purple            # 三叶纽结 双圈旋转 金紫渐变
-/sapdon:particle_list                            # 查看全部可用内容
-/sapdon:particle_clear                           # 清空画面上的粒子
+/sapdon:particle sphere 60 20                    # 呼吸球体，存续60刻、残影20刻
+
+# 数学表达式粒子（expr 含空格/分号，需用双引号或引号括起来）
+/sapdon:particle_math "x=sin(t*6.28)*r;y=cos(t*6.28)*r;z=t*2*r" count 300
+/sapdon:particle_math "x=sin(t*6.28)*r;y=cos(t*6.28)*r;z=0" count 200 radius 3 cyan
+
+# Molang 全能粒子（配方 + 可选参数覆盖）
+/sapdon:mfx ring                             # 旋转光环
+/sapdon:mfx heart radius 2 life 100          # 心动爱心 放大、寿命100刻
+/sapdon:mfx spiral radius 3 turns 2 color red
+
+/sapdon:particle_list                        # 查看全部可用内容
+/sapdon:mfx_list                             # 查看 Molang 配方
+/sapdon:particle_clear                       # 清空画面上的粒子
 ```
 
 > **提示**：指令里的尖括号 `<...>` 表示必填参数，方括号 `[...]` 表示可选参数。可选参数可以省略，程序会使用默认值。
@@ -126,80 +137,113 @@ dev/newColorParticle_RP/   资源包
 
 ## 5. 可选参数详解
 
-### 5.1 通用参数（两类指令都可用）
+### 5.1 `particle` 通用参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `color` | 字符串 | 蓝 `blue` | 粒子主色 |
-| `duration` | 数值 | `10` | 效果持续时间（秒） |
-| `trail` | 整数 | `2` | 残影长度（游戏刻），越大轨迹越长 |
+| `duration` | 整数 | `60` | 效果存续时间（游戏刻，20 刻 = 1 秒） |
+| `trail` | 整数 | `1` | 残影长度（游戏刻），越大轨迹越长 |
 | `spin` | 数值 | `0` | 粒子自旋速率 |
 | `radius` | 数值 | `1.5` | 形状半径（相对大小） |
 | `pos` | 坐标 | 施法者位置 | 粒子中心落点坐标 |
 
-### 5.2 `particle_shape` 专用参数
-
-`particle_shape` 追加了 4 个高级参数：
+### 5.2 `particle_math` 参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `motion` | 枚举（必填） | — | 粒子运动方式（见附录运动表） |
-| `color2` | 字符串 | 无 | 渐变色尾色；传 `cycle` 则做 RGB 循环 |
-| `turns` | 数值 | `1` | 旋转圈数 |
-| `p1` | 数值 | 依形状 | 形状高级参数（见 5.4） |
-| `p2` | 数值 | 依形状 | 形状高级参数（见 5.4） |
+| `expr` | 字符串（必填） | — | 数学表达式，多条 `变量=公式` 用 `;` 分隔 |
+| `mode` | 枚举 | `param` | `param`：沿 t 铺曲线；`surface`：用 i/n 铺曲面 |
+| `count` | 整数 | `120` | 采样粒子总数 |
+| `duration` | 整数 | `60` | 效果存续时间（游戏刻，20 刻 = 1 秒） |
+| `trail` | 整数 | `1` | 残影长度（游戏刻） |
+| `dt` | 数值 | `0.01` | t 的采样步长（越小越密，受 count 上限约束） |
+| `radius` | 数值 | `1.5` | 半径（表达式里的 `r` 即此值） |
+| `color` | 字符串 | 蓝 `blue` | 整组缺省色（expr 输出 `red/green/blue` 时自动逐点覆盖） |
 
-### 5.3 颜色写法
+> **性能提示**：两指令的 `duration`、`trail` 均以**游戏刻(tick)**计（20 刻 = 1 秒）。`particle_math` 每刻会重刷所有点，`count` 越大越密集也越卡；默认值已偏低，按需再往上调。
 
-`color` / `color2` 支持三种写法：
+### 5.3 Molang 全能粒子（`mfx`）
+
+`mfx` 是**单个预烘焙的 Molang 粒子**：脚本只算好每个粒子的初始位置并传参，粒子的**轨迹 / 颜色渐变 / 大小演化 / 旋转 / 淡出**全部由粒子 JSON 里的 Molang 表达式用 `variable.particle_age` 自己计算，不再逐 tick 重刷——性能最优，最适合成品特效。
+
+```
+/sapdon:mfx <preset> [radius] [turns] [life] [count] [color] [pos]
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `preset` | 枚举（必填） | — | 配方名（`/sapdon:mfx_list` 查看） |
+| `radius` | 数值 | 配方默认 | 半径（也用作 wave 振幅） |
+| `turns` | 数值 | 配方默认 | 旋转圈数（spin/spiral） |
+| `life` | 整数 | `60` | 粒子寿命（游戏刻） |
+| `count` | 整数 | 全部 | 抽样粒子数（超过则均匀抽稀） |
+| `color` | 字符串 | 配方默认 | 覆盖主色（命名色 / RGB） |
+| `pos` | 坐标 | 施法者位置 | 中心落点 |
+
+**内置配方（7 个）**：`ring`(旋转光环)、`sphere`(呼吸球体)、`spiral`(上升螺旋)、`heart`(心动爱心)、`lissajous`(3D利萨如)、`rose`(玫瑰线)、`torus`(参数环面)。
+
+> **与 `particle_math` 的关系（双方案）**：`mfx` = 作者期把公式烘焙进 Molang，数学在粒子内、性能最好，适合成品特效；`particle_math` = 运行期任意表达式，数学在脚本，最灵活。日常用 `mfx`，要完全自定义形状再上 `particle_math`。
+
+### 5.4 数学表达式（DSL）语法
+
+参考 Java 模组 **AnotherColorBlock** 的表达式风格。你只需把「粒子的位置写成含 `t` 的方程」。
+
+**内置变量 / 常量：**
+
+| 名称 | 含义 |
+|------|------|
+| `t` | 进度，0→1 |
+| `i` | 粒子序号 |
+| `n` | 粒子总数 |
+| `r` | 半径（`radius` 参数） |
+| `PI` / `E` / `TAU` | 常量 π / 自然常数 / 2π |
+
+**输出变量：** 必须给出 `x,y,z`（相对中心的位置）；可选 `red,green,blue`（0~1，逐粒子着色）。
+
+**支持的函数：** `sin cos tan asin acos atan atan2 sqrt abs floor ceil round exp log ln pow min max sign mod clamp deg rad`
+
+**语法要点：**
+- 赋值用 `=`，多条用 `;` 分隔，可定义中间变量再复用：`a=5;u=floor(t/78.5)/25;x=a*cos(u);...`
+- 支持 `+ - * / ^ %`、括号、一元负号；**隐式乘**（`2PI`、`3t`、`2(x+1)` 自动视为乘法）
+- 前缀 `^` 为幂运算，右结合（`2^3^2 = 2^(3^2)`）
+
+### 5.5 颜色写法（`particle` 的 `color` 参数）
 
 | 写法 | 示例 | 说明 |
 |------|------|------|
 | 命名色 | `red`、`gold`、`cyan` | 内置 12 种颜色（见附录颜色表） |
 | RGB 值 | `255,0,128` | 用英文逗号分隔的 0~255 三通道 |
-| 关键字 | `cycle` | RGB 循环渐变（红→绿→蓝→红） |
+| 关键字 | `cycle` | RGB 循环渐变（仅 `particle` 预设指令支持） |
 
-**渐变逻辑**：同时提供 `color` 和 `color2` 时，粒子色随时间在两者间渐变；`color2` 设成 `cycle` 则主色参与循环。
+`particle_math` 的 `color` 参数只接受命名色 / RGB 固态色；如需逐点渐变，直接在表达式里写 `red,green,blue` 输出（见 5.3）。
 
-### 5.4 形状的高级参数（p1 / p2）
-
-部分数学形状可用 `p1` / `p2` 微调形态：
-
-| 形状 | p1 含义 | p2 含义 |
-|------|---------|---------|
-| `fib_sphere` | 点数（默认 240） | — |
-| `knot` | 纽结 p（默认 2） | 纽结 q（默认 3） |
-| `rose` | 瓣数 k（默认 5） | — |
-| `lissajous` | X 频率（默认 3） | Y 频率（默认 2） |
-| `superflower` | 对称瓣数 m（默认 4） | 形状参数 n1（默认 0.3） |
-| `sierpinski` | 迭代点数（默认 700） | — |
-
-> **注意**：`pos` 允许坐标格式（如 `100 64 100`），也支持相对坐标（`~ ~ ~`）。指令由**命令方块**执行时会以方块中心为默认位置。
+> **注意**：表达式里的位置 `x,y,z` 会自动乘上 `radius`（通过 `r` 参与），也可在表达式内自定尺度。指令由**命令方块**执行时，粒子以方块中心为原点。
 
 ---
 
 ## 6. 进阶玩法示例
 
-把形状 × 运动 × 渐变组合，能做出很多炫酷效果：
+把数学形状 × 运动 × 颜色写成表达式，能做出很多炫酷效果：
 
 ```text
-# 波纹涌动：斐波那契球 + 行波
-/sapdon:particle_shape fib_sphere wave cyan purple
+# 圆形螺旋（t 控制 3 圈 + 上升）
+/sapdon:particle_math "x=sin(t*6.28)*r;y=cos(t*6.28)*r;z=t*2*r" count 300
 
-# 星环公转 + 自转
-/sapdon:particle_shape lissajous spin green cyan
+# 平面心形线
+/sapdon:particle_math "c=16*sin(t)^3;u=13*cos(t)-5*cos(2*t)-2*cos(3*t)-cos(4*t);x=c*r;y=-u*r;z=0" count 200
 
-# 热浪抖动：谢尔宾斯基分形随机抖动
-/sapdon:particle_shape sierpinski jitter red orange
+# 3D 环面（用 i/n 做第二维铺面）
+/sapdon:particle_math "a=i/n*6.28;b=(i%40)/40*6.28;x=(1+0.4*cos(b))*cos(a)*r;y=0.4*sin(b)*r;z=(1+0.4*cos(b))*sin(a)*r" mode surface count 400
 
-# 慢速旋转光环（半径放大）
-/sapdon:particle_shape ring spin_turns blue purple 20 1 0 0 3
+# 波浪曲面
+/sapdon:particle_math "x=(i/n*2-1)*r;y=sin(t*6.28+i)*r;z=(t*2-1)*r" mode surface count 400
 
-# 持续很久的洛伦兹吸引子流
-/sapdon:particle_shape path:lorenz flow cycle      120 3
+# 渐变着色的螺旋（表达式同时输出 red/green/blue）
+/sapdon:particle_math "x=sin(t*6.28)*r;y=cos(t*6.28)*r;z=t*2*r;red=0.5+0.5*sin(t*6);green=0.3;blue=0.9" count 300
 ```
 
-> **提示**：特效太多可以用 `/sapdon:particle_clear` 一键清屏；想了解某预设内部由哪些层组成，可查看本示例的 `scripts/effects.ts`。
+> **提示**：表达式越精细、`count` 越大，粒子越密集——记得控制数量避免卡顿。特效太多可用 `/sapdon:particle_clear` 一键清屏。想了解预设效果的内部公式，可参考本示例 `scripts/effects.ts`。
 
 ---
 
@@ -208,6 +252,8 @@ dev/newColorParticle_RP/   资源包
 你可以用 `/sapdon:particle_list` 在游戏内随时查看到以下全部内容。
 
 ### 7.1 预设列表（16 个）
+
+这些预设由 `/sapdon:particle <预设>` 触发，其内部形状/运动见 7.2 / 7.3。
 
 | 预设 id | 中文名 | 预设 id | 中文名 |
 |---------|--------|---------|--------|
@@ -221,17 +267,26 @@ dev/newColorParticle_RP/   资源包
 | — | — | `sierpinski` | 谢尔宾斯基分形 |
 | — | — | `wave_sphere` | 波动球面 |
 
-### 7.2 形状列表
+### 7.2 数学模式（`particle_math` 的 `mode`）
+
+| 模式 | 说明 |
+|------|------|
+| `param` | 沿 `t:0→1` 铺出曲线（默认） |
+| `surface` | 用 `i/n` 做第二维，铺满曲面 |
+
+> **说明**：旧指令 `/sapdon:particle_shape` 因超出引擎 8 参数上限从未生效，已由更灵活的 `/sapdon:particle_math` 取代。下方形状/运动/颜色表供 `/sapdon:particle` 预设参考；写自由形状请直接用 `particle_math` 表达式。
+
+### 7.3 形状列表
 
 **普通形状**：`sphere`、`cube`、`ring`、`ring_tilt`、`ring_tilt2`、`helix`、`heart`、`star`、`fib_sphere`、`torus`、`knot`、`rose`、`lissajous`、`mobius`、`spirograph`、`superflower`、`sierpinski`
 
 **路径轨迹**（`path:` 前缀）：`path:lorenz`、`path:rossler`、`path:thomas`、`path:aizawa`、`path:dejong`、`path:henon`
 
-### 7.3 运动列表（12 个）
+### 7.4 运动列表（12 个）
 
 `still`（静止）、`spin`（旋转）、`spin_rev`（反转）、`spin_turns`（多圈旋转）、`pulse`（脉冲缩放）、`heartbeat`（心动）、`spin_breathe`（旋转呼吸）、`rise`（上升）、`flow`（沿路径流动）、`wave`（行波）、`phase`（相位呼吸）、`jitter`（随机抖动）
 
-### 7.4 颜色表（12 个命名色）
+### 7.5 颜色表（12 个命名色）
 
 | 名称 | RGB | 名称 | RGB |
 |------|-----|------|-----|
@@ -242,11 +297,11 @@ dev/newColorParticle_RP/   资源包
 | `gold` | 0.999, 0.85, 0.1 | `silver` | 0.7, 0.7, 0.7 |
 | `white` | 0.999, 0.999, 0.999 | `black` | 0.05, 0.05, 0.05 |
 
-另支持自定义 RGB（如 `255,128,0`）与 `cycle` 关键字。
+另支持自定义 RGB（如 `255,128,0`）；`particle` 指令还支持 `cycle` 关键字做 RGB 轮换。
 
 ---
 
 ### 下一步
 
-- 浏览源码理解实现：`scripts/effects.ts`（预设/形状/运动）、`scripts/particles.ts`（粒子调度器）、`scripts/mathfx.ts`（数学光效）
+- 浏览源码理解实现：`scripts/expr.ts`（数学表达式解析器，可 `node --experimental-strip-types test/expr.test.mjs` 单测）、`scripts/mathexpress.ts`（表达式铺点）、`scripts/effects.ts`（预设/形状/运动）、`scripts/particles.ts`（粒子调度器）、`scripts/mathfx.ts`（数学光效）
 - 想改默认效果，直接编辑 `scripts/effects.ts` 中 `PRESETS` 表后重新 `npm run build`

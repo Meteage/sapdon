@@ -85,10 +85,12 @@ export class ColorParticleManager {
         basePoints: number[][],
         color: Color | ((t: number) => Color),
         opts: {
-            duration?: number;
+            durationTicks?: number;
             trail?: number;
             spin?: number;
             tick?: number;
+            // 逐点颜色：存在时按序号返回对应点颜色，优先于 color
+            perPointColor?: (index: number) => Color | undefined;
             movementFn: (center: Vector3, basePoint: number[], index: number, elapsedTick: number, totalTicks: number) => Vector3;
         },
     ) {
@@ -98,8 +100,8 @@ export class ColorParticleManager {
             basePoints,
             color,
             spin: opts.spin ?? 0,
-            trail: opts.trail ?? 2,
-            totalTicks: Math.round((opts.duration ?? 10) * 20),
+            trail: opts.trail ?? 1,
+            totalTicks: opts.durationTicks ?? 60,
             elapsed: 0,
             movementFn: opts.movementFn,
             handle: null,
@@ -114,14 +116,20 @@ export class ColorParticleManager {
                 if (i >= 0) ColorParticleManager.groups.splice(i, 1);
                 return;
             }
-            const c = typeof group.color === "function" ? group.color(group.elapsed / group.totalTicks) : group.color;
             const vars = new MolangVariableMap();
-            vars.setFloat("variable.color_r", c.r);
-            vars.setFloat("variable.color_g", c.g);
-            vars.setFloat("variable.color_b", c.b);
             vars.setFloat("variable.lifetime", group.trail / 20);
             vars.setFloat("variable.spin", group.spin);
             for (let i = 0; i < group.basePoints.length; i++) {
+                let c: Color;
+                if (opts.perPointColor) {
+                    const pc = opts.perPointColor(i);
+                    c = pc ?? (typeof group.color === "function" ? group.color(0) : group.color);
+                } else {
+                    c = typeof group.color === "function" ? group.color(group.elapsed / group.totalTicks) : group.color;
+                }
+                vars.setFloat("variable.color_r", c.r);
+                vars.setFloat("variable.color_g", c.g);
+                vars.setFloat("variable.color_b", c.b);
                 const pos = group.movementFn(group.center, group.basePoints[i], i, group.elapsed, group.totalTicks);
                 try {
                     group.dimension.spawnParticle(PARTICLE_ID, pos, vars);
