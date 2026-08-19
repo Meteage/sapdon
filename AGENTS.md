@@ -44,6 +44,9 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 ## 通用经验
 
 - **粒子**：原版 basic 粒子会引用 `variable.direction`，需用 `new MolangVariableMap().setVector3("variable.direction", v)` 作为 `spawnParticle` 第三参传入，否则报 `unknown variable '.z'`；偏移显示位置直接改传入的 `location`。
+- **Molang 变量名统一小写**：粒子 JSON 里引用 `variable.xxx` 与脚本 `MolangVariableMap.setFloat(variable.xxx)` 必须**全小写**（运行时会小写化查询；`variable.A0`/`variable.colorMode`/`variable.fadeMode` 都会报 `unhandled request for unknown variable 'variable.a0/colormode/fademode'`）。
+- **粒子 parametric 位置**：`particle_motion_parametric.relative_position` 要与 `variable.emitter_age`（发射器 loop 内年龄，秒）配合才能逐帧移动且 `math.sin` 正常工作；用 `variable.particle_age` 做 sin 相位常不振荡。sin/cos 按**角度制**（`sin(emitter_age*360)` 一周），弧度数值需 `×57.2958`。脚本 `spawnParticle`（手动发射）的 parametric 未必可靠，改用发射器驱动（`emitter_local_space.position:true` + `rate_steady/instant` + `emitter_shape.offset` 用 `emitter_age`）。
+- **Molang 数学函数**：无 `math.log`，自然对数用 `math.ln`；`math.exp/math.abs/math.pow/sin/cos` 可用。
 
 ---
 

@@ -1,0 +1,49 @@
+{
+	"format_version": "1.21.0",
+	"particle_effect": {
+		"description": {
+			"identifier": "sapdon:mfx_stream",
+			"basic_render_parameters": {
+				"material": "particles_alpha",
+				"texture": "textures/particle/particles"
+			}
+		},
+		"components": {
+			"minecraft:emitter_rate_steady": {
+				"max_particles": "variable.flowmax",
+				"spawn_rate": "variable.flow"
+			},
+			"minecraft:emitter_lifetime_looping": {
+				"active_time": "variable.flowtime",
+				"sleep_time": 0.0
+			},
+			"minecraft:emitter_shape_point": {
+				"direction": [ "0.0", "1.0", "0.0" ]
+			},
+			"minecraft:particle_initial_speed": "variable.speed * (0.6 + 0.8 * variable.particle_random_1)",
+			"minecraft:particle_motion_dynamic": {
+				"linear_acceleration": [ "0.0", "variable.gravity", "0.0" ],
+				"linear_drag_coefficient": "variable.drag"
+			},
+			"minecraft:particle_lifetime_expression": {
+				"max_lifetime": "variable.life"
+			},
+			"minecraft:particle_appearance_billboard": {
+				"size": [
+					"(variable.sizemode == 0) ? variable.size0 : (variable.sizemode == 1) ? (variable.size0 * (0.5 + 0.5 * math.sin(3.1415927*(variable.particle_age/variable.particle_lifetime)))) : (variable.size0 * (1.0 - variable.particle_age/variable.particle_lifetime))",
+					"(variable.sizemode == 0) ? variable.size0 : (variable.sizemode == 1) ? (variable.size0 * (0.5 + 0.5 * math.sin(3.1415927*(variable.particle_age/variable.particle_lifetime)))) : (variable.size0 * (1.0 - variable.particle_age/variable.particle_lifetime))"
+				],
+				"facing_camera_mode": "rotate_xyz",
+				"uv": { "texture_width": 128, "texture_height": 128, "uv": [49, 88], "uv_size": [8, 8] }
+			},
+			"minecraft:particle_appearance_tinting": {
+				"color": [
+					"(variable.colormode == 0) ? variable.cr : (variable.colormode == 1) ? math.lerp(variable.cr, variable.c2r, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555)*0.5+0.5, 0, 1) : math.clamp(1.0 - 1.5*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.colormode == 0) ? variable.cg : (variable.colormode == 1) ? math.lerp(variable.cg, variable.c2g, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 2.0943951)*0.5+0.5, 0, 1) : math.clamp(1.0 - 3.0*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.colormode == 0) ? variable.cb : (variable.colormode == 1) ? math.lerp(variable.cb, variable.c2b, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : math.clamp(1.0 - 5.0*(variable.particle_age/variable.particle_lifetime), 0, 1)",
+					"(variable.fademode == 0) ? math.clamp(1.0 - variable.particle_age/variable.particle_lifetime, 0, 1) : (variable.fademode == 1) ? math.clamp(4.0*(variable.particle_age/variable.particle_lifetime)*(1.0 - variable.particle_age/variable.particle_lifetime), 0, 1) : 1.0"
+				]
+			}
+		}
+	}
+}

@@ -181,11 +181,23 @@ dev/newColorParticle_RP/   资源包
 | `color` | 字符串 | 配方默认 | 覆盖主色（命名色 / `R,G,B`） |
 | `pos` | 坐标 | 施法者位置 | 中心落点 |
 
-**内置配方（12 个）**：
-- 基础：`ring`(旋转光环)、`sphere`(呼吸球体)、`spiral`(上升螺旋)、`heart`(心动爱心)、`lissajous`(3D利萨如)、`rose`(玫瑰线)、`torus`(参数环面)
-- A-1 新增：`cone`(喷锥)、`bounce`(弹跳盘)、`orbit`(流转轨道)、`heat`(余烬/白热)、`sprite`(序列帧火苗)
+**内置配方（17 个）**：
+- universal（parametric，脚本铺点 + Molang 轨迹）：`ring`(旋转光环)、`sphere`(呼吸球体)、`spiral`(上升螺旋)、`heart`(心动爱心)、`lissajous`(3D利萨如)、`rose`(玫瑰线)、`torus`(参数环面)、`cone`(喷锥)、`bounce`(弹跳盘)、`orbit`(流转轨道)、`heat`(余烬/白热)、`sprite`(序列帧火苗)
+- A-2 伴生粒子（互斥模型）：`gust`(喷发气流/dynamic)、`spring`(喷泉/stream)、`halo`(光环爆发/shape_disc)、`snowstorm`(雪片风暴/shape_box)、`starfield`(星空爆发/shape_sphere)
+- uni（全能表达式）：`uni_linear`(x=t)、`uni_sine`(x=5·sin t)、`uni_cos`(x=5·cos t)、`uni_parabolic`(x=0.5·t²)、`uni_mix`(x=2t+3·sin 2t)、`uni_sinpar`(x=3·sin t+0.5·t²)、`uni_spiral`(螺旋上升)、`uni_lissajous`(利萨如)
 
-**配方驱动的能力矩阵**（差异靠 `variable.*` 分支选择）：
+**uni 全能表达式**：`x / y / z = Σ Aᵢ·fᵢ(Bᵢ·t + Cᵢ) + D`，`t=variable.emitter_age`。函数 type：`0`线性 `1`平方 `2`sin `3`cos `4`exp `5`exp⁻ `6`abs `7`ln。sin/cos 为**角度制**（`B`≈每秒角度数，`B=1`≈4.7°/s·…·慢；`B=18`≈3 圈/s）。
+
+**配方实现的模型（kind）**：
+
+| kind | 对应粒子 | 运动/发射模型 |
+|------|---------|--------------|
+| `universal` | `mfx_universal` | parametric：轨迹由 Molang 演化（见能力矩阵） |
+| `dynamic` | `mfx_dynamic` | 初速度 + 重力/拖曳/碰撞（物理粒子） |
+| `stream` | `mfx_stream` | 持续/循环发射（喷泉/火焰流） |
+| `shape_disc/sphere/box` | `mfx_shape_*` | 原生随机分布，一次爆发（脚本最省） |
+
+**能力矩阵（universal，差异靠 `variable.*` 分支选择）**：
 
 | 能力轴 | 可选分支（Molang 三元） |
 |--------|------------------------|
@@ -195,9 +207,9 @@ dev/newColorParticle_RP/   资源包
 | 淡出 `fadeMode` | `0`out `1`inout `2`none |
 | 序列帧 `maxframe` | `1`=静态；`N`=N 帧动画（配合起始 UV） |
 
-> 现有 `billboard.uv` 已改为 flipbook 驱动：`maxframe=1` 时等价静态帧（现有配方外观不变），`maxframe>1` 时做序列帧动画。
+> 色彩/大小/淡出/寿命契约在全部伴生粒子间统一；`dynamic`/`stream` 还接受 `speed/gravity/drag/collide/flow` 等由配方烘焙的参数。
 
-> **与 `particle_math` 的关系（双方案）**：`mfx` = 作者期把公式烘焙进 Molang，数学在粒子内、性能最好，适合成品特效；`particle_math` = 运行期任意表达式，数学在脚本，最灵活。日常用 `mfx`，要完全自定义形状再上 `particle_math`。重力/碰撞/原生随机分布/持续发射属互斥模型，将由后续伴生粒子（`mfx_dynamic`/`mfx_shape_*`/`mfx_stream`）补齐。
+> **与 `particle_math` 的关系（双方案）**：`mfx` = 作者期把公式烘焙进 Molang，数学在粒子内、性能最好，适合成品特效；`particle_math` = 运行期任意表达式，数学在脚本，最灵活。日常用 `mfx`，要完全自定义形状再上 `particle_math`。
 
 ### 5.4 数学表达式（DSL）语法
 
