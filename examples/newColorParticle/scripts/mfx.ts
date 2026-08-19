@@ -5,11 +5,11 @@
 //   dynamic    → mfx_dynamic（初速度 + 重力/拖曳/碰撞）
 //   stream     → mfx_stream（持续/循环发射）
 //   shape_disc/sphere/box → mfx_shape_*（原生随机分布，一次爆发）
-// 与 expr/particle_math（任意表达式脚本求值）互为双方案。
+// 运动全部由粒子/发射器自驱动；脚本只生成初始形状并传参。
 // ============================================================
 import { Dimension, Vector3, MolangVariableMap } from "@minecraft/server";
 import { getShapePoints } from "./effects.js";
-import { resolveSolidColor } from "./mathexpress.js";
+import { resolveSolidColor } from "./colors.js";
 
 export type MfxKind =
   | "universal" | "dynamic" | "stream"

@@ -12,16 +12,15 @@
 			"minecraft:emitter_rate_instant": {
 				"num_particles": 1
 			},
-			"minecraft:emitter_lifetime_once": {},
 			"minecraft:emitter_shape_point": {},
 			"minecraft:particle_lifetime_expression": {
 				"max_lifetime": "variable.life"
 			},
 			"minecraft:particle_motion_parametric": {
 				"relative_position": [
-					"(variable.motion == 0) ? variable.px : (variable.motion == 1) ? (variable.px * math.cos(variable.turns*6.2831853*variable.particle_age) + variable.pz * math.sin(variable.turns*6.2831853*variable.particle_age)) : (variable.motion == 2) ? variable.px : (variable.motion == 3) ? (variable.px * math.cos(variable.turns*6.2831853*variable.particle_age) + variable.pz * math.sin(variable.turns*6.2831853*variable.particle_age)) : (variable.motion == 4) ? (variable.px * (1.0 + 0.9 * math.sin(1.5707963*variable.particle_age))) : (variable.motion == 5) ? variable.px : (variable.motion == 6) ? (variable.px * (1.0 + variable.radius*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.px + variable.radius*0.3*math.sin(12.5663706*variable.particle_age + variable.phase)) : (variable.motion == 8) ? variable.px : variable.radius*math.cos(variable.phase*6.2831853 + 6.2831853*variable.turns*variable.particle_age)",
-					"(variable.motion == 0) ? variable.py : (variable.motion == 1) ? variable.py : (variable.motion == 2) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 3) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 4) ? (variable.py * (1.0 + 0.9 * math.sin(1.5707963*variable.particle_age))) : (variable.motion == 5) ? (variable.py + variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*variable.particle_age)) : (variable.motion == 6) ? (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime)) : (variable.motion == 7) ? variable.py : (variable.motion == 8) ? (variable.py + variable.radius*math.abs(math.sin(6.2831853*variable.particle_age))) : (variable.py + variable.rise*(variable.particle_age/variable.particle_lifetime))",
-					"(variable.motion == 0) ? variable.pz : (variable.motion == 1) ? (-variable.px * math.sin(variable.turns*6.2831853*variable.particle_age) + variable.pz * math.cos(variable.turns*6.2831853*variable.particle_age)) : (variable.motion == 2) ? variable.pz : (variable.motion == 3) ? (-variable.px * math.sin(variable.turns*6.2831853*variable.particle_age) + variable.pz * math.cos(variable.turns*6.2831853*variable.particle_age)) : (variable.motion == 4) ? (variable.pz * (1.0 + 0.9 * math.sin(1.5707963*variable.particle_age))) : (variable.motion == 5) ? variable.pz : (variable.motion == 6) ? (variable.pz * (1.0 + variable.radius*(variable.particle_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.pz + variable.radius*0.3*math.cos(12.5663706*variable.particle_age + variable.phase)) : (variable.motion == 8) ? variable.pz : variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*variable.turns*variable.particle_age)"
+					"(variable.motion == 0) ? variable.px : (variable.motion == 1) ? (variable.px * math.cos(variable.turns*6.2831853*variable.emitter_age) + variable.pz * math.sin(variable.turns*6.2831853*variable.emitter_age)) : (variable.motion == 2) ? variable.px : (variable.motion == 3) ? (variable.px * math.cos(variable.turns*6.2831853*variable.emitter_age) + variable.pz * math.sin(variable.turns*6.2831853*variable.emitter_age)) : (variable.motion == 4) ? (variable.px * (1.0 + 0.9 * math.sin(1.5707963*variable.emitter_age))) : (variable.motion == 5) ? variable.px : (variable.motion == 6) ? (variable.px * (1.0 + variable.radius*(variable.emitter_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.px + variable.radius*0.3*math.sin(12.5663706*variable.emitter_age + variable.phase)) : (variable.motion == 8) ? variable.px : variable.radius*math.cos(variable.phase*6.2831853 + 6.2831853*variable.turns*variable.emitter_age)",
+					"(variable.motion == 0) ? variable.py : (variable.motion == 1) ? variable.py : (variable.motion == 2) ? (variable.py + variable.rise*(variable.emitter_age/variable.particle_lifetime)) : (variable.motion == 3) ? (variable.py + variable.rise*(variable.emitter_age/variable.particle_lifetime)) : (variable.motion == 4) ? (variable.py * (1.0 + 0.9 * math.sin(1.5707963*variable.emitter_age))) : (variable.motion == 5) ? (variable.py + variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*variable.emitter_age)) : (variable.motion == 6) ? (variable.py + variable.rise*(variable.emitter_age/variable.particle_lifetime)) : (variable.motion == 7) ? variable.py : (variable.motion == 8) ? (variable.py + variable.radius*math.abs(math.sin(6.2831853*variable.emitter_age))) : (variable.py + variable.rise*(variable.emitter_age/variable.particle_lifetime))",
+					"(variable.motion == 0) ? variable.pz : (variable.motion == 1) ? (-variable.px * math.sin(variable.turns*6.2831853*variable.emitter_age) + variable.pz * math.cos(variable.turns*6.2831853*variable.emitter_age)) : (variable.motion == 2) ? variable.pz : (variable.motion == 3) ? (-variable.px * math.sin(variable.turns*6.2831853*variable.emitter_age) + variable.pz * math.cos(variable.turns*6.2831853*variable.emitter_age)) : (variable.motion == 4) ? (variable.pz * (1.0 + 0.9 * math.sin(1.5707963*variable.emitter_age))) : (variable.motion == 5) ? variable.pz : (variable.motion == 6) ? (variable.pz * (1.0 + variable.radius*(variable.emitter_age/variable.particle_lifetime))) : (variable.motion == 7) ? (variable.pz + variable.radius*0.3*math.cos(12.5663706*variable.emitter_age + variable.phase)) : (variable.motion == 8) ? variable.pz : variable.radius*math.sin(variable.phase*6.2831853 + 6.2831853*variable.turns*variable.emitter_age)"
 				],
 				"rotation": "variable.spin * variable.particle_age"
 			},
@@ -35,9 +34,18 @@
 					"texture_width": 128,
 					"texture_height": 128,
 					"flipbook": {
-						"base_UV": ["variable.uvx", "variable.uvy"],
-						"size_UV": [8, 8],
-						"step_UV": [8, 0],
+						"base_UV": [
+							"variable.uvx",
+							"variable.uvy"
+						],
+						"size_UV": [
+							8,
+							8
+						],
+						"step_UV": [
+							8,
+							0
+						],
 						"frames_per_second": 8,
 						"max_frame": "variable.maxframe",
 						"loop": true
@@ -51,6 +59,10 @@
 					"(variable.colormode == 0) ? variable.cb : (variable.colormode == 1) ? math.lerp(variable.cb, variable.c2b, variable.particle_age/variable.particle_lifetime) : (variable.colormode == 2) ? math.clamp(math.sin((variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : (variable.colormode == 3) ? math.clamp(math.sin((variable.phase + variable.particle_age/variable.particle_lifetime)*18.849555 + 4.1887902)*0.5+0.5, 0, 1) : math.clamp(1.0 - 5.0*(variable.particle_age/variable.particle_lifetime), 0, 1)",
 					"(variable.fademode == 0) ? math.clamp(1.0 - variable.particle_age/variable.particle_lifetime, 0, 1) : (variable.fademode == 1) ? math.clamp(4.0*(variable.particle_age/variable.particle_lifetime)*(1.0 - variable.particle_age/variable.particle_lifetime), 0, 1) : 1.0"
 				]
+			},
+			"minecraft:emitter_lifetime_looping": {
+				"active_time": "variable.life",
+				"sleep_time": 0
 			}
 		}
 	}
