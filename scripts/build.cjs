@@ -30,7 +30,8 @@ async function build(type, execStr, taskName = execStr) {
       if (type === 'file') {
         child = cp.spawn('node', ['--no-warnings', execStr])
       } else {
-        child = cp.exec(execStr)
+        const [cmd, ...cmdArgs] = execStr.split(' ')
+        child = cp.execFile(cmd, cmdArgs)
       }
 
       let stderrData = ''
