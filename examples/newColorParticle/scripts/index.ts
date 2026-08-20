@@ -1,5 +1,6 @@
 import { system, Dimension, Vector3, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus, CustomCommandSource } from "@minecraft/server";
-import { spawnMfx, MFX_PRESETS, MFX_PRESET_IDS } from "./mfx.js";
+import { spawnMfx, MFX_PRESETS, MFX_PRESET_IDS, spawnUniCustom, parseCurve, uniHelpText, spawnShapeSculpt, sculptHelpText } from "./mfx.js";
+import { SHAPE_IDS } from "./effects.js";
 
 // ============================================================
 // 指令来源解析：支持玩家/实体与命令方块（sourceType=Block）
@@ -30,18 +31,18 @@ system.beforeEvents.startup.subscribe((init) => {
         }
     };
 
-    safe("registerEnum(mfx_preset)", () => reg.registerEnum("sapdon:mfx_preset_enum", MFX_PRESET_IDS));
+    safe("registerEnum(mfx_preset)", () => reg.registerEnum("colorparticle:mfx_preset_enum", MFX_PRESET_IDS));
 
     // ----------------------------------------------------------
-    // /sapdon:mfx <preset> [radius] [turns] [life] [count] [color] [pos]
+    // /colorparticle:mfx <preset> [radius] [turns] [life] [count] [color] [pos]
     // ----------------------------------------------------------
     safe("registerCommand(mfx)", () => reg.registerCommand({
-        name: "sapdon:mfx",
+        name: "colorparticle:mfx",
         description: "用 Molang 全能粒子生成效果",
         permissionLevel: CommandPermissionLevel.Any,
         cheatsRequired: false,
         mandatoryParameters: [
-            { name: "sapdon:mfx_preset_enum", type: CustomCommandParamType.Enum },
+            { name: "colorparticle:mfx_preset_enum", type: CustomCommandParamType.Enum },
         ],
         optionalParameters: [
             { name: "radius", type: CustomCommandParamType.Float },
@@ -71,16 +72,121 @@ system.beforeEvents.startup.subscribe((init) => {
     }));
 
     // ----------------------------------------------------------
-    // /sapdon:mfx_list
+    // /colorparticle:mfx_list
     // ----------------------------------------------------------
     safe("registerCommand(mfx_list)", () => reg.registerCommand({
-        name: "sapdon:mfx_list",
+        name: "colorparticle:mfx_list",
         description: "列出所有 Molang 全能粒子配方",
         permissionLevel: CommandPermissionLevel.Any,
         cheatsRequired: false,
     }, () => {
         const list = MFX_PRESET_IDS.map((id) => `${id}(${MFX_PRESETS[id].label})`).join(", ");
         return { status: CustomCommandStatus.Success, message: `[mfx 配方] ${list}` };
+    }));
+
+    console.warn(`[mfx-cmd] 指令注册完成：配方=${MFX_PRESET_IDS.length}`);
+
+    // ----------------------------------------------------------
+    // /colorparticle:uni <curve> [life] [color] [size] [sizemode] [fademode] [pos]
+    // ----------------------------------------------------------
+    safe("registerCommand(uni)", () => reg.registerCommand({
+        name: "colorparticle:uni",
+        description: "自定义单 uni 粒子（关键字式 DSL 驱动三轴运动）",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        mandatoryParameters: [
+            { name: "curve", type: CustomCommandParamType.String },
+        ],
+        optionalParameters: [
+            { name: "life",     type: CustomCommandParamType.Integer },
+            { name: "color",    type: CustomCommandParamType.String },
+            { name: "size",     type: CustomCommandParamType.Float },
+            { name: "sizemode", type: CustomCommandParamType.Integer },
+            { name: "fademode", type: CustomCommandParamType.Integer },
+            { name: "colormode",type: CustomCommandParamType.Integer },
+            { name: "pos",      type: CustomCommandParamType.Location },
+        ],
+    }, (origin, curve?: string, life?: number, color?: string, size?: number, sizemode?: number, fademode?: number, colormode?: number, pos?: any) => {
+        const src = resolveOrigin(origin, pos);
+        if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
+        if (!curve) return { status: CustomCommandStatus.Failure, message: "缺少 curve 参数" };
+        const chk = parseCurve(curve);
+        if (!chk.ok) return { status: CustomCommandStatus.Failure, message: `DSL 错误：${chk.message}` };
+        system.run(() => {
+            const result = spawnUniCustom(src.dimension, src.loc, curve, {
+                lifeTicks: life,
+                color,
+                size,
+                sizemode,
+                fademode,
+                colormode,
+            });
+            if (!result.ok) console.warn(`[uni] ${result.message}`);
+        });
+        return { status: CustomCommandStatus.Success, message: uniHelpText() };
+    }));
+
+    // ----------------------------------------------------------
+    // /colorparticle:uni_help
+    // ----------------------------------------------------------
+    safe("registerCommand(uni_help)", () => reg.registerCommand({
+        name: "colorparticle:uni_help",
+        description: "显示自定义 uni 粒子 DSL 语法",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+    }, () => {
+        return { status: CustomCommandStatus.Success, message: uniHelpText() };
+    }));
+
+    // ----------------------------------------------------------
+    // /colorparticle:sculpt <shape> "<animDsl>" [mode move|scale] [radius] [count] [color] [size] [life]
+    // ----------------------------------------------------------
+    safe("registerEnum(sculpt_shape)", () => reg.registerEnum("colorparticle:sculpt_shape_enum", SHAPE_IDS));
+    safe("registerEnum(sculpt_mode)", () => reg.registerEnum("colorparticle:sculpt_mode_enum", ["move", "scale"]));
+
+    safe("registerCommand(sculpt)", () => reg.registerCommand({
+        name: "colorparticle:sculpt",
+        description: "已有形状枚举铺锚点 + uni 粒子运动 DSL；move=叠加平移/旋转, scale=整体径向缩放",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+        mandatoryParameters: [
+            { name: "colorparticle:sculpt_shape_enum", type: CustomCommandParamType.Enum },
+            { name: "animDsl", type: CustomCommandParamType.String },
+        ],
+        optionalParameters: [
+            { name: "colorparticle:sculpt_mode_enum", type: CustomCommandParamType.Enum },
+            { name: "radius",   type: CustomCommandParamType.Float },
+            { name: "count",    type: CustomCommandParamType.Integer },
+            { name: "color",    type: CustomCommandParamType.String },
+            { name: "size",     type: CustomCommandParamType.Float },
+            { name: "life",     type: CustomCommandParamType.Integer },
+        ],
+    }, (origin, shape?: string, animDsl?: string, mode?: string, radius?: number, count?: number, color?: string, size?: number, life?: number) => {
+        const src = resolveOrigin(origin, null);
+        if (!src) return { status: CustomCommandStatus.Failure, message: "需要由实体或命令方块执行" };
+        if (!shape || !animDsl) return { status: CustomCommandStatus.Failure, message: "缺少 shape / animDsl 参数" };
+        const chk = parseCurve(animDsl);
+        if (!chk.ok) return { status: CustomCommandStatus.Failure, message: `动画DSL错误：${chk.message}` };
+        const m = mode === "scale" ? "scale" : "move";
+        system.run(() => {
+            const result = spawnShapeSculpt(src.dimension, src.loc, shape, animDsl, {
+                mode: m, radius, count, color, size, lifeTicks: life,
+            });
+            if (!result.ok) console.warn(`[sculpt] ${result.message}`);
+        });
+        return { status: CustomCommandStatus.Success, message: `[sculpt] ${shape}×${m} × ${animDsl}` };
+    }));
+
+    // ----------------------------------------------------------
+    // /colorparticle:sculpt_help
+    // ----------------------------------------------------------
+    safe("registerCommand(sculpt_help)", () => reg.registerCommand({
+        name: "colorparticle:sculpt_help",
+        description: "显示 sculpt 形状枚举 + uni 动画 DSL 语法",
+        permissionLevel: CommandPermissionLevel.Any,
+        cheatsRequired: false,
+    }, () => {
+        return { status: CustomCommandStatus.Success, message: sculptHelpText() };
     }));
 
     console.warn(`[mfx-cmd] 指令注册完成：配方=${MFX_PRESET_IDS.length}`);

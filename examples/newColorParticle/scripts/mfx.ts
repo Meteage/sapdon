@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Molang 粒子家族：脚本只算初始位置并传参，数学由粒子 Molang 演化。
 // 统一色彩/大小/寿命契约；按 recipe.kind 分派到不同运动/发射模型：
 //   universal  → mfx_universal（parametric：脚本铺点 + Molang 轨迹）
@@ -17,15 +17,15 @@ export type MfxKind =
   | "cubebreath" | "sine" | "uni";
 
 const KIND_PARTICLE: Record<MfxKind, string> = {
-    universal: "sapdon:mfx_universal",
-    dynamic: "sapdon:mfx_dynamic",
-    stream: "sapdon:mfx_stream",
-    shape_disc: "sapdon:mfx_shape_disc",
-    shape_sphere: "sapdon:mfx_shape_sphere",
-    shape_box: "sapdon:mfx_shape_box",
-    cubebreath: "sapdon:mfx_edgebreathe",
-    sine: "sapdon:mfx_sine",
-    uni: "sapdon:mfx_uni",
+    universal: "colorparticle:mfx_universal",
+    dynamic: "colorparticle:mfx_dynamic",
+    stream: "colorparticle:mfx_stream",
+    shape_disc: "colorparticle:mfx_shape_disc",
+    shape_sphere: "colorparticle:mfx_shape_sphere",
+    shape_box: "colorparticle:mfx_shape_box",
+    cubebreath: "colorparticle:mfx_edgebreathe",
+    sine: "colorparticle:mfx_sine",
+    uni: "colorparticle:mfx_uni",
 };
 
 export const MFX_COLORMODES = ["solid", "gradient", "cycle", "rainbow", "heat"];
@@ -120,6 +120,128 @@ export const MFX_PRESETS: Record<string, MfxRecipe> = {
 
 export const MFX_PRESET_IDS = Object.keys(MFX_PRESETS);
 
+// ============================================================
+// 单 uni 粒子的 DSL（两种形式并存）：
+//   在命令行里【必须用双引号"..."整体包裹】，
+//   否则裸 token 里的 = , ; ( ) : $ 会被指令 tokenizer 当作保留符报错。
+//   ① 词条式：<轴>:<函数>(<A=,B=,C=>) 函数 lin/sqr/sin/cos/exp/expd/abs/ln
+//   ② 数字式：<轴>:<type>(<A,B,C>)    type 0..7（0线性1平方2sin3cos4exp5exp⁻6abs7ln）
+//   系数均可部分缺省补 0；同轴用 + 叠加（最多 3 项）；; 分轴。
+//   D 全局偏移两种写法：;D=0.5 / ;D0.5 / 尾部 $0.5
+// ============================================================
+const UNI_DRE = /^D(?:\s*=\s*)?(-?[0-9.]+)$/i;
+const UNI_DLR = /\$(-?[0-9.]+)\s*$/;
+
+export const UNI_FUNCS: Record<string, number> = {
+    lin: 0, sqr: 1, sin: 2, cos: 3,
+    exp: 4, expd: 5, abs: 6, ln: 7,
+};
+
+export function uniHelpText(): string {
+    return "用双引号包裹 DSL: /colorparticle:uni \"x:sin(A=3,B=4);z:cos(A=3,B=4)\" | 函数 lin/sqr/sin/cos/exp/expd/abs/ln | 系数 A=/B=/C=，整体偏移 D=";
+}
+
+interface NamedCurveOut { x?: CurveSpec; y?: CurveSpec; z?: CurveSpec }
+
+// 解析一个 term：词条式 → type via UNI_FUNCS；数字式 → type = 首数字。
+function parseUniTerm(part: string): number[] | string {
+    const tm = /^([a-zA-Z][a-zA-Z0-9]*)\s*\(\s*(.*?)\s*\)$/.exec(part);
+    if (tm) {
+        const fname = tm[1].toLowerCase();
+        const type = UNI_FUNCS[fname];
+        if (type === undefined) return `未知函数 "${fname}"，可用 ${Object.keys(UNI_FUNCS).join("/")}`;
+        const coeff = [0, 0, 0]; // A B C
+        const inner = tm[2].trim();
+        if (inner) {
+            for (const kv of inner.split(",")) {
+                const kvm = /^([ABC])\s*=\s*(-?[0-9.]+)$/i.exec(kv.trim()) || /^([ABC])(-?[0-9.]+)$/i.exec(kv.trim());
+                if (!kvm) return `系数 "${kv}" 不合法，应为 A=<数值>/B=<数值>/C=<数值>`;
+                coeff["ABC".indexOf(kvm[1].toUpperCase())] = Number(kvm[2]);
+            }
+        }
+        return [type, coeff[0], coeff[1], coeff[2]];
+    }
+
+    const nm = /^(\d+)\s*\(\s*(.*?)\s*\)$/.exec(part);
+    if (nm) {
+        const type = Number(nm[1]);
+        if (!Number.isInteger(type) || type < 0 || type > 7) return `数字式 type=${nm[1]} 越界，应为 0..7`;
+        const coeff = [0, 0, 0]; // A B C，部分缺省补 0
+        const inner = nm[2].trim();
+        if (inner) {
+            const items = inner.split(",");
+            if (items.length > 3) return `数字式括号内最多 3 个系数，当前 ${items.length} 个`;
+            items.forEach((v, i) => {
+                const num = Number(v.trim());
+                if (!isNaN(num)) coeff[i] = num;
+            });
+        }
+        return [type, coeff[0], coeff[1], coeff[2]];
+    }
+
+    return `无法解析函数项 "${part}"，应为 函数(A=,B=,C=) 或 type(A,B,C)`;
+}
+
+export function parseCurve(dsl: string): { ok: true; curve: NamedCurveOut } | { ok: false; message: string } {
+    const clean = dsl.trim();
+    if (!clean) return { ok: false, message: "DSL 为空" };
+    const out: NamedCurveOut = {};
+
+    // 先剥离尾部 $<偏移>（D 的第二种写法）
+    let globalD: number | undefined;
+    let unlimited = clean;
+    const dlm = UNI_DLR.exec(clean);
+    if (dlm) {
+        globalD = Number(dlm[1]);
+        unlimited = clean.slice(0, dlm.index).trim();
+    }
+
+    const AXIS = /^([xyz]):(.*)$/i;
+    const DRE = UNI_DRE;
+    const tokens = unlimited.split(";");
+
+    // 预排：D= 全局偏移，写入三轴 D
+    for (const raw of tokens) {
+        const t = raw.trim();
+        const dm = DRE.exec(t);
+        if (dm) globalD = Number(dm[1]);
+    }
+
+    let matchedAxis = false;
+    for (const raw of tokens) {
+        const t = raw.trim();
+        if (!t) continue;
+        if (DRE.test(t)) continue;
+        const axm = AXIS.exec(t);
+        if (!axm) return { ok: false, message: `无法解析片段 "${t}"，应为 <轴>:<函数>(...) 或 D<偏移>` };
+        matchedAxis = true;
+        const axis = axm[1].toLowerCase() as "x" | "y" | "z";
+        const body = axm[2].trim();
+
+        const terms: number[][] = []; // 每项 [type,A,B,C]
+        for (const part of body.split("+")) {
+            const p = part.trim();
+            if (!p) continue;
+            const parsed = parseUniTerm(p);
+            if (typeof parsed === "string") return { ok: false, message: parsed };
+            terms.push(parsed);
+        }
+        if (terms.length === 0) return { ok: false, message: `${axis} 轴未定义任何函数项` };
+        if (terms.length > 3) return { ok: false, message: `${axis} 轴最多 3 项，当前 ${terms.length} 项` };
+
+        const spec: CurveSpec = { A: [0, 0, 0], B: [0, 0, 0], C: [0, 0, 0], type: [0, 0, 0], D: globalD ?? 0 };
+        terms.forEach((tt, i) => {
+            spec.type[i] = tt[0];
+            spec.A[i] = tt[1];
+            spec.B[i] = tt[2];
+            spec.C[i] = tt[3];
+        });
+        out[axis] = spec;
+    }
+    if (!matchedAxis) return { ok: false, message: "没有解析到任何轴（x/y/z）定义" };
+    return { ok: true, curve: out };
+}
+
 export interface MfxOptions {
     count?: number;
     radius?: number;
@@ -179,8 +301,7 @@ export function spawnMfx(
             m.setFloat("variable.c2g", c2.g);
             m.setFloat("variable.c2b", c2.b);
             try {
-                // 发射器放棱点上；offset(emitter_age) 让其发射点在径向往返
-                dimension.spawnParticle("sapdon:mfx_edgebreathe", { x: center.x + p[0], y: center.y + p[1], z: center.z + p[2] }, m);
+                dimension.spawnParticle("colorparticle:mfx_edgebreathe", { x: center.x + p[0], y: center.y + p[1], z: center.z + p[2] }, m);
                 spawned++;
             } catch (e) {
                 if (!firstErr) firstErr = String(e);
@@ -300,4 +421,171 @@ export function spawnMfx(
 
     if (firstErr) return { ok: false, message: `[mfx] spawn 失败：${firstErr}` };
     return { ok: true, message: `[mfx] ${recipe.label}（kind=${kind}，${spawned} 粒子）` };
+}
+
+// ============================================================
+// 自定义单 uni 粒子：完全由 DSL 驱动三轴运动 + 视觉/发射/淡出参数。
+// ============================================================
+
+function applyCurveAxis(map: MolangVariableMap, pre: string, spec?: CurveSpec) {
+    for (let i = 0; i < 3; i++) {
+        map.setFloat(`variable.${pre}a${i}`, spec?.A[i] ?? 0);
+        map.setFloat(`variable.${pre}b${i}`, spec?.B[i] ?? 0);
+        map.setFloat(`variable.${pre}c${i}`, spec?.C[i] ?? 0);
+        map.setFloat(`variable.${pre}t${i}`, spec?.type[i] ?? 0);
+    }
+    map.setFloat(`variable.${pre}d`, spec?.D ?? 0);
+}
+
+export interface UniCustomOptions {
+    lifeTicks?: number;   // 默认 120
+    color?: string;       // 命名色 / R,G,B
+    color2?: string;      // 渐变尾色（仅 colormode=1 用）
+    colormode?: number;   // 0 solid 1 gradient 2 cycle 3 rainbow 4 heat
+    size?: number;        // 默认 0.16
+    sizemode?: number;    // 0 const 1 bloom 2 fade（默认 2，保留经典缩小）
+    fademode?: number;    // 0 out 1 inout 2 none（默认 2，不透明）
+}
+
+export function spawnUniCustom(
+    dimension: Dimension,
+    center: Vector3,
+    dsl: string,
+    opts: UniCustomOptions = {},
+): MfxResult {
+    const parsed = parseCurve(dsl);
+    if (!parsed.ok) return parsed;
+
+    const c1 = resolveSolidColor(opts.color ?? "blue");
+    const c2 = resolveSolidColor(opts.color2 ?? opts.color ?? "blue");
+    const size0 = opts.size ?? 0.16;
+    const sizemode = opts.sizemode ?? 2;
+    const fademode = opts.fademode ?? 2;
+    // 显式给了 color2 → 渐变(1)；否则保持纯色(0)，color 即生效
+    const colormode = opts.color2 ? (opts.colormode ?? 1) : (opts.colormode ?? 0);
+    const life = (opts.lifeTicks ?? 120) / 20;
+
+    const map = new MolangVariableMap();
+    applyCurveAxis(map, "x", parsed.curve.x);
+    applyCurveAxis(map, "y", parsed.curve.y);
+    applyCurveAxis(map, "z", parsed.curve.z);
+    map.setFloat("variable.colormode", colormode);
+    map.setFloat("variable.cr", c1.r);
+    map.setFloat("variable.cg", c1.g);
+    map.setFloat("variable.cb", c1.b);
+    map.setFloat("variable.c2r", c2.r);
+    map.setFloat("variable.c2g", c2.g);
+    map.setFloat("variable.c2b", c2.b);
+    map.setFloat("variable.sizemode", sizemode);
+    map.setFloat("variable.size0", size0);
+    map.setFloat("variable.fademode", fademode);
+    map.setFloat("variable.life", life);
+    map.setFloat("variable.phase", 0);
+
+    try {
+        dimension.spawnParticle("colorparticle:mfx_uni", center, map);
+        return { ok: true, message: `[uni] 出生单粒子（life=${life}s size=${size0} sm=${sizemode} fm=${fademode} cm=${colormode}）` };
+    } catch (e) {
+        return { ok: false, message: `[uni] spawn 失败：${e}` };
+    }
+}
+
+// ============================================================
+// /colorparticle:sculpt：形状枚举铺锚点 + uni 粒子运动 DSL。
+//   脚本用 getShapePoints(shape, radius) 算形状点，在每个锚点 spawn
+//   一个 mfx_uni（粒子默认出生即固定在该锚点），并传同一 animDsl →
+//   每颗粒子相对自己锚点按同一条动画曲线位移 → 整形状整体动、不散架。
+// ============================================================
+
+export interface ShapeSculptOptions {
+    radius?: number;     // 默认 1.5
+    count?: number;      // 降采样点数，默认取形状全部点
+    color?: string;
+    color2?: string;
+    colormode?: number;  // 默认 3 彩虹
+    size?: number;       // 默认 0.08
+    sizemode?: number;   // 默认 2 fade
+    fademode?: number;   // 默认 1 inout
+    lifeTicks?: number;  // 默认 120
+    mode?: "move" | "scale"; // move=平移/旋转叠加; scale=径向整体缩放
+}
+
+export function spawnShapeSculpt(
+    dimension: Dimension,
+    center: Vector3,
+    shape: string,
+    animDsl: string,
+    opts: ShapeSculptOptions = {},
+): MfxResult {
+    const anim = parseCurve(animDsl);
+    if (!anim.ok) return anim;
+
+    const radius = opts.radius ?? 1.5;
+    const points = getShapePoints(shape, radius);
+    if (!points || points.length === 0) {
+        return { ok: false, message: `形状 "${shape}" 生成失败：无点集` };
+    }
+
+    let pts = points;
+    const cnt = opts.count;
+    if (cnt && cnt < pts.length) {
+        const step = pts.length / Math.max(1, Math.floor(cnt));
+        const sampled: number[][] = [];
+        for (let k = 0; k < pts.length; k += step) sampled.push(pts[Math.min(pts.length - 1, Math.round(k))]);
+        pts = sampled;
+    }
+
+    const n = pts.length;
+    const c1 = resolveSolidColor(opts.color ?? "cyan");
+    const c2 = resolveSolidColor(opts.color2 ?? opts.color ?? "purple");
+    // 显式给了 color2 → 渐变(1)；只给 color → 纯色(0)；都不给 → 彩虹(3)
+    const colormode = opts.color2 ? (opts.colormode ?? 1) : opts.color ? (opts.colormode ?? 0) : (opts.colormode ?? 3);
+    const sizemode = opts.sizemode ?? 2;
+    const fademode = opts.fademode ?? 1;
+    const size0 = opts.size ?? 0.08;
+    const life = (opts.lifeTicks ?? 120) / 20;
+    const scaleMode = opts.mode === "scale" ? 1 : 0;
+    const spawnAtCenter = scaleMode === 1; // scale 在形状中心出生，sx/sy/sz=锚点向量
+
+    let spawned = 0;
+    let firstErr = "";
+    for (let k = 0; k < n; k++) {
+        const map = new MolangVariableMap();
+        applyCurveAxis(map, "x", anim.curve.x);
+        applyCurveAxis(map, "y", anim.curve.y);
+        applyCurveAxis(map, "z", anim.curve.z);
+        map.setFloat("variable.colormode", colormode);
+        map.setFloat("variable.cr", c1.r);
+        map.setFloat("variable.cg", c1.g);
+        map.setFloat("variable.cb", c1.b);
+        map.setFloat("variable.c2r", c2.r);
+        map.setFloat("variable.c2g", c2.g);
+        map.setFloat("variable.c2b", c2.b);
+        map.setFloat("variable.sizemode", sizemode);
+        map.setFloat("variable.size0", size0);
+        map.setFloat("variable.fademode", fademode);
+        map.setFloat("variable.life", life);
+        map.setFloat("variable.phase", n > 1 ? k / (n - 1) : 0);
+        map.setFloat("variable.sms", scaleMode);
+        if (spawnAtCenter) {
+            map.setFloat("variable.sx", pts[k][0]);
+            map.setFloat("variable.sy", pts[k][1]);
+            map.setFloat("variable.sz", pts[k][2]);
+        }
+        const loc = spawnAtCenter
+            ? { x: center.x, y: center.y, z: center.z }
+            : { x: center.x + pts[k][0], y: center.y + pts[k][1], z: center.z + pts[k][2] };
+        try {
+            dimension.spawnParticle("colorparticle:mfx_uni", loc, map);
+            spawned++;
+        } catch (e) {
+            if (!firstErr) firstErr = String(e);
+        }
+    }
+    if (firstErr) return { ok: false, message: `[sculpt] 部分失败：${firstErr}` };
+    return { ok: true, message: `[sculpt] ${shape}×${n}锚点[${scaleMode ? "scale" : "move"}] + anim(${animDsl})` };
+}
+
+export function sculptHelpText(): string {
+    return "sculpt: /colorparticle:sculpt <shape> \"<动画DSL>\" [mode move|scale] [radius] [count] [color] [size] [life] | shape=形状枚举(sphere/cube/ring/helix/heart/torus/rose/...) | mode move=叠加平移/旋转, scale=整体径向缩放(px/py/pz=锚点向量) | 动画DSL用双引号包裹复用uni曲线";
 }
