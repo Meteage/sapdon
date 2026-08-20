@@ -1,0 +1,21 @@
+{
+    "name": "ts-sapdon",
+    "version": "1.0.0",
+    "main": "main.ts",
+    "scripts": {
+        "build": "sapdon build ./",
+        "postinstall": "sapdon lib"
+    },
+    "keywords": [
+        "bedrock",
+        "addon"
+    ],
+    "author": "",
+    "license": "ISC",
+    "type": "module",
+    "devDependencies": {
+        "@minecraft/server": "2.6.0",
+        "@minecraft/server-ui": "^2.1.0",
+        "@types/node": "^26.2.0"
+    }
+}

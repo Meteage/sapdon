@@ -1,0 +1,4 @@
+power_grid:itemGroup.name.source=电源与线路
+power_grid:itemGroup.name.load=用电设备
+power_grid:itemGroup.name.store=储能装置
+power_grid:itemGroup.name.ctrl=控制与工具

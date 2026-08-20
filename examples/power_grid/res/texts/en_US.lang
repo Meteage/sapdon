@@ -1,0 +1,4 @@
+power_grid:itemGroup.name.source=Sources & Wiring
+power_grid:itemGroup.name.load=Consumers
+power_grid:itemGroup.name.store=Energy Storage
+power_grid:itemGroup.name.ctrl=Control & Tools
