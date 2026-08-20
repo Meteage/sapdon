@@ -99,3 +99,8 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - 加了新 `@minecraft/server-ui` 依赖后，**必须删掉 `dev/<proj>_BP/manifest.json` 再 build**，否则 manifest 只在首次构建生成、不会自动追加依赖（表现为 `Module [@minecraft/server-ui] is unrecognized` / version conflict，脚本 context 创建失败、整包脚本不运行）。
 - `@minecraft/server` 2.6.0 需配 `@minecraft/server-ui` 2.x（1.x 会报 version conflict）。
 - item `minecraft:icon` 引用原版纹理名须与 `resource_pack/textures/item_texture.json` 里的 `texture_data` 键一致，否则 `Missing referenced asset`。书请用 `book_writable`（`book` 不存在）。
+
+- **脚本源码（.ts/.js/.mjs）一律用 edit/write 工具修改，绝不用 PowerShell 的 `Get-Content`/`Set-Content` 重写**：PS5.1 编码往返会损坏 UTF-8 中文（变 mojibake）并吃掉字符串里的引号/逗号，导致 Rollup 编译报 "Unterminated string constant"、产物 `index.js` 残留旧代码、看起来像"命令没生效"。需裁剪/追加脚本文件时用 Read + edit/write 工具，或 `git checkout`/`git show HEAD:...` 取基线再重写。JSON 粒子/配置类用 ConvertFrom-Json/ConvertTo-Json 生成新文件是安全的（ASCII 字符串为主）。
+- **自定义命令参数总数上限 8**（mandatory+optional 合计），超出注册抛 `CustomCommandError: has 'N' parameters, limit '8'` 被 `safe()` 吞掉 → 运行时报"未知的命令"。多参数命令必须把可选参数收到 ≤8。
+- **脚本侧手动采样形状点 + 叠加动画**：在"每个锚点 spawn 一个 `mfx_uni`"即可让整形状作为一个整体动（粒子默认出生位置即锚点，relative_position 是其相对位移），**无需新增 sculpt 类粒子 JSON**。
+- **粒子 Molang 的 `math.sin/cos` 是角度制**：uni 表达式 `sin((B·t+C)*rad2deg)` 等价于对弧度数 `v=B·t+C` 取 `Math.sin(v)`（JS 侧别乘 rad2deg，会差一档）。
