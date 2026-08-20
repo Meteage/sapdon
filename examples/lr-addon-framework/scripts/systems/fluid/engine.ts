@@ -2,11 +2,11 @@
 // 与电力引擎同基类：只需提供 graph/注册/结算/渲染/存读。
 
 import { Block } from "@minecraft/server";
-import { BaseEngine } from "../../src/engine/BaseEngine.js";
-import { FloodGraph, SegEnd, Segment } from "../../src/core/graph.js";
-import { blockKey, getBlockByKey, getAdjacent } from "../../src/engine/world.js";
-import { settleFluid, PumpState, TankState, ValveState, TANK_MAX } from "../../src/core/fluid-settle.js";
-import { Logger } from "../../src/engine/log.js";
+import { BaseEngine } from "../../framework/engine/BaseEngine.js";
+import { FloodGraph, SegEnd, Segment } from "../../framework/core/graph.js";
+import { blockKey, getBlockByKey, getAdjacent } from "../../framework/engine/world.js";
+import { settleFluid, PumpState, TankState, ValveState, TANK_MAX } from "../../framework/core/fluid-settle.js";
+import { Logger } from "../../framework/engine/log.js";
 
 const PIPE = "lrf:pipe";
 const PUMP = "lrf:pump";

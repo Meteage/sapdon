@@ -51,7 +51,7 @@ ContentLog 路径：`<APPDATA>\Minecraft Bedrock\logs\ContentLog*.txt`（不可�
 ```
 npm test          # 电力+流体 L 层结算镜像，12 断言
 ```
-测试镜像的是 `src/core/{power,fluid}-settle.ts` 的纯逻辑，**改结算必须先同步测试副本**再跑绿。
+测试镜像的是 `scripts/framework/core/{power,fluid}-settle.ts` 的纯逻辑，**改结算必须先同步测试副本**再跑绿。
 
 ## 5. 下一步
 想加第三个系统？看 `doc/tutorial-third-system.md` 的逐步教程。

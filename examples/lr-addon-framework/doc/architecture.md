@@ -15,17 +15,17 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  L 层（src/core/*，纯逻辑，禁止 import @minecraft/server）          │
+│  L 层（scripts/framework/core/*，纯逻辑，禁止 import @minecraft/server）│
 │    graph.ts        段/端点/洪水填充 floodSegment                   │
 │    network.ts      并查集 buildGrids：共享设备 → Grid 归并          │
 │    power-settle.ts 电力结算（纯函数）                             │
 │    fluid-settle.ts 流体结算（纯函数）                             │
 │    → 只读写 Segment 与设备状态，返回 seg.powered 等			      │
 ├─────────────────────────────────────────────────────────────────┤
-│  R 层（src/engine/*，可继承基类 + 世界工具）                        │
+│  R 层（scripts/framework/engine/*，可继承基类 + 世界工具）            │
 │    BaseEngine.ts  ★ 生命周期：建段/重建/持久化/心跳/加载恢复          │
 │    world.ts / log.ts  方块 key 工具 + 日志                        │
-│  concrete：systems/*/engine.ts  继承 BaseEngine 实现契约           │
+│  concrete：scripts/systems/*/engine.ts  继承 BaseEngine 实现契约   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -82,11 +82,11 @@ tickSettle(deviceSegs) {
 
 ## 6. 目录
 ```
-src/core/      L 层纯逻辑 + 两个系统的结算
-src/engine/    BaseEngine + 世界工具
-systems/{power,fluid}/  两个继承 BaseEngine 的引擎
-scripts/index.ts        双引擎启动 + 事件/交互分发
-main.ts                 声明式方块/物品（构建时）
-test/*.test.mjs         两个系统 L 结算镜像测试
-doc/                    本目录（教程）
+scripts/framework/core/      L 层纯逻辑 + 两个系统的结算
+scripts/framework/engine/    BaseEngine + 世界工具
+scripts/systems/{power,fluid}/  两个继承 BaseEngine 的引擎
+scripts/index.ts             双引擎启动 + 事件/交互分发
+main.ts                      声明式方块/物品（构建时）
+test/*.test.mjs              两个系统 L 结算镜像测试
+doc/                         本目录（教程）
 ```

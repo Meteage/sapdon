@@ -2,11 +2,11 @@
 // 只需实现基类的接口即可得到完整生命周期：建段/重建/持久化/心跳/加载恢复全由基类负责。
 
 import { Block, world } from "@minecraft/server";
-import { BaseEngine } from "../../src/engine/BaseEngine.js";
-import { FloodGraph, SegEnd } from "../../src/core/graph.js";
-import { blockKey, getBlockByKey, getAdjacent } from "../../src/engine/world.js";
-import { settlePower, GenState, BattState, BATTERY_MAX } from "../../src/core/power-settle.js";
-import { Logger } from "../../src/engine/log.js";
+import { BaseEngine } from "../../framework/engine/BaseEngine.js";
+import { FloodGraph, SegEnd } from "../../framework/core/graph.js";
+import { blockKey, getBlockByKey, getAdjacent } from "../../framework/engine/world.js";
+import { settlePower, GenState, BattState, BATTERY_MAX } from "../../framework/core/power-settle.js";
+import { Logger } from "../../framework/engine/log.js";
 
 const WIRE = "lrf:wire";
 const GEN = "lrf:coal_gen";

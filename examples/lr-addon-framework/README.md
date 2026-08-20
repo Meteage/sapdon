@@ -12,7 +12,7 @@
 
 从 sapdon 的 `digitCircuit`(数电) / `fluid_pipe`(流体) / `power_grid`(电力) 三个示例中
 **提取的通用骨架**：继承一个 `BaseEngine` 基类，即可快速实现"连接-源-功能-消费-储量"类系统。
-本仓库本身就用它实现了 **电力系统** 与 **流体管道系统** 两个 Demo（`systems/power`、`systems/fluid`）。
+本仓库本身就用它实现了 **电力系统** 与 **流体管道系统** 两个 Demo（`scripts/systems/power`、`scripts/systems/fluid`）。
 
 > 范式说明见 sapdon 的 `doc/dev/lr-paradigm.md`。本框架是这条范式的可运行实现。
 
@@ -22,21 +22,22 @@
 
 ```
 lr-addon-framework/
-├── src/
-│   ├── core/                    # L 层（纯逻辑，无 @minecraft/server）
-│   │   ├── graph.ts             #   段(Segment)/端点(SegEnd)/洪水填充 floodSegment
-│   │   ├── network.ts           #   并查集 buildGrids（共享设备把段并成网格）
-│   │   ├── power-settle.ts      #   电力：供/需/电池 结算（纯函数）
-│   │   └── fluid-settle.ts      #   流体：泵→罐 势/流动 结算（纯函数）
-│   └── engine/
-│       ├── world.ts             #   方块 key/邻块 工具
-│       ├── log.ts               #   运行期日志
-│       └── BaseEngine.ts        #   ★ 可继承基类（建段/重建/持久化/心跳/加载恢复）
-├── systems/
-│   ├── power/engine.ts          #   电力系统引擎（继承 BaseEngine）
-│   └── fluid/engine.ts          #   流体系统引擎（继承 BaseEngine）
-├── scripts/index.ts             #   双引擎启动 + 事件/交互分发
-├── main.ts                      #   声明式方块/物品（构建时）
+├── scripts/
+│   ├── framework/                # 运行时框架（L/R 分离）
+│   │   ├── core/                 #   L 层（纯逻辑，无 @minecraft/server）
+│   │   │   ├── graph.ts          #     段(Segment)/端点(SegEnd)/洪水填充 floodSegment
+│   │   │   ├── network.ts        #     并查集 buildGrids（共享设备把段并成网格）
+│   │   │   ├── power-settle.ts   #     电力：供/需/电池 结算（纯函数）
+│   │   │   └── fluid-settle.ts   #     流体：泵→罐 势/流动 结算（纯函数）
+│   │   └── engine/
+│   │       ├── world.ts          #     方块 key/邻块 工具
+│   │       ├── log.ts            #     运行期日志
+│   │       └── BaseEngine.ts     #     ★ 可继承基类（建段/重建/持久化/心跳/加载恢复）
+│   ├── systems/
+│   │   ├── power/engine.ts       #   电力系统引擎（继承 BaseEngine）
+│   │   └── fluid/engine.ts       #   流体系统引擎（继承 BaseEngine）
+│   └── index.ts                  #   双引擎启动 + 事件/交互分发
+├── main.ts                       #   声明式方块/物品（构建时）
 ├── test/{power,fluid}.test.mjs  #   两系统 L 层结算镜像测试
 └── (res/ 贴图复用自 sapdon 示例)
 ```
@@ -82,12 +83,12 @@ tickSettle(deviceSegs) {
   this.render(deviceSegs);                          // 系统自己的 R 渲染（写方块状态）
 }
 ```
-结算逻辑是纯函数（`src/core/*-settle.ts`），可被 Node 直接用镜像测试——这就是"L/R 分离可测"的来源。
+结算逻辑是纯函数（`scripts/framework/core/*-settle.ts`），可被 Node 直接用镜像测试——这就是"L/R 分离可测"的来源。
 
 ## 3. 新增第三个系统的步骤（举"水车传动/机械网络"等例子）
 
-1. `src/core/<sys>-settle.ts`：写纯逻辑结算（源/功能/消费/储量）。
-2. `systems/<sys>/engine.ts`：`class XEngine extends BaseEngine`，实现上面 10 个成员，
+1. `scripts/framework/core/<sys>-settle.ts`：写纯逻辑结算（源/功能/消费/储量）。
+2. `scripts/systems/<sys>/engine.ts`：`class XEngine extends BaseEngine`，实现上面 10 个成员，
    `tickSettle` = `settleX(...)` + 你的渲染。
 3. `main.ts`：声明该系统的连接块与设备块（可抄电力/流体的 `connectorBlock`/`deviceBlock` 助手）。
 4. `scripts/index.ts`：`const x = new XEngine(logger)`，把 `x` 加进 `engines`，

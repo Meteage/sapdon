@@ -2,10 +2,10 @@
 // 同时启动 电力引擎 + 流体引擎（都继承 BaseEngine），共用事件分发与交互。
 
 import { world, system, ItemStack, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
-import { blockKey, getBlockByKey } from "../src/engine/world.js";
-import { makeLogger } from "../src/engine/log.js";
-import { PowerEngine } from "../systems/power/engine.js";
-import { FluidEngine } from "../systems/fluid/engine.js";
+import { blockKey, getBlockByKey } from "./framework/engine/world.js";
+import { makeLogger } from "./framework/engine/log.js";
+import { PowerEngine } from "./systems/power/engine.js";
+import { FluidEngine } from "./systems/fluid/engine.js";
 
 const power = new PowerEngine(makeLogger("power"));
 const fluid = new FluidEngine(makeLogger("fluid"));

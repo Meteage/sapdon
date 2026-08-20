@@ -1,4 +1,4 @@
-// power-settle 镜像测试（与 src/core/power-settle.ts + network.ts 语义一致）
+// power-settle 镜像测试（与 scripts/framework/core/power-settle.ts + network.ts 语义一致）
 // 运行: node --test test/power.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

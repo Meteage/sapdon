@@ -1,4 +1,4 @@
-// fluid-settle 镜像测试（与 src/core/fluid-settle.ts + network.ts 语义一致）
+// fluid-settle 镜像测试（与 scripts/framework/core/fluid-settle.ts + network.ts 语义一致）
 // 运行: node --test test/fluid.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

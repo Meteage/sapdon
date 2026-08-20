@@ -16,7 +16,7 @@
 
 ---
 
-## 1. 写 L 层结算 `src/core/mech-settle.ts`
+## 1. 写 L 层结算 `scripts/framework/core/mech-settle.ts`
 
 > 复制 `power-settle.ts`，把 `GEN→WHEEL`、`FURNACE→MILL`、`BATTERY→FLYWHEEL`，去掉太阳能，即可。
 
@@ -84,15 +84,15 @@ export function settleMech(inp: MechSettleInput): void {
 
 > 对比一下：它和 `power-settle.ts` 结构完全同构——**这正说明"新系统 = 继承基类 + 换一个纯结算"**。
 
-## 2. 写 R 层引擎 `systems/mech/engine.ts`（继承 BaseEngine）
+## 2. 写 R 层引擎 `scripts/systems/mech/engine.ts`（继承 BaseEngine）
 
 ```ts
 import { Block } from "@minecraft/server";
-import { BaseEngine } from "../../src/engine/BaseEngine.js";
-import { FloodGraph, SegEnd } from "../../src/core/graph.js";
-import { blockKey, getBlockByKey, getAdjacent } from "../../src/engine/world.js";
-import { settleMech, WheelState, FlywheelState, ClutchState, FLYWHEEL_MAX } from "../../src/core/mech-settle.js";
-import { Logger } from "../../src/engine/log.js";
+import { BaseEngine } from "../../framework/engine/BaseEngine.js";
+import { FloodGraph, SegEnd } from "../../framework/core/graph.js";
+import { blockKey, getBlockByKey, getAdjacent } from "../../framework/engine/world.js";
+import { settleMech, WheelState, FlywheelState, ClutchState, FLYWHEEL_MAX } from "../../framework/core/mech-settle.js";
+import { Logger } from "../../framework/engine/log.js";
 
 const BELT = "mech:belt";
 const WHEEL = "mech:waterwheel";
@@ -184,7 +184,7 @@ export class MechEngine extends BaseEngine<unknown> {
 }
 ```
 
-> 有没有发现：这段几乎就是 `systems/power/engine.ts` 的复制改名字？**这正是这个框架的意义——新系统主要是"换结算 + 改 id"。**
+> 有没有发现：这段几乎就是 `scripts/systems/power/engine.ts` 的复制改名字？**这正是这个框架的意义——新系统主要是"换结算 + 改 id"。**
 
 ## 3. 声明方块 `main.ts`
 
@@ -203,7 +203,7 @@ const clutch = deviceBlock("mech:clutch", "relay_off", "relay_on", "mech:clutch_
 ## 4. 接进 `scripts/index.ts`
 
 ```ts
-import { MechEngine } from "../systems/mech/engine.js";
+import { MechEngine } from "../../systems/mech/engine.js";
 const mech = new MechEngine(makeLogger("mech"));
 const engines = [power, fluid, mech];
 
@@ -233,7 +233,7 @@ if (mech.isPart(b.typeId) && !held.typeId.startsWith("mech:") && !isPlacement(he
 ```
 npm test && npm run build
 ```
-完成——一个完整的新系统就这样用继承基类"插"进框架。**要再快，就照 systems/power 复制一份改字段。**
+完成——一个完整的新系统就这样用继承基类"插"进框架。**要再快，就照 scripts/systems/power 复制一份改字段。**
 
 ---
 
