@@ -4,7 +4,7 @@
 
 ## 0. 准备
 ```
-cd examples/lr-addon-framework
+cd examples/lr-framework
 npm install        # 装 @minecraft/server + sapdon lib
 npm run build      # 构建到 dev/ 并同步游戏开发包
 ```

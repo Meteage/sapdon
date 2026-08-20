@@ -1,6 +1,6 @@
-# lr-addon-framework — L/R 连接块系统框架
+# lr-framework — L/R 连接块系统框架
 
-> 本项目位于 **`examples/lr-addon-framework`**（sapdon 仓库内），是 `digitCircuit`/`fluid_pipe`/`power_grid`
+> 本项目位于 **`examples/lr-framework`**（sapdon 仓库内），是 `digitCircuit`/`fluid_pipe`/`power_grid`
 > 三个示例抽取出的可继承框架。范式背景见仓库根 `doc/dev/lr-paradigm.md`。
 
 ## 📚 文档索引
@@ -21,7 +21,7 @@
 ## 1. 目录
 
 ```
-lr-addon-framework/
+lr-framework/
 ├── scripts/
 │   ├── framework/                # 运行时框架（L/R 分离）
 │   │   ├── core/                 #   L 层（纯逻辑，无 @minecraft/server）

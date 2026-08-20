@@ -1,5 +1,5 @@
 {
-    "name": "lr-addon-framework",
+    "name": "lr-framework",
     "version": "1.0.0",
     "main": "main.ts",
     "scripts": {

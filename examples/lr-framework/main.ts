@@ -1,4 +1,4 @@
-// ===== lr-addon-framework :: main.ts（声明式方块/物品，构建时由 sapdon CLI 执行）====
+// ===== lr-framework :: main.ts（声明式方块/物品，构建时由 sapdon CLI 执行）====
 // 仅声明（不 import @minecraft/server / 不 import 运行时引擎），供构建生成 dev/ JSON。
 // 两部分：电力系统块（wire/gen/solar/furnace/battery）+ 流体系统块（pipe/pump/tank/valve）。
 

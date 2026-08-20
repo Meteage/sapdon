@@ -1,4 +1,4 @@
-// ===== lr-addon-framework :: scripts/index.ts（运行时入口）====
+// ===== lr-framework :: scripts/index.ts（运行时入口）====
 // 同时启动 电力引擎 + 流体引擎（都继承 BaseEngine），共用事件分发与交互。
 
 import { world, system, ItemStack, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";

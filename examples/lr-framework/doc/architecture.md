@@ -1,4 +1,4 @@
-# lr-addon-framework 架构
+# lr-framework 架构
 
 本框架把 sapdon 三个生态示例（`digitCircuit` 数电 / `fluid_pipe` 流体 / `power_grid` 电力）里
 **重复出现的"连接块系统"骨架**收敛成一个可继承基类 `BaseEngine`。你写一个新的"连接-源-功能-消费-储量"
