@@ -10,8 +10,8 @@ world.afterEvents.itemUse.subscribe((event) => {
         new ActionFormData()
             .title("sapdon_ui:apple")
             .body("触发苹果页")
-            .button("test1")
-            .button("test2")
+            .button("是")
+            .button("否")
             .show(player)
             .then((r) => world.sendMessage("apple selection: " + r.selection));
     }

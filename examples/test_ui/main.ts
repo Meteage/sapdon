@@ -1,5 +1,5 @@
 import {
-    Image, Label, Layout, Panel, SapdonButtonPanel, SapdonPanel,
+    Button, Label, Layout, Panel, SapdonButton, SapdonButtonPanel, SapdonPanel,
     SapdonServerUI, StackPanel, Text, UIElement, registry
 } from '@sapdon/core'
 
@@ -15,14 +15,24 @@ apple_content_panel.addControl(
             new Label("body", undefined).enableDebug().setText(new Text().setText("内容面板")))
 );
 
-// 按键网格面板：grid(form_buttons) + pos_wrap(form_button)
-const apple_buttons_panel = new SapdonButtonPanel("apple_buttons_panel")
-    .setDimensions([2, 1])
-    .setCollection("form_buttons")
-    .setSize(["40%", "40%"])
-    .place([0, 0], new UIElement("bt0", "button", "server_form.form_button").setLayout(new Layout().setSize([32, 32])))
-    .place([1, 0], new UIElement("bt1", "button", "server_form.form_button").setLayout(new Layout().setSize([32, 32])))
-    .build();
+// 按键面板：grid(2×1, 左下/右下表单按钮) + 右上普通退出键
+const apple_buttons_panel = new Panel("apple_buttons_panel")
+    .setLayout(new Layout().setSize(["40%", "40%"]))
+    .addControl(
+        new SapdonButtonPanel("apple_buttons_grid")
+            .setDimensions([2, 1])                       // 左右两份
+            .setCollection("form_buttons")
+            .setSize(["100%", "100%"])
+            .place([0, 0], new SapdonButton("bt0").setAnchor("bottom_left"))
+            .place([1, 0], new SapdonButton("bt1").setAnchor("bottom_right"))
+            .build()
+    )
+    .addControl(
+        new Button("exit", "common.button")               // 右上：普通退出键
+            .addVariable("pressed_button_name", "button.menu_exit")
+            .setLayout(new Layout().setSize([48, 24]).setAnchorFrom("top_right").setAnchorTo("top_right"))
+            .addControl(new Label("exit_text", undefined).setText(new Text().setText("退出")))
+    );
 
 new SapdonPanel("sapdon_ui_apple")
     .setContent(apple_content_panel)

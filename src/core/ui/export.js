@@ -30,6 +30,7 @@ export * from "./systems/system.js"
 export * from "./systems/sapdon/sapdonServerUI.js"
 export * from "./systems/sapdon/sapdonPanel.js"
 export * from "./systems/sapdon/sapdonButtonPanel.js"
+export * from "./systems/sapdon/sapdonButton.js"
 
 export * from "./buttonMapping.js"
 export * from "./dataBindingObject.js"
