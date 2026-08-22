@@ -27,7 +27,7 @@ ItemAPI.createItem()                system.beforeEvents.startup
   + setCustomComponentV2()            → registerCustomComponent()
   + setMaxStackSize()                 → onUse(event, params)
   + setDisplayName()                    → ActionFormData
-  + setInteractButton()                   .title("book_name")
+  + setInteractButton()                   .title("sapdon_ui:book_name")
                                          .body("page_id")
 NeoGuidebook("ns:name")               → 按钮 .button("prev_button")
   + addDoublePageStack(id, L, R)        .show(player)
@@ -44,9 +44,11 @@ registry.submit()
 
 | ActionForm API | JSON UI 变量 | 说明 |
 |----------------|-------------|------|
-| `.title("name")` | `#title_text` | 选择自定义 UI 皮肤（匹配 server_form.json 注册名） |
+| `.title("sapdon_ui:name")` | `#title_text` | `sapdon_ui:` 前缀路由（SapdonServerUI），精确匹配 `$panel_id` |
 | `.body("page_id")` | `#form_text` | 切换可见页面（匹配页面的 `$binding_text`） |
 | `.button("text")` | `#form_button_text` | 匹配按钮的 `$binding_button_text`，控制哪个按钮 visible |
+
+> NeoGuidebook 已迁移到新接口：注册走 `SapdonServerUI.registerPage`（`panelId = sapdon_ui:<name>`），书拆为 `内容面板 + 按键面板`，导航/章节按钮使用 `SapdonTexturedButton`（模板 `server_form.sapdon_textured_button`），不再依赖旧 `ServerUISystem`/`sapdon_form_button_factory`。
 
 ---
 

@@ -340,7 +340,7 @@ import pageIds from "../page_ids.json"
 
 const DEBUG: boolean = true
 
-const bridge = new NeoGuidebookBridge("my_mod:guidebook", pageIds, { debug: DEBUG })
+const bridge = new NeoGuidebookBridge("sapdon_ui:guidebook", pageIds, { debug: DEBUG })
 
 export const GuiBookItemComponent: ItemCustomComponent = {
     onUse(event: ItemComponentUseEvent, params: any): void {
@@ -512,7 +512,7 @@ import { world, ItemCustomComponent, ItemComponentUseEvent } from "@minecraft/se
 import { NeoGuidebookBridge } from "../lib/page_bridge"
 import pageIds from "../../page_ids.json"
 
-const bridge = new NeoGuidebookBridge("my_mod:guidebook", pageIds)
+const bridge = new NeoGuidebookBridge("sapdon_ui:guidebook", pageIds)
 
 export const GuiBookItemComponent: ItemCustomComponent = {
     onUse(event: ItemComponentUseEvent, params: any): void {

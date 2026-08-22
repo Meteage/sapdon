@@ -11,7 +11,8 @@ import { Input } from "../../properties/input.js";
 import { Layout } from "../../properties/layout.js";
 import { Sprite } from "../../properties/sprite.js";
 import { Text } from "../../properties/text.js";
-import { ServerFormButton, ServerUISystem } from "../serverForm.js";
+import { SapdonServerUI } from "../sapdon/sapdonServerUI.js";
+import { SapdonTexturedButton } from "../sapdon/sapdonButton.js";
 import { UISystem } from "../system.js";
 
 type BookPage = {
@@ -65,8 +66,10 @@ export class NeoGuidebook {
     private background_image: string;
     private debug_mode: boolean;
     private system: UISystem;
-    private root_panel_id: string;
-    private root_panel_name: string;
+    private content_panel_name: string;
+    private content_panel_id: string;
+    private buttons_panel_name: string;
+    private buttons_panel_id: string;
     private root_panel_elements: UIElement[] = [];
     private custom_buttons: CustomButtonConfig[] = [];
     private button_visibility: Record<string, boolean> = {};
@@ -77,8 +80,10 @@ export class NeoGuidebook {
         this.identifier = identifier;
         const [namespace, name] = identifier.split(":");
 
-        this.root_panel_name = `${name}_root_panel`;
-        this.root_panel_id = `${namespace}.${this.root_panel_name}`;
+        this.content_panel_name = `${name}_content_panel`;
+        this.content_panel_id = `${namespace}.${this.content_panel_name}`;
+        this.buttons_panel_name = `${name}_buttons_panel`;
+        this.buttons_panel_id = `${namespace}.${this.buttons_panel_name}`;
         this.size = size || options?.size || [320,207];
         this.background_image = options?.background || "textures/ui/book_back";
         this.debug_mode = options?.debug || false;
@@ -92,10 +97,14 @@ export class NeoGuidebook {
         }
 
         this.system = new UISystem(identifier, path);
-        ServerUISystem.bindingTitlewithContent(
-            this.system.name,
-            this.root_panel_id
-        );
+
+        // 新接口：注册为 sapdon_ui: 前缀的自定义页面（内容面板 + 按键面板）
+        SapdonServerUI.registerPage({
+            panelId: `sapdon_ui:${this.system.name}`,
+            name: this.system.name,
+            contentPanel: this.content_panel_id,
+            buttonsPanel: this.buttons_panel_id,
+        });
 
         this.initUI();
     }
@@ -167,25 +176,28 @@ export class NeoGuidebook {
             this.createBookPage(),
         ];
 
-        if (this.button_visibility["close"] !== false) elements.push(this.createCloseButton());
-        if (this.button_visibility["prev"] !== false) elements.push(this.createPageButton("prev", [7, -9], "prev_button"));
-        if (this.button_visibility["next"] !== false) elements.push(this.createPageButton("next", [-7, -9], "next_button"));
-        if (this.button_visibility["home"] !== false) elements.push(this.createHomeButton([0, 0], ["8%", "8%"], "home_button"));
+        if (this.debug_mode) elements.push(this.createDebugText());
 
         this.addRootElements(elements);
-
-        if(this.debug_mode) this.addRootElement(this.createDebugText());
         this.dirty = true;
         this.flush();
     }
 
+    private createNavButtons(): UIElement[] {
+        const buttons: UIElement[] = [];
+        if (this.button_visibility["close"] !== false) buttons.push(this.createCloseButton());
+        if (this.button_visibility["prev"] !== false) buttons.push(this.createPageButton("prev", [7, -9], "prev_button"));
+        if (this.button_visibility["next"] !== false) buttons.push(this.createPageButton("next", [-7, -9], "next_button"));
+        if (this.button_visibility["home"] !== false) buttons.push(this.createHomeButton([0, 0], ["8%", "8%"], "home_button"));
+        return buttons;
+    }
+
     private createCustomButtons(): UIElement[] {
         return this.custom_buttons.map(cfg => {
-            return new UIElement(cfg.id, undefined, "server_form.sapdon_form_button_factory")
-                .addVariable("binding_button_text", cfg.bindingButtonName)
-                .addVariable("default_texture", cfg.defaultTexture)
-                .addVariable("hover_texture", cfg.hoverTexture)
-                .addVariable("pressed_texture", cfg.pressedTexture)
+            return new SapdonTexturedButton(cfg.id, cfg.bindingButtonName)
+                .setDefaultTexture(cfg.defaultTexture)
+                .setHoverTexture(cfg.hoverTexture)
+                .setPressedTexture(cfg.pressedTexture)
                 .addProp("offset", cfg.offset)
                 .addProp("size", cfg.size)
                 .addProp("layer", 5)
@@ -195,13 +207,18 @@ export class NeoGuidebook {
     }
 
     private updateUI(){
-        const root_panel = new Panel(this.root_panel_name);
-        root_panel.setLayout(new Layout().setSize(this.size));
-        root_panel.addControls(this.root_panel_elements);
-        root_panel.addControls(this.createCustomButtons());
-        root_panel.addControl(this.createPagesPanel());
+        const content_panel = new Panel(this.content_panel_name);
+        content_panel.setLayout(new Layout().setSize(this.size));
+        content_panel.addControls(this.root_panel_elements);
+        content_panel.addControl(this.createPagesPanel());
 
-        this.system.addElement(root_panel);
+        const buttons_panel = new Panel(this.buttons_panel_name);
+        buttons_panel.setLayout(new Layout().setSize(this.size));
+        buttons_panel.addControls(this.createNavButtons());
+        buttons_panel.addControls(this.createCustomButtons());
+
+        this.system.addElement(content_panel);
+        this.system.addElement(buttons_panel);
     }
 
     private tex(name: string, fallback: string): string {
@@ -245,20 +262,18 @@ export class NeoGuidebook {
                     .setAnchorTo(`bottom_${button_anchor}`)
             )
             .addControl(
-                new UIElement(buttonId, undefined, "server_form.sapdon_form_button_factory")
-                    .addVariable("binding_button_text", bindingButtonName)
-                    .addVariable("default_texture", this.tex(type + "Default", `textures/ui/${prefix}_default`))
-                    .addVariable("hover_texture", this.tex(type + "Hover", `textures/ui/${prefix}_hover`))
-                    .addVariable("pressed_texture", this.tex(type + "Pressed", `textures/ui/${prefix}_pressed`))
+                new SapdonTexturedButton(buttonId, bindingButtonName)
+                    .setDefaultTexture(this.tex(type + "Default", `textures/ui/${prefix}_default`))
+                    .setHoverTexture(this.tex(type + "Hover", `textures/ui/${prefix}_hover`))
+                    .setPressedTexture(this.tex(type + "Pressed", `textures/ui/${prefix}_pressed`))
             );
     }
 
     private createHomeButton(offset: [number, number], size: [number|string, number|string], bindingButtonName: string) {
-        return new UIElement("home_button", undefined, "server_form.sapdon_form_button_factory")
-            .addVariable("binding_button_text", bindingButtonName)
-            .addVariable("default_texture", this.tex("homeDefault", "textures/ui/book_shiftleft_default"))
-            .addVariable("hover_texture", this.tex("homeHover", "textures/ui/book_shiftleft_hover"))
-            .addVariable("pressed_texture", this.tex("homePressed", "textures/ui/book_shiftleft_pressed"))
+        return new SapdonTexturedButton("home_button", bindingButtonName)
+            .setDefaultTexture(this.tex("homeDefault", "textures/ui/book_shiftleft_default"))
+            .setHoverTexture(this.tex("homeHover", "textures/ui/book_shiftleft_hover"))
+            .setPressedTexture(this.tex("homePressed", "textures/ui/book_shiftleft_pressed"))
             .addProp("offset", offset)
             .addProp("size", size)
             .addProp("layer", 5)

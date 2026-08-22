@@ -1,4 +1,13 @@
-import { Control, Label, Layout, Panel, StackPanel, Text, UIElement, ServerFormButton, Image, Sprite } from "../../export.js";
+import { Control } from "../../properties/control.js";
+import { Label } from "../../elements/label.js";
+import { Layout } from "../../properties/layout.js";
+import { Panel } from "../../elements/panel.js";
+import { StackPanel } from "../../elements/stackPanel.js";
+import { Text } from "../../properties/text.js";
+import { UIElement } from "../../elements/uiElement.js";
+import { Image } from "../../elements/image.js";
+import { Sprite } from "../../properties/sprite.js";
+import { SapdonTexturedButton } from "../sapdon/sapdonButton.js";
 
 // 空占位组件
 export class EmptySpace extends Panel {
@@ -67,7 +76,7 @@ export class Divider extends StackPanel {
 }
 
 // 书籍按钮组件
-export class BookButton extends ServerFormButton {
+export class BookButton extends SapdonTexturedButton {
     constructor(id: string, texture: string, size: [string, string] = ["100%", "100%"]) {
         super(id, id);
         this.setDefaultTexture(texture)
@@ -182,12 +191,12 @@ export class ChapterItem extends Panel {
                     )
             )
             .addStack(["15%", "60%"],
-                new ServerFormButton(`${prefix}_${index}_warning`, `${prefix}_${index}_button`)
+                new SapdonTexturedButton(`${prefix}_${index}_warning`, `${prefix}_${index}_button`)
                     .setDefaultTexture("textures/ui/ErrorGlyph")
                     .setHoverTexture("textures/ui/ErrorGlyph")
             );
         
-        const backgroundButton = new ServerFormButton(`${prefix}_${index}_button`, `${prefix}_${index}_button`)
+        const backgroundButton = new SapdonTexturedButton(`${prefix}_${index}_button`, `${prefix}_${index}_button`)
             .setDefaultTexture("")
             .setHoverTexture("textures/ui/promotion_slot");
         

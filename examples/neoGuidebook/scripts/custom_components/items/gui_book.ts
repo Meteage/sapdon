@@ -5,7 +5,7 @@ import pageIds from "../../page_ids.json"
 const DEBUG: boolean = false
 
 
-const bridge = new NeoGuidebookBridge("neo_guidebook", pageIds, { debug: DEBUG })
+const bridge = new NeoGuidebookBridge("sapdon_ui:neo_guidebook", pageIds, { debug: DEBUG })
 
 export const GuiBookItemComponent: ItemCustomComponent = {
     onUse(event: ItemComponentUseEvent, params: any): void {
