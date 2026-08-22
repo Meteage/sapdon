@@ -8,7 +8,7 @@
       0,
       0
     ],
-    "uuid": "dbe47d61-05d1-4993-8720-6e9cc7e4a857",
+    "uuid": "2903263a-4b49-4696-8c50-fe1c33eeddf8",
     "min_engine_version": [
       1,
       19,
@@ -19,7 +19,7 @@
     {
       "description": "行为模块",
       "type": "data",
-      "uuid": "06cdc722-a7dc-4386-9681-b95639d34963",
+      "uuid": "2ffb92a8-45b6-4b2c-8c6d-94eb7d83aa3e",
       "version": [
         1,
         0,
@@ -29,7 +29,7 @@
     {
       "description": "脚本模块",
       "type": "script",
-      "uuid": "d3fb6cb5-9032-4305-8345-eba903b489cd",
+      "uuid": "b07d0258-8c8a-42bf-98ae-8d6f7b2b5449",
       "version": [
         1,
         0,
@@ -40,12 +40,20 @@
   ],
   "dependencies": [
     {
-      "module_name": "@minecraft/server-ui",
-      "version": "1.3.0"
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
     },
     {
-      "module_name": "@minecraft/server",
-      "version": "1.17.0"
+      "module_name": "@minecraft/server-ui",
+      "version": "2.0.0"
+    },
+    {
+      "uuid": "142d2a9d-db45-4294-b347-a4ad490abccd",
+      "version": [
+        1,
+        0,
+        0
+      ]
     }
   ],
   "metadata": {
@@ -55,10 +63,10 @@
     "license": "MIT",
     "generated_with": {
       "sapdon": [
-        "2.0.1"
+        "1.0.0"
       ]
     },
     "product_type": "addon",
-    "url": "https://github.com/Meteage/sapdon"
+    "url": "https://github.com/junjun260/sapdon"
   }
 }

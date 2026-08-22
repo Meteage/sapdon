@@ -1,0 +1,7 @@
+{
+  "name": "test_ui",
+  "description": "sapdon_ui: 页面壳系统 TS 示例",
+  "author": "meteage",
+  "version": "1.0.0",
+  "min_engine_version": "1.26.30"
+}

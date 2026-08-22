@@ -44,6 +44,6 @@ const test_ui_system = new UISystem("test:test_ui","ui/"); //添加ui系统
       
 //UISystemRegistry.addOuterUIdefs(["ui/其他ui.json"])  导入外部ui文件
 
-ServerUISystem.bindingTitlewithContent("我的自定义表单","test.root_panel")
+ServerUISystem.bindingTitlewithContent("test_test_ui","test.root_panel")
 
 registry.submit()
