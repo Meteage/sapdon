@@ -75,7 +75,7 @@ export class UIElement {
   }
 
   setLayout(layout: Layout): this {
-    if (!(layout instanceof Layout)) new Error('参数需要Layout类')
+    if (!(layout instanceof Layout)) throw new Error('参数需要Layout类')
     this.layout = layout
     return this
   }
@@ -121,25 +121,21 @@ export class UIElement {
     return this
   }
 
+  /**
+   * 声明待序列化合并的属性包（子类覆写以加入自己的专属属性包）。
+   * 合并顺序对结果无影响：重复键值均相同。
+   */
+  protected serializableSources(): object[] {
+    return [this.control, this.dataBinding, this.layout]
+  }
+
   serialize(): SerializedElement {
-    // 复制Control的属性
-    for (const key in this.control) {
-      if (this.control.hasOwnProperty(key)) {
-        this.properties.set(key, this.control[key])
-      }
-    }
-
-    // 复制DataBinding的属性
-    for (const key in this.dataBinding) {
-      if (this.dataBinding.hasOwnProperty(key)) {
-        this.properties.set(key, this.dataBinding[key])
-      }
-    }
-
-    // 复制Layout的属性
-    for (const key in this.layout) {
-      if (this.layout.hasOwnProperty(key)) {
-        this.properties.set(key, this.layout[key])
+    // 复制所有属性包的属性
+    for (const src of this.serializableSources()) {
+      for (const key in src) {
+        if (src.hasOwnProperty(key)) {
+          this.properties.set(key, (src as JsonUIBag)[key])
+        }
       }
     }
 

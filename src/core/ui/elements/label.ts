@@ -3,7 +3,7 @@ import { DataBinding } from '../properties/dataBinding.js'
 import { Factory } from '../properties/factory.js'
 import { Layout } from '../properties/layout.js'
 import { Text } from '../properties/text.js'
-import { UIElement, type SerializedElement } from './uiElement.js'
+import { UIElement } from './uiElement.js'
 
 export class Label extends UIElement {
   text: Text
@@ -19,7 +19,7 @@ export class Label extends UIElement {
   }
 
   setLayout(layout: Layout): this {
-    if (!(layout instanceof Layout)) new Error('参数需要Layout类')
+    if (!(layout instanceof Layout)) throw new Error('参数需要Layout类')
     this.layout = layout
     return this
   }
@@ -29,45 +29,7 @@ export class Label extends UIElement {
     return this
   }
 
-  serialize(): SerializedElement {
-    // 合并属性
-
-    // 复制Text的属性
-    for (const key in this.text) {
-      if (this.text.hasOwnProperty(key)) {
-        this.properties.set(key, this.text[key])
-      }
-    }
-
-    // 复制Layout的属性
-    for (const key in this.layout) {
-      if (this.layout.hasOwnProperty(key)) {
-        this.properties.set(key, this.layout[key])
-      }
-    }
-
-    // 复制DataBinding的属性
-    for (const key in this.dataBinding) {
-      if (this.dataBinding.hasOwnProperty(key)) {
-        this.properties.set(key, this.dataBinding[key])
-      }
-    }
-
-    // 复制Factory的属性
-    for (const key in this.factory) {
-      if (this.factory.hasOwnProperty(key)) {
-        this.properties.set(key, this.factory[key])
-      }
-    }
-
-    // 复制Control的属性
-    for (const key in this.control) {
-      if (this.control.hasOwnProperty(key)) {
-        this.properties.set(key, this.control[key])
-      }
-    }
-
-    // 调用父类的serialize方法
-    return super.serialize()
+  protected serializableSources(): object[] {
+    return [this.text, this.layout, this.dataBinding, this.factory, this.control]
   }
 }

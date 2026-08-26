@@ -29,13 +29,11 @@ export class Grid extends CollectionPanel {
     return this
   }
 
+  protected serializableSources(): object[] {
+    return [this.grid, ...super.serializableSources()]
+  }
+
   serialize(): SerializedElement {
-    // 复制grid的属性
-    for (const key in this.grid) {
-      if (this.grid.hasOwnProperty(key)) {
-        this.properties.set(key, this.grid[key])
-      }
-    }
     // 类型修正
     this.properties.set('type', 'grid')
 

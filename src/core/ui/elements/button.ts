@@ -13,7 +13,7 @@ import { Factory } from '../properties/factory.js'
 import { Input } from '../properties/input.js'
 import { Layout } from '../properties/layout.js'
 import { Sound } from '../properties/sound.js'
-import { UIElement, type SerializedElement } from './uiElement.js'
+import { UIElement } from './uiElement.js'
 
 export class Button extends UIElement {
   input: Input
@@ -51,69 +51,24 @@ export class Button extends UIElement {
   }
 
   setInput(input: Input): this {
-    if (!(input instanceof Input)) new Error('需求Input类')
+    if (!(input instanceof Input)) throw new Error('需求Input类')
     this.input = input
     return this
   }
 
   setSound(sound: Sound): this {
-    if (!(sound instanceof Sound)) new Error('需求Sound类')
+    if (!(sound instanceof Sound)) throw new Error('需求Sound类')
     this.sound = sound
     return this
   }
 
   setLayout(layout: Layout): this {
-    if (!(layout instanceof Layout)) new Error('参数需要Layout类')
+    if (!(layout instanceof Layout)) throw new Error('参数需要Layout类')
     this.layout = layout
     return this
   }
 
-  serialize(): SerializedElement {
-    // 序列化
-
-    // 复制Layout的属性
-    for (const key in this.layout) {
-      if (this.layout.hasOwnProperty(key)) {
-        this.properties.set(key, this.layout[key])
-      }
-    }
-
-    // 复制input的属性
-    for (const key in this.input) {
-      if (this.input.hasOwnProperty(key)) {
-        this.properties.set(key, this.input[key])
-      }
-    }
-
-    // 复制sound的属性
-    for (const key in this.sound) {
-      if (this.sound.hasOwnProperty(key)) {
-        this.properties.set(key, this.sound[key])
-      }
-    }
-
-    // 复制DataBinding的属性
-    for (const key in this.dataBinding) {
-      if (this.dataBinding.hasOwnProperty(key)) {
-        this.properties.set(key, this.dataBinding[key])
-      }
-    }
-
-    // 复制Factory的属性
-    for (const key in this.factory) {
-      if (this.factory.hasOwnProperty(key)) {
-        this.properties.set(key, this.factory[key])
-      }
-    }
-
-    // 复制Control的属性
-    for (const key in this.control) {
-      if (this.control.hasOwnProperty(key)) {
-        this.properties.set(key, this.control[key])
-      }
-    }
-
-    // 调用父类的serialize方法
-    return super.serialize()
+  protected serializableSources(): object[] {
+    return [this.layout, this.input, this.sound, this.dataBinding, this.factory, this.control]
   }
 }
