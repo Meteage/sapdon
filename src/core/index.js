@@ -10,6 +10,3 @@ export * from './ui/index.js'
 export * from './texture.js'
 export * from '../utils/index.js'
 export { registry } from './registry.js'
-
-//ui export 
-export * from "./ui/export.js"

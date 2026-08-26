@@ -1,10 +1,8 @@
 import { DataBindingObject } from "../../dataBindingObject.js";
 import { Button } from "../../elements/button.js";
-import { Image } from "../../elements/image.js";
 import { Panel } from "../../elements/panel.js";
 import { UIElement } from "../../elements/uiElement.js";
 import { Layout } from "../../properties/layout.js";
-import { Sprite } from "../../properties/sprite.js";
 import { UISystem } from "../system.js";
 
 /**
@@ -50,37 +48,6 @@ export class SapdonServerUI {
         return formButtonTemplate;
     }
 
-    /** 框架侧固定提供的纹理按钮模板 sapdon_textured_button@common.button（三态纹理 + 门控） */
-    static createTexturedButtonTemplate(): UIElement {
-        const tpl = new Button("sapdon_textured_button", "common.button")
-            .addVariable("pressed_button_name", "button.form_button_click")
-            .addVariable("default_texture|default", "textures/ui/focus_border_white")
-            .addVariable("hover_texture|default", "textures/ui/focus_border_white")
-            .addVariable("pressed_texture|default", "textures/ui/focus_border_white")
-            .addVariable("binding_button_text|default", "")
-            .addControls([
-                new Image("default").setSprite(new Sprite().setTexture("$default_texture")),
-                new Image("hover").setSprite(new Sprite().setTexture("$hover_texture")),
-                new Image("pressed").setSprite(new Sprite().setTexture("$pressed_texture")),
-            ]);
-        tpl.dataBinding.addDataBinding(
-            new DataBindingObject().setBindingType("collection_details").setBindingCollectionName("form_buttons")
-        );
-        tpl.dataBinding.addDataBinding(
-            new DataBindingObject()
-                .setBindingType("collection")
-                .setBindingCollectionName("form_buttons")
-                .setBindingName("#form_button_text")
-        );
-        tpl.dataBinding.addDataBinding(
-            new DataBindingObject()
-                .setBindingType("view")
-                .setSourcePropertyName("($binding_button_text = #form_button_text)")
-                .setTargetPropertyName("#visible")
-        );
-        return tpl;
-    }
-
     /** 通用页面壳 custom_panel_content: panel_id 精确匹配 + 内容(下)/按键(上) */
     static createPanelContentShell(): UIElement {
         const shell = new Panel("custom_panel_content")
@@ -104,7 +71,6 @@ export class SapdonServerUI {
         this._system = system;
 
         system.addElement(this.createFormButtonTemplate());
-        system.addElement(this.createTexturedButtonTemplate());
         system.addElement(this.createPanelContentShell());
 
         // custom_full_screen：native vs sapdon 分流
