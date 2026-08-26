@@ -22,9 +22,18 @@ export class SapdonButtonPanel {
     private rows = 1;
     private occupied = new Set<number>();
     private nextIndex = 0;
+    private debug = false;
+
+    private static readonly RED = [1, 0, 0, 1] as [number, number, number, number];
 
     constructor(gridId: string) {
         this.grid = new Grid(gridId);
+    }
+
+    /** 每个放置格渲染红色调试框（用于观察 grid_position / pos_wrap 布局） */
+    enableDebug(): this {
+        this.debug = true;
+        return this;
     }
 
     /** 网格尺寸 [列, 行] */
@@ -89,7 +98,7 @@ export class SapdonButtonPanel {
     /** 摆一个按钮（内部生成带 grid_position 的 pos_wrap 面板，命名 grid_item_<id> 零填充） */
     private placeInternal([w, h]: [number, number], id: number, content: UIElement): void {
         const name = `grid_item_${String(id).padStart(3, "0")}`;
-        this.grid.addGridItem([w, h], content, name);
+        this.grid.addGridItem([w, h], content, name, this.debug ? SapdonButtonPanel.RED : undefined);
     }
 
     /** 摆一个按钮到 [w, h]（内部生成带 grid_position 的 pos_wrap 面板，命名 grid_item_<id> 零填充） */

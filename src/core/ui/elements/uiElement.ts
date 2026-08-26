@@ -62,15 +62,17 @@ export class UIElement {
     this.modifications = []
   }
 
-  enableDebug(): this {
-    this.control.addControl({
-      debug_board: {
-        type: 'image',
-        texture: 'textures/ui/focus_border_white',
-        nineslice_size: 1,
-        size: ['100%', '100%'],
-      },
-    })
+  enableDebug(color?: [number, number, number, number]): this {
+    const board: { type: string; texture: string; nineslice_size: number; fill: boolean; keep_ratio: boolean; size: string[]; color?: number[] } = {
+      type: 'image',
+      texture: 'textures/ui/focus_border_white',
+      nineslice_size: 1,
+      fill: true,
+      keep_ratio: false,
+      size: ['100%', '100%'],
+    }
+    if (color) board.color = color
+    this.control.addControl({ debug_board: board })
     return this
   }
 

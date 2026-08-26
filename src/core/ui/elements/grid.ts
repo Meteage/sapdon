@@ -19,11 +19,12 @@ export class Grid extends CollectionPanel {
     return this
   }
 
-  addGridItem(grid_position: Offset2, content: UIElement | JsonUIBag, name?: string): this {
+  addGridItem(grid_position: Offset2, content: UIElement | JsonUIBag, name?: string, debugColor?: [number, number, number, number]): this {
     const item_name = name || `grid_item_${this.gridNum}`
     const grid_item = new Panel(item_name)
     grid_item.addProp('grid_position', grid_position)
     grid_item.addControl(content)
+    if (debugColor) grid_item.enableDebug(debugColor)
     this.addControl(grid_item)
     this.gridNum++
     return this
