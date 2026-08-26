@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "strict": true,
+    "resolveJsonModule": true,
+    "outDir": "./dev"
+  },
+  "include": ["scripts/**/*.ts", "src/**/*.ts", "main.ts"]
+}
