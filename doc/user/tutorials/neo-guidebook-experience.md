@@ -123,10 +123,10 @@ getPageIds() 写 scripts/guide_pages.js        .body(page_id)
 | 产物 | 作用 | 谁生成 |
 |---|---|---|
 | `dev/<proj>_RP/ui/<name>.json` | 书页 UI 控件 | `registry.submit()` 自动 |
-| `dev/<proj>_RP/ui/server_form.json` | title 绑定 + 按钮工厂 | `ServerUISystem.bindingTitlewithContent` 自动 |
+| `dev/<proj>_RP/ui/server_form.json` | title 前缀路由 + 按钮工厂 | `SapdonServerUI` 自动 |
 | `dev/<proj>_RP/ui/_ui_defs.json` | 声明所有 UI 文件 | `UISystemRegistry` 自动 |
 
-> `server_form.json` 的 title 绑定是**累加**的（`#title_text - 'guidebook'`），加第二个书会自动并列，互不冲突。
+> `server_form.json` 通过 `SapdonServerUI` 的前缀标题路由（`#title_text - 'sapdon_ui:'`）分派页面，多个书/页面各自按 `$panel_id` 精确匹配，互不冲突。
 
 ---
 
@@ -249,7 +249,7 @@ function openGuidebook(player, index) {
 
 ```js
 // main.mjs 构建时
-import { NeoGuidebook, NeoGuidebookPage, ServerFormButton } from '@sapdon/core'
+import { NeoGuidebook, NeoGuidebookPage } from '@sapdon/core'
 
 // 1) 方块总览分类页：子目录用 sub 前缀，避免与目录页 item_* id 冲突
 const nav = new NeoGuidebookPage("blocksNavRight")

@@ -683,11 +683,10 @@ UIElement (基类: name, type, template, control, layout, properties)
 | 系统 | 文件 | 说明 |
 |------|------|------|
 | `UISystem` | `systems/system.js` | 核心 UI 文件系统，管理 elements + animations |
-| `ServerFormSystem` | `systems/serverForm.js` | 预置服务器表单 UI |
+| `SapdonServerUI` | `systems/sapdon/sapdonServerUI.ts` | 页面壳路由系统，生成 `server_form.json` |
 | `ChestUISystem` | `systems/chest.js` | 容器 UI 系统 |
 | `ContainerUISystem` | `systems/containerUISystem.js` | 自定义容器 UI |
-| `Guidebook` | `systems/guidebook.js` | 指南书 UI |
-| `NeoGuidebook` | `systems/neoGuibook/book.ts` | 新版指南书 UI，详见 [neo-guidebook.md](neo-guidebook.md) |
+| `NeoGuidebook` | `systems/neoGuibook/book.ts` | 指南书 UI，详见 [neo-guidebook.md](../user/api/neo-guidebook.md) |
 | `HudUISystem` | `systems/hud/hud.ts` | HUD 系统 |
 | `HudStatePanel` | `systems/hud/hudElement.ts` | HUD 状态面板 |
 

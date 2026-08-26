@@ -48,7 +48,7 @@ registry.submit()
 | `.body("page_id")` | `#form_text` | 切换可见页面（匹配页面的 `$binding_text`） |
 | `.button("text")` | `#form_button_text` | 匹配按钮的 `$binding_button_text`，控制哪个按钮 visible |
 
-> NeoGuidebook 已迁移到新接口：注册走 `SapdonServerUI.registerPage`（`panelId = sapdon_ui:<name>`），书拆为 `内容面板 + 按键面板`，导航/章节按钮使用 `SapdonTexturedButton`（模板 `server_form.sapdon_textured_button`），不再依赖旧 `ServerUISystem`/`sapdon_form_button_factory`。
+> NeoGuidebook 已迁移到新接口：注册走 `SapdonServerUI.registerPage`（`panelId = sapdon_ui:<name>`），书拆为 `内容面板 + 按键面板`，导航/章节按钮使用 `SapdonTexturedButton`（模板 `server_form.sapdon_textured_button`）。旧 `ServerUISystem`/`Guidebook` 已移除。
 
 ---
 
