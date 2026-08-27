@@ -70,7 +70,7 @@ test_ui/
 
 ```typescript
 import {
-    Label, Layout, Panel, SapdonButton, SapdonButtonPanel, SapdonPanel,
+    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonPanel,
     SapdonServerUI, StackPanel, Text, registry
 } from '@sapdon/core'
 ```
@@ -100,20 +100,17 @@ apple_content_panel.addControl(
 
 ## 4. 定义按键面板
 
-按键面板画在内容面板**上层**。两个表单按钮用 `SapdonButtonPanel`(grid 2×1) 摆到左右下角；右上角放一个普通退出键（不占表单集合）。
+按键面板画在内容面板**上层**。两个表单按钮用 `FormButtonGrid`(grid 2×1) 摆到左右下角；右上角放一个普通退出键（不占表单集合）。
 
 ```typescript
-import { Button } from '@sapdon/core'
+import { Button, FormButton, FormButtonGrid } from '@sapdon/core'
 
 const apple_buttons_panel = new Panel("apple_buttons_panel")
     .setLayout(new Layout().setSize(["40%", "40%"]))
     .addControl(
-        new SapdonButtonPanel("apple_buttons_grid")
-            .setDimensions([2, 1])                       // 左右两份
-            .setCollection("form_buttons")
-            .setSize(["100%", "100%"])
-            .place([0, 0], new SapdonButton("bt0").setAnchor("bottom_left"))
-            .place([1, 0], new SapdonButton("bt1").setAnchor("bottom_right"))
+        new FormButtonGrid("apple_buttons_grid", { dimensions: [2, 1], size: ["100%", "100%"] })
+            .addButton(0, new FormButton("bt0").setAnchor("bottom_left"))   // 左边一枚
+            .addButton(1, new FormButton("bt1").setAnchor("bottom_right"))  // 右边一枚
             .build()
     )
     .addControl(
@@ -125,8 +122,8 @@ const apple_buttons_panel = new Panel("apple_buttons_panel")
 ```
 
 要点：
-- `grid_dimensions [2,1]` 把按键面板切成左右两半；格子内默认左上对齐，`setAnchor("bottom_left")` / `("bottom_right")` 把按钮落到两个下角。
-- 表单按钮走 `SapdonButton`（自动引用框架模板 `server_form.form_button`，吃 `form_buttons` 集合数据）。
+- `FormButtonGrid` 的 `dimensions [2,1]` 把按键面板切成左右两半；`addButton(index, btn)` 逐枚注入集合/门控绑定并定位，按钮自身用 `setAnchor("bottom_left")` / `("bottom_right")` 落到两个下角。
+- 表单按钮走 `FormButton`（基底 `@common.button` 无文字，纹理用 `setTexture`，门控用 `setBinding`；绑定由格盘注入）。
 - 退出键用 `common.button` + `button.menu_exit`，点击关闭表单。
 
 ---
@@ -190,8 +187,8 @@ npm run build  # 构建并复制到开发包目录
 构建产物（`dev/test_ui_RP/ui/`）：
 
 ```
-server_form.json        # 路由壳（custom_full_screen / sapdon_screen_content / custom_panel_content / form_button）
-sapdon_ui_apple.json    # 页面：内容面板 + 按键面板
+server_form.json        # 路由壳（third_party_server_screen / main_screen_content / custom_panel_content）
+sapdon_ui_apple.json    # 页面：内容面板 + 按键面板（含 FormButtonGrid）
 _ui_defs.json           # 自动登记
 ```
 

@@ -1,16 +1,20 @@
 import {
-    Control, DataBindingObject, Image, Label, Layout, Panel, SapdonButton,
-    SapdonButtonPanel, SapdonServerUI, Sprite, Text, UISystem, UIElement,
+    Button, ButtonMapping, Control, DataBindingObject, FormButton, FormButtonGrid, Image, Input,
+    Label, Layout, Panel, SapdonServerUI, Sprite, Text, UISystem, UIElement,
 } from '@sapdon/core'
 
 /**
  * 一页 = 一个内容元素 + 一个按钮组（对称门控）。
  * 内容/按钮组都以 page_id 门控；组内按钮以 setBinding(text) 门控。
  */
+
+/** 一枚按钮 + 叠加式绝对落点（透传给 FormButtonGrid.addButton 的 pos，不传则走基坐标） */
+export type GatedButton = { btn: FormButton; pos?: [number, number] }
+
 export type GatedPage = {
     id: string
     content: UIElement
-    buttons: SapdonButton[]
+    buttons: GatedButton[]
 }
 
 /**
@@ -45,8 +49,8 @@ export class SymGatedBook {
         })
     }
 
-    /** 注册一页：内容元素 + 该页按钮组（按钮需已 setBinding） */
-    addPage(id: string, content: UIElement, buttons: SapdonButton[] = []): this {
+    /** 注册一页：内容元素 + 该页按钮组（每枚 { btn, pos? }，按钮需已 setBinding） */
+    addPage(id: string, content: UIElement, buttons: GatedButton[] = []): this {
         this.pages.push({ id, content, buttons })
         return this
     }
@@ -61,11 +65,27 @@ export class SymGatedBook {
         )
     }
 
+/** 退出按钮：一次按压映射 menu_select → menu_exit 关闭表单（全局常显） */
+    private createCloseButton(): UIElement {
+        return new Button('close_button')
+            .setLayout(new Layout().setSize([14, 14]).setAnchorFrom('top_right').setAnchorTo('top_right'))
+            .setInput(new Input().setButtonMappings([
+                new ButtonMapping().setMappingType('pressed')
+                    .setFromButtonId('button.menu_select')
+                    .setToButtonId('button.menu_exit'),
+            ]))
+            .addControls([
+                new UIElement('default', undefined, 'book.close_button_default'),
+                new UIElement('hover', undefined, 'book.close_button_hover'),
+                new UIElement('pressed', undefined, 'book.close_button_pressed'),
+            ])
+    }
+
     build(): void {
         // —— 内容面板：多内容页，按 binding_text 门控 ——
         const content_panel = new Panel(`${this.name}_content_panel`)
             .setLayout(new Layout().setSize(this.size))
-            // .addControl(new Image('gated_book_background').setSprite(new Sprite().setTexture(this.background)))
+            .addControl(new Image('gated_book_background').setSprite(new Sprite().setTexture(this.background)))
 
         const pages_root = new Panel('gated_book_pages_panel')
             .setLayout(new Layout().setSize(['100%', '100%']))
@@ -93,18 +113,15 @@ export class SymGatedBook {
             .setControl(new Control().setLayer(5))
             // .enableDebug()
         for (const p of this.pages) {
-            // 每个页面一个独立按钮 grid：按钮必须由 grid 管理，游离按钮绑定无效
-            const grid = new SapdonButtonPanel(`${p.id}_buttons`)
-                .setDimensions([Math.max(p.buttons.length, 1), 1])
-                .setSize(['100%', '100%'])
-                .setCollection('form_buttons')
-                .enableDebug()
-            p.buttons.forEach((b, i) => grid.place([i, 0], b))
+            // 每个页面一个 FormButtonGrid：按钮必须 addButton 进去才生效（游离按钮绑定无效）
+            const grid = new FormButtonGrid(`${p.id}_buttons`, { dimensions: [Math.max(p.buttons.length, 1), 1], size: ['100%', '100%'] }).enableDebug()
+            p.buttons.forEach((b, i) => grid.addButton(i, b.btn, b.pos))
             const built = grid.build()
             this.gate(built, p.id)
             groups_root.addControl(built)
         }
         buttons_panel.addControl(groups_root)
+        buttons_panel.addControl(this.createCloseButton())
 
         this.system.addElement(content_panel)
         this.system.addElement(buttons_panel)

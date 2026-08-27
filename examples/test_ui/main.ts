@@ -1,5 +1,5 @@
 import {
-    Button, Label, Layout, Panel, SapdonButton, SapdonButtonPanel, SapdonPanel,
+    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonPanel,
     SapdonServerUI, StackPanel, Text, UIElement, registry
 } from '@sapdon/core'
 
@@ -19,12 +19,9 @@ apple_content_panel.addControl(
 const apple_buttons_panel = new Panel("apple_buttons_panel")
     .setLayout(new Layout().setSize(["40%", "40%"]))
     .addControl(
-        new SapdonButtonPanel("apple_buttons_grid")
-            .setDimensions([2, 1])                       // 左右两份
-            .setCollection("form_buttons")
-            .setSize(["100%", "100%"])
-            .place([0, 0], new SapdonButton("bt0").setAnchor("bottom_left"))
-            .place([1, 0], new SapdonButton("bt1").setAnchor("bottom_right"))
+        new FormButtonGrid("apple_buttons_grid", { dimensions: [2, 1], size: ["100%", "100%"] })
+            .addButton(0, new FormButton("bt0").setAnchor("bottom_left"))
+            .addButton(1, new FormButton("bt1").setAnchor("bottom_right"))
             .build()
     )
     .addControl(

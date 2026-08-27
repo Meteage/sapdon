@@ -1,5 +1,4 @@
 import { DataBindingObject } from "../../dataBindingObject.js";
-import { Button } from "../../elements/button.js";
 import { Modifications, UIElement } from "../../elements/uiElement.js";
 import { Panel } from "../../elements/panel.js";
 import { Layout } from "../../properties/layout.js";
@@ -34,21 +33,6 @@ export class SapdonServerUI {
     private static _pagesPanel: Panel | null = null;
     private static _pageCount = 0;
 
-    /** 框架侧固定提供的按钮项模板：form_button@common_buttons.light_text_button */
-    static createFormButtonTemplate(): UIElement {
-        const formButtonTemplate = new Button("form_button", "common_buttons.light_text_button")
-            .addVariable("pressed_button_name", "button.form_button_click")
-            .setLayout(new Layout().setSize([16, 16]).setAnchorFrom("top_left").setAnchorTo("top_left"))
-            .addVariable("button_text", "#form_button_text")
-            .addVariable("button_text_binding_type", "collection")
-            .addVariable("button_text_grid_collection_name", "form_buttons")
-            .addVariable("button_text_max_size", ["100%", 20]);
-        formButtonTemplate.dataBinding.addDataBinding(
-            new DataBindingObject().setBindingType("collection_details").setBindingCollectionName("form_buttons")
-        );
-        return formButtonTemplate;
-    }
-
     /** 通用页面壳 custom_panel_content: panel_id 前缀匹配 + 内容(下)/按键(上) + 向下传绑定名变量 */
     static createPanelContentShell(): UIElement {
         const shell = new Panel("custom_panel_content")
@@ -75,7 +59,6 @@ export class SapdonServerUI {
         const system = new UISystem(`${this.NS}:${this.NS}`, "ui/");
         this._system = system;
 
-        system.addElement(this.createFormButtonTemplate());
         system.addElement(this.createPanelContentShell());
 
         // sapdon_long_form_panel：所有注册页的容器（main_screen_content 作用域内，#title_text/#form_text 可用）

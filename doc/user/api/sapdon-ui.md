@@ -1,5 +1,7 @@
 # Sapdon UI 页面壳系统 API 参考
 
+> 按钮组件采用 `FormButton`（纯样式，`@common.button` 无文字）+ `FormButtonGrid`（格盘，注入集合/门控绑定）。背景与踩坑见 `doc/dev/ui-lessons.md`。
+
 Sapdon UI 是一套「sapdon_ui: 前缀标题路由 + 页面壳」的自定义 Server Form UI 系统。它用 TypeScript 声明式生成 `server_form.json` 路由结构与每个页面的独立 UI 文件，运行时通过 `ActionFormData` 的 title 前缀自动分流：`sapdon_ui:` 开头的标题渲染自定义全屏 UI，其它标题走原版原生表单。
 
 ---
@@ -9,8 +11,8 @@ Sapdon UI 是一套「sapdon_ui: 前缀标题路由 + 页面壳」的自定义 S
 1. [架构总览](#1-架构总览)
 2. [SapdonServerUI 类](#2-sapdonserverui-类)
 3. [SapdonPanel 类](#3-sapdonpanel-类)
-4. [SapdonButtonPanel 类](#4-sapdonbuttonpanel-类)
-5. [SapdonButton 类](#5-sapdonbutton-类)
+4. [FormButtonGrid 类](#4-formbuttongrid-类)
+5. [FormButton 类](#5-formbutton-类)
 6. [运行时触发](#6-运行时触发)
 7. [已知注意点](#7-已知注意点)
 
@@ -106,48 +108,50 @@ new SapdonPanel("sapdon_ui_apple")      // 生成 ui/sapdon_ui_apple.json (ns: s
 
 ---
 
-## 4. SapdonButtonPanel 类
+## 4. FormButtonGrid 类
 
-构建按键网格面板（grid）。网格通过 `collection_name: form_buttons` 提供每项数据上下文，`place()` 把按钮按 `grid_position` 摆到指定格（内部即 pos_wrap：面板包裹 + `grid_position`）。
+构建按键格盘（内部一个 `Grid`，`collection_name: form_buttons`）。构造函数必填 `dimensions` + `size`；`addButton(index, btn, pos?)` 逐枚**注入集合/门控绑定**并定位（`FormButton` 只有加进格盘才生效）。
 
 ```typescript
-import { SapdonButtonPanel, SapdonButton } from '@sapdon/core'
+import { FormButton, FormButtonGrid } from '@sapdon/core'
 
-const buttons = new SapdonButtonPanel("apple_buttons_panel")
-    .setDimensions([2, 1])                       // [列, 行]
-    .setCollection("form_buttons")               // 注入表单按钮集合
-    .setSize(["100%", "100%"])
-    .place([0, 0], new SapdonButton("bt0").setAnchor("bottom_left"))
-    .place([1, 0], new SapdonButton("bt1").setAnchor("bottom_right"))
+const buttons = new FormButtonGrid("apple_buttons_grid", { dimensions: [2, 1], size: ["100%", "100%"] })
+    .addButton(0, new FormButton("bt0").setAnchor("bottom_left"))
+    .addButton(1, new FormButton("bt1").setAnchor("bottom_right"))
     .build()
 ```
 
 | 方法 | 说明 |
 |------|------|
-| `setDimensions([cols, rows])` | 网格尺寸（**列 × 行**） |
-| `setCollection(name)` | 注入集合（表单场景固定 `form_buttons`） |
-| `setSize(size)` | 网格尺寸 |
-| `place([col, row], element)` | 摆一个按钮/控件到指定格（自动包一层 pos_wrap） |
+| `constructor(id, { dimensions, size })` | `dimensions`=**[列, 行]**、`size`=面板大小，均必填 |
+| `addButton(index, btn, pos?)` | `index` 决定基准格（`index%cols, index/cols`），`pos` 叠加；注入 collection 三件套绑定 |
+| `enableDebug()` | 给每个格子描红调试框 |
 | `build()` | 返回 `Grid` |
 
-> **布局技巧**：`grid_dimensions [2,1]` 把面板切成左右两份；格子内控件默认左上对齐，改锚点 `bottom_left` / `bottom_right` / `top_right` 即可把按钮贴到对应角。
+> **布局技巧**：`dimensions [2,1]` 把面板切成左右两份；按钮自身用 `setAnchor("bottom_left"/"bottom_right"/"top_right")` 贴到对应角。
 
 ---
 
-## 5. SapdonButton 类
+## 5. FormButton 类
 
-表单按钮的封装：默认模板固定为 `server_form.form_button`（吃 `form_buttons` 集合数据），无需手写模板引用。
+表单按钮（纯样式）封装：基底固定 `common.button`（**无文字 label**，绕开 `light_text_button` 的空 `binding_name` 坑），三态纹理由 `setTexture` 提供；集合/门控绑定由 `FormButtonGrid.addButton` 注入。
 
 ```typescript
-import { SapdonButton } from '@sapdon/core'
+import { FormButton } from '@sapdon/core'
 
-new SapdonButton("bt0")                 // → bt0@server_form.form_button
-    .setAnchor("bottom_left")           // 锚点对齐，默认 32×32
+new FormButton("bt0")
+    .setTexture("textures/ui/..._default", "textures/ui/..._hover", "textures/ui/..._pressed")
+    .setBinding("bt0")              // 门控键：== #form_button_text 时可见（绑定由 Grid 注入）
+    .setAnchor("bottom_left")       // 锚点对齐
+    .setSize(24, 24)
 ```
 
 | 方法 | 说明 |
 |------|------|
-| `setAnchor(anchor)` | 设置 `anchor_from`/`anchor_to` 对齐（如 `bottom_left`、`bottom_right`、`top_right`），默认尺寸 32×32 |
+| `setTexture(d, h, p)` | 三态纹理（default / hover / pressed） |
+| `setBinding(key)` | 门控键（仅记变量；真正绑定由 `FormButtonGrid` 注入） |
+| `setAnchor(anchor)` | 设置锚点对齐（原地改，保留尺寸/offset） |
+| `setSize(w, h)` | 设置尺寸（原地改，保留锚点/offset） |
 
 > 右上角的「退出」这类非集合按钮，请用普通 `Button("exit", "common.button")` + `$pressed_button_name: "button.menu_exit"` 手写，不占用表单按钮集合。
 

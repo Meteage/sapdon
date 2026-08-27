@@ -1,5 +1,5 @@
 import {
-    Label, Layout, Panel, SapdonButton, Text, UIElement, registry,
+    FormButton, Label, Layout, Panel, Text, registry,
 } from '@sapdon/core'
 import { SymGatedBook } from './src/gated_book'
 
@@ -19,29 +19,32 @@ function page(pageId: string, title: string, body: string): Panel {
     return p
 }
 
-// ---------- 页内按钮 helper：SapdonButton + setBinding 门控 + 锚点 ----------
-function navBtn(id: string, binding: string, anchor: string): SapdonButton {
-    return new SapdonButton(id)
-        .setBinding(binding)
-        .setLayout(
-            new Layout()
-                .setSize([24, 24])
-                .setAnchorFrom(anchor)
-                .setAnchorTo(anchor)
-        )
+// ---------- 页内按钮 helper：FormButton（纯样式：三态纹理 + setBinding 门控 + 自带角锚） ----------
+// binding 名 → 三态纹理（参考 NeoGuidebook：pageleft=上一页 / pageright=下一页 / shiftleft=首页）
+const NAV_TEXTURES: Record<string, [string, string, string]> = {
+    prev_button: ['textures/ui/book_pageleft_default', 'textures/ui/book_pageleft_hover', 'textures/ui/book_pageleft_pressed'],
+    next_button: ['textures/ui/book_pageright_default', 'textures/ui/book_pageright_hover', 'textures/ui/book_pageright_pressed'],
+    home_button: ['textures/ui/book_shiftleft_default', 'textures/ui/book_shiftleft_hover', 'textures/ui/book_shiftleft_pressed'],
 }
+
+const navBtn = (id: string, binding: string, anchor: string): FormButton =>
+    new FormButton(id)
+        .setTexture(...NAV_TEXTURES[binding])
+        .setBinding(binding)
+        .setAnchor(anchor)
+        .setSize(24, 24)
 
 // ---------- 3 页：每页各自的内容 + 按钮组（prev/next/home 按页配置） ----------
 const book = new SymGatedBook('gateddemo:book', [320, 207])
 
 book.addPage('page1', page('page1', '第一页', '正文：只有 next（跳转到第 2 页）'),
-    [navBtn('next', 'next_button', 'bottom_right')])
+    [{ btn: navBtn('next', 'next_button', 'bottom_right') }])
 
 book.addPage('page2', page('page2', '第二页', '正文：有 prev 与 next'),
-    [navBtn('prev', 'prev_button', 'bottom_left'), navBtn('next', 'next_button', 'bottom_right')])
+    [{ btn: navBtn('prev', 'prev_button', 'bottom_left') }, { btn: navBtn('next', 'next_button', 'bottom_right') ,pos:[1,0]}])
 
 book.addPage('page3', page('page3', '第三页', '正文：有 prev 与 home'),
-    [navBtn('prev', 'prev_button', 'bottom_left'), navBtn('home', 'home_button', 'bottom_middle'),navBtn('next', 'next_button', 'bottom_right')])
+    [{ btn: navBtn('prev', 'prev_button', 'bottom_left') }, { btn: navBtn('home', 'home_button', 'bottom_middle') ,pos:[1,0]}, { btn: navBtn('next', 'next_button', 'bottom_right') }])
 
 book.build()
 
