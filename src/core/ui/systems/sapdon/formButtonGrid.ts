@@ -35,15 +35,15 @@ export class FormButtonGrid {
         return this
     }
 
-    /** 加一枚按钮：index 决定基准格（off_col = index%c, off_row = index/c）；给 pos 则叠加。Grid 注入绑定并生效。 */
-    addButton(index: number, btn: FormButton, pos?: [number, number]): this {
+    /** 加一枚内容：index 决定基准格（off_col = index%c, off_row = index/c）；给 pos 则叠加。仅 FormButton 注入集合/门控绑定。 */
+    addButton(index: number, btn: FormButton | UIElement, pos?: [number, number]): this {
         // grid_position 顺序 = [col, row]；基准格行优先：col = index%c, row = index/c
         const base_col = index % this.cols
         const base_row = Math.floor(index / this.cols)
         const col = -base_col + (pos ? pos[0] : 0)
         const row = -base_row + (pos ? pos[1] : 0)
         btn.layout.setOffset([`${col * 100}%`, `${row * 100}%`] as unknown as [number, number]) // 百分偏移重映射位置（保留 size/anchor）
-        this.injectBindings(btn)
+        if (btn instanceof FormButton) this.injectBindings(btn)
         this.grid.addGridItem([base_col, base_row], btn, `grid_item_${String(index).padStart(3, '0')}`,
             this.debug ? FormButtonGrid.RED : undefined)
         this.index = Math.max(this.index, index + 1)
