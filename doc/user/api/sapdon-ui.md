@@ -24,7 +24,7 @@ Sapdon UI 是一套「sapdon_ui: 前缀标题路由 + 页面壳」的自定义 S
 
 | 文件 | 内容 |
 |------|------|
-| `ui/server_form.json` | 路由壳：屏幕、native/自定义分流、页面壳 `custom_panel_content`、按钮模板 `form_button` |
+| `ui/server_form.json` | 路由壳：屏幕、native/自定义分流、扁平化的 `sapdon_long_form_panel`（modifications 注入各注册页） |
 | `ui/sapdon_ui_xxx.json` | 每个页面一个独立文件（内容面板 + 按键面板） |
 | `ui/_ui_defs.json` | 自动登记所有 UI 文件 |
 
@@ -37,9 +37,10 @@ third_party_server_screen@common.base_screen   (type: screen)
    │     visible = title 不含 'sapdon_ui:'
    └─ sapdon_custom_full@sapdon_screen_content
          visible = title 含 'sapdon_ui:'
-         └─ (每个注册页) @custom_panel_content   ← $panel_id 精确匹配 title
-              ├─ content@$user_content_panel    (下)
-              └─ buttons@$user_buttons_panel    (上, 后绘制覆盖)
+         └─ @server_form.sapdon_long_form_panel (size:[fill,fill])
+              └─ (modifications controls.insert_back) 每个注册页 Panel ← $panel_id 前缀匹配 title
+                   ├─ content@$user_content_panel    (下)
+                   └─ buttons@$user_buttons_panel    (上, 后绘制覆盖)
 ```
 
 ### 脚本 ↔ JSON UI 绑定
@@ -53,7 +54,7 @@ third_party_server_screen@common.base_screen   (type: screen)
 
 ## 2. SapdonServerUI 类
 
-负责生成 `server_form.json` 的完整路由壳（屏幕、分流、页面壳、form_button 模板），并提供页面注册入口。
+负责生成 `server_form.json` 的完整路由壳（屏幕、分流、扁平化的 `sapdon_long_form_panel`），并提供页面注册入口。
 
 ```typescript
 import { SapdonServerUI } from '@sapdon/core'
@@ -80,8 +81,7 @@ SapdonServerUI.registerPage({
 - `third_party_server_screen@common.base_screen`：`$screen_content` 指向 `custom_full_screen`，附带退出动画抑制与 `menu_cancel → menu_exit` 映射。
 - `custom_full_screen`：`native_form`（`((#title_text - 'sapdon_ui:') = #title_text)` → 非自定义显示）与 `sapdon_screen_content`（取反）分流。
 - `sapdon_screen_content`：`sapdon_ui:` 前缀可见，承载所有注册页。
-- `custom_panel_content`：通用页面壳，`(#title_text = $panel_id)` 精确匹配，内容(下)+按键(上)两块。
-- `form_button@common_buttons.light_text_button`：框架固定提供的表单按钮模板（16×16，集合绑定 `form_buttons`）。
+- `sapdon_long_form_panel`：`main_screen_content` 内（`size:[fill,fill]`），用 `modifications controls.insert_back` **扁平化注入**每个注册页 Panel（`$panel_id` 前缀门控，内容(下)+按键(上)），不再经过 `custom_panel_content` 中壳。
 
 ---
 

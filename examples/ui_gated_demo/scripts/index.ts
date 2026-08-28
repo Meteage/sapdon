@@ -1,34 +1,47 @@
 import { world, Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
-// 与 main.ts 里每页 setBinding(buttonName) 对齐的按钮 emit 表
-const PAGE_BUTTONS: Record<string, string[]> = {
-    page1: ["next_button"],
-    page2: ["prev_button", "next_button"],
-    page3: ["prev_button", "home_button"],
-};
-const ORDER = ["page1", "page2", "page3"];
+// 与 main.ts 的 ManualBook 分类对齐
+const CATS = [
+    { key: "layout", text: "手册用可复用内容块 + 纵向 StackPanel 逐格排布页面，不靠绝对坐标。" },
+    { key: "routing", text: "每页一个独立 factory，页面根以 #title_text 前缀门控；#form_text 控布局。" },
+    { key: "buttons", text: "FormButton 无文字贴图按钮，由 FormButtonGrid 注入集合/门控绑定。" },
+];
 
-function open(player: Player, page: string): void {
-    const form = new ActionFormData()
-        .title("sapdon_ui:book")                       // #title_text 只做路由（Wiki 前缀标记）
-        .body(page)                                    // → #form_text 切内容页 + 按钮组（binding_text 门控）
-    for (const b of PAGE_BUTTONS[page]) form.button(b) // → 组内对应按钮可见（setBinding 门控）
+const TITLE = "sapdon_ui:book";
+
+function openIndex(player: Player): void {
+    const form = new ActionFormData().title(TITLE).body("INDEX");
+    for (let i = 0; i < 4; i++) form.button(`idx${i}`); // 右栏四个分类图标按钮
+    form.show(player).then((r) => {
+        if (r.canceled) return;
+        world.sendMessage(`[manual] X index selection=${r.selection}`);
+        openIndex(player); // 占位：点击暂不跳转，专注视觉
+    });
+}
+
+function openText(player: Player, idx: number): void {
+    const form = new ActionFormData().title(TITLE).body(`TXT|${CATS[idx].text}`);
+    const hasPrev = idx > 0;
+    const hasNext = idx < CATS.length - 1;
+    // 顺序 = selection：prev / home / next
+    const act: ("prev" | "home" | "next")[] = [];
+    if (hasPrev) act.push("prev");
+    act.push("home");
+    if (hasNext) act.push("next");
+    for (const a of act) form.button(a === "home" ? "home_button" : a === "prev" ? "prev_button" : "next_button");
 
     form.show(player).then((r) => {
-        console.warn(`[gated] title=sapdon_ui:book body=${page} canceled=${r.canceled} selection=${r.selection}`);
-        world.sendMessage(`[gated] body=${page} selection=${r.selection}`);
         if (r.canceled) return;
-        const action = PAGE_BUTTONS[page][r.selection!];
-        const cur = ORDER.indexOf(page);
-        if (action === "next_button") open(player, ORDER[cur + 1]);
-        else if (action === "prev_button") open(player, ORDER[cur - 1]);
-        else if (action === "home_button") open(player, ORDER[0]);
+        const a = act[r.selection!];
+        if (a === "prev") openText(player, idx - 1);
+        else if (a === "next") openText(player, idx + 1);
+        else openIndex(player);
     });
 }
 
 world.afterEvents.itemUse.subscribe((event) => {
     if (event.itemStack.typeId !== "minecraft:stick") return;
     if (event.source.typeId !== "minecraft:player") return;
-    open(event.source as Player, "page1");
+    openIndex(event.source as Player);
 });

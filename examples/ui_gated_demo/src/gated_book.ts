@@ -29,13 +29,15 @@ export type GatedPage = {
 export class SymGatedBook {
     private system: UISystem
     private pages: GatedPage[] = []
-    private size: [number, number]
+    private size: [number|string, number|string]
     private background: string
     private name: string
+    private namespace: string
 
-    constructor(identifier: string, size: [number, number] = [320, 207], background: string = 'textures/ui/book_back') {
+    constructor(identifier: string, size: [number|string, number|string] = [320, 207], background: string = 'textures/ui/book_back') {
         const [namespace, name] = identifier.split(':')
         this.name = name
+        this.namespace = namespace
         this.size = size
         this.background = background
         this.system = new UISystem(identifier, 'ui/')
@@ -47,6 +49,16 @@ export class SymGatedBook {
             contentPanel: `${namespace}.${name}_content_panel`,
             buttonsPanel: `${namespace}.${name}_buttons_panel`,
         })
+
+        // 页面根壳：在本书的 UI 文件里注册 <name>（供 server_form 工厂 long_form 引用）
+        this.system.addElement(
+            SapdonServerUI.createPageRoot({
+                name,
+                panelId: `sapdon_ui:${name}`,
+                contentRef: `${namespace}.${name}_content_panel`,
+                buttonsRef: `${namespace}.${name}_buttons_panel`,
+            })
+        )
     }
 
     /** 注册一页：内容元素 + 该页按钮组（每枚 { btn, pos? }，按钮需已 setBinding） */

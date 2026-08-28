@@ -212,9 +212,9 @@ elem.dataBinding.addDataBinding(
 采用 Bedrock Wiki Action Form 官方路由：
 
 ```
-main_screen_content ─(modification: controls.insert_back)→ sapdon_form_factory
+main_screen_content(size:[fill,fill]) ─(modification: controls.insert_back)→ sapdon_form_factory
   └─ factory{ server_form_factory, long_form } → @server_form.sapdon_long_form_panel
-       └─ 所有注册页 @server_form.custom_panel_content（$panel_id 前缀门控）
+       └─ (modifications controls.insert_back) 所有注册页 Panel（$panel_id 前缀门控，扁平化）
             ├─ content@$user_content_panel   (下)
             └─ buttons@$user_buttons_panel   (上)
 long_form ─(modification: bindings)→ title 含 'sapdon_ui:' 时隐藏原生表单

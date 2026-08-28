@@ -1,7 +1,6 @@
 import { DataBindingObject } from "../../dataBindingObject.js";
 import { Modifications, UIElement } from "../../elements/uiElement.js";
 import { Panel } from "../../elements/panel.js";
-import { Layout } from "../../properties/layout.js";
 import { UISystem } from "../system.js";
 
 /**
@@ -10,9 +9,8 @@ import { UISystem } from "../system.js";
  * 采用 Bedrock Wiki「Modifying Server Forms — Action Form」官方路由：
  *   main_screen_content ─(modification: insert_back controls)→ sapdon_form_factory
  *     └─ factory { name: server_form_factory, control_ids.long_form } → @server_form.sapdon_long_form_panel
- *          └─ 所有注册页 @custom_panel_content（$panel_id 前缀门控）
- *             ├─ content@$user_content_panel   (下)
- *             └─ buttons@$user_buttons_panel   (上)
+ *          └─ (modifications insert_back) 所有注册页 Panel（$panel_id 前缀门控）
+ *             └─ content@$user_content_panel (下) + buttons@$user_buttons_panel (上)
  *   vanilla long_form ─(modification: bindings)→ title 含 'sapdon_ui:' 时隐藏原生表单
  *
  * 关键收益：自定义页处于 main_screen_content 作用域 → #form_text / #title_text 均可解析。
@@ -30,28 +28,8 @@ export class SapdonServerUI {
     static readonly NS = "server_form";
 
     private static _system: UISystem | null = null;
-    private static _pagesPanel: Panel | null = null;
+    private static _factories: unknown[] = [];
     private static _pageCount = 0;
-
-    /** 通用页面壳 custom_panel_content: panel_id 前缀匹配 + 内容(下)/按键(上) + 向下传绑定名变量 */
-    static createPanelContentShell(): UIElement {
-        const shell = new Panel("custom_panel_content")
-            .setLayout(new Layout().setSize(["100%", "100%"]))
-            .addControl(new UIElement("content", undefined, "$user_content_panel"))
-            .addControl(new UIElement("buttons", undefined, "$user_buttons_panel"))
-            // 变量传递：注册页内容/按钮面板可读 $title_text / $form_text（值为绑定名，作用域内解析）
-            .addVariable("title_text", "#title_text")
-            .addVariable("form_text", "#form_text");
-        shell.dataBinding.addDataBinding(new DataBindingObject().setBindingName("#title_text"));
-        shell.dataBinding.addDataBinding(
-            new DataBindingObject()
-                .setBindingType("view")
-                // title 含 $panel_id 前缀即命中（允许 `:pageId` 后缀，如 sapdon_ui:book:page1）
-                .setSourcePropertyName(`((#title_text - $panel_id) != #title_text)`)
-                .setTargetPropertyName("#visible")
-        );
-        return shell;
-    }
 
     private static _ensureBuilt(): UISystem {
         if (this._system) return this._system;
@@ -59,26 +37,14 @@ export class SapdonServerUI {
         const system = new UISystem(`${this.NS}:${this.NS}`, "ui/");
         this._system = system;
 
-        system.addElement(this.createPanelContentShell());
-
-        // sapdon_long_form_panel：所有注册页的容器（main_screen_content 作用域内，#title_text/#form_text 可用）
-        const pagesPanel = new Panel("sapdon_long_form_panel")
-            .setLayout(new Layout().setSize(["100%", "100%"]));
-        pagesPanel.dataBinding.addDataBinding(new DataBindingObject().setBindingName("#title_text"));
-        system.addElement(pagesPanel);
-        this._pagesPanel = pagesPanel;
-
-        // main_screen_content：注入 factory（Wiki Action Form 路由）
-        const sapdonFormFactory = new UIElement("sapdon_form_factory", "panel")
-            .addProp("factory", {
-                name: "server_form_factory",
-                control_ids: { long_form: `@${this.NS}.sapdon_long_form_panel` },
+        // main_screen_content(vanilla)：注入每页一个 gated factory（modifications 合法）
+        const mainScreenContent = new UIElement("main_screen_content")
+            .addProp("size", ["fill", "fill"])
+            .addModification({
+                array_name: "controls",
+                operation: Modifications.OPERATION.INSERT_BACK,
+                value: this._factories,
             });
-        const mainScreenContent = new UIElement("main_screen_content").addModification({
-            array_name: "controls",
-            operation: Modifications.OPERATION.INSERT_BACK,
-            value: [sapdonFormFactory.serialize()],
-        });
         system.addElement(mainScreenContent);
 
         // long_form：title 含 'sapdon_ui:' 时隐藏原生表单
@@ -120,23 +86,41 @@ export class SapdonServerUI {
         return system;
     }
 
-    /** 注册一个自定义页面到 sapdon_long_form_panel */
+    /** 页面根壳：在页面自己的 UISystem 里生成 <name> 元素（门控 + content/buttons 子控件 + 变量），供工厂 long_form 引用 */
+    static createPageRoot(reg: { name: string; panelId: string; contentRef: string; buttonsRef: string }): UIElement {
+        const page = new Panel(reg.name)
+            .addVariable("panel_id", reg.panelId)
+            .addVariable("title_text", "#title_text")
+            .addVariable("form_text", "#form_text")
+            .addControl(new UIElement("content", undefined, reg.contentRef))
+            .addControl(new UIElement("buttons", undefined, reg.buttonsRef));
+        // 门控：#title_text 含 <panelId> 前缀即命中（如 sapdon_ui:book），用 not((A-B)=A) 判定
+        page.dataBinding.addDataBinding(new DataBindingObject().setBindingName("#title_text"));
+        page.dataBinding.addDataBinding(
+            new DataBindingObject()
+                .setBindingType("view")
+                .setSourcePropertyName(`(not( (#title_text - '${reg.panelId}') = #title_text))`)
+                .setTargetPropertyName("#visible")
+        );
+        return page;
+    }
+
+    /** 注册一个自定义页面：向 main_screen_content 追加一个纯 gated factory（long_form → @<页ns>.<name>），门控在页面根 */
     static registerPage(reg: SapdonPageRegistration): void {
-        const system = this._ensureBuilt();
-        const pagesPanel = this._pagesPanel!;
+        this._ensureBuilt();
 
         const name = reg.name ?? `page${this._pageCount}`;
-        const page = new UIElement(name, "panel", `${this.NS}.custom_panel_content`)
-            .addVariable("panel_id", reg.panelId)
-            .addVariable("user_content_panel", reg.contentPanel instanceof UIElement ? reg.contentPanel.id : reg.contentPanel);
-        if (reg.buttonsPanel != null) {
-            page.addVariable("user_buttons_panel", reg.buttonsPanel instanceof UIElement ? reg.buttonsPanel.id : reg.buttonsPanel);
-        }
+        const contentRef = reg.contentPanel instanceof UIElement ? reg.contentPanel.id : reg.contentPanel;
+        const ns = typeof contentRef === 'string' && contentRef.includes('.') ? contentRef.split('.')[0] : this.NS;
 
-        pagesPanel.addControl(page.serialize());
-
+        // 纯 factory（不 gate；gate 落在页面根 <name>）
+        const factory = new UIElement(`sapdon_form_factory_${name}`, "panel")
+            .addProp("factory", {
+                name: "server_form_factory",
+                control_ids: { long_form: `@${ns}.${name}` },
+            });
+        this._factories.push(factory.serialize());
         this._pageCount++;
-        void system;
     }
 
     static getSystem(): UISystem | null {

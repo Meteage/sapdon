@@ -125,11 +125,20 @@ const buttonsPanel = new Panel("gomoku_buttons_panel", undefined)
     .addControl(boardGridBuilt);
 
 // ---------- 组装页面 + 注册 ----------
-new SapdonPanel("gomoku")
+const gomokuSystem = new SapdonPanel("gomoku")
     .setContent(contentPanel)
     .setButtons(buttonsPanel)
-    .build()
-    .addElement(cellTemplate);
+    .build();
+gomokuSystem.addElement(cellTemplate);
+// 页面根壳：在本页 UI 文件注册 <name>，供 server_form 工厂 long_form 引用
+gomokuSystem.addElement(
+    SapdonServerUI.createPageRoot({
+        name: "gomoku",
+        panelId: "sapdon_ui:gomoku",
+        contentRef: "gomoku.gomoku_content_panel",
+        buttonsRef: "gomoku.gomoku_buttons_panel",
+    })
+);
 
 SapdonServerUI.registerPage({
     panelId: "sapdon_ui:gomoku",

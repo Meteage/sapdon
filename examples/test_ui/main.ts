@@ -5,7 +5,7 @@ import {
 
 // ---------- 页 A：sapdon_ui:apple（内容面板 + 按键网格面板） ----------
 const apple_content_panel = new Panel("apple_content_panel")
-    .setLayout(new Layout().setSize(["40%", "40%"]))
+    .setLayout(new Layout().setSize(["100%", "100%"]))
     .enableDebug();
 apple_content_panel.addControl(
     new StackPanel("main", undefined)
@@ -31,10 +31,19 @@ const apple_buttons_panel = new Panel("apple_buttons_panel")
             .addControl(new Label("exit_text", undefined).setText(new Text().setText("退出")))
     );
 
-new SapdonPanel("sapdon_ui_apple")
+const appleSystem = new SapdonPanel("sapdon_ui_apple")
     .setContent(apple_content_panel)
     .setButtons(apple_buttons_panel)
     .build();
+// 页面根壳：在本页 UI 文件注册 <name>，供 server_form 工厂 long_form 引用
+appleSystem.addElement(
+    SapdonServerUI.createPageRoot({
+        name: "apple",
+        panelId: "sapdon_ui:apple",
+        contentRef: "sapdon_ui_apple.apple_content_panel",
+        buttonsRef: "sapdon_ui_apple.apple_buttons_panel",
+    })
+);
 
 // ---------- 页 B：sapdon_ui:test（纯内容面板 + 空按键面板） ----------
 const test_content_panel = new Panel("test_content_panel")
@@ -46,10 +55,18 @@ test_content_panel.addControl(
 
 const test_buttons_panel = new Panel("test_buttons_panel")
     .setLayout(new Layout().setSize(["40%", "40%"]));
-new SapdonPanel("sapdon_ui_test")
+const testSystem = new SapdonPanel("sapdon_ui_test")
     .setContent(test_content_panel)
     .setButtons(test_buttons_panel)
     .build();
+testSystem.addElement(
+    SapdonServerUI.createPageRoot({
+        name: "test",
+        panelId: "sapdon_ui:test",
+        contentRef: "sapdon_ui_test.test_content_panel",
+        buttonsRef: "sapdon_ui_test.test_buttons_panel",
+    })
+);
 
 // ---------- 注册到 sapdon_screen_content ----------
 SapdonServerUI.registerPage({

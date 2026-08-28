@@ -187,7 +187,7 @@ npm run build  # 构建并复制到开发包目录
 构建产物（`dev/test_ui_RP/ui/`）：
 
 ```
-server_form.json        # 路由壳（third_party_server_screen / main_screen_content / custom_panel_content）
+server_form.json        # 路由壳（third_party_server_screen / main_screen_content / sapdon_long_form_panel，扁平化注入）
 sapdon_ui_apple.json    # 页面：内容面板 + 按键面板（含 FormButtonGrid）
 _ui_defs.json           # 自动登记
 ```
