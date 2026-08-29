@@ -5,28 +5,48 @@ import { ActionFormData } from "@minecraft/server-ui";
 const CATS = ["intro", "routing", "controls", "undecided"];
 const TITLE = "sapdon_ui:book";
 
+// 占位键：不匹配任何 setBinding，用于让对应导航按钮隐藏
+const NO_PREV = "no_prev";
+const NO_HOME = "no_home";
+const NO_NEXT = "no_next";
+const PREV = "prev_button";
+const HOME = "home_button";
+const NEXT = "next_button";
+
 function openIndex(player: Player): void {
     const form = new ActionFormData().title(TITLE).body("INDEX");
-    for (let i = 0; i < 4; i++) form.button(`idx${i}`); // 分类图标按钮
+    // 槽位：[no_prev, no_home, no_next, idx0..3] —— INDEX 三导航全部隐藏
+    form.button(NO_PREV);
+    form.button(NO_HOME);
+    form.button(NO_NEXT);
+    for (let i = 0; i < 4; i++) form.button(`idx${i}`);
     form.show(player).then((r) => {
         if (r.canceled) { console.warn(`[manual] INDEX canceled`); return; }
         const sel = r.selection!;
-        console.warn(`[manual] INDEX click → idx${sel}`);
-        if (sel < CATS.length) openCat(player, CATS[sel]);
+        console.warn(`[manual] INDEX click → sel=${sel}`);
+        if (sel >= 3 && sel - 3 < CATS.length) openCat(player, CATS[sel - 3]);
         else openIndex(player);
     });
 }
 
 function openCat(player: Player, id: string): void {
+    const idx = CATS.indexOf(id);
+    const hasPrev = idx > 0;
+    const hasNext = idx < CATS.length - 1;
     const form = new ActionFormData().title(TITLE).body(`CAT:${id}`);
-    for (let i = 0; i < 4; i++) form.button(`${id}_e${i}`); // 右页 4 条目（暂不跳转）
-    form.button("home_button");                             // 回索引
+    // 槽位：[prev?, home, next?, <id>_e0..3]
+    form.button(hasPrev ? "prev_button" : NO_PREV);
+    form.button("home_button");
+    form.button(hasNext ? "next_button" : NO_NEXT);
+    for (let i = 0; i < 4; i++) form.button(`${id}_e${i}`);
     form.show(player).then((r) => {
         if (r.canceled) { console.warn(`[manual] CAT:${id} canceled`); return; }
         const sel = r.selection!;
-        console.warn(`[manual] CAT:${id} click → ${sel === 4 ? "home_button" : `${id}_e${sel}`}`);
-        if (sel === 4) openIndex(player);   // home
-        else openCat(player, id);           // 条目暂不跳转，重开同页
+        console.warn(`[manual] CAT:${id} click → sel=${sel}`);
+        if (sel === 0 && hasPrev) openCat(player, CATS[idx - 1]); // prev
+        else if (sel === 1) openIndex(player);                    // home
+        else if (sel === 2 && hasNext) openCat(player, CATS[idx + 1]); // next
+        else openCat(player, id);                                  // 条目/边界：暂不跳，重开同页
     });
 }
 

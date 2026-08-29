@@ -215,7 +215,7 @@ export class ManualBook {
                 size:["100%","100%"],
                 dimensions:[1,1]
             });
-            topBtn.addButton(i,new FormButton(key)
+            topBtn.addButton(3+i,new FormButton(key)
                 .setBinding(key)
                 .setTexture('', 'textures/ui/promotion_slot', '')
                 ,[0,0]
@@ -303,7 +303,7 @@ export class ManualBook {
         const catRow = new FormButtonGrid(`cat_row`,{size:["90%","90%"],dimensions:[4,1]})
         const INDEX_ICONS = ['textures/items/book_writable', 'textures/items/comparator', 'textures/items/paper', 'textures/items/iron_ingot']
         INDEX_ICONS.forEach((ic, i) =>
-            catRow.addButton(i,new FormButton(`idx${i}`).setBinding(`idx${i}`).setTexture(ic, ic, ic).setSize("60%","60%"),[i,0])
+            catRow.addButton(3+i,new FormButton(`idx${i}`).setBinding(`idx${i}`).setTexture(ic, ic, ic).setSize("60%","60%"),[i,0])
         )
         right.addStack(['100%', '20%'], catRow.build())
         right.addStack(['100%', '3%'], new UIElement('div2', undefined, 'settings_common.option_group_section_divider'))
@@ -335,12 +335,12 @@ export class ManualBook {
         categories.forEach((c) => content.addControl(this.catPage(c)))
 
         // ---- 按键面板：导航网格 + 关闭 ----
-        const buttons = new Panel(`${this.name}_buttons_panel`).setLayout(new Layout().setSize(this.size as any))
+        const buttons = new Panel(`${this.name}_buttons_panel`).setControl(new Control().setLayer(10)).setLayout(new Layout().setSize(this.size as any))
         if (this.debug) buttons.enableDebug()
         buttons.addControl(this.closeButton())
         const navGrid = new FormButtonGrid('nav_grid', { dimensions: [3, 1], size: ['100%', '100%'] })
         if (this.debug) navGrid.enableDebug()
-        ;(['prev_button', 'home_button', 'next_button']).forEach((k, i) => navGrid.addButton(i, this.navButton(k)))
+        ;(['prev_button', 'home_button', 'next_button']).forEach((k, i) => navGrid.addButton(i, this.navButton(k),[i,0]))
         buttons.addControl(navGrid.build())
 
         this.system.addElement(content)
