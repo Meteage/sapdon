@@ -3,8 +3,12 @@ import { ManualBook } from './src/manual'
 
 const PLACEHOLDER_ICONS = ['textures/items/book_writable', 'textures/items/comparator', 'textures/items/paper', 'textures/items/iron_ingot']
 // 每分类词条数：intro 4 / layout 8 / controls 12 / undecided 5（>8 触发分页）
-function chapters(n: number): { name: string; icon: string }[] {
-    return Array.from({ length: n }, (_, i) => ({ name: `词条${i + 1}`, icon: PLACEHOLDER_ICONS[i % 4] }))
+function chapters(n: number): { name: string; icon: string; lines: string[] }[] {
+    return Array.from({ length: n }, (_, i) => ({
+        name: `词条${i + 1}`,
+        icon: PLACEHOLDER_ICONS[i % 4],
+        lines: [`这是「词条${i + 1}」的内容占位行一。`, `这是「词条${i + 1}」的内容占位行二。`],
+    }))
 }
 
 // 帕秋莉式手册：分类索引 → CAT:<id>|p<N>（p0 左简介/右 list，p1+ 左右 list）

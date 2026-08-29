@@ -16,6 +16,8 @@ import {
 export interface ManualChapter {
     name: string
     icon: string
+    /** 词条正文（多行，ENT 页逐行渲染） */
+    lines: string[]
 }
 
 export interface ManualCategory {
@@ -250,6 +252,44 @@ export class ManualBook {
         return pages
     }
 
+    /** ENT 词条内容页（L3）：左=词条标题+正文逐行，右=空；门控 ENT:<id>:<gi>|（尾部 | 避免 1/10 前缀串误判） */
+    private entPage(c: ManualCategory, gi: number): UIElement {
+        const ch = c.chapters[gi]
+        const tag = `ENT:${c.id}:${gi}|`
+        const page = new Panel(`ent_${c.id}_${gi}`)
+            .setLayout(new Layout().setSize(['95%', '90%']))
+            .setControl(new Control().setLayer(5))
+        this.gateLayout(page, tag)
+        if (this.debug) page.enableDebug()
+
+        const spread = new StackPanel(`ent_spread_${c.id}_${gi}`, undefined)
+            .setOrientation('horizontal')
+            .setLayout(new Layout().setSize(['100%', '100%']))
+
+        // 左页：空白5 / 标题10 / 分割5 / 正文逐行15%
+        const left = new StackPanel(`ent_left_${c.id}_${gi}`, undefined)
+            .setOrientation('vertical')
+            .setLayout(new Layout().setSize(['100%', '100%']))
+        left.addStack(['100%', '5%'], new Panel(`ent_sp1_${c.id}_${gi}`))
+        left.addStack(['100%', '10%'],
+            new Label(`ent_title_${c.id}_${gi}`, undefined).setText(new Text().setText(ch.name).setColor([0, 0, 0]).setTextAlignment('center'))
+        )
+        left.addStack(['100%', '5%'], new UIElement(`ent_div_${c.id}_${gi}`, undefined, 'settings_common.option_group_section_divider'))
+        ch.lines.forEach((ln, i) =>
+            left.addStack(['100%', '15%'],
+                new Label(`ent_line_${c.id}_${gi}_${i}`, undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
+            )
+        )
+
+        // 右页：空
+        const right = new Panel(`ent_right_${c.id}_${gi}`).setLayout(new Layout().setSize(['100%', '100%']))
+
+        spread.addStack(['50%', '100%'], left)
+        spread.addStack(['50%', '100%'], right)
+        page.addControl(spread)
+        return page
+    }
+
     build(categories: ManualCategory[]): this {
         const ns = `${this.namespace}.${this.name}`
 
@@ -352,6 +392,9 @@ export class ManualBook {
 
         // CAT 页（L2）：每个分类的页容器（layer 5，CAT:<id>|p<N> 门控）
         categories.forEach((c) => this.catPages(c).forEach((pg) => content.addControl(pg)))
+
+        // ENT 页（L3）：每个词条一个内容页容器（layer 5，ENT:<id>:<gi>| 门控）
+        categories.forEach((c) => c.chapters.forEach((_, gi) => content.addControl(this.entPage(c, gi))))
 
         // ---- 按键面板：导航网格 + 关闭 ----
         const buttons = new Panel(`${this.name}_buttons_panel`).setControl(new Control().setLayer(10)).setLayout(new Layout().setSize(this.size as any))

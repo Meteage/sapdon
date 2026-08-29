@@ -49,7 +49,27 @@ function openCat(player: Player, id: string, page: number): void {
         if (sel === 0 && hasPrev) openCat(player, id, page - 1); // prev（词条分页）
         else if (sel === 1) openIndex(player);                   // home → 回 INDEX（A：切分类走 INDEX）
         else if (sel === 2 && hasNext) openCat(player, id, page + 1); // next（词条分页）
-        else openCat(player, id, page);                          // 条目/边界：暂不跳，重开同页
+        else if (sel >= 3) {                                     // 词条点击 → ENT 内容页
+            const gi = start + (sel - 3);
+            if (gi < total) openEnt(player, id, gi, page);
+            else openCat(player, id, page);
+        } else openCat(player, id, page);
+    });
+}
+
+function openEnt(player: Player, id: string, gi: number, fromPage: number): void {
+    const form = new ActionFormData().title(TITLE).body(`ENT:${id}:${gi}|`);
+    // 槽位：[prev_button(返回分类), home_button(回INDEX), no_next(隐藏)] —— 无 next 跳词条
+    form.button("prev_button");
+    form.button("home_button");
+    form.button(NO_NEXT);
+    form.show(player).then((r) => {
+        if (r.canceled) { console.warn(`[manual] ENT:${id}:${gi} canceled`); return; }
+        const sel = r.selection!;
+        console.warn(`[manual] ENT:${id}:${gi} click → sel=${sel}`);
+        if (sel === 0) openCat(player, id, fromPage); // prev → 返回来源分类页
+        else if (sel === 1) openIndex(player);        // home → 回 INDEX
+        else openEnt(player, id, gi, fromPage);        // 边界：重开
     });
 }
 
