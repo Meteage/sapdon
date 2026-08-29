@@ -154,81 +154,100 @@ export class ManualBook {
         )
     }
 
-    /** CAT 页（L2）：左=简介(A)，右=章节标题+4 条目行；门控 CAT:<id> */
-    private catPage(c: ManualCategory): UIElement {
-        const page = new Panel(`cat_${c.id}`)
-            .setLayout(new Layout().setSize(['95%', '90%']))
-            .setControl(new Control().setLayer(5))
-        this.gateLayout(page, `CAT:${c.id}`)
-        if (this.debug) page.enableDebug()
-
-        const spread = new StackPanel(`cat_spread_${c.id}`, undefined)
-            .setOrientation('horizontal')
-            .setLayout(new Layout().setSize(['100%', '100%']))
-
-        // 左页：空白5 / 标题10 / 空5 / 分割5 / 空5 / 简介70
-        const left = new StackPanel(`cat_left_${c.id}`, undefined)
+    /** 章节列表列（章节标题 + 分割线 + ≤8 行条目） */
+    private catListColumn(c: ManualCategory, k: number, side: string, start: number, end: number): UIElement {
+        const col = new StackPanel(`cat_list_${c.id}_p${k}_${side}`, undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
-        left.addStack(['100%', '5%'], new Panel(`sp_l1_${c.id}`))
-        left.addStack(['100%', '10%'],
-            new Label(`cat_title_${c.id}`, undefined).setText(new Text().setText(c.title).setColor([0, 0, 0]).setTextAlignment('center'))
+        col.addStack(['100%', '5%'], new Panel(`sp_c1_${c.id}_p${k}_${side}`))
+        col.addStack(['100%', '10%'],
+            new Label(`chapter_title_${c.id}_p${k}_${side}`, undefined).setText(new Text().setText('章节').setColor([0, 0, 0]).setTextAlignment('center'))
         )
-        left.addStack(['100%', '5%'], new UIElement(`div_l_${c.id}`, undefined, 'settings_common.option_group_section_divider'))
-        // 简介：coverLines 同款，逐行 15%（左对齐黑字）
-        c.introLines.forEach((ln, i) =>
-            left.addStack(['100%', '15%'],
-                new Label(`cat_intro_${c.id}_${i}`, undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
-            )
-        )
-
-        // 右页：空白5 / 章节20 / 空5 / 分割5 / 条目65（4 行）
-        const right = new StackPanel(`cat_right_${c.id}`, undefined)
+        col.addStack(['100%', '5%'], new UIElement(`div_c_${c.id}_p${k}_${side}`, undefined, 'settings_common.option_group_section_divider'))
+        const rows = new StackPanel(`cat_rows_${c.id}_p${k}_${side}`, undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
-        right.addStack(['100%', '5%'], new Panel(`sp_r1_${c.id}`))
-        right.addStack(['100%', '10%'],
-            new Label(`chapter_title_${c.id}`, undefined).setText(new Text().setText('章节').setColor([0, 0, 0]).setTextAlignment('center'))
-        )
-        right.addStack(['100%', '5%'], new UIElement(`div_r_${c.id}`, undefined, 'settings_common.option_group_section_divider'))
-        // 条目行：仿 NeoGuidebook ChapterItem（底层内容行 + 顶层透明整行按钮），每行 10%
-        const rows = new StackPanel(`cat_rows_${c.id}`, undefined)
-            .setOrientation('vertical')
-            .setLayout(new Layout().setSize(['100%', '100%']))
-        c.chapters.forEach((ch, i) => {
-            const key = `${c.id}_e${i}`
-            const rowPanel = new Panel(`item_panel_${c.id}_${i}`).setLayout(new Layout().setSize(['100%', '100%']))
-            const contentStack = new StackPanel(`item_${c.id}_${i}`, undefined)
+        for (let gi = start; gi < end; gi++) {
+            const ch = c.chapters[gi]
+            const j = gi - start
+            const key = `${c.id}_e${gi}`
+            const rowPanel = new Panel(`item_panel_${c.id}_p${k}_${side}_${j}`).setLayout(new Layout().setSize(['100%', '100%']))
+            const contentStack = new StackPanel(`item_${c.id}_p${k}_${side}_${j}`, undefined)
                 .setOrientation('horizontal')
                 .setLayout(new Layout().setSize(['100%', '100%']))
-            contentStack.addStack(['15%', '100%'], new Panel(`sp_i1_${c.id}_${i}`))
+            contentStack.addStack(['15%', '100%'], new Panel(`sp_i1_${c.id}_p${k}_${side}_${j}`))
             contentStack.addStack(['10%', '100%'],
-                new Image(`item_image_${c.id}_${i}`, undefined).setSprite(new Sprite().setTexture(ch.icon))
+                new Image(`item_image_${c.id}_p${k}_${side}_${j}`, undefined).setSprite(new Sprite().setTexture(ch.icon))
             )
             contentStack.addStack(['60%', '100%'],
-                new Label(`item_name_${c.id}_${i}`, undefined).setText(new Text().setText(ch.name).setColor([0, 0, 0]).setTextAlignment('left'))
+                new Label(`item_name_${c.id}_p${k}_${side}_${j}`, undefined).setText(new Text().setText(ch.name).setColor([0, 0, 0]).setTextAlignment('left'))
             )
-            contentStack.addStack(['15%', '60%'], new Panel(`sp_i2_${c.id}_${i}`)) // 角标占位（本轮不做）
+            contentStack.addStack(['15%', '60%'], new Panel(`sp_i2_${c.id}_p${k}_${side}_${j}`))
             rowPanel.addControl(contentStack)
             // 顶层透明整行按钮（default 透明、hover 高亮），整行可点
-            const topBtn = new FormButtonGrid(key,{
-                size:["100%","100%"],
-                dimensions:[1,1]
-            });
-            topBtn.addButton(3+i,new FormButton(key)
-                .setBinding(key)
-                .setTexture('', 'textures/ui/promotion_slot', '')
-                ,[0,0]
-            );
+            const topBtn = new FormButtonGrid(key, { size: ['100%', '100%'], dimensions: [1, 1] })
+            topBtn.addButton(3 + j, new FormButton(key).setBinding(key).setTexture('', 'textures/ui/promotion_slot', ''), [0, 0])
             rowPanel.addControl(topBtn.build())
             rows.addStack(['100%', '10%'], rowPanel)
-        })
-        right.addStack(['100%', '80%'], rows)
+        }
+        col.addStack(['100%', '80%'], rows)
+        return col
+    }
 
-        spread.addStack(['50%', '100%'], left)
-        spread.addStack(['50%', '100%'], right)
-        page.addControl(spread)
-        return page
+    /** 介绍列（标题 + 分割线 + 简介逐行）——仅 p0 左页 */
+    private catIntroColumn(c: ManualCategory, k: number): UIElement {
+        const col = new StackPanel(`cat_intro_col_${c.id}_p${k}`, undefined)
+            .setOrientation('vertical')
+            .setLayout(new Layout().setSize(['100%', '100%']))
+        col.addStack(['100%', '5%'], new Panel(`sp_l1_${c.id}_p${k}`))
+        col.addStack(['100%', '10%'],
+            new Label(`cat_title_${c.id}_p${k}`, undefined).setText(new Text().setText(c.title).setColor([0, 0, 0]).setTextAlignment('center'))
+        )
+        col.addStack(['100%', '5%'], new UIElement(`div_l_${c.id}_p${k}`, undefined, 'settings_common.option_group_section_divider'))
+        c.introLines.forEach((ln, i) =>
+            col.addStack(['100%', '15%'],
+                new Label(`cat_intro_${c.id}_p${k}_${i}`, undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
+            )
+        )
+        return col
+    }
+
+    /**
+     * CAT 页（L2）：按词条数分页容器，门控 CAT:<id>|p<N>。
+     * p0：左=介绍，右=章节 list（≤8）；p1+：左、右都是章节 list（容量 8+8=16，先填左列再右列）。
+     */
+    private catPages(c: ManualCategory): UIElement[] {
+        const PER_ROW = 8
+        const PER_PAGE = 16 // p1+ 容量：左 8 + 右 8
+        const total = c.chapters.length
+        const pageCount = 1 + Math.max(0, Math.ceil(Math.max(0, total - PER_ROW) / PER_PAGE))
+        const pages: UIElement[] = []
+        for (let k = 0; k < pageCount; k++) {
+            const tag = `CAT:${c.id}|p${k}`
+            const page = new Panel(`cat_${c.id}_p${k}`)
+                .setLayout(new Layout().setSize(['95%', '90%']))
+                .setControl(new Control().setLayer(5))
+            this.gateLayout(page, tag)
+            if (this.debug) page.enableDebug()
+
+            const spread = new StackPanel(`cat_spread_${c.id}_p${k}`, undefined)
+                .setOrientation('horizontal')
+                .setLayout(new Layout().setSize(['100%', '100%']))
+
+            if (k === 0) {
+                spread.addStack(['50%', '100%'], this.catIntroColumn(c, k))
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', 0, Math.min(PER_ROW, total)))
+            } else {
+                const base = PER_ROW + (k - 1) * PER_PAGE
+                const leftEnd = Math.min(base + PER_ROW, total)
+                const rightEnd = Math.min(leftEnd + PER_ROW, total)
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'l', base, leftEnd))
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', leftEnd, rightEnd))
+            }
+            page.addControl(spread)
+            pages.push(page)
+        }
+        return pages
     }
 
     build(categories: ManualCategory[]): this {
@@ -331,8 +350,8 @@ export class ManualBook {
         txt.addControl(txtLabel)
         content.addControl(txt)
 
-        // CAT 页（L2）：每个分类一个容器（layer 5，CAT:<id> 门控）
-        categories.forEach((c) => content.addControl(this.catPage(c)))
+        // CAT 页（L2）：每个分类的页容器（layer 5，CAT:<id>|p<N> 门控）
+        categories.forEach((c) => this.catPages(c).forEach((pg) => content.addControl(pg)))
 
         // ---- 按键面板：导航网格 + 关闭 ----
         const buttons = new Panel(`${this.name}_buttons_panel`).setControl(new Control().setLayer(10)).setLayout(new Layout().setSize(this.size as any))
