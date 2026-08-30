@@ -64,6 +64,7 @@ new SapdonGuideBook(
 | 方法 | 说明 |
 |---|---|
 | `.build(categories: GuideBookCategory[])` | 传入分类数据，生成全部页面；返回 `this` |
+| `.setCover(title, lines)` | 自定义封面标题（可含 `\n`）与简介行，如 `.setCover('  我的手册 \\n            by Me', ['第一行简介', '第二行简介'])` |
 | `.enableDebug()` | 开启调试（显示 `#form_text` 当前值 / 格子描边） |
 | `.getSystem()` | 返回内部 `UISystem` |
 
@@ -232,6 +233,8 @@ world.afterEvents.itemUse.subscribe((e) => {
 });
 ```
 
+> **打开触发**默认是手持**木棍右键**（`minecraft:stick`）。若手册由某个具体物品打开（如 more-golem 的指南书），把 `e.itemStack.typeId` 换成该物品的 id，或改为在物品的 `onUse` 自定义组件里直接调 `openIndex(player)`。
+
 ---
 
 ## 7. 完整教程（从零做一个手册）
@@ -279,10 +282,15 @@ sapdon build ./
     "buildEntry": "main.ts",
     "scriptEntry": "scripts/index.ts",
     "scriptOutput": "scripts/index.js",
-    "buildMode": "dev"
+    "buildMode": "dev",
+    "dependencies": [
+      { "module_name": "@minecraft/server-ui", "version": "2.1.0" },
+      { "module_name": "@minecraft/server", "version": "2.8.0" }
+    ]
   }
 }
 ```
+> `dependencies` 里的 `@minecraft/server-ui` 是运行时路由（`ActionFormData`）必需的，别忘了。
 
 ---
 
