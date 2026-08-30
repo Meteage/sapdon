@@ -1,5 +1,4 @@
 import { system, world, ItemStack, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
-import { ActionFormData } from "@minecraft/server-ui";
 import {
     WIRE_TYPE,
     SWITCH_TYPE,
@@ -42,8 +41,6 @@ import {
     stageRead,
     stageClear,
 } from "./logicStore.js";
-import { PAGE_IDS, PAGE_NAV, PAGE_PREV } from "./guide_pages.js";
-
 const POWER_STATE = "sapdon:powered";
 const FACES = ["North", "South", "East", "West", "Up", "Down"];
 
@@ -425,51 +422,6 @@ system.beforeEvents.startup.subscribe((init) => {
             world.sendMessage(`[电路] 已保存逻辑 uuid=${record.uuid} mode=${record.mode || "table"} in=[${record.inputs.join(",")}] out=[${record.outputs.join(",")}]`);
         }
     });
-
-    // 游戏内指导手册：右键打开 NeoGuidebook UI（页面 id 清单由 main.mjs 生成到 scripts/guide_pages.js）
-    const guidePageIds = Array.isArray(PAGE_IDS) ? PAGE_IDS : [];
-
-    init.itemComponentRegistry.registerCustomComponent("sapdon:guidebook", {
-        onUse(event) {
-            const player = event.source;
-            if (!player || player.typeId !== "minecraft:player") return;
-            openGuidebook(player, 0);
-        },
-    });
-
-    // 指南书导航：上一页/下一页/首页 + 数据驱动的页面跳转按钮（PAGE_NAV：binding 键 -> 目标页）
-    function openGuidebook(player, index) {
-        const ids = guidePageIds.length ? guidePageIds : ["page_index0"];
-        const current = Math.max(0, Math.min(index, ids.length - 1));
-        const pageId = ids[current];
-
-        const form = new ActionFormData()
-            .title("guidebook")
-            .body(pageId);
-
-        const actions = [];
-        // 当前页配置的跳转按钮（目录页 item_*、方块总览分类页 sub_*）
-        const nav = PAGE_NAV && PAGE_NAV[pageId];
-        if (Array.isArray(nav)) {
-            for (const item of nav) {
-                form.button(item.key);
-                actions.push(`goto:${item.target}`);
-            }
-        }
-        if (current > 0) { form.button("prev_button"); actions.push("prev"); }
-        if (current < ids.length - 1) { form.button("next_button"); actions.push("next"); }
-        if (current !== 0) { form.button("home_button"); actions.push("home"); }
-
-        form.show(player).then((response) => {
-            if (response.canceled) return;
-            const action = actions[response.selection];
-            if (!action) return;
-            if (action === "prev") openGuidebook(player, (PAGE_PREV && PAGE_PREV[pageId] != null) ? PAGE_PREV[pageId] : current - 1);
-            else if (action === "next") openGuidebook(player, current + 1);
-            else if (action === "home") openGuidebook(player, 0);
-            else if (action.startsWith("goto:")) openGuidebook(player, parseInt(action.split(":")[1], 10));
-        }).catch(() => {});
-    }
 
     // 手动测试/管理命令：官方自定义命令（斜杠命令，无需 chatSend）
     registerLogicCommands(init.customCommandRegistry);
