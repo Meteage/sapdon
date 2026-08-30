@@ -2,13 +2,13 @@ import { world, Player } from "@minecraft/server";
 import { ActionFormData } from "@minecraft/server-ui";
 
 // 与 main.ts 的分类/词条配置对齐（英文 id；每分类词条总数）
-const CATS = ["intro", "routing", "controls", "undecided"];
-const CAT_CHAPTERS: Record<string, number> = { intro: 4, routing: 8, controls: 11, undecided: 5 };
+const CATS = ["intro", "pages", "routing", "controls"];
+const CAT_CHAPTERS: Record<string, number> = { intro: 4, pages: 6, routing: 6, controls: 6 };
 const PER_ROW = 8;   // 每列最多 8 行
 const PER_PAGE = 16; // p1+ 容量：左 8 + 右 8
 const TITLE = "sapdon_ui:book";
 // 词条页数（ENT 分页，默认 1；text 按 5 行/页）
-const ENT_PAGES: Record<string, number> = { controls_e7: 2 };
+const ENT_PAGES: Record<string, number> = { pages_e4: 2 };
 
 // 占位键：不匹配任何 setBinding，让对应导航按钮隐藏
 const NO_PREV = "no_prev";

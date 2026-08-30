@@ -268,8 +268,8 @@ export class ManualBook {
     private entPages(c: ManualCategory, gi: number): UIElement[] {
         const ch = c.chapters[gi]
         const type = ch.pageType ?? 'text'
-        const LINES_PER_PAGE = 5
-        const pageCount = type === 'text' ? Math.max(1, Math.ceil(ch.lines.length / LINES_PER_PAGE)) : 1
+        const LINES_PER_HALF = 5   // 每半页最多 5 行
+        const pageCount = type === 'text' ? Math.max(1, Math.ceil(ch.lines.length / (LINES_PER_HALF * 2))) : 1
         const pages: UIElement[] = []
         for (let ep = 0; ep < pageCount; ep++) {
             const tag = `ENT:${c.id}:${gi}|p${ep}`
@@ -354,9 +354,13 @@ export class ManualBook {
                         .setSprite(new Sprite().setTexture(ch.spotlight?.icon ?? ''))
                         .setLayout(new Layout().setSize(['60%', '100%']).setAnchorTo('center'))
                 )
-                left.addStack(['100%', '15%'],
-                    new Label(`ent_spotdesc_${c.id}_${gi}_p${ep}`, undefined).setText(new Text().setText(ch.spotlight?.desc ?? '').setColor([0, 0, 0]).setTextAlignment('left'))
-                )
+                // 描述按 \n 拆成多行、左对齐渲染，避免单行长文本溢出
+                const spotDescLines = (ch.spotlight?.desc ?? '').split('\n')
+                spotDescLines.forEach((ln, di) => {
+                    left.addStack(['100%', '8%'],
+                        new Label(`ent_spotdesc_${c.id}_${gi}_p${ep}_${di}`, undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
+                    )
+                })
             } else if (type === 'image') {
                 left.addStack(['100%', '60%'],
                     new Image(`ent_img_${c.id}_${gi}_p${ep}`, undefined)
@@ -367,14 +371,14 @@ export class ManualBook {
                     new Label(`ent_imgcap_${c.id}_${gi}_p${ep}`, undefined).setText(new Text().setText(ch.image?.caption ?? '').setColor([0, 0, 0]).setTextAlignment('left'))
                 )
             } else {
-                // text：分页渲染，把当前页的行分配到左右两半页（左：前半，右：后半），右页不再为空
-                const start = ep * LINES_PER_PAGE
-                const end = Math.min(start + LINES_PER_PAGE, ch.lines.length)
-                const inLeft = Math.ceil((end - start) / 2)
+                // text：先填左半页（最多 5 行），超出再填右半页；整体超过 10 行才分页
+                const start = ep * LINES_PER_HALF * 2
+                const end = Math.min(start + LINES_PER_HALF * 2, ch.lines.length)
+                const leftEnd = Math.min(start + LINES_PER_HALF, end)
                 for (let i = start; i < end; i++) {
                     const lineLabel = new Label(`ent_line_${c.id}_${gi}_p${ep}_${i}`, undefined)
                         .setText(new Text().setText(ch.lines[i]).setColor([0, 0, 0]).setTextAlignment('left'))
-                    if (i - start < inLeft) {
+                    if (i < leftEnd) {
                         left.addStack(['100%', '15%'], lineLabel)
                     } else {
                         right.addStack(['100%', '15%'], lineLabel)
