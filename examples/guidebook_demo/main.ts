@@ -1,9 +1,8 @@
-import { registry } from '@sapdon/core'
-import { ManualBook } from './src/manual'
+import { registry, SapdonGuideBook } from '@sapdon/core'
 
 // 帕秋莉式手册：INDEX 分类索引 → CAT:<id>|p<N> → ENT:<id>:<gi>|p<N>
 // 本手册用它"自己介绍自己"，向手册开发者展示这套手册系统自身的各种功能。
-const book = new ManualBook('gateddemo:book', [320, 207])
+const book = new SapdonGuideBook('gateddemo:book', [320, 207])
 
 book.build([
     {

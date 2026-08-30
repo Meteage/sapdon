@@ -1,4 +1,4 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, NeoGuidebook, StackPanel, Label, Text, Panel, UIElement, NeoGuidebookPage, BookImage, Image, Sprite, BookRecipeGrid, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout, Grid, GridProp, HudProgressBar } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, SapdonGuideBook, StackPanel, Label, Text, Panel, UIElement, Image, Sprite, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout, Grid, GridProp, HudProgressBar } from '@sapdon/core'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 
@@ -265,84 +265,57 @@ const neoGuidebook = ItemAPI.createItem("sapdon:neo_guidebook", ItemCategory.Ite
       neoGuidebook.addComponent(ItemComponent.setInteractButton("打开指南"))
 
 
-const neo_guidebook = new NeoGuidebook("neo_guidebook:neo_guidebook","ui/",[320,207]);
-
-const book_intro_text = "欢迎下载使用稻田傀儡模组 \n \n 本模组为MinecraftPE添加了一种\n新的实体:稻田傀儡 \n \n \n \n \n";
-const book_title_bar_text = "稻田傀儡模组指南\n     by Meteage";
-
-
-//1
-//本书介绍页
-const book_intro = new NeoGuidebookPage("book_intro_panel")
-      .addEmptySpace(["100%","5%"])
-      .addBookTitleBar(book_title_bar_text,["100%","15%"])
-      .addCategoryTitle(book_intro_text,["100%","70%"])
-
-
-
-//合成配方页
-//配方为:干草块 木棍 木棍
-//木棍 紫水晶 木棍
-//干草块 木棍 干草块
-const book_recipe = new NeoGuidebookPage("book_recipe")// 添加书籍分类
-      .addEmptySpace(["100%","5%"])
-      book_recipe.getPanel().addStack(["100%","50%"],
-        new Image("t",undefined).setSprite(
-          new Sprite().setTexture("textures/items/recipe_golem")
-        )
-      )
-
-
-const BOOK_CHAPTER_LIST = [
+// 稻田傀儡模组指南 —— 用 SapdonGuideBook 数据驱动构建
+const neo_guidebook = new SapdonGuideBook("neo_guidebook:neo_guidebook", [320, 207])
+  .setCover('  稻田傀儡模组指南 \n            by Meteage', [
+      '欢迎下载使用稻田傀儡模组',
+      '本模组为 Minecraft PE 添加了一种',
+      '新实体：稻田傀儡。',
+  ])
+  .build([
     {
-        chapter_name:`农业傀儡功能介绍`,
-        chapter_texture:"textures/items/apple"
+        id: 'intro', title: '简介', icon: 'textures/items/book_writable',
+        introLines: ['欢迎下载使用稻田傀儡模组。', '本模组添加了一种新实体：稻田傀儡。'],
+        chapters: [
+            { name: '模组内容', icon: 'textures/items/apple', lines: ['稻田傀儡是一种自动农田傀儡，', '能自动种植、收割、拾取掉落物。'] },
+            { name: '使用说明', icon: 'textures/items/book_writable', lines: ['手持「稻田傀儡模组指南」右键，', '即可打开本手册浏览。'] },
+        ],
     },
     {
-        chapter_name:`农业傀儡行为介绍`,
-        chapter_texture:"textures/items/apple"
+        id: 'features', title: '功能', icon: 'textures/items/apple',
+        introLines: ['农业傀儡的主要功能与行为。'],
+        chapters: [
+            { name: '功能介绍', icon: 'textures/items/apple', lines: [
+                '自动种植与收割小麦、胡萝卜、土豆、甜菜根',
+                '自动拾取掉落作物，存入 16 格背包',
+                '绑定箱子为家，16 格范围内自动工作',
+                '召唤：潜行右键箱子',
+                '收纳：使用傀儡收纳器捕获',
+            ]},
+            { name: '行为介绍', icon: 'textures/items/apple', lines: [
+                '闲暇模式：没有任务时在农田附近闲逛',
+                '耕种模式：发现未种植作物时前往种植',
+                '收获模式：作物成熟时自动前往收获',
+                '任务执行：执行间隔 2 秒一次',
+            ]},
+            { name: '制作方式', icon: 'textures/items/apple', lines: [
+                '制作农业傀儡需要以下材料：',
+                '- 2 个干草块',
+                '- 4 根木棍',
+                '- 1 个紫水晶碎片',
+                '按特定配方在工作台制作即可。',
+            ]},
+        ],
     },
     {
-        chapter_name:`农业傀儡制作方式`,
-        chapter_texture:"textures/items/apple"
-    }
-];
-
-//章节目录
-const book_chapter = new NeoGuidebookPage("book_chapter_panel")
-      .addChapters(BOOK_CHAPTER_LIST)
-      .buildChapterList()
-
-const golem_craft_intro = "制作农业傀儡需要以下材料：\n\n - 2个干草块\n - 4根木棍\n - 1个紫水晶碎片\n\n将这些材料按照特定的配方\n放置在工作台上即可制作出\n农业傀儡。\n\n\n\n"
-const golem_behavior_intro = "农业傀儡具有以下行为模式： \n\n 1.闲暇模式：在没有任务时，\n农业傀儡会在农田附近闲逛。\n\n 2.耕种模式 ：当检测到\n附近有未种植的农作物时，\n农业傀儡会自动前往并进行种植。\n\n 3.收获模式：当农作物成熟时，\n农业傀儡会自动前往并进行收获。\n 任务执行： 傀儡执行任务的间隔为2秒一次。\n"
-
-const book_chapter_1 = new NeoGuidebookPage("book_chapter_1")
-      .addEmptySpace(["100%","5%"])
-      .addCategoryTitle("农业傀儡功能介绍",["100%","15%"])
-      .addDivider(["100%","3%"])
-      .addBookText("自动种植与收割\n小麦、胡萝卜、土豆、甜菜根", ["100%","18%"])
-      .addBookText("自动拾取掉落作物\n存入16格背包", ["100%","18%"])
-      .addBookText("绑定箱子为家\n16格范围内自动工作", ["100%","18%"])
-      .addBookText("召唤：潜行右键箱子\n收纳：使用傀儡收纳器捕获", ["100%","15%"])
-      .addEmptySpace(["100%","8%"])
-
-const book_chapter_2 = new NeoGuidebookPage("book_chapter_3")
-      .addEmptySpace(["100%","5%"])
-      .addCategoryTitle("农业傀儡行为介绍",["100%","15%"])
-      .addBookText(golem_behavior_intro,["100%","75%"])
-      .addEmptySpace(["100%","5%"])
-
-const book_chapter_3 = new NeoGuidebookPage("book_chapter_2")
-      .addEmptySpace(["100%","5%"])
-      .addCategoryTitle("农业傀儡制作方式",["100%","15%"])
-      .addBookText(golem_craft_intro,["100%","75%"])
-      .addEmptySpace(["100%","5%"])
-
-
-
-neo_guidebook.addDoublePageStack("page_index0",book_intro.getPanel(),book_chapter.getPanel())
-neo_guidebook.addDoublePageStack("page_index1",book_chapter_1.getPanel(),book_chapter_2.getPanel())
-neo_guidebook.addDoublePageStack("page_index2",book_chapter_3.getPanel(),book_recipe.getPanel())
+        id: 'recipe', title: '配方', icon: 'textures/items/recipe_golem',
+        introLines: ['农业傀儡的合成配方。'],
+        chapters: [
+            { name: '合成配方', icon: 'textures/items/recipe_golem', pageType: 'image', lines: [],
+              image: { texture: 'textures/items/recipe_golem', caption: '干草块 木棍 木棍 / 木棍 紫水晶 木棍 / 干草块 木棍 干草块' } },
+        ],
+    },
+  ])
 /*
 RecipeAPI.registerSimpleShaped('golem_craft:farm_golem_summon',['golem_craft:farm_golem_summon'],
   ['HSH','SAS','HSH'],{

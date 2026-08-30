@@ -1,139 +1,83 @@
 import { world } from "@minecraft/server";
-import { ActionFormData} from "@minecraft/server-ui";
+import { ActionFormData } from "@minecraft/server-ui";
 
-const item_ui_list ={
-    "sapdon:neo_guidebook":"neo_guidebook",
-    "minecraft:stick":""
-};
+// 与 main.ts 的 SapdonGuideBook 分类/词条配置对齐
+const CATS = ["intro", "features", "recipe"];
+const CAT_CHAPTERS = { intro: 2, features: 3, recipe: 1 };
+const ENT_PAGES = { };
+const TITLE = "sapdon_ui:neo_guidebook";
 
-let page_index = 0;
+// 占位键：不匹配任何 setBinding，让对应导航按钮隐藏
+const NO_PREV = "no_prev";
+const NO_HOME = "no_home";
+const NO_NEXT = "no_next";
 
-function myLog(log){
-    //world.sendMessage(log);
+function myLog(log) {
+  // world.sendMessage(log);
+}
+
+function openIndex(player) {
+  const form = new ActionFormData().title(TITLE).body("INDEX");
+  form.button(NO_PREV);
+  form.button(NO_HOME);
+  form.button(NO_NEXT);
+  for (let i = 0; i < CATS.length; i++) form.button(`idx${i}`);
+  form.show(player).then((r) => {
+    if (r.canceled) return;
+    const s = r.selection;
+    if (s >= 3 && s - 3 < CATS.length) openCat(player, CATS[s - 3], 0);
+    else openIndex(player);
+  });
+}
+
+function openCat(player, id, page) {
+  const total = CAT_CHAPTERS[id] ?? 0;
+  const start = page === 0 ? 0 : 8 + (page - 1) * 16;
+  const end = Math.min(start + (page === 0 ? 8 : 16), total);
+  const form = new ActionFormData().title(TITLE).body(`CAT:${id}|p${page}`);
+  form.button(page > 0 ? "prev_button" : NO_PREV);
+  form.button("home_button");
+  form.button(end < total ? "next_button" : NO_NEXT);
+  for (let i = start; i < end; i++) form.button(`${id}_e${i}`);
+  form.show(player).then((r) => {
+    if (r.canceled) return;
+    const s = r.selection;
+    myLog(`CAT:${id} p${page} click → sel=${s}`);
+    if (s === 0 && page > 0) openCat(player, id, page - 1);
+    else if (s === 1) openIndex(player);
+    else if (s === 2 && end < total) openCat(player, id, page + 1);
+    else if (s >= 3) {
+      const gi = start + (s - 3);
+      if (gi < total) openEnt(player, id, gi, page, 0);
+      else openCat(player, id, page);
+    } else openCat(player, id, page);
+  });
+}
+
+function openEnt(player, id, gi, fromPage, ep) {
+  const pc = ENT_PAGES[`${id}_e${gi}`] ?? 1;
+  const form = new ActionFormData().title(TITLE).body(`ENT:${id}:${gi}|p${ep}`);
+  form.button("prev_button");
+  form.button("home_button");
+  form.button(ep < pc - 1 ? "next_button" : NO_NEXT);
+  form.show(player).then((r) => {
+    if (r.canceled) return;
+    const s = r.selection;
+    myLog(`ENT:${id}:${gi} p${ep} click → sel=${s}`);
+    if (s === 0) {
+      if (ep > 0) openEnt(player, id, gi, fromPage, ep - 1);
+      else openCat(player, id, fromPage);
+    } else if (s === 1) openIndex(player);
+    else if (s === 2 && ep < pc - 1) openEnt(player, id, gi, fromPage, ep + 1);
+    else openEnt(player, id, gi, fromPage, ep);
+  });
 }
 
 /** @type {import("@minecraft/server").ItemCustomComponent} */
 export const GuiBookItemComponent = {
-    onUse({itemStack,source}){
-        myLog(itemStack.typeId)
-        if(source.typeId != "minecraft:player") return
-        showGuidebook(source,item_ui_list[itemStack.typeId])
-        //showTestGuideBook(source,"")
-    }
-}
-
-const page_list = [];
-
-function createPage(ui){
-    //首页
-    const form = new ActionFormData()
-    .title(ui)
-    .body("page_index0")
-    //.button("prev_button")
-    .button("next_button") 
-
-    /*
-    .button("chatper_1")  //傀儡功能
-    .button("chatper_2")  //傀儡行为
-    .button("chatper_3")  //傀儡合成
-    */
-
-    for(let i = 0;i<3;i++){
-        form.button(`item_${i}_button`)
-        form.button(`item_${i}_warning`)
-    }
-
-    //2 功能与行为
-    const form2 = new ActionFormData()
-    .title(ui)
-    .body("page_index1")
-    .button("prev_button")
-    .button("next_button")
-    .button("home_button")
-
-    //3 合成
-    const form3 = new ActionFormData()
-    .title(ui)
-    .body("page_index2")
-    .button("prev_button")
-    //.button("next_button")
-    .button("home_button")
-
-    page_list.push(form);
-    page_list.push(form2);
-    page_list.push(form3);
-}
-
-
-function showGuidebook(target,ui){
-
-    if(page_list.length == 0) createPage(ui);
-
-    const form = page_list[page_index];
-    switch(page_index){
-        case 0:
-            form.show(target).then((response) => {
-                myLog("response.selection:"+response.selection)
-                switch(response.selection){
-                    case 0:
-                        page_index++;
-                        myLog("下一页")
-                        showGuidebook(target,ui);
-                        break;
-                    case 1:
-                        page_index = 1;
-                        myLog("傀儡功能")
-                        showGuidebook(target,ui);
-                        break;
-                    case 3:
-                        page_index = 1;
-                        myLog("傀儡行为")
-                        showGuidebook(target,ui);
-                        break;
-                    case 5:
-                        page_index = 2;
-                        myLog("傀儡合成")
-                        showGuidebook(target,ui);
-                        break;
-                }
-            });
-            break;
-        case 1:
-            form.show(target).then((response) => {
-                switch(response.selection){
-                    case 0:
-                        page_index--;
-                        myLog("上一页")
-                        showGuidebook(target,ui);
-                        break;
-                    case 1:
-                        page_index++;
-                        myLog("下一页")
-                        showGuidebook(target,ui);
-                        break;
-                    case 2:
-                        page_index = 0;
-                        myLog("首页")
-                        showGuidebook(target,ui);
-                        break;
-                }
-            });
-            break;
-        case 2:
-            form.show(target).then((response) => {
-                switch(response.selection){
-                    case 0:
-                        page_index--;
-                        myLog("上一页")
-                        showGuidebook(target,ui);
-                        break;
-                    case 1:
-                        page_index = 0;
-                        myLog("首页")
-                        showGuidebook(target,ui);
-                        break;
-                }
-            });
-            break;
-    }  
-}
+  onUse({ itemStack, source }) {
+    myLog(itemStack.typeId);
+    if (source.typeId != "minecraft:player") return;
+    openIndex(source);
+  }
+};

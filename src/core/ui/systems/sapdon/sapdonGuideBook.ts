@@ -1,27 +1,43 @@
-import {
-    Button, ButtonMapping, Control, DataBindingObject, FormButton, FormButtonGrid, Grid, GridProp, Image, Input, Label,
-    Layout, Panel, SapdonServerUI, Sprite, StackPanel, Text, UISystem, UIElement,
-} from '@sapdon/core'
+import { Button } from '../../elements/button.js'
+import { ButtonMapping } from '../../buttonMapping.js'
+import { Control } from '../../properties/control.js'
+import { DataBindingObject } from '../../dataBindingObject.js'
+import { FormButton } from './formButton.js'
+import { FormButtonGrid } from './formButtonGrid.js'
+import { Grid } from '../../elements/grid.js'
+import { GridProp } from '../../properties/gridProp.js'
+import { Image } from '../../elements/image.js'
+import { Input } from '../../properties/input.js'
+import { Label } from '../../elements/label.js'
+import { Layout } from '../../properties/layout.js'
+import { Panel } from '../../elements/panel.js'
+import { SapdonServerUI } from './sapdonServerUI.js'
+import { Sprite } from '../../properties/sprite.js'
+import { StackPanel } from '../../elements/stackPanel.js'
+import { Text } from '../../properties/text.js'
+import { UISystem } from '../system.js'
+import { UIElement } from '../../elements/uiElement.js'
 
 /**
- * ManualBook —— 帕秋莉式手册（B1：Index 分类索引 + Text 动态文本页 + home/prev/next 导航）。
+ * SapdonGuideBook —— 帕秋莉式手册（分类索引 INDEX + 词条列表 CAT + 内容页 ENT + home/prev/next 导航）。
  *
  * 线协议（运行时发射）：
- *   body = "INDEX"         → 显示分类索引网格（子按钮 = 各分类，setBinding 精确门控）
- *   body = "TXT|<正文>"     → 显示文本页（Label 绑定 #form_text - "TXT|"，动态文本）
+ *   body = "INDEX"          → 显示分类索引网格（子按钮 = 各分类，setBinding 精确门控）
+ *   body = "CAT:<id>|p<N>"   → 分类页（p0 左简介/右 list，p1+ 左右 list）
+ *   body = "ENT:<id>:<gi>|p<N>" → 词条内容页（按 pageType 渲染、可分页）
  *   title = "sapdon_ui:<name>"
- *   button(...)            → 集合 form_buttons：分类按钮 or 导航，均 exact-match 门控
+ *   button(...)             → 集合 form_buttons：分类按钮 or 导航，均 exact-match 门控
  */
 
-export type ChapterPageType = 'text' | 'crafting' | 'spotlight' | 'image'
+export type GuideBookPageType = 'text' | 'crafting' | 'spotlight' | 'image'
 
-export interface ManualChapter {
+export interface GuideBookChapter {
     name: string
     icon: string
-    /** 词条正文（多行，ENT 页逐行渲染；text 类型按 5 行/页分页） */
+    /** 词条正文（多行，ENT 页逐行渲染；text 类型按 5 行/半页分页） */
     lines: string[]
     /** 页类型（默认 text） */
-    pageType?: ChapterPageType
+    pageType?: GuideBookPageType
     /** crafting：3×3 合成格（9 项，空位 ''）+ 输出图标 */
     craft?: { grid: string[]; output: string }
     /** spotlight：大图标 + 描述 */
@@ -30,7 +46,7 @@ export interface ManualChapter {
     image?: { texture: string; caption: string }
 }
 
-export interface ManualCategory {
+export interface GuideBookCategory {
     /** 英文 id（路由用，如 intro / routing / controls / undecided） */
     id: string
     /** 中文标题（左页标题 / 索引卡名称） */
@@ -40,7 +56,7 @@ export interface ManualCategory {
     /** 简介正文（左页，多行，逐行渲染） */
     introLines: string[]
     /** 右页章节条目 */
-    chapters: ManualChapter[]
+    chapters: GuideBookChapter[]
 }
 
 const NAV_TEXTURES: Record<string, [string, string, string]> = {
@@ -49,13 +65,19 @@ const NAV_TEXTURES: Record<string, [string, string, string]> = {
     home_button: ['textures/ui/book_shiftleft_default', 'textures/ui/book_shiftleft_hover', 'textures/ui/book_shiftleft_pressed'],
 }
 
-export class ManualBook {
+export class SapdonGuideBook {
     private system: UISystem
     private namespace: string
     private name: string
     private size: [number | string, number | string]
     private background: string
     private debug = false
+    private coverTitle = '  Sapdon 手册 \n           1st 版 by meteage'
+    private coverLines = [
+        'hi 开发者，欢迎使用 Sapdon 手册。',
+        '本手册为基岩版开发者提供了简单容易的',
+        '手册前置库。',
+    ]
 
     constructor(identifier: string, size: [number, number] = [320, 207], background: string = 'textures/ui/book_back') {
         const [namespace, name] = identifier.split(':')
@@ -65,7 +87,7 @@ export class ManualBook {
         this.background = background
         this.system = new UISystem(identifier, 'ui/')
 
-        // 路由：server_form 只加 factory；页面根 <name> 在本文件注册
+        // 路由：server_form 只加 factory；页面根 <name> 在本类注册
         SapdonServerUI.registerPage({
             panelId: `sapdon_ui:${name}`,
             name,
@@ -84,6 +106,13 @@ export class ManualBook {
 
     enableDebug(): this {
         this.debug = true
+        return this
+    }
+
+    /** 自定义封面：标题（可含 \n）+ 简介行 */
+    setCover(title: string, lines: string[]): this {
+        this.coverTitle = title
+        this.coverLines = lines
         return this
     }
 
@@ -169,7 +198,7 @@ export class ManualBook {
     }
 
     /** 章节列表列（章节标题 + 分割线 + ≤8 行条目） */
-    private catListColumn(c: ManualCategory, k: number, side: string, start: number, end: number): UIElement {
+    private catListColumn(c: GuideBookCategory, k: number, side: string, start: number, end: number): UIElement {
         const col = new StackPanel(`cat_list_${c.id}_p${k}_${side}`, undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
@@ -209,7 +238,7 @@ export class ManualBook {
     }
 
     /** 介绍列（标题 + 分割线 + 简介逐行）——仅 p0 左页 */
-    private catIntroColumn(c: ManualCategory, k: number): UIElement {
+    private catIntroColumn(c: GuideBookCategory, k: number): UIElement {
         const col = new StackPanel(`cat_intro_col_${c.id}_p${k}`, undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
@@ -230,7 +259,7 @@ export class ManualBook {
      * CAT 页（L2）：按词条数分页容器，门控 CAT:<id>|p<N>。
      * p0：左=介绍，右=章节 list（≤8）；p1+：左、右都是章节 list（容量 8+8=16，先填左列再右列）。
      */
-    private catPages(c: ManualCategory): UIElement[] {
+    private catPages(c: GuideBookCategory): UIElement[] {
         const PER_ROW = 8
         const PER_PAGE = 16 // p1+ 容量：左 8 + 右 8
         const total = c.chapters.length
@@ -264,8 +293,8 @@ export class ManualBook {
         return pages
     }
 
-    /** ENT 词条内容页（L3）：按 pageType 分派布局；text 按 5 行/页分页；门控 ENT:<id>:<gi>|p<N> */
-    private entPages(c: ManualCategory, gi: number): UIElement[] {
+    /** ENT 词条内容页（L3）：按 pageType 分派布局；text 按 5 行/半页分页；门控 ENT:<id>:<gi>|p<N> */
+    private entPages(c: GuideBookCategory, gi: number): UIElement[] {
         const ch = c.chapters[gi]
         const type = ch.pageType ?? 'text'
         const LINES_PER_HALF = 5   // 每半页最多 5 行
@@ -394,7 +423,7 @@ export class ManualBook {
         return pages
     }
 
-    build(categories: ManualCategory[]): this {
+    build(categories: GuideBookCategory[]): this {
         const ns = `${this.namespace}.${this.name}`
 
         // ---- 内容面板：大背景(layer0) + 纸页基底(layer0) + 内容层(layer5) ----
@@ -436,19 +465,14 @@ export class ManualBook {
             .addControl(new Image('ribbon_bg').setSprite(new Sprite().setTexture('textures/ui/saleribbon')).setLayout(new Layout().setSize(['100%', '100%'])))
             .addControl(
                 new Label('cover_title', undefined)
-                    .setText(new Text().setText('  Sapdon 手册 \n           1st 版 by meteage')
+                    .setText(new Text().setText(this.coverTitle)
                     .setColor([0, 0, 0]).setTextAlignment('left'))
                     .setLayout(new Layout().setSize(['100%', '100%']).setAnchorTo('center'))
             )
         left.addStack(['100%', '5%'], new Panel('sp_top')) // 标题带上侧 5% 空隙
         left.addStack(['100%', '20%'], ribbonBar)
         left.addStack(['100%', '5%'], new Panel('sp_top')) // 标题带下侧 5% 空隙
-        const coverLines = [
-            'hi 开发者，欢迎使用 Sapdon 手册。',
-            '本手册为基岩版开发者提供了简单容易的',
-            '手册前置库。',
-        ]
-        coverLines.forEach((ln) => left.addStack(['100%', '15%'],
+        this.coverLines.forEach((ln) => left.addStack(['100%', '15%'],
             new Label('cover_line', undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
         ))
         spread.addStack(['50%', '100%'], left)
@@ -462,7 +486,7 @@ export class ManualBook {
             new Label('cat_title', undefined).setText(new Text().setText('类别').setColor([0, 0, 0]).setTextAlignment('center'))
         )
         right.addStack(['100%', '3%'], new UIElement('div1', undefined, 'settings_common.option_group_section_divider'))
-                
+
         const catRow = new FormButtonGrid(`cat_row`, { size: ['90%', '90%'], dimensions: [4, 1] })
         categories.forEach((c, i) => {
             // 卡片：上图标、下名称——图标不再铺满整卡，名称独立放在下方，避免文字被图标遮挡

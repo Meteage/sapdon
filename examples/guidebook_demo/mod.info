@@ -1,0 +1,7 @@
+{
+  "name": "guidebook_demo",
+  "description": "SapdonGuideBook 手册框架类 demo",
+  "author": "meteage",
+  "version": "1.0.0",
+  "min_engine_version": "1.26.30"
+}

@@ -228,9 +228,9 @@ long_form ─(modification: bindings)→ title 含 'sapdon_ui:' 时隐藏原生�
 
 ---
 
-## 5. 对称门控模型（`examples/ui_gated_demo`）
+## 5. 对称门控模型（`examples/guidebook_demo`）
 
-`ui_gated_demo` 演示最通用的"页面切换"落地：**内容面板与按钮面板"对称"，都按当前页门控，组内按钮再按运行时 emit 的按钮文字门控**。双向、两级，UI 数据流完全由 view 绑定表达式驱动，无 JS 逻辑。
+`guidebook_demo` 演示最通用的"页面切换"落地：**内容面板与按钮面板"对称"，都按当前页门控，组内按钮再按运行时 emit 的按钮文字门控**。双向、两级，UI 数据流完全由 view 绑定表达式驱动，无 JS 逻辑。
 
 ### 5.1 模型
 

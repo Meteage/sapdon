@@ -1,6 +1,6 @@
 # Sapdon UI 实战经验 / 排障与模式
 
-本文沉淀在 `ui_gated_demo` 开发中踩过的坑与提炼出的可用模式。面向框架/UI 开发者：讲运行时机制、打破直觉的坑、以及经过验证的「`FormButton` + `FormButtonGrid`」纹理按钮方案。
+本文沉淀在 `guidebook_demo` 开发中踩过的坑与提炼出的可用模式。面向框架/UI 开发者：讲运行时机制、打破直觉的坑、以及经过验证的「`FormButton` + `FormButtonGrid`」纹理按钮方案。
 
 > 架构总览见 `doc/dev/ui-architecture.md`；用户教程见 `doc/user/tutorials/sapdon-ui.md`；旧文本按钮 API 见 `doc/user/api/sapdon-ui.md`。
 
@@ -94,7 +94,7 @@ Unknown property [pressed_button_name]
 
 ---
 
-## 4. 推荐模式：`FormButton` + `FormButtonGrid`（`ui_gated_demo`）
+## 4. 推荐模式：`FormButton` + `FormButtonGrid`（`guidebook_demo`）
 
 经上述坑之后，采用"纯样式按钮 + 负责几何/绑定的格盘"。
 
