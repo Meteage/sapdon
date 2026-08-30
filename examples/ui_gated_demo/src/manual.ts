@@ -1,5 +1,5 @@
 import {
-    Button, ButtonMapping, Control, DataBindingObject, FormButton, FormButtonGrid, Image, Input, Label,
+    Button, ButtonMapping, Control, DataBindingObject, FormButton, FormButtonGrid, Grid, GridProp, Image, Input, Label,
     Layout, Panel, SapdonServerUI, Sprite, StackPanel, Text, UISystem, UIElement,
 } from '@sapdon/core'
 
@@ -13,21 +13,33 @@ import {
  *   button(...)            → 集合 form_buttons：分类按钮 or 导航，均 exact-match 门控
  */
 
+export type ChapterPageType = 'text' | 'crafting' | 'spotlight' | 'image'
+
 export interface ManualChapter {
     name: string
     icon: string
-    /** 词条正文（多行，ENT 页逐行渲染） */
+    /** 词条正文（多行，ENT 页逐行渲染；text 类型按 5 行/页分页） */
     lines: string[]
+    /** 页类型（默认 text） */
+    pageType?: ChapterPageType
+    /** crafting：3×3 合成格（9 项，空位 ''）+ 输出图标 */
+    craft?: { grid: string[]; output: string }
+    /** spotlight：大图标 + 描述 */
+    spotlight?: { icon: string; desc: string }
+    /** image：整页图 + 说明 */
+    image?: { texture: string; caption: string }
 }
 
 export interface ManualCategory {
     /** 英文 id（路由用，如 intro / routing / controls / undecided） */
     id: string
-    /** 中文标题（左页标题） */
+    /** 中文标题（左页标题 / 索引卡名称） */
     title: string
+    /** 分类图标（索引卡） */
+    icon: string
     /** 简介正文（左页，多行，逐行渲染） */
     introLines: string[]
-    /** 右页章节条目（4 条，暂不跳转） */
+    /** 右页章节条目 */
     chapters: ManualChapter[]
 }
 
@@ -252,42 +264,130 @@ export class ManualBook {
         return pages
     }
 
-    /** ENT 词条内容页（L3）：左=词条标题+正文逐行，右=空；门控 ENT:<id>:<gi>|（尾部 | 避免 1/10 前缀串误判） */
-    private entPage(c: ManualCategory, gi: number): UIElement {
+    /** ENT 词条内容页（L3）：按 pageType 分派布局；text 按 5 行/页分页；门控 ENT:<id>:<gi>|p<N> */
+    private entPages(c: ManualCategory, gi: number): UIElement[] {
         const ch = c.chapters[gi]
-        const tag = `ENT:${c.id}:${gi}|`
-        const page = new Panel(`ent_${c.id}_${gi}`)
-            .setLayout(new Layout().setSize(['95%', '90%']))
-            .setControl(new Control().setLayer(5))
-        this.gateLayout(page, tag)
-        if (this.debug) page.enableDebug()
+        const type = ch.pageType ?? 'text'
+        const LINES_PER_PAGE = 5
+        const pageCount = type === 'text' ? Math.max(1, Math.ceil(ch.lines.length / LINES_PER_PAGE)) : 1
+        const pages: UIElement[] = []
+        for (let ep = 0; ep < pageCount; ep++) {
+            const tag = `ENT:${c.id}:${gi}|p${ep}`
+            const page = new Panel(`ent_${c.id}_${gi}_p${ep}`)
+                .setLayout(new Layout().setSize(['95%', '90%']))
+                .setControl(new Control().setLayer(5))
+            this.gateLayout(page, tag)
+            if (this.debug) page.enableDebug()
 
-        const spread = new StackPanel(`ent_spread_${c.id}_${gi}`, undefined)
-            .setOrientation('horizontal')
-            .setLayout(new Layout().setSize(['100%', '100%']))
+            const spread = new StackPanel(`ent_spread_${c.id}_${gi}_p${ep}`, undefined)
+                .setOrientation('horizontal')
+                .setLayout(new Layout().setSize(['100%', '100%']))
 
-        // 左页：空白5 / 标题10 / 分割5 / 正文逐行15%
-        const left = new StackPanel(`ent_left_${c.id}_${gi}`, undefined)
-            .setOrientation('vertical')
-            .setLayout(new Layout().setSize(['100%', '100%']))
-        left.addStack(['100%', '5%'], new Panel(`ent_sp1_${c.id}_${gi}`))
-        left.addStack(['100%', '10%'],
-            new Label(`ent_title_${c.id}_${gi}`, undefined).setText(new Text().setText(ch.name).setColor([0, 0, 0]).setTextAlignment('center'))
-        )
-        left.addStack(['100%', '5%'], new UIElement(`ent_div_${c.id}_${gi}`, undefined, 'settings_common.option_group_section_divider'))
-        ch.lines.forEach((ln, i) =>
-            left.addStack(['100%', '15%'],
-                new Label(`ent_line_${c.id}_${gi}_${i}`, undefined).setText(new Text().setText(ln).setColor([0, 0, 0]).setTextAlignment('left'))
+            // 左页：空白5 / 标题10 / 分割5 / 正文（按类型）
+            const left = new StackPanel(`ent_left_${c.id}_${gi}_p${ep}`, undefined)
+                .setOrientation('vertical')
+                .setLayout(new Layout().setSize(['100%', '100%']))
+            left.addStack(['100%', '5%'], new Panel(`ent_sp1_${c.id}_${gi}_p${ep}`))
+            left.addStack(['100%', '10%'],
+                new Label(`ent_title_${c.id}_${gi}_p${ep}`, undefined).setText(new Text().setText(ch.name).setColor([0, 0, 0]).setTextAlignment('center'))
             )
-        )
+            left.addStack(['100%', '5%'], new UIElement(`ent_div_${c.id}_${gi}_p${ep}`, undefined, 'settings_common.option_group_section_divider'))
 
-        // 右页：空
-        const right = new Panel(`ent_right_${c.id}_${gi}`).setLayout(new Layout().setSize(['100%', '100%']))
+            // 右页（垂直 StackPanel；text 类型会把后半正文放进来，其他类型保持为空）
+            const right = new StackPanel(`ent_right_${c.id}_${gi}_p${ep}`, undefined)
+                .setOrientation('vertical')
+                .setLayout(new Layout().setSize(['100%', '100%']))
 
-        spread.addStack(['50%', '100%'], left)
-        spread.addStack(['50%', '100%'], right)
-        page.addControl(spread)
-        return page
+            if (type === 'crafting') {
+                // 三部分：合成台(3×3 Grid) + 箭头 + 产物，水平 StackPanel
+                const craftArea = new StackPanel(`ent_craft_${c.id}_${gi}_p${ep}`, undefined)
+                    .setOrientation('horizontal')
+                    .setLayout(new Layout().setSize(['100%', '100%']))
+                // ① 3×3 合成台：一个整体 Grid，背景统一，区分仅在于有无物品
+                const grid = new Grid(`ent_grid_${c.id}_${gi}_p${ep}`)
+                    .setGridProp(new GridProp().setGridDimensions([3, 3]))
+                    .setLayout(new Layout().setSize(['100%', '100%']))
+                for (let idx = 0; idx < 9; idx++) {
+                    const tex = ch.craft?.grid[idx]
+                    const cell = new Panel(`ent_cell_${c.id}_${gi}_p${ep}_${idx}`)
+                        .setLayout(new Layout().setSize(['100%', '100%']))
+                        .addControl(
+                            new Image(`ent_cellslot_${c.id}_${gi}_p${ep}_${idx}`, undefined)
+                                .setSprite(new Sprite().setTexture('textures/ui/slot_enabled'))
+                                .setLayout(new Layout().setSize(['100%', '100%']))
+                        )
+                    if (tex) {
+                        cell.addControl(
+                            new Image(`ent_cellitem_${c.id}_${gi}_p${ep}_${idx}`, undefined)
+                                .setSprite(new Sprite().setTexture(tex))
+                                .setLayout(new Layout().setSize(['88%', '88%']).setAnchorTo('center'))
+                        )
+                    }
+                    grid.addGridItem([idx % 3, Math.floor(idx / 3)], cell, `grid_item_${idx}`)
+                }
+                craftArea.addStack(['44%', '100%'], grid)
+                // ② 箭头（官方 textures/ui/arrow）
+                craftArea.addStack(['14%', '100%'],
+                    new Image(`ent_arrow_${c.id}_${gi}_p${ep}`, undefined)
+                        .setSprite(new Sprite().setTexture('textures/ui/arrow'))
+                        .setLayout(new Layout().setSize(['70%', '26%']).setAnchorTo('center'))
+                )
+                // ③ 产物（单个槽）
+                craftArea.addStack(['32%', '100%'],
+                    new Panel(`ent_outputslot_${c.id}_${gi}_p${ep}`)
+                        .setLayout(new Layout().setSize(['78%', '78%']).setAnchorTo('center'))
+                        .addControl(
+                            new Image(`ent_outputslotbg_${c.id}_${gi}_p${ep}`, undefined)
+                                .setSprite(new Sprite().setTexture('textures/ui/slot_enabled'))
+                                .setLayout(new Layout().setSize(['100%', '100%']))
+                        )
+                        .addControl(
+                            new Image(`ent_output_${c.id}_${gi}_p${ep}`, undefined)
+                                .setSprite(new Sprite().setTexture(ch.craft?.output ?? ''))
+                                .setLayout(new Layout().setSize(['88%', '88%']).setAnchorTo('center'))
+                        )
+                )
+                left.addStack(['100%', '42%'], craftArea)
+            } else if (type === 'spotlight') {
+                left.addStack(['100%', '40%'],
+                    new Image(`ent_spot_${c.id}_${gi}_p${ep}`, undefined)
+                        .setSprite(new Sprite().setTexture(ch.spotlight?.icon ?? ''))
+                        .setLayout(new Layout().setSize(['60%', '100%']).setAnchorTo('center'))
+                )
+                left.addStack(['100%', '15%'],
+                    new Label(`ent_spotdesc_${c.id}_${gi}_p${ep}`, undefined).setText(new Text().setText(ch.spotlight?.desc ?? '').setColor([0, 0, 0]).setTextAlignment('left'))
+                )
+            } else if (type === 'image') {
+                left.addStack(['100%', '60%'],
+                    new Image(`ent_img_${c.id}_${gi}_p${ep}`, undefined)
+                        .setSprite(new Sprite().setTexture(ch.image?.texture ?? ''))
+                        .setLayout(new Layout().setSize(['80%', '100%']).setAnchorTo('center'))
+                )
+                left.addStack(['100%', '15%'],
+                    new Label(`ent_imgcap_${c.id}_${gi}_p${ep}`, undefined).setText(new Text().setText(ch.image?.caption ?? '').setColor([0, 0, 0]).setTextAlignment('left'))
+                )
+            } else {
+                // text：分页渲染，把当前页的行分配到左右两半页（左：前半，右：后半），右页不再为空
+                const start = ep * LINES_PER_PAGE
+                const end = Math.min(start + LINES_PER_PAGE, ch.lines.length)
+                const inLeft = Math.ceil((end - start) / 2)
+                for (let i = start; i < end; i++) {
+                    const lineLabel = new Label(`ent_line_${c.id}_${gi}_p${ep}_${i}`, undefined)
+                        .setText(new Text().setText(ch.lines[i]).setColor([0, 0, 0]).setTextAlignment('left'))
+                    if (i - start < inLeft) {
+                        left.addStack(['100%', '15%'], lineLabel)
+                    } else {
+                        right.addStack(['100%', '15%'], lineLabel)
+                    }
+                }
+            }
+
+            spread.addStack(['50%', '100%'], left)
+            spread.addStack(['50%', '100%'], right)
+            page.addControl(spread)
+            pages.push(page)
+        }
+        return pages
     }
 
     build(categories: ManualCategory[]): this {
@@ -359,11 +459,25 @@ export class ManualBook {
         )
         right.addStack(['100%', '3%'], new UIElement('div1', undefined, 'settings_common.option_group_section_divider'))
                 
-        const catRow = new FormButtonGrid(`cat_row`,{size:["90%","90%"],dimensions:[4,1]})
-        const INDEX_ICONS = ['textures/items/book_writable', 'textures/items/comparator', 'textures/items/paper', 'textures/items/iron_ingot']
-        INDEX_ICONS.forEach((ic, i) =>
-            catRow.addButton(3+i,new FormButton(`idx${i}`).setBinding(`idx${i}`).setTexture(ic, ic, ic).setSize("60%","60%"),[i,0])
-        )
+        const catRow = new FormButtonGrid(`cat_row`, { size: ['90%', '90%'], dimensions: [4, 1] })
+        categories.forEach((c, i) => {
+            // 卡片：上图标、下名称——图标不再铺满整卡，名称独立放在下方，避免文字被图标遮挡
+            const card = new FormButton(`idx${i}`)
+                .setBinding(`idx${i}`)
+                .setSize('80%', '80%')
+                .setTexture('', 'textures/ui/promotion_slot', '')
+                .addControl(
+                    new Image(`idx_icon_${i}`, undefined)
+                        .setSprite(new Sprite().setTexture(c.icon))
+                        .setLayout(new Layout().setSize(['60%', '60%']).setAnchorFrom('top_middle').setAnchorTo('top_middle').setOffset([0, -2]))
+                )
+                .addControl(
+                    new Label(`idx_name_${i}`, undefined)
+                        .setText(new Text().setText(c.title).setColor([0, 0, 0]).setTextAlignment('center'))
+                        .setLayout(new Layout().setSize(['100%', '30%']).setAnchorFrom('bottom_middle').setAnchorTo('bottom_middle').setOffset([0, -2]))
+                )
+            catRow.addButton(3 + i, card, [i, 0])
+        })
         right.addStack(['100%', '20%'], catRow.build())
         right.addStack(['100%', '3%'], new UIElement('div2', undefined, 'settings_common.option_group_section_divider'))
         right.addStack(['100%', '59%'], new Panel('sp_end'))
@@ -393,8 +507,8 @@ export class ManualBook {
         // CAT 页（L2）：每个分类的页容器（layer 5，CAT:<id>|p<N> 门控）
         categories.forEach((c) => this.catPages(c).forEach((pg) => content.addControl(pg)))
 
-        // ENT 页（L3）：每个词条一个内容页容器（layer 5，ENT:<id>:<gi>| 门控）
-        categories.forEach((c) => c.chapters.forEach((_, gi) => content.addControl(this.entPage(c, gi))))
+        // ENT 页（L3）：每个词条的内容页容器（layer 5，ENT:<id>:<gi>|p<N> 门控）
+        categories.forEach((c) => c.chapters.forEach((_, gi) => this.entPages(c, gi).forEach((pg) => content.addControl(pg))))
 
         // ---- 按键面板：导航网格 + 关闭 ----
         const buttons = new Panel(`${this.name}_buttons_panel`).setControl(new Control().setLayer(10)).setLayout(new Layout().setSize(this.size as any))

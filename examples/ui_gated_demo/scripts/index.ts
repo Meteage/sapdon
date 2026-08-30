@@ -3,10 +3,12 @@ import { ActionFormData } from "@minecraft/server-ui";
 
 // 与 main.ts 的分类/词条配置对齐（英文 id；每分类词条总数）
 const CATS = ["intro", "routing", "controls", "undecided"];
-const CAT_CHAPTERS: Record<string, number> = { intro: 4, routing: 8, controls: 12, undecided: 5 };
+const CAT_CHAPTERS: Record<string, number> = { intro: 4, routing: 8, controls: 11, undecided: 5 };
 const PER_ROW = 8;   // 每列最多 8 行
 const PER_PAGE = 16; // p1+ 容量：左 8 + 右 8
 const TITLE = "sapdon_ui:book";
+// 词条页数（ENT 分页，默认 1；text 按 5 行/页）
+const ENT_PAGES: Record<string, number> = { controls_e7: 2 };
 
 // 占位键：不匹配任何 setBinding，让对应导航按钮隐藏
 const NO_PREV = "no_prev";
@@ -51,25 +53,31 @@ function openCat(player: Player, id: string, page: number): void {
         else if (sel === 2 && hasNext) openCat(player, id, page + 1); // next（词条分页）
         else if (sel >= 3) {                                     // 词条点击 → ENT 内容页
             const gi = start + (sel - 3);
-            if (gi < total) openEnt(player, id, gi, page);
+            if (gi < total) openEnt(player, id, gi, page, 0);
             else openCat(player, id, page);
         } else openCat(player, id, page);
     });
 }
 
-function openEnt(player: Player, id: string, gi: number, fromPage: number): void {
-    const form = new ActionFormData().title(TITLE).body(`ENT:${id}:${gi}|`);
-    // 槽位：[prev_button(返回分类), home_button(回INDEX), no_next(隐藏)] —— 无 next 跳词条
+function openEnt(player: Player, id: string, gi: number, fromPage: number, ep: number): void {
+    const pageCount = ENT_PAGES[`${id}_e${gi}`] ?? 1;
+    const hasPrevPage = ep > 0;
+    const hasNextPage = ep < pageCount - 1;
+    const form = new ActionFormData().title(TITLE).body(`ENT:${id}:${gi}|p${ep}`);
+    // 槽位：[prev(返回分类|上一页), home, next(下一页|no_next)]
     form.button("prev_button");
     form.button("home_button");
-    form.button(NO_NEXT);
+    form.button(hasNextPage ? "next_button" : NO_NEXT);
     form.show(player).then((r) => {
-        if (r.canceled) { console.warn(`[manual] ENT:${id}:${gi} canceled`); return; }
+        if (r.canceled) { console.warn(`[manual] ENT:${id}:${gi} p${ep} canceled`); return; }
         const sel = r.selection!;
-        console.warn(`[manual] ENT:${id}:${gi} click → sel=${sel}`);
-        if (sel === 0) openCat(player, id, fromPage); // prev → 返回来源分类页
-        else if (sel === 1) openIndex(player);        // home → 回 INDEX
-        else openEnt(player, id, gi, fromPage);        // 边界：重开
+        console.warn(`[manual] ENT:${id}:${gi} p${ep} click → sel=${sel}`);
+        if (sel === 0) {
+            if (hasPrevPage) openEnt(player, id, gi, fromPage, ep - 1); // prev → 上一内容页
+            else openCat(player, id, fromPage);                         // 首页 prev → 返回分类
+        } else if (sel === 1) openIndex(player);                        // home → 回 INDEX
+        else if (sel === 2 && hasNextPage) openEnt(player, id, gi, fromPage, ep + 1); // next → 下一页
+        else openEnt(player, id, gi, fromPage, ep);                     // 边界：重开
     });
 }
 
