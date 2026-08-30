@@ -1,6 +1,6 @@
 # Sapdon
 
-![Sapdon Logo](pack_icon.png)
+![Sapdon Logo](sapdon.svg)
 
 Minecraft Bedrock 版 Addon 开发框架，将 JSON 配置抽象为 TypeScript 类，提供类型安全的 API 和自动化构建工具。
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="sapdon">
+  <!-- hexagon base -->
+  <polygon points="84,8 146,42 146,102 84,136 22,102 22,42" fill="#f57c00"/>
+  <!-- Z / X mosaic triangles -->
+  <polygon points="22,42 84,76 22,102" fill="#e65100"/>
+  <polygon points="146,42 84,76 146,102" fill="#e65100"/>
+  <polygon points="84,8 84,76 146,42" fill="#ffb300"/>
+  <polygon points="84,8 84,76 22,42" fill="#ffa000"/>
+  <polygon points="84,76 84,136 22,102" fill="#ffa000"/>
+  <polygon points="84,76 84,136 146,102" fill="#ffb300"/>
+  <!-- wordmark -->
+  <text x="84" y="142" font-family="'Trebuchet MS','Arial',sans-serif" font-weight="900" font-style="italic" font-size="38" fill="#f57c00" text-anchor="middle" letter-spacing="1">sapdon</text>
+</svg>
