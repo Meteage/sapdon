@@ -117,6 +117,5 @@ dev/
 - [物品教程](./tutorials/item.md) — 学习创建各类物品
 - [实体教程](./tutorials/entity.md) — 学习创建实体
 - [方块教程](./tutorials/block.md) — 学习创建方块
-- [指南书教程](./tutorials/neo-guidebook.md) — API 用法
-- [指南书实战经验](./tutorials/neo-guidebook-experience.md) — 接入流程与踩坑清单
+- [指南书（SapdonGuideBook）](../guidebook.md) — 手册框架类文档与教程
 - [API 参考](./api/item.md) — 完整的 API 文档

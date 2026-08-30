@@ -25,7 +25,7 @@ src/core/ui/
     ├── chest.ts             # ChestUISystem（接管 vanilla 箱子 screen）
     ├── containerUISystem.ts # ContainerUISystem（自定义容器 UI）
     ├── hud/                 # HudUISystem + HudStatePanel
-    ├── neoGuibook/          # NeoGuidebook（游戏内书）+ NeoGuidebookPage
+    ├── neoGuibook/          # （旧）NeoGuidebook + NeoGuidebookPage（兼容保留，新用 SapdonGuideBook）
     └── sapdon/              # SapdonServerUI（表单路由壳）+ SapdonPanel/FormButton/FormButtonGrid
 ```
 
@@ -39,7 +39,7 @@ src/core/ui/
 ┌──────────────────────────────────────────────────────────┐
 │ Layer 4: systems/  UISystem + 落地系统                     │
 │  UISystem = 一个 UI 文件；ContainerUISystem / SapdonServerUI │
-│  / NeoGuidebook / HudUISystem 等在其上叠业务能力            │
+│  / SapdonGuideBook / HudUISystem 等在其上叠业务能力            │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 3: elements/  元素层                                │
 │  UIElement 基类 + Panel/StackPanel/Grid/Label/Image/Button │
@@ -204,7 +204,7 @@ elem.dataBinding.addDataBinding(
 
 | 形式 | 走法 | 代表 |
 |------|------|------|
-| **server_form（表单 / 容器 / 书）** | `SapdonServerUI` 用 modification 把自定义页注入 vanilla `main_screen_content`，用 `#title_text` / `#form_text` 前缀门控可见性；每页 = "内容面板 + 按键面板" | `NeoGuidebook`、`ContainerUISystem/ChestUISystem`、`SapdonPanel/FormButton/FormButtonGrid` |
+| **server_form（表单 / 容器 / 书）** | `SapdonServerUI` 用 modification 把自定义页注入 vanilla `main_screen_content`，用 `#title_text` / `#form_text` 前缀门控可见性；每页 = "内容面板 + 按键面板" | `SapdonGuideBook`、`ContainerUISystem/ChestUISystem`、`SapdonPanel/FormButton/FormButtonGrid` |
 | **HUD 常驻** | `HudUISystem` 改 vanilla `hud_title_text` 绑定，`mountRootElement` 往根面板 `insert_front` 挂元素；`HudStatePanel` 用 title 字符串做状态机驱动 `#visible` | `HudProgressBar` |
 
 ### 4.1 server_form 路由壳（`SapdonServerUI`）

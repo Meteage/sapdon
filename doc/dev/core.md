@@ -132,7 +132,7 @@ src/core/
 │   ├── dataBindingObject.js     #   DataBindingObject 类
 │   ├── elements/                #   UI 元素 (UIElement, Panel, Button, Image, Label, Grid...)
 │   ├── properties/              #   UI 属性 (Control, Layout, DataBinding, Sprite, Text...)
-│   └── systems/                 #   UI 系统 (UISystem, Chest, ServerForm, Guidebook, HUD, NeoGuidebook...)
+│   └── systems/                 #   UI 系统 (UISystem, Chest, ServerForm, Guidebook, HUD, SapdonGuideBook...)
 │
 └── extra/                       # ── 附加模块 ──
     ├── apperance.ts             #   ClientEntityApperance (实体外观管理)
@@ -686,7 +686,7 @@ UIElement (基类: name, type, template, control, layout, properties)
 | `SapdonServerUI` | `systems/sapdon/sapdonServerUI.ts` | 页面壳路由系统，生成 `server_form.json` |
 | `ChestUISystem` | `systems/chest.js` | 容器 UI 系统 |
 | `ContainerUISystem` | `systems/containerUISystem.js` | 自定义容器 UI |
-| `NeoGuidebook` | `systems/neoGuibook/book.ts` | 指南书 UI，详见 [neo-guidebook.md](../user/api/neo-guidebook.md) |
+| `SapdonGuideBook` | `systems/sapdon/sapdonGuideBook.ts` | 数据驱动手册框架类，详见 [guidebook.md](../guidebook.md) |
 | `HudUISystem` | `systems/hud/hud.ts` | HUD 系统 |
 | `HudStatePanel` | `systems/hud/hudElement.ts` | HUD 状态面板 |
 
