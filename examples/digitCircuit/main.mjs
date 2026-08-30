@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry, Label, Text, Image, Sprite, StackPanel } from '@sapdon/core'
+import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry, SapdonGuideBook, Label, Text, Image, Sprite, StackPanel } from '@sapdon/core'
 import { BlockWire } from "./lib/wire.js";
 
 // === item_group 分割 ===
@@ -126,6 +126,64 @@ ItemAPI.createItem("sapdon:wire_item", ItemCategory.Construction, "wireitem", {
     ItemComponent.setBlockPlacer("sapdon:wire")
 )
 
+// === 游戏内指导手册（sapdon:guidebook，SapdonGuideBook 数据驱动）===
+const guidebookItem = ItemAPI.createItem("sapdon:guidebook", ItemCategory.Equipment, "book_writable", {
+    maxStackSize: 1,
+    group: GROUP_TOOL,
+    formatVersion: "1.21.90",
+}).addComponent(
+    ItemComponent.combineComponents(
+        ItemComponent.setDisplayName("digitCircuit 指导手册"),
+        ItemComponent.setInteractButton("打开手册"),
+        ItemComponent.setHandEquipped(true),
+        ItemComponent.setCustomComponents(["sapdon:guidebook"])
+    )
+)
+
+const guidebook = new SapdonGuideBook("sapdon:guidebook", [320, 207])
+  .setCover('  digitCircuit 使用指导手册 \n          by Meteage', [
+      'Minecraft 基岩版数字电路 Addon。',
+      '导线、逻辑门、位宽总线、可编程芯片、寄存器。',
+  ])
+  .build([
+    { id: 'intro', title: '简介', icon: 'textures/items/book_writable', introLines: ['digitCircuit 是一款基岩版数字电路 Addon。', '用 sapdon 框架构建。'],
+      chapters: [
+        { name: '这是什么', icon: 'textures/items/book_writable', lines: ['即时逻辑电路：导线/逻辑门/总线/芯片/寄存器。'] },
+        { name: '打开方式', icon: 'textures/items/book_writable', lines: ['手持「digitCircuit 指导手册」右键打开。'] },
+      ] },
+    { id: 'blocks', title: '方块', icon: 'textures/blocks/on', introLines: ['常用电路方块。'],
+      chapters: [
+        { name: '信号源', icon: 'textures/blocks/on', lines: ['on_signal：恒 1', 'off_signal：恒 0'] },
+        { name: '开关', icon: 'textures/blocks/switch', lines: ['手动切换 0/1', '调试工具点击切换'] },
+        { name: '导线', icon: 'textures/blocks/wire', lines: ['连接信号，瞬时传播，可分支'] },
+        { name: '逻辑门', icon: 'textures/blocks/and', lines: ['and_gate / or_gate / not_gate', '可旋转'] },
+        { name: '显示灯', icon: 'textures/blocks/display', lines: ['有信号即亮'] },
+        { name: '位宽器件', icon: 'textures/blocks/splitter', lines: ['splitter：分线 N→N-1 直通+1 分出', 'merger：合并 N+1'] },
+      ] },
+    { id: 'tools', title: '工具', icon: 'textures/items/stick', introLines: ['两个调试/编程工具。'],
+      chapters: [
+        { name: 'debug_tool', icon: 'textures/items/stick', lines: ['点击开关切换、导线打印网络信息', '切换导线连接面'] },
+        { name: 'logic_tool', icon: 'textures/items/iron_ingot', lines: ['点输入端口→保存电路逻辑', '点芯片→装载逻辑'] },
+      ] },
+    { id: 'build', title: '搭建', icon: 'textures/items/brick', introLines: ['电路搭建步骤。'],
+      chapters: [
+        { name: '布线', icon: 'textures/items/brick', lines: ['放导线、信号源/开关/门，导线自动连通'] },
+        { name: '接端口', icon: 'textures/items/redstone', lines: ['外部接 input_port / output_port', 'debug_tool 点击循环切换端口号 0~9'] },
+        { name: '调试', icon: 'textures/items/stick', lines: ['debug_tool 点击各器件查看信号与位宽'] },
+        { name: '保存为逻辑', icon: 'textures/items/iron_ingot', lines: ['logic_tool 点输入端口→编译电路→绑定 uuid'] },
+        { name: '装入芯片', icon: 'textures/blocks/chip-unload', lines: ['右键 sapdon:chip 装载，南=输入，北=输出'] },
+      ] },
+    { id: 'chip', title: '芯片', icon: 'textures/blocks/chip-unload', introLines: ['可编程芯片。'],
+      chapters: [
+        { name: '两种模式', icon: 'textures/blocks/chip-unload', lines: ['table：输入 ≤8 真值表', 'topo：输入 >8 存电路拓扑、支持寄存器'] },
+      ] },
+    { id: 'cmd', title: '命令', icon: 'textures/items/writable_book', introLines: ['斜杠命令与分享。'],
+      chapters: [
+        { name: '常用命令', icon: 'textures/items/writable_book', lines: ['sapdon:logic_list', 'sapdon:logic_info <ref>', 'sapdon:logic_test <ref> <mask>', 'sapdon:logic_dump [radius]'] },
+        { name: '分享/导入', icon: 'textures/items/writable_book', lines: ['logic_export → 分块打印', 'logic_stage 逐段粘贴 → logic_import 合并', 'logic_item 绑到手持工具，右键 chip 装载'] },
+      ] },
+  ])
+
 
 // === 创造菜单物品分类（group + item_catalog）===
 const inputPorts = ["sapdon:input_port"];
@@ -159,6 +217,7 @@ ItemAPI.createItemCatalog()
     .addGroup("equipment", [
         "sapdon:debug_tool",
         "sapdon:logic_tool",
+        "sapdon:guidebook",
     ], { icon: "sapdon:logic_tool", name: GROUP_TOOL })
     .register()
 

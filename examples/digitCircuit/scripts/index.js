@@ -1,4 +1,5 @@
 import { system, world, ItemStack, CommandPermissionLevel, CustomCommandParamType, CustomCommandStatus } from "@minecraft/server";
+import { ActionFormData } from "@minecraft/server-ui";
 import {
     WIRE_TYPE,
     SWITCH_TYPE,
@@ -48,6 +49,60 @@ const FACES = ["North", "South", "East", "West", "Up", "Down"];
 const DBG = false;
 function dbg(msg) {
     if (DBG) world.sendMessage(msg);
+}
+
+// === 游戏内指导手册路由（SapdonGuideBook，INDEX/CAT/ENT）===
+const GB_CATS = ["intro", "blocks", "tools", "build", "chip", "cmd"];
+const GB_CHAPTERS = { intro: 2, blocks: 6, tools: 2, build: 5, chip: 1, cmd: 2 };
+const GB_ENT_PAGES = {};
+const GB_TITLE = "sapdon_ui:guidebook";
+const GB_NO_PREV = "no_prev", GB_NO_HOME = "no_home", GB_NO_NEXT = "no_next";
+
+function gbOpenIndex(player) {
+    const f = new ActionFormData().title(GB_TITLE).body("INDEX");
+    f.button(GB_NO_PREV); f.button(GB_NO_HOME); f.button(GB_NO_NEXT);
+    GB_CATS.forEach((_, i) => f.button(`idx${i}`));
+    f.show(player).then((r) => {
+        if (r.canceled) return;
+        const s = r.selection;
+        if (s >= 3 && s - 3 < GB_CATS.length) gbOpenCat(player, GB_CATS[s - 3], 0);
+        else gbOpenIndex(player);
+    });
+}
+
+function gbOpenCat(player, id, page) {
+    const total = GB_CHAPTERS[id] ?? 0;
+    const start = page === 0 ? 0 : 8 + (page - 1) * 16;
+    const end = Math.min(start + (page === 0 ? 8 : 16), total);
+    const f = new ActionFormData().title(GB_TITLE).body(`CAT:${id}|p${page}`);
+    f.button(page > 0 ? "prev_button" : GB_NO_PREV);
+    f.button("home_button");
+    f.button(end < total ? "next_button" : GB_NO_NEXT);
+    for (let i = start; i < end; i++) f.button(`${id}_e${i}`);
+    f.show(player).then((r) => {
+        if (r.canceled) return;
+        const s = r.selection;
+        if (s === 0 && page > 0) gbOpenCat(player, id, page - 1);
+        else if (s === 1) gbOpenIndex(player);
+        else if (s === 2 && end < total) gbOpenCat(player, id, page + 1);
+        else if (s >= 3) { const gi = start + (s - 3); if (gi < total) gbOpenEnt(player, id, gi, page, 0); else gbOpenCat(player, id, page); }
+        else gbOpenCat(player, id, page);
+    });
+}
+
+function gbOpenEnt(player, id, gi, fromPage, ep) {
+    const pc = GB_ENT_PAGES[`${id}_e${gi}`] ?? 1;
+    const f = new ActionFormData().title(GB_TITLE).body(`ENT:${id}:${gi}|p${ep}`);
+    f.button("prev_button"); f.button("home_button");
+    f.button(ep < pc - 1 ? "next_button" : GB_NO_NEXT);
+    f.show(player).then((r) => {
+        if (r.canceled) return;
+        const s = r.selection;
+        if (s === 0) { if (ep > 0) gbOpenEnt(player, id, gi, fromPage, ep - 1); else gbOpenCat(player, id, fromPage); }
+        else if (s === 1) gbOpenIndex(player);
+        else if (s === 2 && ep < pc - 1) gbOpenEnt(player, id, gi, fromPage, ep + 1);
+        else gbOpenEnt(player, id, gi, fromPage, ep);
+    });
 }
 
 // 记录玩家本次“用物品点击方块”的目标面，用于判定导线放置时的连接面
@@ -424,6 +479,14 @@ system.beforeEvents.startup.subscribe((init) => {
     });
 
     // 手动测试/管理命令：官方自定义命令（斜杠命令，无需 chatSend）
+    init.itemComponentRegistry.registerCustomComponent("sapdon:guidebook", {
+        onUse(event) {
+            const player = event.source;
+            if (!player || player.typeId !== "minecraft:player") return;
+            gbOpenIndex(player);
+        },
+    });
+
     registerLogicCommands(init.customCommandRegistry);
 
     // 前置事件：手持电路类的物品（导线/门/端口等）点击方块时记录目标面与方块，
