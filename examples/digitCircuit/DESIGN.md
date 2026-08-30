@@ -231,6 +231,8 @@ examples/digitCircuit/
 | `afterEvents.worldLoad` | `loadCircuit()` 还原内存模型 |
 | 工具 `sapdon:debug_tool.onUseOn` | 切换开关/导线，然后 `propagate` + `saveCircuit` |
 | 工具 `sapdon:logic_tool.onUseOn` | 点输入端口→`compileLogic`+`saveLogic`；点芯片→`bindChipLogic` |
+| 工具 `sapdon:guidebook.onUse` | 用 `ActionFormData`（title=`sapdon_ui:guidebook`）打开 SapdonGuideBook 手册 |
+| 构建 `main.mjs` | `SapdonGuideBook("sapdon:guidebook")` 生成书页 UI + `scripts` 的 INDEX/CAT/ENT 路由 |
 
 ## 11. 构建与部署
 
