@@ -241,7 +241,7 @@ world.afterEvents.itemUse.subscribe((e) => {
 
 **步骤 1：创建项目**
 ```bash
-sapdon create my_guide
+npx sapdon create my_guide
 cd my_guide
 ```
 

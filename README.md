@@ -31,14 +31,18 @@ Minecraft Bedrock 版 Addon 开发框架，将 JSON 配置抽象为 TypeScript �
 
 ### 安装
 
+把 `sapdon` 作为当前项目的本地开发依赖安装（不写入全局 PATH）：
+
 ```bash
-npm install -g sapdon
+npm install -D sapdon
 ```
 
 ### 创建项目
 
+通过 `npx` 调用本地安装的 `sapdon`：
+
 ```bash
-sapdon create my_addon
+npx sapdon create my_addon
 ```
 
 根据提示输入项目信息，选择 TypeScript 或 JavaScript 模板。

@@ -8,14 +8,18 @@
 
 ## 安装 CLI
 
+把 `sapdon` 作为当前项目的本地开发依赖安装（不写入全局 PATH）：
+
 ```bash
-npm install -g sapdon
+npm install -D sapdon
 ```
 
 ## 创建项目
 
+通过 `npx` 调用本地安装的 `sapdon`：
+
 ```bash
-sapdon create hello_sapdon
+npx sapdon create hello_sapdon
 ```
 
 按提示填写项目信息：

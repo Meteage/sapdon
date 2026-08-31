@@ -2,13 +2,7 @@
 
 ## 1. 如何更新框架版本？
 
-全局更新 sapdon CLI 和核心库：
-
-```bash
-npm update -g sapdon
-```
-
-如果使用的是本地项目依赖，请在项目目录中执行：
+sapdon 作为本地 devDependency 安装，请在项目目录中更新：
 
 ```bash
 npm update sapdon
@@ -95,19 +89,13 @@ $env:MC_PATH = "C:\Users\<用户名>\AppData\Local\Packages\Microsoft.MinecraftU
 
 ## 7. 构建报错 "tsc-alias not found"？
 
-确保已安装项目依赖：
+确保已在项目目录安装依赖（sapdon 作为本地 devDependency，`npm install` 会一并安装，无需全局安装）：
 
 ```bash
 npm install
 ```
 
-如果使用了全局安装方式，可能需要重新安装：
-
-```bash
-npm install -g sapdon
-```
-
-此错误通常是因为依赖未正确安装或 node_modules 目录不完整导致的。
+此错误通常是因为依赖未正确安装或 `node_modules` 目录不完整导致的。
 
 ---
 
