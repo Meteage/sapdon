@@ -1,5 +1,4 @@
 
-import { BlockWithEntityComponent } from "./block/block_with_entity.js";
 import { CustomCropGrowthBlockComponent } from "./cropComponent.js";
 import { GuiBookItemComponent } from "./items/gui_book.js";
 import { world } from "@minecraft/server";
@@ -12,10 +11,6 @@ export const registerCustomItemComponent = ()=>{
 
 export const registerCustomBlockComponent = ()=>{
     world.beforeEvents.worldInitialize.subscribe(({ blockComponentRegistry }) => {
-        blockComponentRegistry.registerCustomComponent(
-            "sapdon:block_with_entity",
-            BlockWithEntityComponent
-        );
         blockComponentRegistry.registerCustomComponent(
             "sapdon:crop_growth",
             CustomCropGrowthBlockComponent
