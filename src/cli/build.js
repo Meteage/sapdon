@@ -43,20 +43,21 @@ const rollupIgnores = [
     '@minecraft',
 ]
 
-const uuidCachePath = (buildDirPath) => path.join(buildDirPath, '.sapdon_uuid.json')
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function loadOrCreateUuids(buildDirPath) {
-    const cachePath = uuidCachePath(buildDirPath)
-    if (fs.existsSync(cachePath)) {
-        return JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
+// 从 mod.info 读取/生成 BP、RP 持久化 UUID，写回 mod.info 保持同步
+function loadOrCreateUuids(modInfoPath, modInfo) {
+    if (typeof modInfo.bp === 'string' && uuidPattern.test(modInfo.bp) &&
+        typeof modInfo.rp === 'string' && uuidPattern.test(modInfo.rp)) {
+        return { bp: modInfo.bp, rp: modInfo.rp }
     }
     const uuids = {
         bp: generateUUID(),
         rp: generateUUID()
     }
-    fs.mkdirSync(path.dirname(cachePath), { recursive: true })
-    fs.writeFileSync(cachePath, JSON.stringify(uuids, null, 2))
-    console.log('已生成持久化 UUID 用于 BP/RP 交叉绑定')
+    // 同步写回 mod.info，确保下次构建读取到的是同一组 UUID
+    saveFile(modInfoPath, JSON.stringify({ ...modInfo, ...uuids }, null, 2))
+    console.log('已在 mod.info 生成持久化 UUID 用于 BP/RP 交叉绑定')
     return uuids
 }
 
@@ -239,7 +240,7 @@ export const buildProject = async (projectPath, projectName) => {
         //判断manifest.json是否已经生成过了，生成过了就不用生成
         const manifestPath = path.join(buildBehDirPath, "manifest.json")
         if (pathNotExist(manifestPath)) {
-            const uuids = loadOrCreateUuids(buildDirPath)
+            const uuids = loadOrCreateUuids(modInfoPath, modInfo)
             const versionArray = versionStringToArray(modInfo.version)
 
             const behManifest = generateBehManifest(

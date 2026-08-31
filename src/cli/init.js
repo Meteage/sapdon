@@ -1,7 +1,7 @@
 
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { pathNotExist, copyFolder, saveFile } from './utils.js'
+import { pathNotExist, copyFolder, saveFile, generateUUID } from './utils.js'
 import fs from "fs"
 import cp from "child_process"
 import { getBuildConfig } from './meta/buildConfig.js'
@@ -32,8 +32,8 @@ export const initProject = (projectPath, data) => {
     const templateDir = path.join(__dirname, `../templates/${templateMapping[data.language || 'js']}`)
     copyFolder(templateDir, projectPath)
 
-    //生成模组介绍文件
-    saveFile(path.join(projectPath, "mod.info"), JSON.stringify(data, null, 2))
+    //生成模组介绍文件（含持久化 BP/RP UUID，用于 manifest 交叉绑定）
+    saveFile(path.join(projectPath, "mod.info"), JSON.stringify({ ...data, bp: generateUUID(), rp: generateUUID() }, null, 2))
 
     //执行npm i
     cp.execSync('npm i', { cwd: projectPath, stdio: 'inherit' })
@@ -53,8 +53,8 @@ export const initNPMProject = (projectPath, data) => {
     const templateDir = path.join(__dirname, "../templates/js_sapdon")
     copyFolder(templateDir, projectPath)
 
-    //生成模组介绍文件
-    saveFile(path.join(projectPath, "mod.info"), JSON.stringify(data, null, 2))
+    //生成模组介绍文件（含持久化 BP/RP UUID）
+    saveFile(path.join(projectPath, "mod.info"), JSON.stringify({ ...data, bp: generateUUID(), rp: generateUUID() }, null, 2))
 }
 
 // 读取package.json文件并提取信息
