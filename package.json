@@ -1,6 +1,6 @@
 {
     "name": "sapdon",
-    "version": "3.5.2",
+    "version": "3.5.3",
     "scripts": {
         "build": "node scripts/build.cjs",
         "test": "tsc && tsc-alias && node --test \"tests/*.test.mjs\"",
