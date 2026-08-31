@@ -8,6 +8,15 @@ const args = process.argv.slice(2)
 const DETAILED_LOGS = args.includes('verbose')  // 详细日志
 const KEEP_DIST = args.includes('keep')         // 保留dist目录
 
+// 将 src/templates 拷贝到 prod/templates，随包发布供 create 命令使用
+async function copyTemplates() {
+  spinner.text = '正在拷贝模板...'
+  const src = path.join(__dirname, '../src/templates')
+  const dest = path.join(__dirname, '../prod/templates')
+  await fs.rm(dest, { recursive: true, force: true })
+  await fs.cp(src, dest, { recursive: true })
+}
+
 // 更好的错误处理，包含更多上下文信息
 class BuildError extends Error {
   constructor(message, taskName) {
@@ -81,6 +90,7 @@ async function startBuild() {
     await build('cmd', 'tsc', 'TypeScript 编译')
     await build('cmd', 'npx tsc-alias', '路径别名解析')
     await build('file', './scripts/buildTask.cjs', '生产环境构建')
+    await copyTemplates()
     
     if (!KEEP_DIST) {
       spinner.text = '正在清理...'

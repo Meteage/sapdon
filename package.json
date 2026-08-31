@@ -52,7 +52,6 @@
     },
     "files": [
         "prod/**/*",
-        "doc/**/*",
-        "sapdon.svg"
+        "doc/**/*"
     ]
 }

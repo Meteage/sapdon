@@ -29,7 +29,7 @@ export const initProject = (projectPath, data) => {
         return
     }
     //模版目录
-    const templateDir = path.join(__dirname, `../../src/templates/${templateMapping[data.language || 'js']}`)
+    const templateDir = path.join(__dirname, `../templates/${templateMapping[data.language || 'js']}`)
     copyFolder(templateDir, projectPath)
 
     //生成模组介绍文件

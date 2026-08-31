@@ -1,7 +1,5 @@
 # Sapdon
 
-![Sapdon Logo](sapdon.svg)
-
 Minecraft Bedrock 版 Addon 开发框架，将 JSON 配置抽象为 TypeScript 类，提供类型安全的 API 和自动化构建工具。
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0-blue)](https://nodejs.org/)
