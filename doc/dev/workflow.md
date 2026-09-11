@@ -15,21 +15,54 @@
 
 ## 2. 框架自身的构建流程
 
+`npm run build` → `node scripts/build.cjs`，串起**四步**：
+
 ```
 npm run build
   │
-  ├─ tsc          → src/ → dist/  (TypeScript 编译)
-  ├─ tsc-alias    → 解析路径别名
-  └─ rollup       → dist/ → prod/ (打包为 ESM bundle)
-       ├─ prod/cli/start.js   CLI 入口
-       ├─ prod/cli/index.js   CLI 库
-       ├─ prod/core/index.js  @sapdon/core
-       ├─ prod/oc/index.js    @sapdon/runtime
-       ├─ prod/utils/index.js @sapdon/utils
-       └─ prod/*/index.d.ts   TypeScript 声明文件
+  ├─ 1. tsc            → src/ → dist/   (TypeScript 编译，保留路径结构)
+  ├─ 2. npx tsc-alias  → 解析路径别名（@sapdon/* → 相对路径）
+  ├─ 3. node scripts/buildTask.cjs → dist/ → prod/ (rollup 打包为 ESM bundle)
+  │        ├─ prod/cli/start.js   CLI 入口
+  │        ├─ prod/cli/index.js   CLI 库
+  │        ├─ prod/core/index.js  @sapdon/core
+  │        ├─ prod/oc/index.js    @sapdon/runtime
+  │        ├─ prod/utils/index.js @sapdon/utils
+  │        └─ prod/*/index.d.ts   TypeScript 声明文件
+  └─ 4. 收尾：拷贝 src/templates → prod/templates，并删除 dist/
+           （`node scripts/build.cjs keep` 可保留 dist/）
 ```
 
-构建命令在 `scripts/build.cjs` 中定义。
+> 打包脚本的**实际文件名是 `scripts/buildTask.cjs`**（由 `scripts/build.cjs:92` 以 `node ./scripts/buildTask.cjs` 调用），任务的配置在 `scripts/buildConfig.cjs`，共 9 个任务（`buildTask.cjs:9-19`）。
+
+### 2.1 受限环境下的「4 步直跑」
+
+本环境（受限沙箱）下 `npm run build` 可能因 spawn/管道限制失败，此时**直接拆开跑这 4 步**：
+
+```bash
+npx tsc
+npx tsc-alias
+node scripts/buildTask.cjs
+# 再手工：拷贝 src/templates → prod/templates，然后删除 dist/
+```
+
+### 2.2 两条实测坑（务必照做）
+
+1. ★ **不能漏掉 `tsc-alias`**。
+   漏掉它，`prod/` 里的 TS 产物会**残留无法解析的裸包名**（例如 `prod/cli/start.js` 里的 `@sapdon/utils`）。游戏/Node 侧都解析不了这个别名 —— 症状是运行期报模块找不到，而不是构建报错。
+2. ★ **「rollup 9/9 Successful」≠ `prod/` 是新的**。
+   `buildTask.cjs` 只在 `failCount > 0` 时 `exit 1`；即使 `Failed: 0`，也可能是产物没更新（缓存/输入未变/拷贝环节被跳过）。**必须断言 `prod/` 的内容**，例如确认新加的导出真的在 `prod/core/index.d.ts` 或 `prod/oc/index.js` 里，而不是只看 `Failed: 0`。
+
+### 2.3 单元测试
+
+```bash
+node tests/persist.test.mjs      # ✅ 直接跑
+node --test "tests/*.test.mjs"   # ⚠️ 受限环境下会 fork 子进程（EPERM）而失败
+```
+
+- `node --test` 在受限环境里会**fork 子进程**（命名管道 `EPERM`）→ 直接 `node tests/<name>.test.mjs`。
+- 测试 `import` 的是 `../dist/...`，所以**必须先 `tsc` 生成 `dist/`**，否则测试 import 不到模块。
+- 运行期代码（`src/oc`）的单测要靠**纯逻辑 + 内存 target**，不要依赖 `@minecraft/server`（该包只发 `index.d.ts`，Node 里导入不了）。
 
 ---
 
@@ -117,7 +150,14 @@ npm run build        # 构建 + 启动开发服务器（HMR）
 
 ### 6.3 编译后服务器不退出
 
-`sapdon compile` 默认构建完成后自动退出。如果服务器一直占端口，检查 `build.config` 中是否设置了 `buildOptions.keepServer: true`。
+`sapdon compile` / `sapdon build` **默认构建完成后自动退出**（`keepServer` 默认 false，`src/cli/build.js:324-328`）：
+
+```
+[sapdon] 构建完成，开发服务器已自动退出。
+[sapdon] 如需保持服务器常开（HMR / 热更新），请在 build.config 中设置 "buildOptions.keepServer": true
+```
+
+如果服务器一直占端口，检查 `build.config` 中是否设置了 `buildOptions.keepServer: true`。多进程/多 agent 并发构建时还应各自设置 `SAPDON_DEV_SERVER_PORT`，端口被占时 CLI 会直接 `exit 1`。
 
 ### 6.4 新建项目后忘记同步库
 
@@ -127,7 +167,7 @@ npm run build        # 构建 + 启动开发服务器（HMR）
 
 `src/cli/build.js` 中 manifest 只在**不存在时**才生成（`if (pathNotExist(manifestPath))`），目的是保留 uuid。因此修改 `build.config` 里的 `@minecraft/server` 版本后，旧 manifest 会被保留、新版本不生效。
 
-**解决**：手动删除 `dev/<name>_BP/manifest.json` 后重新 `sapdon compile`。删除 manifest 不影响 uuid（uuid 缓存在 `dev/.sapdon` 等目录，由 `loadOrCreateUuids` 复用）。
+**解决**：手动删除 `dev/<name>_BP/manifest.json` 后重新 `sapdon compile`。删除 manifest 不影响 uuid —— **uuid 就存在项目的 `mod.info` 里**（`bp` / `rp` 两个字段，由 `loadOrCreateUuids()` 读写，`src/cli/build.js:49-62`），删 manifest 后重建会从 `mod.info` 复用同一组 uuid，BP/RP 交叉绑定不会断。
 
 ### 6.6 方块脚本事件不存在（blockTick / blockUpdate）与自定义组件注册时机
 
@@ -162,7 +202,7 @@ npm run build        # 构建 + 启动开发服务器（HMR）
 
 **问题**：Minecraft 从 format version 1.26.20 起，`minecraft:material_instances` 的 `ambient_occlusion` 不接受布尔值，必须是 0.0–10.0 浮点数。
 
-**修复位置**：`src/cli/load.ts`（方块 JSON 生成逻辑）。
+**修复位置**：`src/core/block/block.js`（材质实例 `ambient_occlusion` 归一化，见 `block.js:70-75`）。
 
 **修复前**：
 ```ts
@@ -176,14 +216,16 @@ ambient_occlusion: "number" == typeof i ? i : !1 === i ? 0 : 1
 // 生成: "ambient_occlusion": 0  ← 合法浮点数
 ```
 
-### 案例 2：新增 keepServer 配置项
+### 案例 2：`keepServer` 配置项（**已实现**）
 
-**需求**：`sapdon compile` 构建完成后 dev server 不退出，一直占端口 49037。需要加开关控制是否常驻。
+**背景**：`sapdon compile` 构建完成后 dev server 不退出，一直占端口。需要一个开关控制是否常驻。
 
-**修改文件**：
-- `src/cli/meta/buildConfig.ts`：在 `BuildOptions` 中新增 `keepServer?: boolean` 字段。
-- `src/cli/build.js`：在 `buildProject()` 末尾添加自动退出逻辑，默认 `keepServer` 为 false 时 `process.exit(0)`。
-- `src/templates/js_sapdon/build.config` 和 `src/templates/ts_sapdon/build.config`：在模板中新增 `keepServer` 字段及注释。
+**状态：已实现**（不再是待做项）。默认 `keepServer` 为 false，构建完成后打印提示并 `process.exit(0)`；设为 true 则保持服务器常开（配合 `useHMR`）。
+
+**实现位置**（均已落地）：
+- `src/cli/meta/buildConfig.ts:16`：`BuildOptions` 中的 `keepServer?: boolean` 字段。
+- `src/cli/build.js:323-328`：`buildProject()` 末尾的自动退出逻辑 —— `if (!getBuildConfig().buildOptions.keepServer) { ... process.exit(0) }`。
+- `src/templates/js_sapdon/build.config` 和 `src/templates/ts_sapdon/build.config`：模板中带 `keepServer` 字段及注释（ts 模板见第 5 行）。
 
 **使用方式**：
 ```json

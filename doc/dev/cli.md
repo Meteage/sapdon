@@ -11,8 +11,9 @@ src/cli/
 ├── index.js                 # @sapdon/cli 包入口，导出 dev server 客户端
 ├── start.js                 # CLI 命令定义 (commander)，入口脚本
 ├── build.js                 # 构建编排器：bundler、manifest 生成、注册
-├── load.js                  # 处理注册数据，生成 JSON 文件
-├── registryServer.ts        # GRegistryServer — 服务端注册表，注册 submit/remote-logger handler
+├── load.js                  # 处理注册数据，生成 JSON 文件 + 陈旧产物清理 + 注册索引合并
+├── pack.js                  # packProject() — 把 dev/<proj>_BP、_RP 打包为 .mcaddon
+├── registryServer.ts        # GRegistryServer — 服务端注册表，注册 submitGregistry / remote-logger handler
 ├── init.js                  # 项目初始化、路径辅助
 ├── utils.ts                 # 通用文件 I/O 工具
 ├── tools/
@@ -37,7 +38,7 @@ src/cli/
     └── message.ts            # 日志消息类型定义
 ```
 
-共 22 个文件。
+共 23 个文件。
 
 ---
 
@@ -51,11 +52,15 @@ src/cli/
 |------|------|
 | `init` | 为已有项目添加 sapdon 配置（修改 package.json scripts，生成 mod.info） |
 | `create <name>` | 从模板脚手架新项目，支持 `js` / `ts` 选择 |
-| `build <name>` | 完整构建 + 启动热更新 |
-| `pack` | 构建当前目录（不启动 HMR） |
-| `lib` | 复制 `prod/` 到 `node_modules/@sapdon/` |
+| `build <name>` | 完整构建 + 启动热更新（构建前会调用 `initResourceDir()`） |
+| `compile` | 构建当前目录（不启动 HMR）。⚠️ **不会**调用 `initResourceDir()`，即不重新生成 `res.hint.ts` |
+| `pack` | 把 `dev/<proj>_BP` + `dev/<proj>_RP` 打包为 `dev/<proj>.mcaddon`（**不构建**，直接打包现有产物） |
+| `lib` | 复制 `prod/core`、`prod/cli`、`prod/oc` 到 `node_modules/@sapdon/{core,cli,runtime}` |
 | `res` | 生成资源提示文件 `res.hint.ts` |
 | `config` | (占位) 读取 build.config |
+
+> 命令定义见 `src/cli/start.js`。`compile` 与 `pack` 的差别是容易记错的一处：`compile` = 构建不打包，`pack` = 打包不构建。
+> `initResourceDir()` 只在 `build`（`start.js:117`）与 `res`（`start.js:156`）里调用，`compile`（`start.js:130-140`）没有调用 —— 所以新增 `res/` 资源后只跑 `sapdon compile` 不会刷新 `res.hint.ts`，需要单独跑 `sapdon res`。
 
 ### `index.js` — 包入口
 
@@ -79,34 +84,58 @@ import { devServer, client } from '@sapdon/cli'
 ```
 1. projectCanBuild()
    → 验证项目存在 + build.config 存在
+   ⚠️ 未通过时只打印原因并 return，命令本身不报错（见「退出码语义」）
 
-2. 生成 manifest.json（仅首次）
-   → BP/manifest.json + RP/manifest.json
-   → 通过 AddonManifest 类生成
+2. 【仅当 dev server 尚未监听时执行】(if (!server.isListening()))
+   2a. 生成 manifest.json（仅当文件不存在时：if (pathNotExist(manifestPath))）
+       → BP/manifest.json + RP/manifest.json
+       → 通过 AddonManifest 类生成；BP/RP 的 UUID 由 loadOrCreateUuids() 从 mod.info 读写
+   2b. 复制 pack_icon.png → BP + RP
+   2c. 复制资源文件夹 (res/) → RP
+   2d. startDevServer()
+       → 启动 HTTP 服务器（端口取 SAPDON_DEV_SERVER_PORT，默认 49037）
+   2e. GRegistryServer.startServer()
+       → 注册 submitGregistry / remote-logger handler
+   2f. server.handle('submit', ...)
+       → 收到数据后调用 generateAddon() 写 JSON
+       → buildMode === 'debug' 时跳过生成（只同步已有 dev/）
 
-3. 复制 pack_icon.png → BP + RP
-
-4. 复制资源文件夹 (res/) → RP
-
-5. startDevServer()
-   → 启动 HTTP 服务器 (端口 49037)
-
-6. GRegistryServer.startServer()
-   → 注册 submit handler
-
-7. runScript(absoluteModPath)
-   → rollup 编译 buildEntry (main.ts)
-   → fork 子进程执行
+3. runScript(absoluteModPath)
+   → rollup 编译 buildEntry (main.ts) 到 .tmp/<uuid>.js
+   → cp.spawn(process.execPath, [file], { stdio: 'inherit' }) 执行
+   → ★ 检查退出码：非 0 立即抛错（不再静默走到「构建完成」）
    → 子进程中用户代码注册数据
-   → HTTP POST 提交到 dev server
-   → generateAddon() 生成 JSON 文件
+   → HTTP POST 提交到 dev server → generateAddon() 生成 JSON 文件
+   → finally 删除临时文件
 
-8. bundleScripts()
-   → rollup 打包 scripts/main.ts → scripts/index.js
+4. bundleScripts()
+   → rollup 打包 scripts/main.ts → scripts/index.js（await，失败即抛）
 
-9. syncDevFilesServer()
+5. syncDevFilesServer()
    → 复制 BP/RP 到 Minecraft 开发包目录
+
+6. 收尾
+   → buildOptions.keepServer 为真：保持开发服务器常开（配合 HMR）
+   → 为假（默认）：打印「构建完成，开发服务器已自动退出」并 process.exit(0)
 ```
+
+**为什么 step 3 用 `spawn` 而不是 `fork`**（`src/cli/build.js:191-200`）：
+
+`cp.fork` 一定会建立 IPC **命名管道**，在受限环境下会以 `EPERM`（`spawn EPERM`）失败；而框架的传输层走 **HTTP**（`src/core/transport/client.ts` → `localhost:49037`），**从不使用 IPC**。所以 `cp.spawn(process.execPath, [file], { stdio: 'inherit' })` 对「跑一个 Node 脚本」是等价且更少依赖的写法。
+
+### 退出码语义（失败必须非 0）
+
+历史行为是**失败被吞掉**、CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是**上一次的旧产物**（本仓库真实踩过的坑）。现在：
+
+| 环节 | 行为 | 源码 |
+|------|------|------|
+| 构建脚本子进程非 0 退出 | 抛错 | `src/cli/build.js:191-200` `runOnChild()` |
+| `scriptBundler` 打包失败 | 抛错（不再只 `console.error`） | `src/cli/build.js:101-104`、`152-155` |
+| CLI 顶层 catch | `process.exit(1)` | `src/cli/start.js:118-126`（build）、`133-139`（compile） |
+
+⇒ **「构建成功」这句话不可信**。成功的判据是**退出码 0** + 日志里出现 `处理数据: <name> <root> <path>` 行（`src/cli/load.js:210`）。
+
+⚠️ 注意 `projectCanBuild()` 失败（项目不存在 / 没有 `build.config`）时只是**打印原因并 return**，命令本身**不报错**、退出码仍为 0 —— 这是另一条需要看日志才能发现的路径。
 
 **导出的关键组件：**
 
@@ -137,21 +166,68 @@ scriptBundler.any(source, target)
 ```
 generateAddon(modPath, buildPath, projectName)
 
+previousFiles = readManifest(buildPath, projectName)   # 上次的产物清单
+cleanLegacyBpBlocksJson(buildPath, projectName)        # 清理历史误放在 BP 的 blocks.json
+generatedFiles = []                                    # 本次写出的产物（相对 buildPath）
+
 for each { name, root, path: dataPath, data } in dataList:
+  ├── 日志：console.log('处理数据:', name, root, dataPath)   ← 这是「产物真的生成了」的唯一判据
   ├── case "item_texture"      → 暂存，稍后生成 item_texture.json
   ├── case "terrain_texture"   → 暂存，稍后生成 terrain_texture.json
   ├── case "flipbook_textures" → 暂存，稍后生成 flipbook_textures.json
+  ├── data._scriptSource 存在  → 写 scripts/custom_components/<name>.js（已存在则跳过）
+  │                             并登记进 customComponentInfos
   └── default:
-       root == "behavior"
-         → writeFileSync(<buildPath>/<name>_BP/<dataPath>/<name>.json)
-       root == "resource"
-         → writeFileSync(<buildPath>/<name>_RP/<dataPath>/<name>.json)
+       root == "behavior" → writeFileSync(<buildPath>/<projectName>_BP/<dataPath>/<name>.json)
+       root == "resource" → writeFileSync(<buildPath>/<projectName>_RP/<dataPath>/<name>.json)
+       （每个写出的文件都 record() 进 generatedFiles）
 
-generateTextureFiles()
-  → generateItemTextureJson()
-  → generateBlockTextureJson()
+customComponentInfos 非空 → writeCustomComponentIndex(<projectPath>/scripts/custom_components/index.js)
+
+generateTextureFiles(resDir, ...)
+  → generateItemTextureJson()   → <proj>_RP/textures/item_texture.json
+  → generateBlockTextureJson()  → <proj>_RP/textures/terrain_texture.json
   → saveFile(flipbook_textures.json)
+
+cleanStaleGenerated(buildPath, previousFiles.files, generatedFiles)  # 删「上次有、这次没有」的
+writeManifest(buildPath, projectName, generatedFiles)                # 写回本次清单
 ```
+
+⚠️ 注意 path 用的是**项目名** `${projectName}_BP` / `${projectName}_RP`（`load.js:183-184`），而 `<name>.json` 用的是注册项的**数据名**，两者是两个不同的值。
+
+### 陈旧产物清理（缺口 9）
+
+清单文件：`dev/.sapdon_generated_<proj>.json`（`load.js:11-12`），记录**本次构建写出的产物**（相对 `dev/` 的路径）。
+
+- 下次构建只删「**上次清单里有、这次清单里没有**」的路径 → 改名 / 删条目留下的旧 JSON 会被自动清掉。
+- ★ **禁止**把它改成「扫目录删未知文件」：那会把用户从 `res/` 拷进来、以及手写的文件一起误删。
+- ⚠️ **局限**（两个会留下旧文件的场合，必须手工删）：
+  1. **重命名项目后**：新项目名对应的清单（`.sapdon_generated_<新名>.json`）管不到旧名字的 `dev/<旧名>_*` 目录 → 旧目录整个残留，需**手工删除**。
+  2. **从未成功构建过的项目**没有清单 → 其陈旧文件也清不掉（清单不存在时 `readManifest` 返回空列表，`load.js:19`）。
+
+### `blocks.json` 的位置与键
+
+- **位置**：`blocks.json` 是**资源包（RP）**文件 → 框架写在 `dev/<proj>_RP/blocks.json`（`GRegistry.register("blocks","resource","",blocks_json)`，`blockFactory.js:76`）。
+  依据：[Bedrock Wiki · Pack Folder Structure](https://wiki.bedrock.dev/documentation/pack-structure) 的目录树把 `blocks.json` 列在 **RP** 根目录下（BP 侧没有 `blocks.json` 这个概念）；[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的示例标题即 `RP/blocks.json`。历史上框架曾把它误写在 BP，那里会被 Bedrock **完全忽略**；首次带清单构建会自动清掉 BP 侧那个**确切路径**的历史残留（`cleanLegacyBpBlocksJson()`，`load.js:34-41`）。
+- **键**：必须是**完整标识符** `ns:name`，例如 `"mob_chest:chest"`，**不是** `ns_name`。
+  依据：[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的 RP/blocks.json 示例键为 `"wiki:chestnut_log"`；本仓库历史产物 `git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json` 用的也是 `"mob_chest:chest"` / `"sapdon:falling_block"`。
+  `ns_name` 形态是历史上把「**文件名安全名**」复用成 JSON 键的副产品 —— 文件名必须继续用 `_`（`:` 在 Windows 文件名里非法，`blockFactory.js:47`），但它不能兼任 JSON 键。框架现在有护栏：键不含 `:` 会 `console.warn`（`assertBlocksJsonKey()`，`blockFactory.js:26-34`）。
+- ⚠️ **未验证**：移到 RP + 键改成 `ns:name` 之后，**游戏内**的音效/贴图是否正常 —— 本项目无法启动 Minecraft，只验证到了「文件位置与键格式符合 wiki 规范」。
+
+### 自定义组件注册索引合并（缺口 10/11）
+
+`scripts/custom_components/index.js` 用**标记块**维护（`load.js:166-167`）：
+
+```
+// >>> sapdon:custom-component-registry (auto-generated, 请勿手改本块) >>>
+... 自动生成的 import + system.beforeEvents.startup 注册 ...
+// <<< sapdon:custom-component-registry <<<
+```
+
+- **标记块之外的内容一律保留**（用户手写/模板占位都不会被覆盖）；文件里没有生成段时**追加**而不是覆盖。
+- **幂等**：连跑两次文件内容不变（`load.js:158-161`）。
+- 生成块里用 `import { system as __sapdon_system }` 而不是裸 `system` —— 追加时文件里可能已有 `import { system }`，同名重复声明会让整个脚本包 rollup 报 `Identifier "system" has already been declared`（`load.js:80-82`, `SYSTEM_ALIAS`）。
+- ⚠️ 这里**不能**改成「文件已存在就跳过」：索引在 ts 模板里是**预置占位文件**且被 `scripts/index.ts` import，「存在即跳过」会让注册索引**永远不更新**（`load.js:262-265`）。
 
 ---
 
@@ -167,10 +243,16 @@ generateTextureFiles()
 | `globalObject` | 全局可变对象，存储运行时状态 (projectPath) |
 | `getProjectPath()` | 返回当前项目路径 |
 | `getProjectName()` | 返回项目名 (目录 basename) |
-| `getBuildDirBp()` | 返回 BP 构建目录路径 |
-| `getBuildDirRp()` | 返回 RP 构建目录路径 |
+| `getBuildDirBp()` | 返回 BP 构建目录路径（`<projectPath>/<buildDir>/<name>_BP`） |
+| `getBuildDirRp()` | 返回 RP 构建目录路径（`<projectPath>/<buildDir>/<name>_RP`） |
 
 模板映射：`{ js: 'js_sapdon', ts: 'ts_sapdon' }`，对应 `src/templates/` 下的目录。
+
+### 构建子目录名统一大写 `_BP` / `_RP`
+
+`getBuildDirBp()` / `getBuildDirRp()` 固定拼出**大写**的 `_BP` / `_RP`（`src/cli/init.js:105-114`）。
+
+⚠️ 历史上这里是**小写** `_bp` / `_rp`，而 `build.js`、`load.js`、`syncFiles.js`、`pack.js` 一律用大写 —— Windows 文件系统大小写不敏感才侥幸能跑；**Linux/macOS 下会分叉成两个目录**（构建写进 `X_bp`、打包读 `X_BP` → **空包**）。全框架现在只保留大写这一种形态，不要改回小写。
 
 ---
 
@@ -185,11 +267,13 @@ generateTextureFiles()
  ┌─────────────────────────┐      ┌──────────────────────────┐
  │                         │      │                          │
  │ GRegistry               │      │  DevelopmentServer       │
- │ .register()             │ POST │  (端口 49037)            │
- │ .submit()               │─────→│                          │
- │                         │      │  cliServerHandlers:      │
- │ core/transport/client.ts│      │    submit                │
- │ transportPost()         │      │    remote-logger         │
+ │ .register()             │ POST │  (端口 SAPDON_DEV_SERVER_│
+ │ .submit()               │─────→│   PORT，默认 49037)      │
+ │                         │      │                          │
+ │ core/transport/client.ts│      │  cliServerHandlers:      │
+ │ transportPost()         │      │    submitGregistry       │
+ │                         │      │    submit                │
+ │                         │      │    remote-logger         │
  └─────────────────────────┘      └──────────────────────────┘
 ```
 
@@ -223,9 +307,24 @@ HTTP POST /<url>
 
 ### `config.js` — 配置
 
+端口从环境变量 **`SAPDON_DEV_SERVER_PORT`** 读取，默认 `49037`（`src/cli/dev-server/config.js:11-20`）：
+
 ```javascript
-{ port: 49037 }
+const DEFAULT_PORT = 49037
+// 非整数 / ≤0 / 未设置 → 回落默认端口
+export const devServerConfig = { port: resolvePort() }
 ```
+
+| 事项 | 说明 |
+|------|------|
+| 默认端口 | `49037` |
+| 覆盖方式 | 环境变量 `SAPDON_DEV_SERVER_PORT` |
+| ★ 一致性要求 | 服务端（`dev-server/config.js`）与客户端（`src/core/transport/client.ts`）**必须解析同一个变量** |
+| 端口被占用 | 打印「端口已被其他 sapdon 进程占用」并 **`process.exit(1)`**（`dev-server/server.ts:56-64`，判据是 `EADDRINUSE`） |
+
+⚠️ **静默失联**：如果只有一侧读这个变量，就会出现「**客户端 POST 到 A 端口、服务端监听 B 端口**」——两边都不报错，表现为**构建产物莫名不更新**（注册数据发到了没人听的端口）。改端口相关代码时两处必须同步改。
+
+用途：多个 sapdon 构建并行（多 agent / 多项目同时构建）时靠它避开 `EADDRINUSE`，各设各的端口即可。
 
 ---
 
@@ -303,6 +402,7 @@ interface BuildConfig {
   formatVersion: number                    // 当前是 2
   buildOptions: {
     useHMR: boolean                        // 热更新
+    keepServer?: boolean                   // 构建后是否保持开发服务器常开（默认 false → 自动退出）
     buildMode: 'dev' | 'prod' | 'debug' // 构建模式
     buildEntry: string                     // main.ts 入口
     scriptEntry: string                    // scripts/main.ts
@@ -447,7 +547,7 @@ load.js (JSON 文件生成)
   ├── tools/textureSet.js → 纹理图集
   └── registryServer.js → GRegistryServer
 
-dev-server/ (IPC 基础设施)
+dev-server/ (HTTP 传输层 —— 全框架不使用 IPC)
   ├── server.ts ←→ client.js (HTTP 通信)
   ├── hmr.js → build.js + syncFiles.js
   └── syncFiles.js → meta/versionType.js + meta/package.js

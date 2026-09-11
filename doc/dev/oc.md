@@ -4,6 +4,36 @@
 
 ---
 
+## 0. 分层铁律：构建期 `@sapdon/core` vs 运行期 `@sapdon/runtime`
+
+**这一节是读懂 `src/core` 与 `src/oc` 分工的前提，写运行期代码前必看。**
+
+| | `@sapdon/core`（`src/core`） | `@sapdon/runtime`（`src/oc`） |
+|---|---|---|
+| 运行时机 | **构建期**（`main.ts` 跑一遍生成 JSON） | **运行期**（游戏内 `scripts/*` 执行） |
+| 在 `rollupIgnores` 里？ | ✅ 是 → 打包时被当作 **external** | ❌ 否 → **会被打包进脚本包** |
+| 典型内容 | `ItemAPI` / `BlockAPI` / `registry.submit()` / DTO 类 | `ComponentManager` / `Level` / `Scheduler` / `persist` / `components` |
+| 运行宿主 | Node.js（CLI 子进程） | Minecraft Bedrock Script API |
+
+依据：`src/cli/build.js:38-44` 的 `rollupIgnores`：
+
+```javascript
+const rollupIgnores = [
+    'rollup',
+    'typescript',
+    '@sapdon/core',   // ← 构建期库，external
+    '@sapdon/cli',
+    '@minecraft',     // ← 由游戏内置提供
+]
+```
+
+⚠️ **红线**：**运行期脚本里不要 `import '@sapdon/core'`**。
+因为 `@sapdon/core` 在 external 名单里，rollup 会**原样保留** `import ... from '@sapdon/core'` 这条裸包名语句，而 Bedrock **不是它的宿主**（游戏运行时只提供 `@minecraft/*`，没有 npm 解析）→ 产物里留下**游戏解析不了的裸包名**，导致**整包脚本挂掉**。需要"构建期和运行期共用"的逻辑，必须放在 `src/oc`（`@sapdon/runtime`）里，或各自实现一份。
+
+**判断方法**：问「这段代码是在 `main.ts` 里生成 JSON，还是在游戏里每 tick 跑？」前者属于 `core`，后者属于 `oc`。新 API 落地前先想清楚属于哪一层。
+
+---
+
 ## 1. 架构总览
 
 OC 模块实现了一个简化的 **Entity-Component 架构**：
@@ -35,9 +65,11 @@ OC 模块实现了一个简化的 **Entity-Component 架构**：
 | **Component** | 附着在实体上的数据+行为单元，每个 Component 有自己的 `onTick()` |
 | **ComponentManager** | 每个实体一个，管理其所有 Component 的生命周期 |
 | **Level** | 实体集合，以 string ID 索引，每个 ID 对应一个 ComponentManager |
-| **Scheduler** | 驱动游戏循环，每 tick 遍历所有实体的所有 Component 调用 `onTick()` |
+| **Scheduler** | 驱动游戏循环，每 tick 遍历 `Level.table` 里的每个 ID 调用 `onTick()`。⚠️ 它**只认实体**（内部写死 `world.getEntity(id)`），见 §4.2 |
 | **Optional\<T\>** | Monadic 空值包装器 |
 | **EventEmitter** | 自定义发布/订阅事件系统 |
+
+> ⚠️ **调度器只遍历实体（重要架构约束）**：`Level.table` 的键会被当作**实体 ID** 去查 `world.getEntity(id)`。把**方块**的 ID 注册进这张表，`getEntity` 恒为 `undefined` → **方块永远不会 tick，而且不报任何错**。想做「机器每 tick 干活」必须**自建调度**（自己 `system.runInterval`）。详见 §4.2。
 
 ### 目录结构
 
@@ -64,6 +96,14 @@ src/oc/
 │   ├── triggers.ts        # ActionTriggers (pressed/released/hold 等)
 │   └── modifiers.ts       # ActionModifiers (negate/scale)
 ├── ui/hud.ts              # HudComponent (基类)
+├── components/            # 【新增】运行期自定义组件注册（路线 B）
+│   └── registry.ts        # registerBlockComponent / registerItemComponent / pendingComponentCount / registeredComponents
+├── persist/               # 【新增】分块持久化（绕开动态属性约 32KB 上限）
+│   └── chunked.ts         # saveChunked / loadChunked / clearChunked / CHUNK_SIZE
+├── builtin/               # 框架内建自定义组件（在 startup 时机注册）
+│   ├── index.ts           # registerBuiltinComponents()
+│   ├── blocks/            # crop / fallingBlock / headRotation / intercardinalOrientation
+│   └── items/guiBook.ts   # sapdon:guibook
 └── minecraft/             # Minecraft 集成层
     ├── index.ts           # 聚合导出
     ├── core.ts            # MinecraftTickingScheduler, MinecraftLevel, MinecraftGameInstance
@@ -78,6 +118,8 @@ src/oc/
     └── ui/
         └── actionbar.ts       # PlayerHudComponent (actionbar HUD)
 ```
+
+> `components/` 与 `persist/` 的 **API 细节（签名、参数、示例）见[运行期 API 文档](../user/api/runtime.md)**；本节只说明它们的架构定位。
 
 ---
 
@@ -259,39 +301,87 @@ MinecraftGameInstance.onStart()
 
 ### 4.2 MinecraftTickingScheduler
 
+源码：`src/oc/minecraft/core.ts:7-57`。
+
 ```typescript
 @Minecraft
 class MinecraftTickingScheduler implements Scheduler<string> {
-  currentTick = 0
+  private _currentTick = 0
+  private _timeStamp = 0
   timeDilation = 1
 
-  start(table: Map<string, ComponentManager<Entity>>) {
-    system.runInterval(() => {
-      this.executeTick(table)
-    })
+  get currentTick() { return this._currentTick }
+
+  start(table: Map<string, ComponentManager<any>>) {
+    this._timeStamp = Date.now()
+    this._run = system.runInterval(this.executeTick.bind(this, table))
   }
+  stop() { system.clearRun(this._run) }
 
   executeTick(table) {
-    this.currentTick++
-    const dt = this._timeStamp * this.timeDilation
-    for (const [id, manager] of table) {
-      // 使用 world.getEntity(id) 获取 Minecraft Entity 对象
-      manager.handleTicks(entity, dt)
+    if (!this.timeDilation) return
+    const prev = this._currentTick
+    const cur = this._currentTick += this.timeDilation
+    if (cur - prev < 1) return                    // 时间膨胀不足 1 tick → 本帧跳过
+    const lastTickTime = this._timeStamp
+    const currentTime = (this._timeStamp = Date.now())
+    const dt = (currentTime - lastTickTime) * this.timeDilation
+    this._handleTick(table, dt)
+  }
+
+  _handleTick(table, dt) {
+    for (const [ id, manager ] of table.entries()) {
+      const entity = world.getEntity(id)          // ★ 键被当作实体 ID
+      if (entity) manager.handleTicks(entity, dt) // ★ 查不到就静默跳过
     }
   }
 }
 ```
 
+> `currentTick` 是**累积的时间膨胀值**（不是帧数）：只有累积跨过 1 才真正执行一次 tick，`dt` 是「距上次执行的真实毫秒差 × timeDilation」。
+
+#### ⚠️ 调度器只遍历实体 —— 「方块每 tick 干活」必须自建调度
+
+`_handleTick` 里**硬编码**了 `world.getEntity(id)`（`src/oc/minecraft/core.ts:20`）。而 `Level.table` 的键就是任意 string ID（`src/oc/level.ts:11-17`），**框架不校验它是不是实体**。于是：
+
+```
+Level.addEntity("my_addon:my_machine")   // 键是方块标识符
+  → 进 table
+  → 每 tick: world.getEntity("my_addon:my_machine") → undefined
+  → if (entity) 不成立 → 什么都不做
+```
+
+**症状是本项目排查最久的一类坑**：
+
+- 方块**永远不会 tick**；
+- **不报任何错、不打印任何警告**（`if (entity)` 把 `undefined` 静默吞掉了）；
+- 你在 Component 里写的 `onTick(dt)` 代码看起来完全正常，只是**从来没被调用过**。
+
+⇒ 结论：**`Component.onTick()` 这条路只对实体成立**。
+想做「机器 / 方块每 tick 干活」，必须**自建调度**，例如：
+
+```js
+// 运行期脚本：自己驱动，不依赖 Level/Scheduler
+import { system, world } from '@minecraft/server'
+system.runInterval(() => {
+    // 自己遍历方块（例如按 dimension.getBlock 查询已知坐标，
+    // 或维护一份「已放置机器」的坐标表）
+}, 1)
+```
+
+或走方块**自定义组件**的 `onTick` —— 那条路属于**游戏自身的调度**（Bedrock Wiki 的方块组件列表里包含 [Tick 组件](https://wiki.bedrock.dev/blocks/block-components#tick)），**不经过本框架的 `Scheduler`**。⚠️ 其具体的驱动关系（`onTick` 与 `minecraft:tick` 如何配合）**未验证** —— 本项目无法启动 Minecraft。
+
 ### 4.3 MinecraftGameInstance
 
 ```typescript
+// src/oc/minecraft/core.ts:68-100
 abstract class MinecraftGameInstance implements GameInstance {
-  onStart() {
-    const level = new MinecraftLevel()
-    this.setLevel(level)
-    level.start()
-    system.run(() => this.afterStart?.())  // 下一 tick 执行 afterStart
+  onStart(ev: StartupEvent) {
+    this.setLevel(new MinecraftLevel())          // setLevel 内部会调 lvl.start()
+    system.runTimeout(() => this.afterStart(), 1) // 下一 tick 执行 afterStart
   }
+  shutdown() { this.level?.stop?.() }
+  afterStart() {}   // 子类覆写
 }
 ```
 
@@ -571,12 +661,26 @@ KeyState (独立)
 ## 13. 包入口 (`index.ts`)
 
 ```typescript
-// src/oc/index.ts
-export * from './core.js'       // Component 体系 + ComponentManager
-export * from './optional.js'   // Optional<T>
-export * from './input/base.js' // PlayerInputComponent
-export * from './arch.js'       // GameInstance, initialize
-export * from './math/index.js' // Vec3, Vec4, Matrix, Spline, MathExt
+// src/oc/index.ts  （共 10 条导出，与源码逐行对应）
+export * from './core.js'            // Component 体系 + ComponentManager + lazyGet + RequireComponents
+export * from './optional.js'        // Optional<T>
+export * from './components/index.js'// 【新增】运行期自定义组件注册（路线 B）
+export * from './input/base.js'      // PlayerInputComponent
+export * from './arch.js'            // GameInstance, initialize
+export * from './math/index.js'      // Vec3, Vec4, Matrix, Spline, MathExt
 export * from './minecraft/index.js' // Minecraft 集成全部
-export * from './ui/hud.js'     // HudComponent
+export * from './persist/index.js'   // 【新增】分块持久化
+export * from './ui/hud.js'          // HudComponent
+export * from './builtin/index.js'   // 【新增】框架内建自定义组件（registerBuiltinComponents）
 ```
+
+### 本轮新增的两个运行期模块（架构定位）
+
+| 模块 | 目录 | 定位 | 一行用途 |
+|------|------|------|---------|
+| **分块持久化** | `src/oc/persist/` | 运行期（`@sapdon/runtime`），**会被打包进脚本包** | 把超过动态属性上限（约 32KB）的大 JSON **分块存取**，避免 `setDynamicProperty` 抛错被吞掉导致**静默丢存档** |
+| **自定义组件注册** | `src/oc/components/` | 运行期（`@sapdon/runtime`），**会被打包进脚本包** | 在**运行期脚本**里声明自定义组件 id + handler，由框架保证在 `system.beforeEvents.startup` 时机注册（路线 B；handler 是普通闭包，可以 `import` 共享模块） |
+
+> 📖 **这两个模块的 API 签名、参数与示例见[运行期 API 文档](../user/api/runtime.md)** —— 本节只说明「模块存在 + 属于哪一层 + 干什么」，API 细节不在此重复。
+
+⚠️ 注意与**路线 A** 的分工：`BlockCustomComponentBuilder`（构建期声明，CLI 生成 `scripts/custom_components/*.js`，handler 靠 `toString()` 序列化）仍然兼容，但**同一个组件 id 不要同时用两条路线注册**（`src/oc/components/registry.ts:14-25`）。运行期注册必须在**脚本模块加载期**调用（顶层语句），启动完成后再注册会**抛错**（宁可炸也不静默）。
