@@ -134,12 +134,24 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 能力 | 位置 | 签名要点 |
 |---|---|---|
 | 手册标签 i18n | `src/core/ui/systems/sapdon/sapdonGuideBook.ts` | 构造第 4 参 `options.labels`，或链式 `setLabels(Partial<GuideBookLabels>)`；默认值 = 历史中文字面量 |
-| 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource）；**★ 这是当前唯一可用的方块容器路线**，`options` 可带 `inventory_size` / `container_type` / `can_be_siphoned_from`（默认 27 / `minecart_chest` / true，不传 = 产物逐字节不变；每次构造按实例拷贝） |
+| 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource）；**★ 这是当前唯一可用的方块容器路线**，`options` 可带 `inventory_size` / `container_type` / `can_be_siphoned_from`（默认 27 / `minecart_chest` / true，不传 = 产物逐字节不变；每次构造按实例拷贝）+ `group` / `hide_in_command` / `format_version` / `entity_texture`（★ S3b 补：这四个以前 `.d.ts` 里漏声明，传对象字面量会踩 TS2353） |
 | 方块容器（实体路线，★ 唯一可用） | `src/core/block/tileBlock.js` + `src/core/factory/blockFactory.js` | `createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })` → 实体行为里的**实体**组件 `minecraft:inventory` |
 | 方块容器（方块路线，规范但当前引擎拒） | `src/core/block/blockComponent.js` | `BlockComponent.setBlockEntity(true, { container: { slot_count } })` → `minecraft:block_entity.container`；`slot_count` 官方文档 `[1,54]`，**超限抛错** |
 | 方块容器（**已废弃**） | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, …})` → 方块里的 `minecraft:inventory`（**实体**组件放错上下文，引擎必然拒）。产物保持不变 + 构建期一条 warn 指向上面两条路 |
 | 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked(target, key, value: string)`（**`value` 必填**）/ `loadChunked(target, key): string \| undefined` / `clearChunked(target, key)` + `CHUNK_SIZE = 24000`（另导出 `CHUNK_SUFFIX`/`MAX_CHUNK_SCAN` 与几个纯函数） |
 | 组件注册（路线 B） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerBlockComponent(id, handlers)` / `registerItemComponent(id, handlers)`；诊断：`pendingComponentCount()` / `registeredComponents()` |
+| 组件注册（**框架内置兜底**） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerFallbackBlockComponent(id, handlers)` / `registerFallbackItemComponent(id, handlers)`：**项目没注册该 id 才注册**；项目注册了 → 项目生效 + 一条 warn；重复登记同一内置 id 幂等。诊断：`skippedFallbackComponents()` |
+
+### A2. 框架内置自定义组件清单（`registerBuiltinComponents()`）
+
+| id | 实现 | 备注 |
+|---|---|---|
+| `sapdon:crop_growth` | `src/oc/builtin/blocks/crop.ts` | `CropBlock` 用 |
+| `sapdon:fallingblock` | `src/oc/builtin/blocks/fallingBlock.ts` | |
+| `sapdon:head_rotation` | `src/oc/builtin/blocks/headRotation.ts` | `HeadBlock` 用 |
+| `sapdon:intercardinal_orientation` | `src/oc/builtin/blocks/intercardinalOrientation.ts` | `HeadBlock` 的 permutation 用 |
+| `sapdon:guibook` | `src/oc/builtin/items/guiBook.ts` | **物品**组件注册表 |
+| **`sapdon:block_with_entity`** | `src/oc/builtin/blocks/blockWithEntity.ts` | ★ S3b 新增，走**兜底**通道。`TileBlock` 给**每个** `createTileBlock` 的方块都挂它（`tileBlock.js:232`）—— 框架以前不注册 ⇒ 忘了手工注册的项目**整份方块被引擎丢**（`not present in the Schema`）。内置实现 = **模式 A**（`onPlace` 里 spawn `${block.typeId}_entity`，防重复、位置对齐），**刻意不切** `sapdon:block_or_entity` 状态（不替项目决定要不要「方块透明 + 实体接管外观」的模式 B）；项目自己注册同 id 时以项目实现为准 |
 
 ### B. UI i18n：默认值必须保持历史字面量
 - `DEFAULT_GUIDE_BOOK_LABELS = { chapter: '章节', category: '类别' }` —— **改它会让所有既有项目产物变化**，不要动。
@@ -151,7 +163,12 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **路线 B（推荐）**：运行期脚本里 `registerBlockComponent` / `registerItemComponent`。handler 是**普通闭包**，能 import 共享模块（S3 的机器基类必需）。框架内部保证 `system.beforeEvents.startup` 时机。
 - **路线 A（保持兼容）**：`BlockCustomComponentBuilder`（构建期声明）+ CLI 生成的 `scripts/custom_components/*.js`（`build()` / `generateRuntimeCode()` 签名**不许改**，`examples/block_demo` 在用）。handler 会被 `toString()` 序列化 → 只能自包含。
 - **时机红线**：只有上面两条。`world.beforeEvents.worldInitialize` 太晚，症状是 `not present in the Schema`。
-- 守卫：startup 之后注册 → 抛错；同 id 重复注册 → 抛错；事件名拼错 → 只 warn。
+- 守卫：startup 之后注册 → 抛错；同 id 重复注册（**同一张账**内）→ 抛错；事件名拼错 → 只 warn。
+- ★ **框架内置组件不适用「同 id 就抛错」**：框架自己也要注册 `sapdon:block_with_entity`（`TileBlock` 挂的），而历史项目早就手工注册过它。所以内置组件走 `registerFallbackBlockComponent`：
+  - 项目**没注册** → 内置实现生效；
+  - 项目**注册了同 id** → **项目实现生效**、内置被跳过 + 一条 warn（**不是错误**），顺序无关（判定在 `system.beforeEvents.startup` 回调里，等所有模块都加载完）；
+  - 兜底登记本身**幂等**（`registerBuiltinComponents()` 调两次不会重复注册）。
+  - 单测：`node tests/component-registry.test.mjs`（7 条；用「编译产物 + `@minecraft/server` 桩」跑真代码，见该文件头注释）。
 
 ### D. 持久化：绝不吞异常 + 空值靠 `=== undefined`
 - 超限（约 32KB）时 `setDynamicProperty` **抛错**；吞掉就是**静默丢存档**。框架 helper 不吞异常，分块损坏也抛。
