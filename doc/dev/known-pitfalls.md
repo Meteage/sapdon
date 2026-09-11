@@ -99,6 +99,26 @@
 - 检查时机是 `registry.submit()`（`BasicBlock.validate()`）—— **不能**放在 `registerBlock`：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，那一刻组件还没挂上。
 - **⚠️ 待真机确认**：`inventory_size` 的**上限**由 Bedrock 约束，本环境无法实测，框架只校验正整数，**没有硬编码猜测值**。真机请确认 56 槽（FZ 机器所需）可用。
 
+### 4.2 `minecraft:inventory` 在 Bedrock Wiki 上**没有条目**（引用时别引错）
+2026-09 核对：<https://wiki.bedrock.dev/blocks/block-components> 的
+「List of Vanilla Components」共 36 条（Chest Obstruction → Transformation），**没有 Inventory**；
+全页也搜不到 `minecraft:inventory` / `minecraft:block_entity`。
+⇒ 引用这两者时**不要**标注该 wiki 页为出处；按事实标 **「未验证」**。
+（组件本身是真实存在的 —— 框架生成的产物里有，`minecraft:block_entity` 也与 `TileBlock` 链路相关；
+问题只是**该页不覆盖它**。）
+- 该页倒是**有** `minecraft:connection_rule`（`accepts_connections_from`: `all`/`only_fences`/`none` +
+  `enabled_directions`），与 `minecraft:connection` trait（提供 `minecraft:connection_*` 状态）配合，
+  可能是「让管道连接非同种方块」的正路 —— FZ 的管道/线缆（S6）值得先试这条，**但未验证**。
+
+### 4.3 ⚠️ 源码里有一条**指向错误**的 JSDoc（待修）
+`src/core/block/blockComponent.js:688-689`（`setInventory` 的 JSDoc）写：
+> 若只写了 `setInventory` 而没有 `setBlockEntity`，构建时框架会打印 warn 提醒（见 `blockFactory.registerBlock`）。
+
+**指向是错的**：`src/core/factory/blockFactory.js` 里 `block_entity` 命中数 = **0**，`registerBlock` 没有该检查。
+真正的守卫在 `src/core/block/basicBlock.js:155` 的 `BasicBlock.validate()`，
+由 `src/core/registry.ts:26` 的 `runValidators()` 在 `registry.submit()` 时调用。
+⇒ **文档读者按 JSDoc 去 `blockFactory` 找会找不到**。修它要改源码 + 重建 `prod/`，故本轮只记档。
+
 ---
 
 ## 5. 本仓库的构建方式（受限环境）
@@ -139,3 +159,42 @@ node scripts/buildTask.cjs           # rollup → prod/
 - **`tests/ui-buttonpanel.test.mjs` 失败**：import 了早已不存在的 `dist/core/ui/systems/sapdon/sapdonButtonPanel.js`（该模块在 `63262bf` 之后就不在 `src/` 里）。
 - **`tests/item.test.mjs` 失败**：`src/core/entity/componets/entityComponet.js` 把 `type.ts` 的 **type-only** 导出 `RideableComponentDesc` 当**值** import → 运行期 `does not provide an export named 'RideableComponentDesc'`（rollup 构建日志里也有同名 warning）。
 - 上面两个测试**在 `ae6ae16` 之前就已损坏**，与本轮改动无关；本轮未修（超出范围）。
+
+---
+
+## 8. ★ `sapdon lib` 只在**框架仓库内部**可用（已知缺陷，待修）
+
+**症状**（2026-09 由 FZ 项目实测复现，exit 1）：
+```
+Error: src and dest cannot be the same \\?\<proj>\node_modules\@sapdon\core
+  code: 'ERR_FS_CP_EINVAL'
+```
+
+**根因**（`lib` 的实现，见 `prod/cli/start.js` 的 `ge()`）：
+```js
+const t = path.join(path.dirname(fileURLToPath(import.meta.url)), '../')   // ← 框架源 = CLI 自己的兄弟目录
+cpSync(path.join(t,'core'), path.join(n,'@sapdon/core'),    {recursive:true, force:true})
+cpSync(path.join(t,'cli'),  path.join(n,'@sapdon/cli'),     {recursive:true, force:true})
+cpSync(path.join(t,'oc'),   path.join(n,'@sapdon/runtime'), {recursive:true, force:true})  // 注意 oc → runtime
+```
+`lib` 把**「CLI 所在目录的父目录」**当成框架源码根。这对框架自己的 `prod/` 成立
+（`prod/{core,cli,oc}` 就是框架源），但对**任何从项目 `node_modules/@sapdon/cli` 解析到 CLI 的项目**
+都不成立 —— 那时 `t` 就是项目自己的 `node_modules/@sapdon`，于是 `src === dest`。
+
+**范围**：npm 安装的正常用户布局**正是**「CLI 在项目的 `node_modules/@sapdon/cli`」，
+所以 `sapdon lib` 实际上**对所有按正常方式装依赖的用户项目都不工作**，不只是某一个仓库。
+
+**第二重问题（读码 + 列目录，未实跑）**：目标名是 `runtime` 而源目录名是 `oc`。
+`prod/` 下有 `oc/`；`D:\Projects\sapdon\node_modules\@sapdon\` 与
+`examples/guidebook_demo/node_modules/@sapdon/` 下**都只有 `cli`/`core`/`runtime`、没有 `oc`**。
+⇒ 即使 `src === dest` 被修掉，只要 CLI 来自任何 `node_modules/@sapdon/` 布局，
+`cpSync(t/'oc', …)` 仍会因**源不存在**失败（ENOENT）。
+
+**临时绕过**（项目侧可用，不改框架）：显式指定框架构建产物的 CLI，例如
+`SAPDON_CLI=D:/Projects/sapdon/prod/cli/start.js node tools/sapdon.mjs lib`
+（`prod/` 是**唯一**可用的 lib 源：那里同时有 `core/`、`cli/`、`oc/`）。
+
+**修法方向（待定）**：给 `lib` 一个显式来源（环境变量 / 框架根参数 / 从依赖解析 `@sapdon/core`
+的真实安装位置），并把内部的 `oc` 与发布名 `runtime` 的映射落定。
+
+---

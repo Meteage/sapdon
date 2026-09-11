@@ -213,20 +213,29 @@ RecipeAPI.registerSimpleFurnace('my:smelted', 'my:ore')
 | [实体教程](./doc/user/tutorials/entity.md) | 创建实体 → 组件 → AI 行为 |
 | [方块教程](./doc/user/tutorials/block.md) | 基础方块 → 旋转 → 作物 |
 | [配方教程](./doc/user/tutorials/recipe.md) | 有序/无序/熔炉配方 |
-| [指南书教程](./doc/user/tutorials/neo-guidebook.md) | NeoGuidebook API 用法 |
-| [指南书实战经验](./doc/user/tutorials/neo-guidebook-experience.md) | 接入流程与踩坑清单 |
+| [UI 教程](./doc/user/tutorials/sapdon-ui.md) | 自定义 Server Form 页面壳（含完整示例） |
 | [物品 API](./doc/user/api/item.md) | ItemAPI、Item、ItemComponent |
 | [实体 API](./doc/user/api/entity.md) | EntityAPI、EntityComponent、AI |
-| [方块 API](./doc/user/api/block.md) | BlockAPI、BlockComponent |
+| [方块 API](./doc/user/api/block.md) | BlockAPI、BlockComponent、TileBlock、自定义组件两条路线 |
+| [运行期 API](./doc/user/api/runtime.md) | `@sapdon/runtime`：自定义组件注册、分块持久化 |
+| [UI API](./doc/user/api/sapdon-ui.md) | Sapdon UI 页面壳、FormButton / FormButtonGrid |
 | [配方 API](./doc/user/api/recipe.md) | RecipeAPI、配方类 |
 | [生物群系 & 特征 API](./doc/user/api/biome.md) | BiomeAPI、FeatureAPI |
 | [纹理 API](./doc/user/api/texture.md) | 纹理管理器 |
+| [扩展模块 API](./doc/user/api/extra.md) | ClientEntityApperance、BaseVehicle |
+| [手册（Guidebook）](./doc/guidebook.md) | SapdonGuideBook：三层手册、页类型、路由协议、多语言 |
 | [build.config](./doc/user/config/build-config.md) | 构建配置字段 |
+| [mod.info](./doc/user/config/mod-info.md) | 模组元数据 |
 | [常见问题](./doc/user/faq.md) | FAQ |
 | [架构概览](./doc/dev/architecture.md) | 整体架构（源码开发者） |
 | [Core 模块](./doc/dev/core.md) | 三层架构详解（源码开发者） |
 | [CLI 模块](./doc/dev/cli.md) | 构建管道（源码开发者） |
 | [OC 运行时](./doc/dev/oc.md) | ECS 框架（源码开发者） |
+| [开发工作流](./doc/dev/workflow.md) | 框架自身构建、全局 CLI、项目侧同步（源码开发者） |
+| [已知坑清单](./doc/dev/known-pitfalls.md) | 改框架前先扫一遍（源码开发者） |
+| [L-R 编程范式](./doc/dev/lr-paradigm.md) | 存量类 Addon 通用骨架（源码开发者） |
+| [UI 架构](./doc/dev/ui-architecture.md) | JSON UI 的分层与生成（源码开发者） |
+| [UI 经验](./doc/dev/ui-lessons.md) | JSON UI 背景与踩坑（源码开发者） |
 
 ---
 
@@ -242,6 +251,29 @@ npm run build
 构建选项：
 - `npm run build -- verbose` — 查看详细日志
 - `npm run build -- keep` — 保留中间 `dist/` 目录
+
+### 受限环境：手工 4 步等价流程
+
+`npm run build` 内部走 `cp.spawn` + 管道，在受限沙箱里跑不通。它做的其实就是下面 4 步，可以逐条手工执行（等价）：
+
+```bash
+# 1) TypeScript 编译：src/ → dist/
+tsc
+# 2) 解析路径别名（★ 不能漏）
+npx tsc-alias
+# 3) 打包：dist/ → prod/（rollup）
+node scripts/buildTask.cjs
+# 4) 拷贝 src/templates → prod/templates，然后删除 dist/
+```
+
+> ⚠️ **漏掉第 2 步 `tsc-alias` 的后果**：`dist/` 里会残留 `@sapdon/utils/...` 这类裸别名，
+> rollup 解析不到就当成 external ⇒ **`prod/cli/start.js` 里会留下无法解析的 `@sapdon/utils` 裸包名**，
+> 表现为 `ERR_MODULE_NOT_FOUND: Cannot find package '@sapdon/utils'`。
+>
+> ⚠️ 另外：**"rollup N/N 成功"不等于 `prod/` 是新的** —— 改完要断言 `prod/` 里确实有新导出，别只看 `Failed: 0`。
+
+流程细节与常见坑（全局 CLI junction、项目侧 `sapdon lib` 同步、HMR 等）见 [doc/dev/workflow.md](./doc/dev/workflow.md)；
+受限环境的完整说明另见 [doc/dev/known-pitfalls.md](./doc/dev/known-pitfalls.md) §5。
 
 ---
 

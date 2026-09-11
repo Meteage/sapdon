@@ -136,7 +136,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 手册标签 i18n | `src/core/ui/systems/sapdon/sapdonGuideBook.ts` | 构造第 4 参 `options.labels`，或链式 `setLabels(Partial<GuideBookLabels>)`；默认值 = 历史中文字面量 |
 | 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource） |
 | 方块容器 | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, container_type, …})` → `minecraft:inventory` |
-| 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked/loadChunked/clearChunked(target, key[, value])` + `CHUNK_SIZE` |
+| 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked(target, key, value: string)`（**`value` 必填**）/ `loadChunked(target, key): string \| undefined` / `clearChunked(target, key)` + `CHUNK_SIZE = 24000`（另导出 `CHUNK_SUFFIX`/`MAX_CHUNK_SCAN` 与几个纯函数） |
 | 组件注册（路线 B） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerBlockComponent(id, handlers)` / `registerItemComponent(id, handlers)`；诊断：`pendingComponentCount()` / `registeredComponents()` |
 
 ### B. UI i18n：默认值必须保持历史字面量

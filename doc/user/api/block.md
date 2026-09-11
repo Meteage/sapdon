@@ -177,6 +177,87 @@ const block = BlockAPI.createGeometryBlock('demo:chair', 'construction',
 
 ---
 
+### createTileBlock
+
+创建**带实体的方块**（方块 + 承载它的实体），用于**可动模型 / 容器类方块**：外观是一个方块，行为由一个配套实体承担（箱子、机器外壳这类"看起来是方块、实际靠实体驱动"的东西）。
+
+```typescript
+BlockAPI.createTileBlock(
+  identifier: string,
+  category: string,
+  textures_arr: string[],
+  options?: Object
+): TileBlock
+```
+
+**参数**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `identifier` | `string` | 方块唯一标识符，格式 `命名空间:名称` |
+| `category` | `string` | 创造栏分类 |
+| `textures_arr` | `string[]` | 6 纹理数组，顺序 `[down, up, north, south, west, east]` |
+| `options` | `object` | 透传给内部 `BasicBlock`（如 `group` / `hide_in_command`） |
+
+缺 `identifier` / `category` / `textures_arr` 任一项时抛错。
+
+**它会注册三份数据**
+
+| # | 内容 | 包（root） | 路径 |
+|---|---|---|---|
+| 1 | 方块本体 | `behavior` | `blocks/`（并累积 `blocks.json` 的贴图条目） |
+| 2 | 方块实体**行为** | `behavior` | `entities/` |
+| 3 | 方块实体**资源** | `resource` | `entity/` |
+
+> `blocks.json` 是**资源包根目录**的文件，键是**完整的方块标识符**（`ns:name`，不是文件名安全名 `ns_name`）——见 [Bedrock Wiki: Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的 `RP/blocks.json` 示例（键为 `"wiki:chestnut_log"`）。
+
+**实体 identifier 自动为 `${identifier}_entity`**
+
+例如 `demo:machine` → 实体 `demo:machine_entity`，不需要自己起名。
+
+**返回值 `TileBlock`**
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `.block` | `BasicBlock` | 方块本体（已带 `sapdon:block_or_entity` 状态与 `sapdon:block_with_entity` 自定义组件） |
+| `.entity` | `Entity` | 实体（含容器、`minecraft:block_sensor`、无敌 / 不可推动等组件） |
+
+> ⚠️ **`TileBlock` 本身只是包装器**：它只有 `{ block, entity }`，**没有** `identifier` / `textures`，
+> 也没有继承 `BasicBlock`。所以**不能**把它拿去调 `createBasicBlock` 那一套（`addComponent` / `addPermutation` /
+> `registerState` / `registerTrait` 都不在它身上）——需要这些能力时改调 `.block`（行为侧改 `.entity.behavior`，
+> 外观侧改 `.entity.resource`）。
+> 这也正是 `createTileBlock` 在 `blockFactory.js` 里必须被特殊处理的原因：它注册的是内部的 `block` 与 `entity`
+> 这两个对象，而不是 `TileBlock` 自己。
+
+**示例**
+
+```typescript
+import { BlockAPI, BlockComponent, registry } from '@sapdon/core'
+
+const machine = BlockAPI.createTileBlock('demo:machine', 'construction', [
+  'machine_down', 'machine_up', 'machine_north', 'machine_south', 'machine_west', 'machine_east'
+])
+
+// 同时设置方块模型与实体模型（TileBlock 自带的便捷方法）
+machine.setGeometry('geometry.machine')
+
+// 继续配方块本体时必须走 .block
+machine.block.addComponent(BlockComponent.setLightEmission(5))
+
+registry.submit()
+```
+
+**容器类方块用哪条路？**
+
+`TileBlock` 的容器**挂在实体上**：实体行为里预置了 `minecraft:inventory`（`inventory_size: 27`、
+`container_type: "minecart_chest"`、`can_be_siphoned_from: true`）。这与「**方块组件**路线」的
+[`BlockComponent.setInventory()`](#setinventory) 是两条不同的路——后者写的是**方块**的 `minecraft:inventory` 组件，
+需要额外的 `minecraft:block_entity` 前置。选哪条取决于你的方块要不要真方块实体（存档 / 脚本接口不同）。
+
+> ⚠️ 两条路在**游戏内的实际表现均未验证**（本环境无法启动 Minecraft）。
+
+---
+
 ### createCropBlock
 
 创建作物方块。
@@ -1113,6 +1194,100 @@ static setCraftingTable(craftingTags: string[], tableName?: string): Map
 
 设置合成台属性（最多 64 个标签）。
 
+### setBlockEntity
+
+```typescript
+static setBlockEntity(dynamic_properties?: boolean): Map
+```
+
+创建**方块实体**（Block Entity）。`dynamic_properties` 控制是否启用方块实体的动态属性存储，默认 `false`。
+
+这是**容器（`setInventory`）的前置组件**：源码 JSDoc 明确要求容器必须同时具备 `minecraft:block_entity`，否则方块实体不创建、容器打不开。
+
+⚠️ 源码 JSDoc 同时标注该组件为**实验性**，需开启 `Upcoming Creator Features` 实验开关。
+⚠️ **组件语义与游戏内效果未验证**（本环境无法启动 Minecraft）：我核对了 Bedrock Wiki 的
+[Block Components](https://wiki.bedrock.dev/blocks/block-components) 页，该页的页内组件清单（36 条，从
+Chest Obstruction 到 Transformation）**没有** `minecraft:block_entity` 条目，也没有 `minecraft:inventory` 条目，
+因此本条**拿不出可引用的 wiki 依据**。
+
+### setInventory
+
+设置方块容器（`minecraft:inventory`）—— 可右键打开、可存取的方块背包。
+
+```typescript
+static setInventory(options?: {
+  inventory_size: number
+  private?: boolean
+  container_type?: string
+  can_be_siphoned_from?: boolean
+  additional_slots_per_strength?: number
+  restrict_to_owner?: boolean
+}): Map
+```
+
+**参数**
+
+| 参数 | 类型 | 可选性 | 校验 / 说明 |
+|------|------|--------|-------------|
+| `inventory_size` | `number` | **必填** | 槽位数。必须满足 `Number.isInteger(x) && x >= 1`，否则抛错。**上限未验证**（见下） |
+| `private` | `boolean` | 可选 | 是否仅所有者可访问。非布尔抛错 |
+| `container_type` | `string` | 可选 | 容器音效 / 行为类型。必须是非空字符串，且**必须是 Bedrock 认可的值**；源码注释里出现过的有 `"container"` / `"chest"` / `"furnace"` / `"hopper"` / `"dispenser"` / `"dropper"` / `"minecart_chest"` / `"shulker_box"`。框架**不做白名单**（避免写死过窄），所以拼错不会在构建期报错 |
+| `can_be_siphoned_from` | `boolean` | 可选 | 能否用漏斗抽取 |
+| `additional_slots_per_strength` | `number` | 可选 | 每级强度的额外槽位。必须是非负整数，否则抛错 |
+| `restrict_to_owner` | `boolean` | 可选 | 是否限制为所有者可打开 |
+
+**没有隐式默认值**：只写入你**显式赋值**的字段，未赋值的字段不会出现在产物 JSON 里（`inventory_size` 除外，它必填）。框架**不会**替你补 `container_type` / `can_be_siphoned_from` 之类的"常见默认值"。
+
+> ⚠️ **`inventory_size` 的上限「未验证」**：源码注释说明上限由 Bedrock 约束、本环境无法实测，因此框架**故意不硬编码猜测值**，只校验正整数。需要几十槽的大容器时，请自行在真机确认。
+
+#### ★ 前置条件：光有 `minecraft:inventory` 不够，必须有方块实体
+
+只写 `setInventory` 而**没有** `setBlockEntity` ⇒ 方块实体不创建 ⇒ **游戏里容器打不开，而且是静默失败**（构建成功、JSON 正常、右键毫无反应）。这个坑在项目侧踩过，记录见 [known-pitfalls §4.1](../../dev/known-pitfalls.md)。
+
+框架会在缺失时 `console.warn` 提示，检查点在 **`registry.submit()`**：`src/core/block/basicBlock.js` 的 `BasicBlock.validate()` 经 `src/core/registry.ts` 的 `runValidators()` 被调用，命中时打印：
+
+```
+[sapdon] 方块 "demo:crate" 声明了 minecraft:inventory 但没有 minecraft:block_entity —— 容器在游戏内将无法打开。请同时合并 BlockComponent.setBlockEntity()。
+```
+
+> `validate()` 也认「组件写在 permutation 里」的写法（`TileBlock` 就是那样），不会误报。
+
+**为什么框架只 warn、不自动补 `minecraft:block_entity`？** 因为 `combineComponents` 是「**后者覆盖前者**」，自动塞一个默认的 `{ dynamic_properties: false }` 会把你已经声明的 `setBlockEntity(true)` **静默覆盖成 false**，反而制造更难查的问题。
+
+#### 最小可运行示例（方块 + 方块实体 + 容器）
+
+```typescript
+import { BlockAPI, BlockComponent, registry } from '@sapdon/core'
+
+// 1) 方块本体（6 面纹理）
+const crate = BlockAPI.createBasicBlock('demo:crate', 'construction', [
+  'crate_down', 'crate_up', 'crate_north', 'crate_south', 'crate_west', 'crate_east'
+])
+
+// 2) 方块实体（容器前置） + 3) 容器本身：合并后一次挂上
+crate.addComponent(BlockComponent.combineComponents(
+  BlockComponent.setBlockEntity(false),
+  BlockComponent.setInventory({
+    inventory_size: 27,
+    container_type: 'minecart_chest',
+    can_be_siphoned_from: true
+  })
+))
+
+registry.submit()
+```
+
+分开调用也可以（`addComponent` 会逐键并入，后写的同名键覆盖先写的）：
+
+```typescript
+crate.addComponent(BlockComponent.setBlockEntity())
+crate.addComponent(BlockComponent.setInventory({ inventory_size: 27 }))
+```
+
+> **`TileBlock` 的容器是另一条路**：`createTileBlock` 生成的实体行为里自带 `minecraft:inventory`，容器挂在**实体**上，不需要 `minecraft:block_entity`。两条路不要混用，见上文 [`createTileBlock`](#createtileblock)。
+>
+> ⚠️ 上例的**游戏内表现（右键能否打开、能否存取）未验证**——本环境无法启动 Minecraft。
+
 ### setTick
 
 ```typescript
@@ -1355,6 +1530,39 @@ import { registerBuiltinComponents } from '@sapdon/runtime'
 registerBuiltinComponents()
 ```
 
+### 两条路线的分工（★ 本轮结论）
+
+自定义组件有**两条**合法路线，**都要保留**：
+
+| | **路线 A**：`BlockCustomComponentBuilder`（本节） | **路线 B**：运行期注册（**推荐**） |
+|---|---|---|
+| 声明位置 | **构建期**（`main.ts`） | **运行期**（`scripts/*`，随脚本打包） |
+| handler 形态 | 被 `handler.toString()` **序列化成源码**，写进 `scripts/custom_components/<name>.js` | **普通闭包**（你自己模块里的函数） |
+| 能否 import 共享模块 | ❌ **不能**（见下） | ✅ 能 |
+| 注册时机 | CLI 生成的 `scripts/custom_components/index.js` 在 `system.beforeEvents.startup` 里注册 | 框架内建 `system.beforeEvents.startup` |
+| 兼容性 | `build()` / `generateRuntimeCode()` 签名**不变**，`examples/block_demo` 在用 | 本轮新增，见 [`@sapdon/runtime`](./runtime.md) |
+
+**★ 为什么必须保留路线 B：A 做不了「共享基类」的系统**
+
+A 的 handler 会被 `toString()` 序列化进生成的脚本文件，而生成的源码里**只有调用、没有定义也没有 import** ⇒ handler 内**不能引用跨模块的变量**，否则运行期报 `ReferenceError: x is not defined`。
+
+所以 A 路线**做不了需要共享模块的系统** —— 典型是「20 台机器共用一个 `MachineBase`」：20 个 handler 都得 import 同一份基类 / 工具函数，A 路线写不出来。B 路线的 handler 是**普通闭包**，与 `MachineBase` 处在同一个 bundle 里，直接 `import` 即可。**这是保留 B 的唯一决定性理由。**
+
+**时机红线：只有上面这两条路**
+
+- ✅ 路线 A：`BlockCustomComponentBuilder` + CLI 生成的 `scripts/custom_components/index.js`
+- ✅ 路线 B：运行期 `registerBlockComponent` / `registerItemComponent`
+- ❌ `world.beforeEvents.worldInitialize`：**太晚**。症状是启动时方块报
+  `this component was found in the input, but is not present in the Schema`
+  （方块 JSON 里写了 `"ns:xxx": {}`，但脚本没在正确时机注册）
+
+**路线 A 的其它现状**（详述见 [doc/dev/known-pitfalls.md](../../dev/known-pitfalls.md) §2）：
+
+- **源码已支持（依据 `prod/cli/start.js` 的索引合并分支；未端到端实跑路线 A）**：
+  `scripts/custom_components/index.js` 已改为**标记块合并** —— 文件存在但没有标记块时在**末尾追加**自动注册块（原内容保留），有标记块时每次构建**替换标记块区间**（幂等）。历史上"只在文件不存在时才生成 / 增量新增组件时索引不更新"的问题已由这次改动覆盖。
+- **设计如此（不是缺陷）**：`scripts/custom_components/<name>.js` 是「**生成一次、之后归用户**」（存在即跳过、不覆盖），所以改完 handler 后该文件不会自动跟着更新 —— 覆盖会毁掉用户手写的实现。
+- **未修（结构性限制）**：`handler.toString()` 丢失跨模块引用，即上面那条"必须保留 B"的理由。
+
 ---
 
 ## Permutation
@@ -1496,6 +1704,7 @@ BlockAPI.createBasicBlock(identifier, category, textures_arr, options?)
 BlockAPI.createBlock(identifier, category, variantDatas, options?)
 BlockAPI.createRotatableBlock(identifier, category, textures_arr, options?)
 BlockAPI.createGeometryBlock(identifier, category, geometry, material_instances, options?)
+BlockAPI.createTileBlock(identifier, category, textures_arr, options?)
 BlockAPI.createCropBlock(identifier, category, variantDatas, options?)
 BlockAPI.createOreBlock(identifier, category, textures_arr, options?)
 BlockAPI.createGlassBlock(identifier, category, texture, options?)

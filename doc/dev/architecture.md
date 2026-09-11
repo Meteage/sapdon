@@ -105,7 +105,7 @@ src/core/addon/
 |-----|------|---------|
 | `ItemAPI` | `factory/itemFactory.js` | `createItem()`, `createFood()`, `createAttachable()`, armor 系列 |
 | `EntityAPI` | `factory/entityFactory.js` | `createEntity()`, `createDummyEntity()`, `createProjectile()` |
-| `BlockAPI` | `factory/blockFactory.js` | `createBasicBlock()`, `createBlock()`, `createRotatableBlock()`, `createCropBlock()` |
+| `BlockAPI` | `factory/blockFactory.js` | 共 12 个工厂方法：`createBasicBlock()`, `createBlock()`, `createRotatableBlock()`, `createGeometryBlock()`, **`createTileBlock()`**（带实体方块）, `createHeadBlock()`, `createGlassBlock()`, `createFenceBlock()`, `createStairBlock()`, `createTrapdoorBlock()`, `createCropBlock()` |
 | `RecipeAPI` | `factory/recipeFactory.js` | `registerSimpleShaped()`, `registerSimpleShapeless()`, `registerSimpleFurnace()` |
 | `BiomeAPI` | `factory/biomeFactory.js` | `createBiome()` |
 | `FeatureAPI` | `factory/featureFactory.js` | `createOreFeature()`, `createFeatureRules()` |
@@ -283,17 +283,27 @@ export function submit() {
 ```
 1. projectCanBuild()        →  验证项目目录和 build.config
 2. initResourceDir()        →  扫描 res/ 目录，生成 res.hint.ts
+                               ⚠️ 只在 `sapdon build` 命令里调用（start.js:117）；`sapdon compile` 不调用
 3. 生成 manifest.json       →  behavior pack + resource pack 清单
+                               ⚠️ 仅当 dev server 尚未监听、且 manifest 文件不存在时
 4. 复制 pack_icon.png
 5. 复制资源文件 res/ → RP
 6. 启动开发服务器            →  startDevServer() + GRegistryServer.startServer()
-7. runScript(main.ts)       →  rollup 编译 → fork 子进程执行
+                               端口取 SAPDON_DEV_SERVER_PORT（默认 49037）
+7. runScript(main.ts)       →  rollup 编译 → cp.spawn(process.execPath, [file]) 执行
                                  子进程中用户代码执行并注册数据
                                  HTTP POST 提交数据到 dev server
                                  generateAddon() 生成 JSON 文件
-8. bundleScripts()          →  rollup 打包 scripts/main.ts → scripts/index.js
+                               ★ 检查子进程退出码，非 0 直接抛错
+8. bundleScripts()          →  rollup 打包 scripts/main.ts → scripts/index.js（await）
 9. syncDevFilesServer()     →  复制 BP/RP 到 Minecraft 开发包目录
+10. 收尾                    →  keepServer 为真：保持服务器常开
+                               为假（默认）：process.exit(0) 自动退出
 ```
+
+**失败必须非 0 退出**：历史行为是构建脚本失败被吞掉、CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是旧产物。现在 `runOnChild()` 检查退出码、`scriptBundler` 打包失败即抛、CLI 顶层 catch `process.exit(1)`。⇒ **「构建成功」不可信**，成功的判据是**退出码 0** + 日志里出现 `处理数据: <name> <root> <path>`（`src/cli/load.js:210`）。
+
+⚠️ **不要用 `cp.fork`**：`fork` 一定会建立 IPC **命名管道**（受限环境下 `spawn EPERM`），而框架传输层走 **HTTP**（`src/core/transport/client.ts` → localhost），**从不使用 IPC**；`spawn(process.execPath, [file], { stdio: 'inherit' })` 是等价且更少依赖的写法（`src/cli/build.js:191-200`）。
 
 ### 6.3 关键文件职责
 
@@ -301,11 +311,12 @@ export function submit() {
 |------|------|
 | `src/cli/start.js` | CLI 入口，定义所有 commander 命令 |
 | `src/cli/build.js` | 构建编排器：`scriptBundler`、`buildProject()`、`runScript()` |
-| `src/cli/load.js` | `generateAddon()` — 遍历 dataList 写入 JSON 文件，生成纹理 JSON |
-| `src/cli/init.js` | 项目初始化：脚手架生成、路径辅助 |
+| `src/cli/load.js` | `generateAddon()` — 遍历 dataList 写入 JSON 文件，生成纹理 JSON；陈旧产物清单清理；自定义组件注册索引合并 |
+| `src/cli/init.js` | 项目初始化：脚手架生成、路径辅助（`getBuildDirBp/Rp` 固定大写 `_BP`/`_RP`） |
+| `src/cli/pack.js` | `packProject()` — 把 `dev/<proj>_BP`、`dev/<proj>_RP` 打包为 `.mcaddon` |
 | `src/cli/utils.ts` | `saveFile`、`readFile`、`copyFileSync` 等文件 I/O 工具 |
-| `src/cli/registryServer.ts` | `GRegistryServer` — 服务端注册表，注册 submit/remote-logger handler |
-| `src/cli/dev-server/server.ts` | `DevelopmentServer` — HTTP 服务，用于构建时 IPC |
+| `src/cli/registryServer.ts` | `GRegistryServer` — 服务端注册表，注册 `submitGregistry` / `remote-logger` handler |
+| `src/cli/dev-server/server.ts` | `DevelopmentServer` — 构建时进程间通信的 HTTP 服务（**不是 IPC**） |
 | `src/cli/dev-server/client.js` | `cliRequest()` / `post()` — CLI 内部使用的 HTTP 客户端（remoteLogger 等） |
 | `src/cli/dev-server/hmr.js` | `hmr()` — 文件监听器，热更新触发重建 |
 | `src/cli/dev-server/syncFiles.js` | `syncDevFilesServer()` — 同步到 Minecraft 目录；`writeLib()` — 复制库文件 |
@@ -325,10 +336,13 @@ export function submit() {
 
 ### Handler 列表
 
-| Handler | 用途 |
-|---------|------|
-| `submit` | 接收注册数据并触发 `generateAddon()` |
-| `remote-logger` | 游戏内 Script API 通过此 handler 发送日志到 CLI |
+| Handler | 注册位置 | 用途 |
+|---------|---------|------|
+| `submitGregistry` | `registryServer.ts:12` | 接收注册数据、存入 `GRegistryServer.dataList`（由 `GRegistry.submit()` 提交，`core/registry.ts:52`） |
+| `submit` | `build.js:308` | 接收数据并触发 `generateAddon()` 写 JSON（由 `registry.submit()` 提交，`core/registry.ts:87`）；`buildMode === 'debug'` 时跳过生成 |
+| `remote-logger` | `registryServer.ts:16` | 游戏内 Script API 通过此 handler 发送日志到 CLI |
+
+⚠️ `GRegistry.submit()` 与 `registry.submit()` 是**两个不同入口、POST 到两个不同 handler**：前者只上传数据（供 dev server 侧的注册表使用），后者才触发 `generateAddon()` 落盘。用户项目里通常调用 `registry.submit()`。
 
 ---
 
@@ -364,13 +378,13 @@ OC (Object-Component) 是一个 ECS 风格的游戏框架，用于 Minecraft Scr
 - `@MinecraftMain` — 标记主游戏类，自动绑定玩家/实体生成事件
 - `@PlayerSpawned` / `@EntitySpawned` / `@ActorSpawned` — 实体生成时自动附加组件
 - `@SpawnFilter` — 过滤哪些实体附加组件
-- `@RequireComponents` — 声明组件依赖，自动附加
+- `RequireComponents(...)` — ⚠️ 它不是装饰器，而是 `src/oc/core.ts:221` 的 **mixin 工厂函数**（返回一个带依赖的组件类）；用法见 [OC 运行时文档](oc.md) 第 2.5 节
 
 ---
 
 ## 10. 框架自身的构建流程 (`scripts/build.cjs`)
 
-Sapdon 框架自身的构建使用三步管道：
+Sapdon 框架自身的构建使用四步管道：
 
 ```
 tsc (TypeScript 编译)
@@ -387,7 +401,13 @@ rollup (打包)
   │    + 各自的 .d.ts 声明文件
   │  插件: node-resolve, commonjs, json, terser
   │  外部化: rollup, typescript, @sapdon/*, @minecraft/*
+  ▼
+收尾 (scripts/build.cjs)
+  │  拷贝 src/templates → prod/templates
+  └─ 删除 dist/（除非 `node scripts/build.cjs keep`）
 ```
+
+> 这 4 步由 `scripts/build.cjs` 串起来（`npm run build`）。⚠️ 在受限环境里需要**拆开直跑**这 4 步，并注意「漏 `tsc-alias`」与「rollup 全绿 ≠ prod 是新的」两个坑，详见 [开发工作流](workflow.md) 第 2 节。
 
 > **开发工作流**：修改 `src/` 后运行 `npm run build` 重建 `prod/`，在项目侧通过 `npm i`（触发 `postinstall` → `sapdon lib`）或直接运行 `sapdon lib` 将新库同步到 `node_modules/@sapdon/`，然后使用 `sapdon compile` / `npm run build`。详见 [开发工作流](workflow.md)。
 
@@ -399,16 +419,28 @@ rollup (打包)
 
 | 数据类型 | root | dataPath | 输出路径 |
 |---------|------|----------|---------|
-| 物品 | `behavior` | `items/` | `dev/<name>_BP/items/<name>.json` |
-| 实体 (行为) | `behavior` | `entities/` | `dev/<name>_BP/entities/<name>.json` |
-| 方块 | `behavior` | `blocks/` | `dev/<name>_BP/blocks/<name>.json` |
-| 配方 | `behavior` | `recipes/` | `dev/<name>_BP/recipes/<name>.json` |
-| 生物群系 | `behavior` | `biomes/` | `dev/<name>_BP/biomes/<name>.json` |
-| 特征 | `behavior` | `features/` | `dev/<name>_BP/features/<name>.json` |
-| 特征规则 | `behavior` | `feature_rules/` | `dev/<name>_BP/feature_rules/<name>.json` |
-| 实体 (资源) | `resource` | `entity/` | `dev/<name>_RP/entity/<name>.json` |
-| 附着物 | `resource` | `attachables/` | `dev/<name>_RP/attachables/<name>.json` |
-| 渲染控制器 | `resource` | `render_controllers/` | `dev/<name>_RP/render_controllers/<name>.json` |
+| 物品 | `behavior` | `items/` | `dev/<proj>_BP/items/<name>.json` |
+| 实体 (行为) | `behavior` | `entities/` | `dev/<proj>_BP/entities/<name>.json` |
+| 方块 | `behavior` | `blocks/` | `dev/<proj>_BP/blocks/<name>.json` |
+| 配方 | `behavior` | `recipes/` | `dev/<proj>_BP/recipes/<name>.json` |
+| 生物群系 | `behavior` | `biomes/` | `dev/<proj>_BP/biomes/<name>.json` |
+| 特征 | `behavior` | `features/` | `dev/<proj>_BP/features/<name>.json` |
+| 特征规则 | `behavior` | `feature_rules/` | `dev/<proj>_BP/feature_rules/<name>.json` |
+| **方块贴图/音效表** `blocks.json` | `resource` | (空) | **`dev/<proj>_RP/blocks.json`** |
+| 实体 (资源) | `resource` | `entity/` | `dev/<proj>_RP/entity/<name>.json` |
+| 附着物 | `resource` | `attachables/` | `dev/<proj>_RP/attachables/<name>.json` |
+| 渲染控制器 | `resource` | `render_controllers/` | `dev/<proj>_RP/render_controllers/<name>.json` |
+| 物品贴图图集 | — | — | `dev/<proj>_RP/textures/item_texture.json` |
+| 方块贴图图集 | — | — | `dev/<proj>_RP/textures/terrain_texture.json` |
+| 翻书贴图 | — | — | `dev/<proj>_RP/textures/flipbook_textures.json` |
+
+说明：
+
+- 路径里的 `<proj>` 是**项目名**（目录 basename），`<name>` 是**注册项的数据名**，两者是两个不同的值。
+- `_BP` / `_RP` 必须**大写**（`src/cli/init.js:105-114`）。历史版本曾用小写 `_bp`/`_rp`，Windows 大小写不敏感掩盖了它，Linux/macOS 下会分叉成两个目录（构建写 A、打包读 B → 空包）。
+- **`blocks.json` 属资源包（RP）**，不是行为包。依据：[Bedrock Wiki · Pack Folder Structure](https://wiki.bedrock.dev/documentation/pack-structure) 把 `blocks.json` 列在 **RP** 根目录（BP 侧无此文件）；[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的示例标题即 `RP/blocks.json`。
+  它的**键必须是完整标识符** `ns:name`（如 `"wiki:chestnut_log"`），**不是** `ns_name`——`ns_name` 是「文件名安全名」（`:` 在 Windows 文件名里非法）被误复用成 JSON 键的产物；键不含 `:` 时框架会 `console.warn`（`blockFactory.js:26-34`）。
+  ⚠️ 游戏内音效/贴图是否正常**未验证**（本项目无法启动 Minecraft），只验证到位置与键格式符合 wiki 规范（`blockFactory.js:71-77`）。
 
 最终同步到 Minecraft 目录（`versionType` 决定路径）：
 

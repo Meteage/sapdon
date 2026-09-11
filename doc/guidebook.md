@@ -56,8 +56,18 @@ registry.submit()
 new SapdonGuideBook(
     identifier: string,                          // "namespace:name"，如 "mymod:book"
     size: [number, number] = [320, 207],         // 手册画布尺寸
-    background: string = 'textures/ui/book_back' // 背景贴图
+    background: string = 'textures/ui/book_back',// 背景贴图
+    options: GuideBookOptions = {}               // 可选，见下
 )
+
+interface GuideBookOptions {
+    labels?: Partial<GuideBookLabels>            // 覆盖框架渲染的固定标签（只传要改的键）
+}
+
+interface GuideBookLabels {
+    chapter: string                              // CAT 页章节列表标题，默认 '章节'
+    category: string                             // INDEX 页索引卡列标题，默认 '类别'
+}
 ```
 
 ### 常用方法
@@ -66,10 +76,39 @@ new SapdonGuideBook(
 |---|---|
 | `.build(categories: GuideBookCategory[])` | 传入分类数据，生成全部页面；返回 `this` |
 | `.setCover(title, lines)` | 自定义封面标题（可含 `\n`）与简介行，如 `.setCover('  我的手册 \\n            by Me', ['第一行简介', '第二行简介'])` |
+| `.setLabels(labels: Partial<GuideBookLabels>)` | 覆盖框架渲染的固定标签（`章节` / `类别`）；**增量合并、可反复调用、必须在 `build()` 之前**。详见下文「手册的多语言」 |
 | `.enableDebug()` | 开启调试（显示 `#form_text` 当前值 / 格子描边） |
 | `.getSystem()` | 返回内部 `UISystem` |
 
 调用链结束前记得 `registry.submit()`，把注册的 UI 数据提交给构建工具生成 `book.json`。
+
+### 手册的多语言（`labels`）
+
+框架自己渲染的**固定标签只有两个**：`CAT` 页章节列表的标题（默认 `章节`）和 `INDEX` 页索引卡列的标题（默认 `类别`）。它们可以被覆盖成任意字符串——**包括 lang 键**：
+
+```ts
+import { SapdonGuideBook } from '@sapdon/core'
+
+// 方式一：构造第 4 参
+const book = new SapdonGuideBook('mymod:book', [320, 207], 'textures/ui/book_back', {
+    labels: { chapter: 'fz.gb.ui.chapter', category: 'fz.gb.ui.category' },
+})
+
+// 方式二：链式 setLabels（增量合并，可反复调用）
+book.setLabels({ chapter: 'fz.gb.ui.chapter' })
+book.setLabels({ category: 'fz.gb.ui.category' })   // 上一次设的 chapter 不会被冲掉
+```
+
+**五条必须知道的规则**
+
+1. **框架不解析 lang 键**：字符串**原样**交给 `Text.setText`，由 **JSON UI 自己**解析。所以传 `fz.gb.ui.chapter` 这类键的项目**必须**在 `RP/texts/*.lang` 里定义该键，否则界面显示的是**裸键名**。
+   > ⚠️「游戏里真的解析成对应语言」这一步**未验证**（本环境无法启动 Minecraft）。
+2. **`DEFAULT_GUIDE_BOOK_LABELS = { chapter: '章节', category: '类别' }` 是历史中文字面量，不要改**。改它会让**所有既有项目的产物发生变化**——不传 `labels` 的项目产物必须逐字节不变（回归基线见 §5「向后兼容」的 `examples/guidebook_demo`）。
+3. **`setLabels` 是增量合并**（`chapter: labels.chapter ?? this.labels.chapter`）：只传要改的键，其余保持**当前值**，可以反复调用。**不要**指望"未传的键回落默认值"——那样第二次链式调用会把第一次的设置冲掉。
+4. **必须在 `build()` 之前调用**：labels 是**构建期**写进元素树的（CAT 页标题、INDEX 栏目标题都在 `build()` 里渲染）。`build()` 之后再调 `setLabels` 对产物没有任何影响。
+5. **等价判据**：把中文字面量换成 lang 键时，产物 `ui/*.json` 里应当**只有那两处文本变化**，其余结构（元素数、绑定、`grid_position`、`offset`）逐字节不变。改完先 diff 产物、再进游戏。
+
+**真实案例**：FZ 项目用这条接口把两处栏目标题换成了 `fz.gb.ui.chapter` / `fz.gb.ui.category`，并**去掉了旧的"构建后遍历元素树改文本"临时绕过**。它采用的判据就是上面第 5 条：产物结构逐字节不变。
 
 ---
 
