@@ -116,8 +116,13 @@ program.command("build <project-name>").description("Build the project").action(
     globalObject.projectPath = projectPath
     initResourceDir()
     if (projectCanBuild(projectPath)) {
+        // 构建失败必须非 0 退出（缺口 6）：否则「构建报成功但 dev/ 是旧产物」
         buildProject(projectPath, projectName)
-        hmr(projectPath, projectName)
+            .then(() => hmr(projectPath, projectName))
+            .catch((e) => {
+                console.error(`[sapdon] 构建失败：${e?.message ?? e}`)
+                process.exit(1)
+            })
     }
 })
 
@@ -127,6 +132,10 @@ program.command("compile").description("Compile the current project (build witho
     const projectPath = process.cwd()
     if (projectCanBuild(projectPath)) {
         buildProject(projectPath, path.basename(projectPath))
+            .catch((e) => {
+                console.error(`[sapdon] 构建失败：${e?.message ?? e}`)
+                process.exit(1)
+            })
     }
 })
 

@@ -99,7 +99,8 @@ export const scriptBundler = {
     
             bundle.close()
         } catch (e) {
-            console.error(e)
+            // 不能只 console.error：吞掉异常会让 CLI 打印「构建完成」并 exit 0（缺口 6）
+            throw new Error(`脚本打包失败（${source}）：${e?.message ?? e}`)
         }
     },
 
@@ -149,7 +150,8 @@ export const scriptBundler = {
     
             bundle.close()
         } catch (e) {
-            console.error(e)
+            // 同 js：必须向上抛（缺口 6）
+            throw new Error(`脚本打包失败（${source}）：${e?.message ?? e}`)
         }
     },
 
@@ -175,10 +177,26 @@ async function bundleScripts(useJs=false) {
     )
 }
 
+/**
+ * 在子进程中执行构建脚本（main.ts 的临时产物）。
+ *
+ * ⚠️ 用 spawn(process.execPath, …) 而不是 fork：
+ *   fork 一定会建立 IPC 命名管道（沙箱/受限环境下 `spawn EPERM`），
+ *   而框架的传输层走 HTTP（`core/transport/client.ts` → localhost:49037），从不使用 IPC。
+ *   两者对「跑一个 Node 脚本」等价，spawn 少一个命名管道依赖。
+ *
+ * ⚠️ 必须检查退出码：子进程失败（如构建脚本抛异常）时若不抛，CLI 会继续走到
+ *   「构建完成」并 exit 0，产出 dev/ 里的旧产物 —— 见 AGENTS.md「构建成功不可信」。
+ */
 async function runOnChild(targetFilePath) {
-    const { promise, resolve } = Promise.withResolvers()
-    cp.fork(targetFilePath, { stdio: 'inherit' }).on('exit', resolve)
-    return promise
+    const code = await new Promise((resolve, reject) => {
+        const child = cp.spawn(process.execPath, [targetFilePath], { stdio: 'inherit' })
+        child.on('error', reject)
+        child.on('exit', (exitCode, signal) => resolve(signal ? `signal ${signal}` : exitCode))
+    })
+    if (code !== 0) {
+        throw new Error(`构建脚本执行失败（退出代码 ${code}）：${targetFilePath}`)
+    }
 }
 
 async function runScript(src) {
@@ -188,12 +206,9 @@ async function runScript(src) {
     await scriptBundler.any(src, targetFilePath)
     try {
         await runOnChild(targetFilePath)
-    } catch (e) {
-        console.error(e)
     } finally {
         fs.rmSync(targetFilePath, { force: true })
     }
-    return
 }
 
 export function projectCanBuild(projectPath) {
