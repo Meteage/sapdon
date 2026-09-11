@@ -59,26 +59,28 @@ export class ContainerUISystem {
    * @param {UIElement[]} [options.background_images] - 网格项的背景图片控件。
    * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
    */
-  addGridItem(grid_position: Offset2, offset: Offset2, options?: { enable?: boolean; size?: Any; background_images?: Any }): this {
+  addGridItem(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): this {
     const gridItem = new UIElement('grid_item', undefined, 'chest.chest_grid_item')
     gridItem.addProp('offset', offset)
-    gridItem.addProp('enable', options!.enable)
-    gridItem.addProp('size', options!.size)
-    gridItem.addVariable('background_images|default', options!.background_images)
+    gridItem.addProp('enable', options.enable)
+    gridItem.addProp('size', options.size)
+    gridItem.addVariable('background_images|default', options.background_images)
 
     this.grids.addGridItem(grid_position, gridItem)
     this.#updateSystem()
     return this
   }
 
-  addInputGrid(grid_position: Offset2, offset: Offset2, options?: { enable?: boolean; size?: Any; background_images?: Any }): void {
+  addInputGrid(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): void {
     this.addGridItem(grid_position, offset, options)
   }
 
-  addOutputGrid(grid_position: Offset2, offset: Offset2, options?: { enable?: boolean; size?: Any; background_images?: Any }): void {
-    // 设置
-    options!.enable = false
-    this.addGridItem(grid_position, offset, options)
+  addOutputGrid(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): void {
+    // 输出槽一律 enable=false。
+    // ⚠️ 原来写的是 `options!.enable = false`：options 是可选参数，
+    //    不传时这行会抛 `Cannot set properties of undefined (setting 'enable')`
+    //    （setItemMatrix 就是这么调的 → 整条链必然崩）。改成浅拷贝后再覆盖。
+    this.addGridItem(grid_position, offset, { ...options, enable: false })
   }
 
   /**
