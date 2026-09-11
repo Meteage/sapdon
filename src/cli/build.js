@@ -1,5 +1,5 @@
 import path from 'path'
-import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync, copyFolder } from "./utils.js"
+import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync } from "./utils.js"
 import { generateAddon } from './load.js'
 
 import {
@@ -20,7 +20,7 @@ import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
 import terser from '@rollup/plugin-terser'
 
-import { syncDevFilesServer } from './dev-server/syncFiles.js'
+import { syncDevFilesServer, syncResourceFiles } from './dev-server/syncFiles.js'
 import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
 import { GRegistryServer } from './registryServer.js'
@@ -298,9 +298,11 @@ export const buildProject = async (projectPath, projectName) => {
         copyFileSync(packIconPath, path.join(buildResDirPath, "pack_icon.png"))
 
         // 现在只有一个resource
+        // ⚠️ 不再直接用 `copyFolder`：它只合并、从不删除，从 `res/` 删掉的资源会永远留在 dev/ 与游戏里。
+        //    `syncResourceFiles` = copyFolder + 「只删框架自己从 res/ 拷过的、且 res/ 里已不存在的文件」清单。
         const resource = buildConfig.buildOptions.resource
         const sourcePath = path.join(projectPath, resource.path)
-        copyFolder(sourcePath, buildResDirPath)
+        syncResourceFiles(projectPath, projectName, sourcePath, buildResDirPath)
 
         // 在客户端启动前启动服务器
         startDevServer()
