@@ -99,6 +99,34 @@ const TileBehData = {
 const TILE_CONTAINER_OPTION_KEYS = ["inventory_size", "container_type", "can_be_siphoned_from"]
 
 /**
+ * 解析客户端实体要用的贴图。
+ *
+ * ## 为什么需要 `entity_texture`
+ *
+ * `textures_arr` 对**方块**来说是 **terrain_texture.json 的键**（如 `machineblock_0`），
+ * 而 `client_entity` 的 `textures.<name>` 官方文档要求的是**资源路径**
+ * （原文示例：`"default": "textures/entity/pig/pig"`，扩展名省略 ——
+ * <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/cliententitydocumentation/cliententitydocumentationintroduction>）
+ * ⇒ 把 terrain 短名原样写进去，客户端实体会指向不存在的资源（`Missing referenced asset`）。
+ *
+ * 历史行为（本函数之前）就是**原样照写** `textures_arr[0]`，
+ * 所以默认值**必须**保持它 —— 不传 `options.entity_texture` 时产物逐字节不变
+ * （`examples/mob_chest` 传的本来就是完整路径 `textures/blocks/entity/normal`）。
+ *
+ * @param {Array} textures_arr 纹理数组（方块侧是 terrain 键）
+ * @param {Object} options 实例 options
+ * @returns {*} 客户端实体 `textures.default` 的取值
+ */
+function resolveEntityTexture(textures_arr, options) {
+    const texture = options.entity_texture
+    if (texture === undefined) return textures_arr[0]
+    if (typeof texture !== "string" || texture.length === 0) {
+        throw new Error("createTileBlock: options.entity_texture 必须是非空字符串（客户端实体的资源路径，如 \"textures/blocks/entity/normal\"）")
+    }
+    return texture
+}
+
+/**
  * 生成**实例专属**的实体行为数据。
  *
  * `BasicEntity` 的构造里是 `new Map(Object.entries(data.components))` —— 只拷贝了**表**，
@@ -157,6 +185,18 @@ export class TileBlock {
      * @param {*} category
      * @param {*} textures_arr
      * @param {*} options
+     * @param {boolean} [options.hide_in_command=false] 是否在命令中隐藏（透传给 `BasicBlock`）。
+     * @param {string} [options.group] 创造菜单分组（透传给 `BasicBlock` → `menu_category.group`）。
+     *   ⚠️ 与 `createBasicBlock` 取值一致：**不传 = undefined**（产物里 `menu_category` 只有
+     *   `category` 与 `is_hidden_in_commands`）。分组名是**本地化键**，项目须在
+     *   `RP/texts/*.lang` 里定义，否则显示裸键名。
+     * @param {string} [options.format_version] 方块 JSON 的 `format_version`（默认 `1.26.30`）。
+     * @param {string} [options.entity_texture] 客户端实体的贴图**资源路径**
+     *   （如 `"textures/blocks/entity/normal"`，省略扩展名）。
+     *   默认 = `textures_arr[0]`（**历史行为，逐字节不变**）。
+     *   ⚠️ `textures_arr[0]` 在**方块**侧是 terrain_texture.json 的**键**、在**实体**侧却必须是
+     *   资源路径 —— 两者不是一回事。只给短名的项目（如 `"machineblock_0"`）必须传本参数，
+     *   否则客户端实体会报 `Missing referenced asset`。
      * @param {number} [options.inventory_size=27] 实体容器槽位数（正整数）。
      *   ⚠️ 官方文档（<https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/entitycomponents/minecraftcomponent_inventory>）
      *   只写 "Number of slots the container has"、**未给上限** —— 别照搬方块路线 `[1,54]` 的限制。
@@ -177,10 +217,18 @@ export class TileBlock {
         //    判据见 AGENTS.md：与 examples/mob_chest 的历史产物（含 minecraft:inventory 27）逐字段对齐。
         //    `options` 里的 inventory_size / container_type / can_be_siphoned_from 会被
         //    buildTileBehData 合并进**本实例**的 minecraft:inventory（不传 = 与历史产物逐字节一致）。
-        this.entity = new Entity(`${identifier}_entity`, textures_arr[0], {}, buildTileBehData((key) => options[key]));
+        //    第 2 参（客户端实体贴图）由 resolveEntityTexture 解析：不传 `options.entity_texture`
+        //    时**原样**取 textures_arr[0]（历史行为）。
+        this.entity = new Entity(`${identifier}_entity`, resolveEntityTexture(textures_arr, options), {}, buildTileBehData((key) => options[key]));
 
         // 注册方块状态 0:方块 1:实体
         this.block.registerState("sapdon:block_or_entity",[0,1]);
+        // ★ 这个自定义组件**由框架内置兜底注册**（`@sapdon/runtime` 的 `registerBuiltinComponents()`
+        //   → `registerFallbackBlockComponent`，实现见 `src/oc/builtin/blocks/blockWithEntity.ts`）。
+        //   项目若自己注册了同 id（例如 `examples/mob_chest` 那种要切透明状态/自定义交互的），
+        //   **项目实现生效**、内置实现被跳过。
+        //   ⚠️ 字面量不能抽成共享常量：本文件在 `@sapdon/core`（构建期，external），
+        //      而常量在 `@sapdon/runtime`（运行期，会被打进脚本包）—— core 不许 import runtime。
         this.block.addComponent(BlockComponent.setCustomComponents(["sapdon:block_with_entity"]))
 
         this.block.addPermutation(

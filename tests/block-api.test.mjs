@@ -52,6 +52,39 @@ test('TileBlock 容器参数校验：正整数 / 非空字符串 / 布尔', () =
     assert.throws(() => new TileBlock('test:x', 'construction', [...TEX], { can_be_siphoned_from: 'yes' }), /can_be_siphoned_from/)
 })
 
+// ── P1-2 `options.entity_texture` ────────────────────────────────────────────────
+// 客户端实体的 `textures.<name>` 官方要求是**资源路径**
+// （<https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/cliententitydocumentation/cliententitydocumentationintroduction>），
+// 而 `textures_arr` 在方块侧是 terrain_texture.json 的**键** —— 两者不是一回事。
+
+test('TileBlock 实体贴图默认 = textures_arr[0]（**历史行为，不传新参数产物不变**）', () => {
+    assert.equal(new TileBlock('test:chest', 'construction', [...TEX]).entity.resource.textures.default, 't0')
+    // 只给短名（terrain 键）时会原样照写出实体贴图 —— 这正是需要 entity_texture 的原因
+    const shortName = new TileBlock('test:short', 'construction', ['machineblock_0', ...TEX.slice(1)])
+    assert.equal(shortName.entity.resource.textures.default, 'machineblock_0')
+})
+
+test('TileBlock `entity_texture` 只改**实体侧**贴图，方块侧 material_instances 仍用 textures_arr', () => {
+    const tile = new TileBlock('test:typed', 'construction', ['machineblock_0', 'b', 'c', 'd', 'e', 'f'], {
+        entity_texture: 'textures/blocks/entity/normal',
+    })
+    assert.equal(tile.entity.resource.textures.default, 'textures/blocks/entity/normal')
+    assert.equal(
+        tile.block.components.get('minecraft:material_instances').up.texture,
+        'machineblock_0',
+        '方块侧仍必须是 terrain 键'
+    )
+})
+
+test('TileBlock `entity_texture` 校验：必须是**非空字符串**', () => {
+    for (const bad of ['', null, 0, [], {}]) {
+        assert.throws(
+            () => new TileBlock('test:x', 'construction', [...TEX], { entity_texture: bad }),
+            /entity_texture/
+        )
+    }
+})
+
 test('setBlockEntity 的历史产物逐字节不变', () => {
     const none = BlockComponent.setBlockEntity()
     assert.equal(JSON.stringify(Object.fromEntries(none)), '{"minecraft:block_entity":{"dynamic_properties":false}}')

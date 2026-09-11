@@ -117,6 +117,113 @@
 - ❌ `world.beforeEvents.worldInitialize`：**太晚**，症状是启动报
   `this component was found in the input, but is not present in the Schema`（方块 JSON 里写了 `"ns:xxx": {}`，但脚本没在正确时机注册）。
 - **守卫**：`system.beforeEvents.startup` 已触发后再调用注册会**抛错**（那时没有任何注册时机了）；同一 id 重复注册也抛错；事件名拼错只 `console.warn`、不阻断。
+  - ⚠️ 「同 id 重复注册抛错」只适用于**项目注册之间**。**框架内置**组件走 `registerFallbackBlockComponent`
+    （项目没注册才注册；项目注册了 → 项目生效 + 一条 warn）—— 见 §2.4。
+
+### 2.4 ★ `sapdon:block_with_entity` 必须由框架注册（否则**整份方块被丢**）
+- **症状**：用 `BlockAPI.createTileBlock` 的方块全部不出现（连创造菜单里都没有），启动报
+  ```
+  -> components -> sapdon:block_with_entity: this component was found in the input,
+     but is not present in the Schema
+  ```
+  **不是局部报错 —— 是整份方块 JSON 被引擎丢掉**（真机实测：FZ 的探针与回收机都靠脚本手工注册才活下来）。
+- **根因**：`TileBlock` 的构造无条件给方块挂这个自定义组件
+  （`src/core/block/tileBlock.js:232` → `BlockComponent.setCustomComponents(["sapdon:block_with_entity"])`），
+  而框架的 `registerBuiltinComponents()` 到 2026-09 为止**只注册 5 个**
+  （`crop_growth` / `fallingblock` / `head_rotation` / `intercardinal_orientation` / `guibook`）
+  —— **没有** `block_with_entity`。挂组件与注册组件是两件事，只有后者能让 Schema 认识它。
+- **修法（已落地）**：`src/oc/builtin/blocks/blockWithEntity.ts` 提供内置实现，
+  由 `registerBuiltinComponents()` 用**兜底**通道登记（`registerFallbackBlockComponent`）。
+  内置实现 = **模式 A**：`onPlace` 里 spawn `${block.typeId}_entity`（该坐标已有同种实体则跳过；
+  读不出来时**不 spawn** —— 两个承载实体 = 两个容器 = 能复制物品）。
+  **刻意不切** `sapdon:block_or_entity` 状态：切到 1 会命中 `TileBlock` 的透明变体，
+  外观全交给实体（模式 B），框架无权替项目决定。
+- **为什么是「兜底」而不是「直接注册」**：既有项目（`examples/mob_chest`、FZ）**早就手工注册过**这个 id，
+  而且它们的实现是**模式 B / 自定义交互**。直接注册会让 `registry.ts` 的「同 id 重复注册 → 抛错」
+  守卫在启动时炸掉这些项目；无条件覆盖又会**静默改掉它们的方块行为**（切透明与否）。
+  兜底语义：**项目注册了就以项目为准**（一条 warn 说明）、没注册才用内置。
+  判定发生在 `system.beforeEvents.startup` 回调里 —— 只有那时才能确定「所有模块是否都已加载完」。
+- **判据**：
+  1. `prod/oc/index.d.ts` 导出 `registerFallbackBlockComponent` / `skippedFallbackComponents`，
+     `prod/oc/index.js` 含 `sapdon:block_with_entity`（改完必须断言 `prod/`，别只看 rollup 9/9）；
+  2. 单测 `node tests/component-registry.test.mjs`（7 条：兜底生效 / 项目优先（两种登记顺序）/ 项目重复注册仍抛错 /
+     兜底幂等 / startup 之后抛错 / 两张账互不干扰）；
+  3. **最小项目实验**：只 `createTileBlock`、**完全不手工注册** → 产物里有 `"sapdon:block_with_entity": {}`，
+     且脚本包里有内置实现（见 `.tmp/p0-1/`）。
+
+### 2.5 ★ `createTileBlock` 的 `.d.ts` 漏声明 `group` / `hide_in_command`（TS2353）
+- **症状**：项目写 `BlockAPI.createTileBlock(id, cat, tex, { group, hide_in_command })` 编译报
+  **TS2353**（对象字面量只能指定已知属性），而**运行期 `BasicBlock` 明明会读 `options.group`**
+  （`src/core/block/basicBlock.js:39`）—— 类型与运行期不一致。项目只能写成
+  `const opts = { group, ... }; createTileBlock(id, cat, tex, opts)`（传变量绕过多余属性检查）来苟活。
+- **根因**：`.d.ts` 是 `src/core/factory/blockFactory.js` 的 JSDoc 推导出来的；
+  `createBasicBlock` 有 `@param {string} options.group` / `@param {boolean} options.hide_in_command`，
+  `createTileBlock` **没有**（只有 `inventory_size` / `container_type` / `can_be_siphoned_from`）。
+- **修法**：给 `createTileBlock` 的 JSDoc 补 `[options.group]` / `[options.hide_in_command]` /
+  `[options.format_version]` / `[options.entity_texture]`（**都要写成 `[options.x]` 可选**，
+  写成 `options.x` 会变成**必填** —— 那会让只传 `{ inventory_size }` 的既有项目反而编译失败）。
+  **改源头，不要手改 `prod/`。**
+- **同类缺口（同一次核对的结果，判据 = 运行期读的键 ∉ JSDoc 声明的键）**：
+
+  | 工厂 | 运行期会读但**未声明** | 处理 |
+  |---|---|---|
+  | `createBasicBlock` | `format_version`（`basicBlock.js:33`） | 已补 |
+  | `createBlock` | `format_version` | 已补 |
+  | `createRotatableBlock` | `format_version` | 已补 |
+  | `createTileBlock` | `group` / `hide_in_command` / `format_version` | 已补（本轮 P0-2） |
+  | `createHeadBlock` | `tick_interval` / `custom_components` / `format_version`（`headBlock.js:14,19`） | 已补；它原有那三条 JSDoc（`ambient_occlusion`/`face_dimming`/`render_method`）是从 `createCropBlock` 误抄的**无效**声明 —— **保留**（删掉会让传了它们的项目从「被忽略」变成编译错误），但注释里标了「本工厂不读」 |
+  | `createOreBlock` / `createGlassBlock` / `createFenceBlock` / `createStairBlock` / `createTrapdoorBlock` / `createGeometryBlock` / `createCropBlock` | 无 JSDoc ⇒ 推导成 `options?: {}` | **无 TS2353 风险**（TS 对 `{}` 不做多余属性检查），故未动 |
+
+  ⚠️ `createBasicBlock` / `createBlock` / `createRotatableBlock` / `createHeadBlock` 的**已声明键是必填**
+  （推导成 `group: string` 而不是 `group?: string`），于是 `createBasicBlock(id, cat, tex, {})` 也会报错。
+  这是既有的另一类问题（**本轮未改**：把必填改可选是纯放宽，但要单独评估，见「给框架的建议」）。
+
+### 2.6 自定义组件的 JSON **写法**：扁平化是现行规范，`minecraft:custom_components` 已废弃
+- 框架 `setCustomComponents(ids)` 产出的是 `"ns:comp": {}`（直接写在 `components` 里）。
+  **这是对的**，不要改成 `"minecraft:custom_components": [...]`：
+  - Microsoft Learn · Scripting V2 Overview 原文：
+    "`minecraft:custom_components` is deprecated in favor of **flattened custom components** …
+     Instead, you can write your custom components similar to any other Minecraft component."
+    <https://learn.microsoft.com/en-us/minecraft/creator/documents/scriptingv2.0.0overview#custom-components-v2>
+  - Microsoft Learn · Block Components · `minecraft:custom_components` 页首 **Important**：
+    "This type is now deprecated, and no longer in use in the latest versions of Minecraft."
+    <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_custom_components>
+  - 1.21.90 更新说明："Custom Components V2 is now available with new capabilities."
+    <https://learn.microsoft.com/en-us/minecraft/creator/documents/update1.21.90>
+- ⚠️ **`Scripting/…/components-tutorial.md` 那篇教程的「Block custom components」小节仍在用数组写法**
+  （`"minecraft:custom_components": ["example:crop_grow"]`）—— 那是**没跟上 V2 的旧正文**
+  （该节 `format_version` 还写着 `1.21.10`），别拿它当规范。
+- **产物回归判据**：真机与产物双向确认过框架写法可用（`examples/mob_chest` 的
+  `dev/mob_chest_BP/blocks/mob_chest_chest.json` 里就是 `"sapdon:block_with_entity": {}`）。
+  **改写法会让所有既有产物变化** ⇒ 除非有反例，**维持现状**。
+
+### 2.7 `createTileBlock` 的实体贴图是**资源路径**，不是 terrain 短名
+- **症状**：`createTileBlock(id, cat, ["machineblock_0"])` 的产物里
+  `client_entity.textures.default = "machineblock_0"` ⇒ 客户端实体报 `Missing referenced asset`。
+- **根因**：同一个 `textures_arr` 被**两个不同的贴图系统**消费 ——
+  - **方块**侧（`material_instances.up/down/…`）要的是 `terrain_texture.json` 的**键**（terrain 短名）；
+  - **实体**侧（`client_entity.textures.<name>`，`tileBlock.js` → `entity.js:19-21`）要的是**资源路径**
+    （官方示例 `"default": "textures/entity/pig/pig"`，省略扩展名）：
+    <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/cliententitydocumentation/cliententitydocumentationintroduction>
+  框架此前把 `textures_arr[0]` **原样**写进实体贴图 ⇒ 只给短名的项目必然指向不存在的资源。
+- **修法（已落地）**：`createTileBlock` 新增 `options.entity_texture`（**默认 = `textures_arr[0]`**，
+  即不传时产物**逐字节不变**）。只给 terrain 短名的项目传一次
+  `{ entity_texture: 'textures/blocks/entity/normal' }` 即可，不必再像 FZ 那样在
+  `declareTileBlock` 里 `tile.entity.resource.addTexture(...)` 二次覆盖。
+- **判据**：单测 `tests/block-api.test.mjs` 的三条 `entity_texture` 用例；
+  以及 `examples/mob_chest` 重建后 `dev/mob_chest_RP/entity/mob_chest_chest_entity.json`
+  与改动前**逐字节一致**（它传的本来就是完整路径）。
+
+### 2.8 `createTileBlock` 要求项目**自带** `geometry.cube`（与 terrain 键 `none`）
+- `TileBlock` 的状态 1 变体与承载实体都用 `geometry.cube`
+  （`tileBlock.js` 的 `setGeometry("geometry.cube")` / `addGeometry("default","geometry.cube")`），
+  而 `geometry.cube` 是**自定义**几何（不是原版几何名）—— 框架只生成 JSON，**生不出 RP 里的几何文件**。
+- **症状**：状态 1 下（以及承载实体）**没有模型**；引擎报 `Missing referenced asset` 一类。
+- **做法**：项目在 `res/models/blocks/` 放一份 `identifier = "geometry.cube"` 的立方体几何
+  （16³、pivot 在底面 —— 参考 `examples/mob_chest/res/models/blocks/cube.geo.json`）。
+  **模板已随框架提供默认实现**：`src/templates/{js,ts}_sapdon/res/models/blocks/cube.geo.json`
+  （`sapdon create` 出来的新项目直接可用；**既有项目要自己拷一份**）。
+  透明变体用的 terrain 键 `none` 同样要存在（模板有 `res/textures/blocks/none.png`）。
 
 ### 2.2 路线 A 的 handler 会被 `toString()` 序列化
 - **症状**：生成的 `scripts/custom_components/<name>.js` 里只有**调用**、没有定义 → 运行期 `ReferenceError: xxx is not defined`。
@@ -247,6 +354,16 @@ node scripts/buildTask.cjs           # rollup → prod/
 - [ ] **部署 prune 的真机效果**：从项目里删掉一个方块/配方/`res/` 资源后重新构建，
       确认游戏里对应的旧文件**真的消失**（不再报 `not present in the Schema`），且玩家自己放进开发包的文件仍在。
 - [ ] 路线 B：`registerBlockComponent` 注册的组件在游戏内事件是否真的触发（本环境只用桩验证了注册时机与注册表）。
+- [ ] **★ `sapdon:block_with_entity` 内置实现（模式 A）的真机行为**（本轮新增，全部未验证）：
+      ① 只 `createTileBlock`、不手工注册的项目，方块**不再被引擎丢**（`not present in the Schema` 消失）；
+      ② `onPlace` spawn 出来的 `${typeId}_entity` **落点正确**（脚底贴方块底面 = `block.center().y - 0.5`，
+      参考形状出自 `examples/mob_chest`，但该参考只在本环境外被验证过）；
+      ③ **右键能打开容器**（界面是引擎原生开的，`@minecraft/server` 没有「给玩家打开容器」的 API）；
+      ④ `onPlace` 是否会因 `setPermutation` 再次触发 —— 内置实现靠 `getEntitiesAtBlockLocation` 查同种实体**防重复**，
+      若引擎在放置瞬间还没把实体登记进查询结果，仍可能出双容器（**本环境无法证伪**）；
+      ⑤ 破坏方块后 `minecraft:block_sensor` → `despawn_event` 是否真的不留幽灵实体。
+- [ ] `options.entity_texture` 的真机效果：给 terrain 短名的项目传完整路径后，实体贴图 `Missing referenced asset` 是否消失。
+- [ ] 内置 `geometry.cube`（模板）在新项目里是否真的被 RP 收录（`sapdon create` + 一次构建后看 `dev/<proj>_RP/models/blocks/cube.geo.json`）。
 - [ ] i18n：`labels` 传 lang 键时，JSON UI 是否按预期解析（需要 `RP/texts/*.lang` 里定义该键）。
 
 ---
@@ -297,5 +414,25 @@ cpSync(path.join(t,'oc'),   path.join(n,'@sapdon/runtime'), {recursive:true, for
 
 **修法方向（待定）**：给 `lib` 一个显式来源（环境变量 / 框架根参数 / 从依赖解析 `@sapdon/core`
 的真实安装位置），并把内部的 `oc` 与发布名 `runtime` 的映射落定。
+
+**★ 更简的修法建议（2026-09 S3b 复核后补充，本轮只记不做）** —— 不引入任何新参数即可让 `lib`
+在正常用户布局下**不炸**，代价只是「按布局决定做多少事」：
+
+1. **先判「源 == 目标」再拷贝**：对每个包算 `path.resolve(src)` 与 `path.resolve(dest)`，
+   若两者相同（含 `dest` 落在 `src` **内部**的情形）→ **跳过该包**并打印一行说明
+   （例如 `跳过 @sapdon/core：CLI 就来自项目自己的 node_modules/@sapdon，源与目标同一处`）。
+   这条直接消灭 `ERR_FS_CP_EINVAL: src and dest cannot be the same`，
+   且**不改变**「CLI 来自框架 `prod/`」时（框架仓库内部）的既有行为。
+2. **源目录探测同时接受 `oc` 与 `runtime`**：先试 `path.join(root, 'oc')`，不存在再试
+   `path.join(root, 'runtime')`；两者都不存在 → 跳过该包 + 一行说明。
+   理由：目标名一直是 `runtime`（发布名），而框架 `prod/` 下的源目录叫 `oc` ——
+   任何从 `node_modules/@sapdon/` 解析到 CLI 的布局都只有 `runtime`、没有 `oc`，
+   现状会以 ENOENT 失败（§8 第二重问题）。
+3. 两条合起来的语义：**「能同步的就同步，同步不了的（源就是目标 / 源不存在）明确说明并跳过，
+   而不是整条命令 exit 1」**。真正的错误（权限、磁盘满）仍然抛。
+
+> ⚠️ 判据（将来实现时必须给）：框架仓库内部 `node prod/cli/start.js lib` 行为不变
+> （`examples/*/node_modules/@sapdon/{core,cli,runtime}` 时间戳更新）；
+> 从项目自己的 `node_modules/@sapdon/cli` 解析时**exit 0** 且打印「跳过」而不是 `ERR_FS_CP_EINVAL`。
 
 ---

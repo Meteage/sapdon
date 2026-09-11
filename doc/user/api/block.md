@@ -196,14 +196,40 @@ BlockAPI.createTileBlock(
 |------|------|------|
 | `identifier` | `string` | 方块唯一标识符，格式 `命名空间:名称` |
 | `category` | `string` | 创造栏分类 |
-| `textures_arr` | `string[]` | 6 纹理数组，顺序 `[down, up, north, south, west, east]` |
-| `options` | `object` | 透传给内部 `BasicBlock`（如 `group` / `hide_in_command`），另加下面三个**实体容器**参数 |
+| `textures_arr` | `string[]` | 6 纹理数组，顺序 `[up, down, east, west, south, north]`（= `[上, 下, 东, 西, 南, 北]`，见下方「贴图：方块侧是地形图集**键**」） |
+| `options` | `object` | 透传给内部 `BasicBlock`（`group` / `hide_in_command` / `format_version`），另加 `entity_texture` 与三个**实体容器**参数 |
+| `options.group` | `string` | 创造菜单分组（→ `menu_category.group`）。**分组名是本地化键**，须在 `RP/texts/*.lang` 定义，否则显示裸键名。不传 = 不写该字段 |
+| `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
+| `options.format_version` | `string` | 方块 JSON 的 `format_version`，默认 `"1.26.30"` |
+| `options.entity_texture` | `string` | **承载实体**（客户端实体）的贴图**资源路径**，如 `"textures/blocks/entity/normal"`（省略扩展名）。默认 = `textures_arr[0]`（历史行为） |
 | `options.inventory_size` | `number` | **实体容器**槽位数（正整数），默认 `27` |
 | `options.container_type` | `string` | 容器音效/行为类型，默认 `"minecart_chest"`。官方文档列出的取值：`horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper` |
 | `options.can_be_siphoned_from` | `boolean` | 能否用漏斗抽取，默认 `true` |
 
 缺 `identifier` / `category` / `textures_arr` 任一项时抛错；`inventory_size` 非正整数、`container_type` 非空字符串、
-`can_be_siphoned_from` 非布尔时抛错。
+`can_be_siphoned_from` 非布尔、`entity_texture` 非**非空字符串**时抛错。
+
+> ★ `group` / `hide_in_command` / `format_version` / `entity_texture` 这四个键是 **2026-09 才补进 `.d.ts` 的**。
+> 在此之前 `createTileBlock` 的声明里只有三个容器参数 ⇒ 传 `{ group }` 这种**对象字面量**会踩 TS2353
+> （运行期其实会读 `options.group`）。现在传对象字面量不再报错；只传 `{ inventory_size }` 也照旧合法
+> （四个新键都是**可选**）。
+
+> ★ **贴图：方块侧是地形图集「键」，实体侧是「资源路径」** —— 同一个 `textures_arr` 被两个系统消费：
+> - 方块侧（`minecraft:material_instances`）要 `terrain_texture.json` 的**键**（地形短名，如 `machineblock_0`）；
+> - 实体侧（`client_entity.textures.default`）要**资源路径**（如 `textures/blocks/entity/normal`），
+>   官方示例 `"default": "textures/entity/pig/pig"`：
+>   [Microsoft Learn · Client Entity JSON and Introduction](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/cliententitydocumentation/cliententitydocumentationintroduction)。
+>
+> 所以**只给地形短名**的项目必须传 `options.entity_texture`，否则客户端实体会报 `Missing referenced asset`。
+
+> ★ **项目还必须自带两份资源**（框架只生成 JSON，生不出 RP 里的资源文件）：
+> 1. **几何 `geometry.cube`** —— `TileBlock` 的状态 1 变体与承载实体都用它。它是**自定义**几何名
+>    （不是原版几何），要放在 `res/models/blocks/*.geo.json`，`identifier` = `geometry.cube`
+>    （16³ 立方体、pivot 在底面；参考 `examples/mob_chest/res/models/blocks/cube.geo.json`）。
+>    模板 `src/templates/{js,ts}_sapdon/res/models/blocks/cube.geo.json` 已随框架提供一份默认实现
+>    （`sapdon create` 出的新项目直接可用；**既有项目请自己拷一份**）。
+> 2. **地形键 `none`** —— 状态 1（透明）的变体用 `material_instances: { "*": { texture: "none" } }`，
+>    需要 `res/textures/blocks/` 下有 `none.png`（模板已带）。
 
 > ★ **这是当前引擎版本下唯一可用的方块容器路线**：容器挂在**实体**上（实体组件 `minecraft:inventory`）。
 > 不传那三个参数时产物与历史版本**逐字节一致**（默认 27 槽 / `minecart_chest` / 可抽取），
@@ -237,6 +263,27 @@ BlockAPI.createTileBlock(
 |------|------|------|
 | `.block` | `BasicBlock` | 方块本体（已带 `sapdon:block_or_entity` 状态与 `sapdon:block_with_entity` 自定义组件） |
 | `.entity` | `Entity` | 实体（含容器、`minecraft:block_sensor`、无敌 / 不可推动等组件） |
+
+> ★ **`sapdon:block_with_entity` 由框架注册，你不用管**（2026-09 起）。
+> `TileBlock` 会给**每个**带实体方块挂上这个自定义组件，而自定义组件**必须在
+> `system.beforeEvents.startup` 注册**，否则引擎会**把整份方块丢掉**：
+> `-> components -> sapdon:block_with_entity: this component was found in the input, but is not present in the Schema`。
+> 框架内置实现的职责只有一个：`onPlace` 时在方块中心 spawn `${identifier}_entity`
+> （该坐标已有同种实体则跳过），并且**不**替你切换 `sapdon:block_or_entity` 状态
+> （刻意不决定「方块是否变透明、外观交给实体」）。
+> **历史项目手工注册过这个 id 的**：你的实现会**取代**内置实现（启动时一条 warn 说明），行为不变。
+> 需要「方块透明 + 实体接管外观 / 动画」（`examples/mob_chest` 那种）时，自己注册即可：
+
+```typescript
+// scripts/index.ts —— 运行期（仅在你需要自定义交互或透明渲染时）
+import { registerBlockComponent } from '@sapdon/runtime'
+
+registerBlockComponent('sapdon:block_with_entity', {
+  onPlace({ block, dimension }) {
+    // 你的 spawn / 状态切换逻辑（一注册，框架内置实现就不再生效）
+  },
+})
+```
 
 > ⚠️ **`TileBlock` 本身只是包装器**：它只有 `{ block, entity }`，**没有** `identifier` / `textures`，
 > 也没有继承 `BasicBlock`。所以**不能**把它拿去调 `createBasicBlock` 那一套（`addComponent` / `addPermutation` /
@@ -1789,6 +1836,8 @@ BlockAPI.createBlock(identifier, category, variantDatas, options?)
 BlockAPI.createRotatableBlock(identifier, category, textures_arr, options?)
 BlockAPI.createGeometryBlock(identifier, category, geometry, material_instances, options?)
 BlockAPI.createTileBlock(identifier, category, textures_arr, options?)
+//   options?: { group?, hide_in_command?, format_version?, entity_texture?,
+//               inventory_size?, container_type?, can_be_siphoned_from? }   ← 全部**可选**
 BlockAPI.createCropBlock(identifier, category, variantDatas, options?)
 BlockAPI.createOreBlock(identifier, category, textures_arr, options?)
 BlockAPI.createGlassBlock(identifier, category, texture, options?)

@@ -199,6 +199,13 @@ export const BlockAPI = {
      *   不传 = `undefined`（产物里 `menu_category` 只有 `category` / `is_hidden_in_commands`）。
      * @param {boolean} [options.hide_in_command] - 是否在命令中隐藏（默认 false）。同上，已补齐声明。
      * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。
+     * @param {string} [options.entity_texture] - 客户端实体的贴图**资源路径**
+     *   （如 `"textures/blocks/entity/normal"`，省略扩展名）。
+     *   默认 = `textures_arr[0]`（**历史行为，逐字节不变**）。
+     *   官方文档：客户端实体 `textures.<name>` 的值是**资源路径**，不是 terrain 短名
+     *   <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/cliententitydocumentation/cliententitydocumentationintroduction>。
+     *   ⚠️ 只给 terrain 短名（如 `"machineblock_0"`，那是 `terrain_texture.json` 的**键**）的项目
+     *   必须传本参数，否则客户端实体报 `Missing referenced asset`。
      * @param {number} [options.inventory_size=27] - **实体容器**槽位数（正整数）。
      *   ⚠️ 官方文档只写 "Number of slots the container has"、**未给上限**
      *   （实体组件 `minecraft:inventory`），**不要**照搬方块路线 `minecraft:block_entity.container.slot_count`
@@ -208,6 +215,19 @@ export const BlockAPI = {
      * @param {boolean} [options.can_be_siphoned_from=true] - 能否用漏斗抽取。
      *   （不传上面三个键 = 产物与历史版本**逐字节一致**；每次构造都按实例拷贝，改一个方块不会污染别的方块。）
      * @returns {TileBlock} 创建的带实体方块对象（`.block` / `.entity` 可直接继续配置）。
+     *
+     * @remarks
+     * ★ **项目必须自带两份资源**，框架不生成、也没法生成（它们只在 RP 的资源文件里）：
+     *   1. **几何 `geometry.cube`** —— `TileBlock` 给方块的状态 1 变体与承载实体都用它
+     *      （`tileBlock.js` 的 `setGeometry("geometry.cube")` / `addGeometry("default","geometry.cube")`）。
+     *      它是**自定义**几何（不是原版几何名），必须由项目放进
+     *      `res/models/blocks/*.geo.json`（`identifier` = `geometry.cube`，立方体 16³、
+     *      pivot 在底面 —— 见 `examples/mob_chest/res/models/blocks/cube.geo.json`）。
+     *      缺失的症状是状态 1 下**方块/实体没有模型**。模板 `src/templates/{js,ts}_sapdon/res/models/blocks/cube.geo.json`
+     *      已随框架提供一份默认实现（**只对新建项目生效**，既有项目请自行拷贝）。
+     *   2. **terrain 键 `none`** —— 状态 1 的变体用 `material_instances: { "*": { texture: "none" } }`
+     *      （透明）。`none` 要被 `terrain_texture.json` 收录，即 `res/textures/blocks/` 下存在 `none.png`
+     *      （模板已有 `res/textures/blocks/none.png`）。
      */
     createTileBlock: function (identifier, category, textures_arr, options = {}) {
         if (!identifier || !category || !textures_arr) {
