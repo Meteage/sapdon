@@ -6,7 +6,11 @@ import { ItemAPI } from '../dist/core/factory/itemFactory.js'
 import { GRegistry } from '../dist/core/registry.js'
 
 const itemGolden = {
-  format_version: '1.21.40',
+  // 默认 format_version 由 1.21.40 提到 1.21.90（2026-09）：
+  // 1.21.40 下自定义 item catalog 的 `menu_category.group` 会被引擎当"隐含 minecraft: 前缀"解析，
+  // 每次世界加载为**每个**这样的物品报一条 warning（Mojira MCPE-224150）。
+  // 详见 src/core/item/item.ts 的注释与 doc/dev/known-pitfalls.md §1.7。
+  format_version: '1.21.90',
   'minecraft:item': {
     description: {
       identifier: 'test:item',

@@ -53,7 +53,25 @@ export class Item {
         this.texture = texture;
         this.group = group;
         this.hide_in_command = hideInCommand ?? false;
-        this.format_version = formatVersion ?? "1.21.40";
+        // ── 物品 format_version 默认值：1.21.90（原为 1.21.40，见 doc/dev/known-pitfalls.md §1.7）──
+        // 为什么提到 1.21.90：
+        //   1.21.40 下，若物品用**自定义 item catalog** 分组（`ItemAPI.createItemCatalog().addGroup(...)`
+        //   → `menu_category.group = "ns:itemGroup.name.x"`），引擎会把该 group 当「隐含 `minecraft:` 前缀」
+        //   解析，于是每次世界加载为**每一个**这样的物品报一条 warning：
+        //     The item <X> was created with the group set to 'minecraft:ns:itemGroup.name.x',
+        //     but is now being set to 'ns:itemGroup.name.x'
+        //   产物里并不存在 `minecraft:ns:`（两侧都是裸 `ns:itemGroup.name.x`，与
+        //   https://wiki.bedrock.dev/items/item-catalog 的 `wiki:itemGroup.name.ore` 同形）——
+        //   这是**引擎行为**（对应 Mojira MCPE-224150），不是框架把 JSON 写错了。
+        //   1.21.90 下引擎按显式字符串比较，告警消失。
+        // 实测（2026-09，FZ 项目 157 件物品走默认值）：每次加载 156 条；把**单件**物品改成 1.21.90
+        //   （只改已部署副本、不动源码）→ 同一次加载降到 155 条且该物品不再出现。
+        //   `examples/digitCircuit/main.mjs` 一直显式传 `formatVersion: "1.21.90"`，日志里该告警 0 条。
+        // 仍可按物品覆盖 `format_version`：上面同时解构了 `format_version` 与 `formatVersion` 两个键名
+        //   （`formatVersion = format_version`，故二者都认，后者优先）。
+        // ⚠️ `ItemCatalog` 自己的 `format_version`（`itemCatalog.ts:40`，默认 "1.26.30"）是
+        //   **catalog 文件**的格式版本，与物品的 format_version 无关，不要跟着改。
+        this.format_version = formatVersion ?? "1.21.90";
         this.components = new Map();
 
         // 初始化默认组件（可通过 options.icon 传 null 跳过图标组件）
