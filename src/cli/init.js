@@ -96,14 +96,20 @@ export function getProjectName() {
     )
 }
 
+/**
+ * 构建子目录名统一用**大写** `_BP` / `_RP`。
+ * ⚠️ 历史上这里是小写 `_bp` / `_rp`，而 build.js / load.js / syncFiles.js / pack.js 一律大写 ——
+ *    Windows 文件系统大小写不敏感才侥幸能跑，Linux/macOS 下会分叉成两个目录
+ *    （构建写进 X_bp、打包读 X_BP → 空包）。全框架只保留大写这一种形态。
+ */
 export function getBuildDirBp() {
     const { buildDir } = getBuildConfig().buildOptions
     const name = getProjectName()
-    return path.join(getProjectPath(), buildDir, name + '_bp')
+    return path.join(getProjectPath(), buildDir, name + '_BP')
 }
 
 export function getBuildDirRp() {
     const { buildDir } = getBuildConfig().buildOptions
     const name = getProjectName()
-    return path.join(getProjectPath(), buildDir, name + '_rp')
+    return path.join(getProjectPath(), buildDir, name + '_RP')
 }
