@@ -142,27 +142,55 @@ export class BasicBlock {
     }
 
     /**
-     * 提交前的自检（由 `registry.submit()` 在序列化之前调用一次）。
+     * 提交前的自检（由 `registry.submit()` → `runValidators()` 在序列化之前调用一次）。
      *
      * ⚠️ 不能在 `registerBlock` 里做这类检查：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，
-     *    注册那一刻用户还没挂组件，检查必然看不到 `minecraft:inventory`。
+     *    注册那一刻用户还没挂组件，检查必然看不到容器组件。
+     *    （历史上 `blockComponent.js` 的 JSDoc 把守卫指向 `blockFactory.registerBlock` —— **那是错的**，
+     *    `blockFactory.js` 里 `block_entity` 命中数为 0；真守卫就是这里。已于 2026-09 订正。）
      *
-     * 目前只查一件事：**声明了容器却没有方块实体**。容器需要 `minecraft:block_entity` 作前置，
-     * 否则方块实体不创建、游戏里容器**打不开** —— 这个失败是静默的，只有真机右键才发现。
-     * 这里只 warn、**不改产物**：自动补 `minecraft:block_entity` 会覆盖用户已声明的
-     * `setBlockEntity(true)`（`combineComponents` 是后者覆盖前者），反而制造更难查的问题。
+     * 检查两件事，都**只 warn、不改产物**：
+     *
+     * 1. 方块 components 里出现 `minecraft:inventory` —— 它是**实体**组件，不是方块组件，
+     *    引擎必然拒绝（`not present in the Schema`）。容器请走实体路线。
+     * 2. `minecraft:block_entity.container.slot_count` 超出官方文档的 `[1, 54]`
+     *    （`BlockComponent.setBlockEntity({container})` 已经抛错；这里兜住"手写组件对象 / 裸 Map"的写法）。
      */
     validate() {
         const has = (obj, key) => !!obj && Object.prototype.hasOwnProperty.call(obj, key)
         const components = Object.fromEntries(this.components);
-        if (!has(components, "minecraft:inventory")) return;
-        if (has(components, "minecraft:block_entity")) return;
-        // TileBlock 那种把组件放进变体的写法也要认
-        if ((this.permutations ?? []).some((p) => has(p?.components, "minecraft:block_entity"))) return;
-        console.warn(
-            `[sapdon] 方块 "${this.identifier}" 声明了 minecraft:inventory 但没有 minecraft:block_entity —— ` +
-            `容器在游戏内将无法打开。请同时合并 BlockComponent.setBlockEntity()。`
-        );
+        const permutationComponents = (this.permutations ?? []).map((p) => p?.components ?? {})
+        // 组件既可能写在 components，也可能写在变体里（TileBlock 就用变体）
+        const all = [components, ...permutationComponents]
+
+        if (all.some((c) => has(c, "minecraft:inventory"))) {
+            console.warn(
+                `[sapdon] 方块 "${this.identifier}" 的 components 里写了 minecraft:inventory —— ` +
+                `它是**实体**组件（官方文档列在 Entity Components 下），方块组件表里没有它，` +
+                `引擎会报 "-> components -> minecraft:inventory: this component was found in the input, ` +
+                `but is not present in the Schema"。` +
+                `可用的容器请走实体路线：BlockAPI.createTileBlock(id, category, textures, ` +
+                `{ inventory_size, container_type, can_be_siphoned_from }) ` +
+                `（方块带承载实体、实体挂 minecraft:inventory）；` +
+                `要方块侧的规范写法用 BlockComponent.setBlockEntity(true, { container: { slot_count } })` +
+                `（当前引擎版本同样会拒该成员）。`
+            )
+        }
+
+        for (const c of all) {
+            const blockEntity = c["minecraft:block_entity"]
+            if (!has(c, "minecraft:block_entity") || !blockEntity || typeof blockEntity !== 'object') continue
+            if (!has(blockEntity, "container")) continue
+            const container = blockEntity.container
+            const slots = container && typeof container === 'object' ? container.slot_count : undefined
+            if (!Number.isInteger(slots) || slots < 1 || slots > 54) {
+                console.warn(
+                    `[sapdon] 方块 "${this.identifier}" 的 minecraft:block_entity.container 槽位数非法` +
+                    `（当前值：${JSON.stringify(container)}）。官方文档要求 slot_count 为 >= 1 且 <= 54 的整数，` +
+                    `槽位数更大的容器请走实体路线（createTileBlock 的 inventory_size）。`
+                )
+            }
+        }
     }
 
     /**
