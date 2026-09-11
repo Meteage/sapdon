@@ -682,6 +682,75 @@ export class BlockComponent {
   }
 
   /**
+   * 设置方块容器（`minecraft:inventory`）—— 可右键打开、可存取的方块背包。
+   *
+   * ⚠️ **前置**：容器必须同时具备 `minecraft:block_entity`，否则方块实体不创建、容器打不开。
+   *    请**先**调用 `BlockComponent.setBlockEntity()` 再合并本组件；若只写了 `setInventory`
+   *    而没有 `setBlockEntity`，构建时框架会打印 warn 提醒（见 `blockFactory.registerBlock`）。
+   *
+   * ⚠️ 本方法**故意不自动带上 `minecraft:block_entity`**：`combineComponents` 是「后者覆盖前者」，
+   *    若这里自动塞入默认的 `{dynamic_properties:false}`，会把用户已声明的
+   *    `setBlockEntity(true)` **静默覆盖成 false**，反而制造更难查的问题。
+   *
+   * ⚠️ `inventory_size` 的上限由 Bedrock 约束，本环境无法实测，故**不硬编码猜测值**，
+   *    只校验正整数；实际上限需真机确认（见 `doc/dev/` 已知坑清单）。
+   *
+   * @param {Object} options - 容器参数。
+   * @param {number} options.inventory_size - 槽位数（正整数，必填；上限需真机确认）。
+   * @param {boolean} [options.private] - 是否仅所有者可访问。
+   * @param {string} [options.container_type] - 容器音效/行为类型。**必须是 Bedrock 认可的值**，
+   *   文档中出现过的有 "container" / "chest" / "furnace" / "hopper" / "dispenser" /
+   *   "dropper" / "minecart_chest" / "shulker_box" 等（此处不做白名单，避免写死过窄）。
+   * @param {boolean} [options.can_be_siphoned_from] - 能否用漏斗抽取。
+   * @param {number} [options.additional_slots_per_strength] - 每级强度的额外槽位（非负整数）。
+   * @param {boolean} [options.restrict_to_owner] - 是否限制为所有者可打开。
+   * @returns {Map<string, any>} - 组件集合（仅 `minecraft:inventory`）。
+   */
+  static setInventory(options = {}) {
+    if (typeof options !== 'object' || options === null) {
+      throw new Error('setInventory: options 必须是对象');
+    }
+    const {
+      inventory_size,
+      private: isPrivate,
+      container_type,
+      can_be_siphoned_from,
+      additional_slots_per_strength,
+      restrict_to_owner
+    } = options;
+
+    if (!Number.isInteger(inventory_size) || inventory_size < 1) {
+      throw new Error('setInventory: inventory_size 必须是大于 0 的整数（槽位数）');
+    }
+    if (container_type !== undefined && (typeof container_type !== 'string' || container_type.length === 0)) {
+      throw new Error('setInventory: container_type 必须是非空字符串');
+    }
+    for (const [name, value] of [
+      ['private', isPrivate],
+      ['can_be_siphoned_from', can_be_siphoned_from],
+      ['restrict_to_owner', restrict_to_owner]
+    ]) {
+      if (value !== undefined && typeof value !== 'boolean') {
+        throw new Error(`setInventory: ${name} 必须是布尔类型`);
+      }
+    }
+    if (additional_slots_per_strength !== undefined &&
+        (!Number.isInteger(additional_slots_per_strength) || additional_slots_per_strength < 0)) {
+      throw new Error('setInventory: additional_slots_per_strength 必须是非负整数');
+    }
+
+    // 只写入被显式赋值的字段 —— 未赋值不泄漏进产物 JSON
+    const obj = { inventory_size };
+    if (isPrivate !== undefined) obj.private = isPrivate;
+    if (container_type !== undefined) obj.container_type = container_type;
+    if (can_be_siphoned_from !== undefined) obj.can_be_siphoned_from = can_be_siphoned_from;
+    if (additional_slots_per_strength !== undefined) obj.additional_slots_per_strength = additional_slots_per_strength;
+    if (restrict_to_owner !== undefined) obj.restrict_to_owner = restrict_to_owner;
+
+    return new Map().set("minecraft:inventory", obj);
+  }
+
+  /**
    * 设置方块的活塞移动行为。
    * @param {String} movement_type - 移动类型: "immovable" | "popped" | "push" | "push_pull"。
    * @param {String} [sticky] - 黏性行为: "same" 可复制黏液块/蜂蜜块功能。

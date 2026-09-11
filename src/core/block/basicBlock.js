@@ -142,6 +142,30 @@ export class BasicBlock {
     }
 
     /**
+     * 提交前的自检（由 `registry.submit()` 在序列化之前调用一次）。
+     *
+     * ⚠️ 不能在 `registerBlock` 里做这类检查：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，
+     *    注册那一刻用户还没挂组件，检查必然看不到 `minecraft:inventory`。
+     *
+     * 目前只查一件事：**声明了容器却没有方块实体**。容器需要 `minecraft:block_entity` 作前置，
+     * 否则方块实体不创建、游戏里容器**打不开** —— 这个失败是静默的，只有真机右键才发现。
+     * 这里只 warn、**不改产物**：自动补 `minecraft:block_entity` 会覆盖用户已声明的
+     * `setBlockEntity(true)`（`combineComponents` 是后者覆盖前者），反而制造更难查的问题。
+     */
+    validate() {
+        const has = (obj, key) => !!obj && Object.prototype.hasOwnProperty.call(obj, key)
+        const components = Object.fromEntries(this.components);
+        if (!has(components, "minecraft:inventory")) return;
+        if (has(components, "minecraft:block_entity")) return;
+        // TileBlock 那种把组件放进变体的写法也要认
+        if ((this.permutations ?? []).some((p) => has(p?.components, "minecraft:block_entity"))) return;
+        console.warn(
+            `[sapdon] 方块 "${this.identifier}" 声明了 minecraft:inventory 但没有 minecraft:block_entity —— ` +
+            `容器在游戏内将无法打开。请同时合并 BlockComponent.setBlockEntity()。`
+        );
+    }
+
+    /**
      * 将方块对象转换为 JSON 格式
      * @returns {Object} JSON 格式的方块对象
      */
