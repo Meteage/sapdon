@@ -4,5 +4,7 @@
   "author": "RGB39",
   "version": "1.0.0",
   "min_engine_version": "1.19.50",
-  "language": "ts"
+  "language": "ts",
+  "bp": "c0525350-9c6e-4ffd-9e3b-da8ea3123650",
+  "rp": "4cd7f855-52de-4f3c-aa4e-3c449a003859"
 }

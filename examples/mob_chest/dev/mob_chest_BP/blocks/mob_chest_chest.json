@@ -1,14 +1,16 @@
 {
-  "format_version": "1.21.50",
+  "format_version": "1.26.30",
   "minecraft:block": {
     "description": {
       "identifier": "mob_chest:chest",
       "traits": {},
       "states": {
-        "sapdon:block_or_entity": [
-          0,
-          1
-        ]
+        "sapdon:block_or_entity": {
+          "values": [
+            0,
+            1
+          ]
+        }
       },
       "menu_category": {
         "category": "construction",
@@ -16,18 +18,16 @@
       }
     },
     "components": {
-      "minecraft:custom_components": [
-        "sapdon:block_with_entity"
-      ],
-      "minecraft:geometry": {
-        "identifier": "geometry.mob_chest"
-      },
       "minecraft:material_instances": {
         "*": {
           "texture": "normal",
           "render_method": "alpha_test"
         }
-      }
+      },
+      "minecraft:geometry": {
+        "identifier": "geometry.mob_chest"
+      },
+      "sapdon:block_with_entity": {}
     },
     "permutations": [
       {
