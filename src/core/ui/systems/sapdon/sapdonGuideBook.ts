@@ -42,6 +42,33 @@ import { UIElement } from '../../elements/uiElement.js'
 
 export type GuideBookPageType = 'text' | 'crafting' | 'spotlight' | 'image'
 
+/**
+ * 手册里由框架渲染的固定标签（i18n 接入点）。
+ *
+ * ⚠️ 框架**不做任何 lang 键解析**：这里拿到什么字符串就原样交给 `Text.setText`，
+ *    JSON UI 自己会解析 `fz.gb.ui.chapter` 这类键。所以传 lang 键的项目**必须**
+ *    在 `RP/texts/*.lang` 里定义该键，否则界面显示裸键名。
+ * ⚠️ 默认值 = 历史上的中文字面量，**故意保持现状**：不传 labels 的项目产物逐字节不变
+ *    （回归基线见 AGENTS.md / doc/guidebook.md：guidebook_demo 的 book.json 587870 字节）。
+ */
+export interface GuideBookLabels {
+    /** CAT 页章节列表的标题 */
+    chapter: string
+    /** INDEX 页索引卡列的标题 */
+    category: string
+}
+
+/** 手册固定标签的默认值（= 历史字面量，改它会让所有既有项目产物变化） */
+export const DEFAULT_GUIDE_BOOK_LABELS: GuideBookLabels = {
+    chapter: '章节',
+    category: '类别',
+}
+
+export interface GuideBookOptions {
+    /** 覆盖框架渲染的固定标签（只传要改的键，其余走默认值） */
+    labels?: Partial<GuideBookLabels>
+}
+
 export interface GuideBookChapter {
     name: string
     icon: string
@@ -102,6 +129,8 @@ export class SapdonGuideBook {
     private size: [number | string, number | string]
     private background: string
     private debug = false
+    /** 框架渲染的固定标签（i18n；默认值 = 历史中文字面量） */
+    private labels: GuideBookLabels = { ...DEFAULT_GUIDE_BOOK_LABELS }
     private coverTitle = '  Sapdon 手册 \n           1st 版 by meteage'
     private coverLines = [
         'hi 开发者，欢迎使用 Sapdon 手册。',
@@ -109,12 +138,18 @@ export class SapdonGuideBook {
         '手册前置库。',
     ]
 
-    constructor(identifier: string, size: [number, number] = [320, 207], background: string = 'textures/ui/book_back') {
+    constructor(
+        identifier: string,
+        size: [number, number] = [320, 207],
+        background: string = 'textures/ui/book_back',
+        options: GuideBookOptions = {},
+    ) {
         const [namespace, name] = identifier.split(':')
         this.namespace = namespace
         this.name = name
         this.size = size
         this.background = background
+        this.setLabels(options.labels ?? {})
         this.system = new UISystem(identifier, 'ui/')
 
         // 路由：server_form 只加 factory；页面根 <name> 在本类注册
@@ -143,6 +178,19 @@ export class SapdonGuideBook {
     setCover(title: string, lines: string[]): this {
         this.coverTitle = title
         this.coverLines = lines
+        return this
+    }
+
+    /**
+     * 覆盖框架渲染的固定标签（章节 / 类别）。
+     * 只传要改的键，其余保持**当前值**（增量合并，可反复调用）——
+     * 传 lang 键如 'fz.gb.ui.chapter' 时由 JSON UI 自行解析。
+     */
+    setLabels(labels: Partial<GuideBookLabels>): this {
+        this.labels = {
+            chapter: labels.chapter ?? this.labels.chapter,
+            category: labels.category ?? this.labels.category,
+        }
         return this
     }
 
@@ -234,7 +282,7 @@ export class SapdonGuideBook {
             .setLayout(new Layout().setSize(['100%', '100%']))
         col.addStack(['100%', '5%'], new Panel(`sp_c1_${c.id}_p${k}_${side}`))
         col.addStack(['100%', '10%'],
-            new Label(`chapter_title_${c.id}_p${k}_${side}`, undefined).setText(new Text().setText('章节').setColor([0, 0, 0]).setTextAlignment('center'))
+            new Label(`chapter_title_${c.id}_p${k}_${side}`, undefined).setText(new Text().setText(this.labels.chapter).setColor([0, 0, 0]).setTextAlignment('center'))
         )
         col.addStack(['100%', '5%'], new UIElement(`div_c_${c.id}_p${k}_${side}`, undefined, 'settings_common.option_group_section_divider'))
         const rows = new StackPanel(`cat_rows_${c.id}_p${k}_${side}`, undefined)
@@ -494,7 +542,7 @@ export class SapdonGuideBook {
     ): void {
         col.addStack(['100%', '5%'], new Panel(ids.spTop))
         col.addStack(['100%', '10%'],
-            new Label(ids.title, undefined).setText(new Text().setText('类别').setColor([0, 0, 0]).setTextAlignment('center'))
+            new Label(ids.title, undefined).setText(new Text().setText(this.labels.category).setColor([0, 0, 0]).setTextAlignment('center'))
         )
         col.addStack(['100%', '3%'], new UIElement(ids.divTop, undefined, 'settings_common.option_group_section_divider'))
 
