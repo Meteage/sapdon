@@ -8,8 +8,14 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **构建产物**: `prod/`（由 `npm run build` 生成，**不要直接修改**）
 - **全局 CLI**: `C:\nodejs\node_modules\sapdon` → junction 指向本仓库
 - **开发工作流文档**: `doc/dev/workflow.md` — 框架贡献者必读
+- **已知坑清单**: `doc/dev/known-pitfalls.md` — 改框架前先扫一遍
 - **架构文档**: `doc/dev/architecture.md`
 - **用户文档**: `doc/user/`
+
+## 分层铁律：构建期用 `@sapdon/core`，运行期用 `@sapdon/runtime`
+- `src/core` = `@sapdon/core`：**构建期**（`main.ts` 生成 JSON）。它在 `src/cli/build.js` 的 `rollupIgnores` 里是 external。
+- `src/oc` = `@sapdon/runtime`：**运行期**（`scripts/*`）。**不在** external 列表里 → 会被打包进脚本包。
+- ⚠️ 运行期脚本里 `import '@sapdon/core'` 会在产物里留下**无法解析**的裸包名（Bedrock 不是它的宿主）。新 API 请先想清楚属于哪一层。
 
 ## 框架开发原则
 1. 只修改 `src/`，不要改 `prod/` 或 `node_modules/`
@@ -115,3 +121,52 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **自定义命令参数总数上限 8**（mandatory+optional 合计），超出注册抛 `CustomCommandError: has 'N' parameters, limit '8'` 被 `safe()` 吞掉 → 运行时报"未知的命令"。多参数命令必须把可选参数收到 ≤8。
 - **脚本侧手动采样形状点 + 叠加动画**：在"每个锚点 spawn 一个 `mfx_uni`"即可让整形状作为一个整体动（粒子默认出生位置即锚点，relative_position 是其相对位移），**无需新增 sculpt 类粒子 JSON**。
 - **粒子 Molang 的 `math.sin/cos` 是角度制**：uni 表达式 `sin((B·t+C)*rad2deg)` 等价于对弧度数 `v=B·t+C` 取 `Math.sin(v)`（JS 侧别乘 rad2deg，会差一档）。
+
+---
+
+## 框架接口补齐（2026-09，FZ S0–S2 反馈）—— 新增约定
+
+> 来历：FZ 重置项目在 sapdon 上做了一批「绕过框架」的手工活。凡是需要绕过的地方就是缺接口，这一轮把它们补成框架接口。
+> 完整坑清单：`doc/dev/known-pitfalls.md`。
+
+### A. 新增 API 一览（位置 / 签名）
+
+| 能力 | 位置 | 签名要点 |
+|---|---|---|
+| 手册标签 i18n | `src/core/ui/systems/sapdon/sapdonGuideBook.ts` | 构造第 4 参 `options.labels`，或链式 `setLabels(Partial<GuideBookLabels>)`；默认值 = 历史中文字面量 |
+| 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource） |
+| 方块容器 | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, container_type, …})` → `minecraft:inventory` |
+| 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked/loadChunked/clearChunked(target, key[, value])` + `CHUNK_SIZE` |
+| 组件注册（路线 B） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerBlockComponent(id, handlers)` / `registerItemComponent(id, handlers)`；诊断：`pendingComponentCount()` / `registeredComponents()` |
+
+### B. UI i18n：默认值必须保持历史字面量
+- `DEFAULT_GUIDE_BOOK_LABELS = { chapter: '章节', category: '类别' }` —— **改它会让所有既有项目产物变化**，不要动。
+- `setLabels` 是**增量合并**（`labels.x ?? this.labels.x`）：早先写成「未传的键回落默认值」时，链式第二次调用会把第一次的设置冲掉（实测踩到）。
+- 框架**不解析 lang 键**：字符串原样交给 `Text.setText`，JSON UI 自己解析；传键的项目必须在 `RP/texts/*.lang` 定义，否则显示裸键名。
+- **回归判据**：`examples/guidebook_demo` 重建后 `dev/guidebook_demo_RP/ui/book.json` 必须**逐字节不变**（587870 字节 / sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）。**删掉再重建**也要一致，才算真的走通了这条路径。
+
+### C. 自定义组件：两条路线的分工（都要保留）
+- **路线 B（推荐）**：运行期脚本里 `registerBlockComponent` / `registerItemComponent`。handler 是**普通闭包**，能 import 共享模块（S3 的机器基类必需）。框架内部保证 `system.beforeEvents.startup` 时机。
+- **路线 A（保持兼容）**：`BlockCustomComponentBuilder`（构建期声明）+ CLI 生成的 `scripts/custom_components/*.js`（`build()` / `generateRuntimeCode()` 签名**不许改**，`examples/block_demo` 在用）。handler 会被 `toString()` 序列化 → 只能自包含。
+- **时机红线**：只有上面两条。`world.beforeEvents.worldInitialize` 太晚，症状是 `not present in the Schema`。
+- 守卫：startup 之后注册 → 抛错；同 id 重复注册 → 抛错；事件名拼错 → 只 warn。
+
+### D. 持久化：绝不吞异常 + 空值靠 `=== undefined`
+- 超限（约 32KB）时 `setDynamicProperty` **抛错**；吞掉就是**静默丢存档**。框架 helper 不吞异常，分块损坏也抛。
+- 主 key `{"_chunks":N}` + `key#0..N-1`，与 `lr-framework` 的 `BaseEngine`、`digitCircuit` 的 `CIRCUIT_CHUNK=24000` 互通；数据块先写、主 key 后写（提交点）。
+- `loadChunked` → `undefined` = 没存过，`''` = 存过空串。**不要**用真值判断。
+
+### E. 构建行为（改动过的语义）
+1. **失败必须非 0 退出**：`runOnChild` 检查退出码并抛；`scriptBundler` 打包失败抛；CLI 顶层 catch → `exit(1)`。⚠️ `cp.fork` 会建 IPC 命名管道（受限环境 `EPERM`），而框架传输层走 HTTP，**从不用 IPC** —— 所以用 `spawn(process.execPath, [file], {stdio:'inherit'})`。
+2. **子目录名只允许大写 `_BP` / `_RP`**（`src/cli/init.js` 的 `getBuildDirBp/Rp` 之前是小写，Linux/macOS 会分叉目录）。
+3. **`blocks.json` 写在 RP**（`GRegistry.register('blocks','resource','')`）。历史误写在 BP；首次带清单构建会自动清理 BP 侧残留。
+4. **陈旧产物按清单清理**：`dev/.sapdon_generated_<proj>.json` 记录本次产物，下次只删「上次有、这次没有」的。**禁止**改成扫目录删（会误删用户 `res/` 拷进来的文件）。
+5. **注册索引合并**：`scripts/custom_components/index.js` 用标记块维护（`// >>> sapdon:custom-component-registry >>> … <<<`），标记块外内容一律保留；生成块用 `system as __sapdon_system` 避免重名 import。
+6. **Dev Server 端口**读 `SAPDON_DEV_SERVER_PORT`（默认 49037），服务端与客户端必须用同一个变量；端口被占直接 `exit 1`。多 agent 并行构建各设各的端口。
+
+### F. 验证套路（本环境受限，务必照做）
+- 构建必须拆 4 步直跑：`tsc` → `tsc-alias` → `node scripts/buildTask.cjs` → 拷 templates + 删 dist。**漏掉 `tsc-alias` 会让 `prod/cli/start.js` 残留无法解析的 `@sapdon/utils` 裸包名。**
+- **「rollup 9/9 成功」≠ prod 是新的**：改完要断言 `prod/` 内容（新导出在不在），别只看 `Failed: 0`。
+- **`处理数据:` 行数**是「产物真的生成了」的唯一判据。
+- 单测：`node --test` 会 fork（受限环境 EPERM）→ 直接 `node tests/persist.test.mjs`（先 `tsc` 生成 `dist/`）。
+- 运行期代码（`src/oc`）的单测要靠**纯逻辑 + 内存 target**，不要依赖 `@minecraft/server`（该包只发 `index.d.ts`、Node 里导入不了）。
