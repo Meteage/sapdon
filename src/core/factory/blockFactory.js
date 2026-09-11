@@ -16,6 +16,22 @@ import { GRegistry } from "../registry.js";
 //blocks.json — cumulative, registered once by reference
 const blocks_json = {"format_version": "1.20.20"}
 let blocksJsonRegistered = false
+/** 已经就「键不含命名空间」告警过的键（去重，避免每次注册都刷屏） */
+const warnedBlockJsonKeys = new Set()
+
+/**
+ * 护栏：`blocks.json` 的键必须是**带命名空间的完整标识符**（`ns:name`）。
+ * 键一旦退回「文件名安全名」（`ns_name`），Bedrock 认不出这个方块，整条条目静默失效。
+ */
+function assertBlocksJsonKey(key) {
+    if (key.includes(":")) return
+    if (warnedBlockJsonKeys.has(key)) return
+    warnedBlockJsonKeys.add(key)
+    console.warn(
+        `[sapdon] blocks.json 的键 "${key}" 不含命名空间 —— 它必须是方块的完整标识符（"ns:name"），` +
+        `否则 Bedrock 认不出该方块、该条贴图/音效条目会静默失效。`
+    )
+}
 
 /**
  * 注册方块到注册表中。
@@ -26,12 +42,20 @@ export const registerBlock = (block) => {
         throw new Error("无效的方块对象或缺少 identifier。");
     }
 
+    // ⚠️ 这个 `block_name` 只作**文件名安全名**（`:` 在 Windows 文件名里非法），
+    //    用于 `blocks/<name>.json` 的路径；**不能**兼任 blocks.json 的键（见下）。
     const block_name = block.identifier.replace(":", "_");
     GRegistry.register(block_name, "behavior", "blocks/", block);
     
     //blocks.json — accumulate textures
+    // ⚠️ 键用**完整标识符**（`ns:name`），不是文件名安全名：
+    //    - 基岩版权威源：https://wiki.bedrock.dev/blocks/block-sounds 的 RP/blocks.json 示例键即 `"wiki:chestnut_log"`
+    //    - 历史产物（预言机）：`git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json`
+    //      的键是 `"mob_chest:chest"` / `"sapdon:falling_block"`，正与 main.mjs 里的 identifier 一致
+    //    - `_` 形态的来历：05bd104 把这块逻辑挪进 blockFactory.js 时复用了 `block_name`，而当时
+    //      根目录还被误标成 "behavior"（文件落在 BP、被 Bedrock 完全忽略）→ 从没有项目依赖过 `_` 形态
     const textures_arr = block.textures;
-    blocks_json[block_name] = {
+    blocks_json[block.identifier] = {
         textures: {
             up: textures_arr[0],
             down: textures_arr[1],
@@ -41,6 +65,7 @@ export const registerBlock = (block) => {
             north: textures_arr[5]
         }
     }
+    assertBlocksJsonKey(block.identifier)
 
     // Register once by reference; mutations reflect at submit time
     // ⚠️ 根目录必须是 resource：`blocks.json` 是**资源包**文件（RP 根目录）。

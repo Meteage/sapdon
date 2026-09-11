@@ -1,6 +1,6 @@
 {
   "format_version": "1.20.20",
-  "mob_chest_chest": {
+  "mob_chest:chest": {
     "textures": {
       "up": "textures/blocks/entity/normal",
       "down": "textures/blocks/entity/normal",
@@ -10,7 +10,7 @@
       "north": "textures/blocks/entity/normal"
     }
   },
-  "sapdon_falling_block": {
+  "sapdon:falling_block": {
     "textures": {
       "up": "normal",
       "down": "normal",
