@@ -77,7 +77,8 @@
                                   "offset": [
                                     -36,
                                     18
-                                  ]
+                                  ],
+                                  "enable": false
                                 }
                               }
                             ]
@@ -96,7 +97,8 @@
                                   "offset": [
                                     -36,
                                     18
-                                  ]
+                                  ],
+                                  "enable": false
                                 }
                               }
                             ]
@@ -115,7 +117,8 @@
                                   "offset": [
                                     -36,
                                     18
-                                  ]
+                                  ],
+                                  "enable": false
                                 }
                               }
                             ]
@@ -134,7 +137,8 @@
                                   "offset": [
                                     0,
                                     -18
-                                  ]
+                                  ],
+                                  "enable": false
                                 }
                               }
                             ]
@@ -153,7 +157,8 @@
                                   "offset": [
                                     36,
                                     -36
-                                  ]
+                                  ],
+                                  "enable": false
                                 }
                               }
                             ]
