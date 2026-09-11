@@ -1,4 +1,59 @@
 /** @template T */
+
+/**
+ * 方块容器槽位的**官方约束**：`container.slot_count` 必须是 `[1, 54]` 的整数。
+ * 出处（Microsoft Learn · Block Components · minecraft:block_entity）：
+ * <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity>
+ * 原文："Sets the number of slots in the container. Value must be >= 1. Value must be <= 54."
+ *
+ * ⚠️ 这是**方块**路线（`minecraft:block_entity.container`）的限制；
+ *    **实体**路线（实体组件 `minecraft:inventory.inventory_size`）的文档**没有给上限**
+ *    （<https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/entitycomponents/minecraftcomponent_inventory>），
+ *    别把 54 套到实体容器上（`createTileBlock` 的 `inventory_size` 只校验正整数）。
+ */
+const BLOCK_CONTAINER_SLOT_COUNT_MIN = 1
+const BLOCK_CONTAINER_SLOT_COUNT_MAX = 54
+
+/**
+ * 归一化方块容器参数 → `{ slot_count }`（官方文档里的字段名）。
+ *
+ * 同时接受 `inventory_size` 作为别名：框架其它容器 API（实体组件、`createTileBlock`）用的都是
+ * `inventory_size`，用户几乎必然会写成那个名字；若两者同时给出且不一致，抛错而不是猜。
+ *
+ * @param {Object|number} container `{ slot_count }` / `{ inventory_size }`，或直接给槽位数
+ * @param {string} caller 调用方名字（用于报错信息）
+ * @returns {{slot_count: number}}
+ */
+function normalizeBlockContainer(container, caller) {
+  if (Number.isInteger(container)) {
+    container = { slot_count: container }
+  }
+  if (typeof container !== 'object' || container === null || Array.isArray(container)) {
+    throw new Error(`${caller}: container 必须是 { slot_count } 对象（或直接给整数槽位数）`)
+  }
+  const { slot_count, inventory_size } = container
+  if (slot_count !== undefined && inventory_size !== undefined && slot_count !== inventory_size) {
+    throw new Error(`${caller}: container.slot_count 与 container.inventory_size 同时给出且不一致（${slot_count} ≠ ${inventory_size}）`)
+  }
+  const slots = slot_count ?? inventory_size
+  if (!Number.isInteger(slots) || slots < BLOCK_CONTAINER_SLOT_COUNT_MIN || slots > BLOCK_CONTAINER_SLOT_COUNT_MAX) {
+    throw new Error(
+      `${caller}: container 槽位数必须是 ${BLOCK_CONTAINER_SLOT_COUNT_MIN}..${BLOCK_CONTAINER_SLOT_COUNT_MAX} 之间的整数` +
+      `（Microsoft Learn: "Value must be >= 1. Value must be <= 54."）。` +
+      `槽位数超过 54 的容器走**实体**路线，例如 BlockAPI.createTileBlock(id, category, textures, { inventory_size: N })`
+    )
+  }
+  return { slot_count: slots }
+}
+
+/** 已打印过的 warn（按消息去重）—— 避免 N 个容器刷 N 条同样的提示 */
+const warnedMessages = new Set()
+function warnOnce(message) {
+  if (warnedMessages.has(message)) return
+  warnedMessages.add(message)
+  console.warn(message)
+}
+
 export class BlockComponent {
   /**
    * @param {string} texture - 纹理短名
@@ -672,35 +727,102 @@ export class BlockComponent {
 
   /**
    * 设置方块实体（Block Entity，实验性功能，需开启 Upcoming Creator Features）。
-   * @param {Boolean} [dynamic_properties=false] - 是否启用动态属性存储。
+   *
+   * 两种调用方式（都支持，互不干扰）：
+   * ```js
+   * BlockComponent.setBlockEntity()                    // → { dynamic_properties: false }（历史产物，逐字节不变）
+   * BlockComponent.setBlockEntity(true)                // → { dynamic_properties: true }（历史产物，逐字节不变）
+   * BlockComponent.setBlockEntity(true, { container: { slot_count: 27 } })
+   * BlockComponent.setBlockEntity({ container: 54 })   // 只给容器时也可以省掉第一个参数
+   * ```
+   *
+   * ⚠️ **`container` 是「方块容器」的规范写法**（官方文档
+   * <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity>
+   * ：`container.slot_count`，`>= 1` 且 `<= 54`，超限**抛错**），
+   * 但**当前引擎版本仍会拒绝该成员**（实测：`-> minecraft:block_entity -> container: … is not present in the Schema`，
+   * format_version 1.26.30 / 1.26.40 报同样的错）。**要现在就能用的容器，请走实体路线**：
+   * `BlockAPI.createTileBlock(identifier, category, textures_arr, { inventory_size })`
+   * （方块带承载实体、实体挂 `minecraft:inventory`，见 `examples/mob_chest`）。
+   *
+   * ⚠️ `combineComponents` 是「**后者覆盖前者**」：要同时给 `dynamic_properties` 与 `container`，
+   *    请像上面那样**一次调用写完**；把两个 `setBlockEntity(...)` 合并会让先出现的那个被整份丢掉
+   *    （框架不在 `combineComponents` 里做隐式深合并 —— 那会把"覆盖"这条既有语义改掉）。
+   *
+   * @param {Boolean|Object} [dynamic_properties=false] 是否启用动态属性存储；也可以直接传 `options` 对象
+   *   （此时读 `options.dynamic_properties`，缺省 false）。
+   * @param {Object} [options] 可选参数。
+   * @param {Object|number} [options.container] 方块容器：`{ slot_count }`（`inventory_size` 亦可作别名），
+   *   或直接给槽位数。必须是 `[1, 54]` 的整数，超限抛错。
    * @returns {Map<string, any>} - 新的组件集合。
    */
-  static setBlockEntity(dynamic_properties = false) {
-    return new Map().set("minecraft:block_entity", {
-      dynamic_properties
-    });
+  static setBlockEntity(dynamic_properties = false, options = {}) {
+    let dynamicProperties = dynamic_properties
+    let opts = options
+
+    // 只传一个对象时（`setBlockEntity({ container: … })`）把它当成 options
+    if (dynamic_properties !== null && typeof dynamic_properties === 'object') {
+      if (Array.isArray(dynamic_properties)) {
+        throw new Error('setBlockEntity: 第一个参数必须是布尔值或 options 对象')
+      }
+      opts = dynamic_properties
+      dynamicProperties = opts.dynamic_properties ?? false
+    }
+    if (typeof dynamicProperties !== 'boolean') {
+      throw new Error('setBlockEntity: dynamic_properties 必须是布尔类型')
+    }
+    if (typeof opts !== 'object' || opts === null || Array.isArray(opts)) {
+      throw new Error('setBlockEntity: options 必须是对象')
+    }
+
+    // ⚠️ 无 container 时必须产出一模一样的 { dynamic_properties }（键序也不要变）
+    const obj = { dynamic_properties: dynamicProperties }
+    if (opts.container !== undefined) {
+      obj.container = normalizeBlockContainer(opts.container, 'setBlockEntity')
+    }
+
+    return new Map().set("minecraft:block_entity", obj);
   }
 
   /**
-   * 设置方块容器（`minecraft:inventory`）—— 可右键打开、可存取的方块背包。
+   * 设置方块容器 —— ⚠️ **已废弃（deprecated），且当前引擎版本拒绝该组件**。
    *
-   * ⚠️ **前置**：容器必须同时具备 `minecraft:block_entity`，否则方块实体不创建、容器打不开。
-   *    请**先**调用 `BlockComponent.setBlockEntity()` 再合并本组件；若只写了 `setInventory`
-   *    而没有 `setBlockEntity`，构建时框架会打印 warn 提醒（见 `blockFactory.registerBlock`）。
+   * ## 为什么废弃
+   * 本方法产出的是**方块** `components` 里的 `minecraft:inventory`。但 `minecraft:inventory`
+   * 是**实体**组件（官方文档在 Entity Components 下：
+   * <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/entitycomponents/minecraftcomponent_inventory>），
+   * **不是**方块组件（Block Components 列表里没有它）。于是真机引擎直接拒绝：
+   * ```
+   * -> components -> minecraft:inventory: this component was found in the input,
+   *    but is not present in the Schema
+   * ```
+   * ⇒ 把实体组件写在方块里，**在任何版本上都不成立**（不是"版本太旧"的问题）。
+   * 也就是说：**框架此前产不出任何可用的方块容器**，这条 API 是误导性的。
    *
-   * ⚠️ 本方法**故意不自动带上 `minecraft:block_entity`**：`combineComponents` 是「后者覆盖前者」，
-   *    若这里自动塞入默认的 `{dynamic_properties:false}`，会把用户已声明的
-   *    `setBlockEntity(true)` **静默覆盖成 false**，反而制造更难查的问题。
+   * ## 现在该怎么做
+   * - **要能用的容器 → 实体路线**（当前引擎版本下**唯一可用**）：
+   *   `BlockAPI.createTileBlock(identifier, category, textures_arr, { inventory_size, container_type, can_be_siphoned_from })`
+   *   —— 方块带承载实体、实体的行为文件里挂 `minecraft:inventory`（`examples/mob_chest` 的形状）。
+   *   已在用的 `TileBlock` 也可以直接改 `tile.entity.behavior.addComponent(EntityComponent.setInventoryProperties({...}))`。
+   * - **要规范的方块容器 JSON → `BlockComponent.setBlockEntity(true, { container: { slot_count } })`**
+   *   （`slot_count` 官方文档限制 `[1,54]`）。它会生成正确的 `minecraft:block_entity.container`，
+   *   但**当前引擎版本同样会拒**（`not present in the Schema`）—— 等引擎支持后即可直接用。
    *
-   * ⚠️ `inventory_size` 的上限由 Bedrock 约束，本环境无法实测，故**不硬编码猜测值**，
-   *    只校验正整数；实际上限需真机确认（见 `doc/dev/` 已知坑清单）。
+   * ## 为什么保留签名（而不是删掉 / 改成别的产物）
+   * 1. 已有项目调用它时，产物里的键、字段**一个字节都不变** —— 不会出现"升个框架版本构建就报错"，
+   *    也不会因为改成 `block_entity.container` 而与用户自己写的 `setBlockEntity(...)` 抢同一个 JSON 键
+   *    （`combineComponents` 是后者覆盖前者，改键会让容器信息在某些写法下**被静默吞掉**）。
+   * 2. 真正的错误（把实体组件当方块组件用）由**构建期 warn** 明确指出，并给出两条新路线。
+   * 3. `inventory_size` 超过 54 的写法在这里仍可表达（实体组件文档**没有**上限）；
+   *    若按方块路线校验 `[1,54]`，FZ 那类 56 槽的既有项目会从"静默无效"直接变成"构建失败"。
    *
+   * @deprecated 改用实体路线（`createTileBlock` 的 `inventory_size`），或
+   *   `BlockComponent.setBlockEntity(true, { container: { slot_count } })` 产出规范写法。
    * @param {Object} options - 容器参数。
-   * @param {number} options.inventory_size - 槽位数（正整数，必填；上限需真机确认）。
+   * @param {number} options.inventory_size - 槽位数（正整数，必填；实体组件文档未给上限）。
    * @param {boolean} [options.private] - 是否仅所有者可访问。
-   * @param {string} [options.container_type] - 容器音效/行为类型。**必须是 Bedrock 认可的值**，
-   *   文档中出现过的有 "container" / "chest" / "furnace" / "hopper" / "dispenser" /
-   *   "dropper" / "minecart_chest" / "shulker_box" 等（此处不做白名单，避免写死过窄）。
+   * @param {string} [options.container_type] - 容器音效/行为类型。官方文档列出的取值：
+   *   `horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`
+   *   （此处不做白名单，避免把未文档化但可用的值写死掉）。
    * @param {boolean} [options.can_be_siphoned_from] - 能否用漏斗抽取。
    * @param {number} [options.additional_slots_per_strength] - 每级强度的额外槽位（非负整数）。
    * @param {boolean} [options.restrict_to_owner] - 是否限制为所有者可打开。
@@ -738,6 +860,15 @@ export class BlockComponent {
         (!Number.isInteger(additional_slots_per_strength) || additional_slots_per_strength < 0)) {
       throw new Error('setInventory: additional_slots_per_strength 必须是非负整数');
     }
+
+    warnOnce(
+      '[sapdon] BlockComponent.setInventory() 已废弃：它产出的 minecraft:inventory 是**实体**组件，' +
+      '写在方块 components 里会被引擎拒绝（-> components -> minecraft:inventory: this component was found ' +
+      'in the input, but is not present in the Schema）。当前可用的容器请走实体路线：' +
+      'BlockAPI.createTileBlock(id, category, textures, { inventory_size, container_type, can_be_siphoned_from })；' +
+      '要规范写法可用 BlockComponent.setBlockEntity(true, { container: { slot_count } })（当前引擎版本同样会拒，' +
+      '但 JSON 与官方文档一致）。详见 doc/user/api/block.md 的 setInventory 小节。'
+    )
 
     // 只写入被显式赋值的字段 —— 未赋值不泄漏进产物 JSON
     const obj = { inventory_size };

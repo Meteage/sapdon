@@ -172,6 +172,11 @@ export const BlockAPI = {
     /**
      * 创建一个「带实体的方块」（方块 + 承载它的实体，用于可动模型 / 容器类方块）。
      *
+     * ★ **这是当前引擎版本下唯一可用的「方块容器」路线**：`minecraft:inventory` 是**实体**组件，
+     *   容器挂在 `${identifier}_entity` 的行为文件上；方块侧的 `minecraft:block_entity.container`
+     *   在当前引擎版本会被拒（`-> minecraft:block_entity -> container: … is not present in the Schema`）。
+     *   想直接要槽位的项目，用 `options.inventory_size`（不必再自己造裸 Map 覆盖实体组件）。
+     *
      * 注册三份数据：
      *   1. 方块本体 → `behavior` + `blocks/`（含 `blocks.json` 贴图累积）
      *   2. 方块实体行为 → `behavior` + `entities/`
@@ -183,6 +188,14 @@ export const BlockAPI = {
      * @param {string} category - 方块的分类（如 "construction"）。
      * @param {Array} textures_arr - 纹理数组，顺序为 [上, 下, 东, 西, 南, 北]。
      * @param {Object} options - 可选参数（透传给内部 BasicBlock）。
+     * @param {number} [options.inventory_size=27] - **实体容器**槽位数（正整数）。
+     *   ⚠️ 官方文档只写 "Number of slots the container has"、**未给上限**
+     *   （实体组件 `minecraft:inventory`），**不要**照搬方块路线 `minecraft:block_entity.container.slot_count`
+     *   的 `[1,54]`；本参数只校验正整数。
+     * @param {string} [options.container_type="minecart_chest"] - 容器音效/行为类型。官方文档列出的取值：
+     *   `horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`。
+     * @param {boolean} [options.can_be_siphoned_from=true] - 能否用漏斗抽取。
+     *   （不传上面三个键 = 产物与历史版本**逐字节一致**；每次构造都按实例拷贝，改一个方块不会污染别的方块。）
      * @returns {TileBlock} 创建的带实体方块对象（`.block` / `.entity` 可直接继续配置）。
      */
     createTileBlock: function (identifier, category, textures_arr, options = {}) {
