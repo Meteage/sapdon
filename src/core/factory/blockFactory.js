@@ -88,6 +88,8 @@ export const BlockAPI = {
      * @param {Object} options - 可选参数。
      * @param {string} options.group - 分组，默认为 "construction"。
      * @param {boolean} options.hide_in_command - 是否在命令中隐藏，默认为 false。
+     * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。
+     *   ⚠️ 以前 `.d.ts` 里漏声明 ⇒ 传它会踩 TS2353（`BasicBlock` 确实读它，`basicBlock.js:33`）。
      * @returns {BasicBlock} 创建的基础方块对象。
      */
     createBasicBlock: function (identifier, category, textures_arr, options = {}) {
@@ -115,6 +117,7 @@ export const BlockAPI = {
      * @param {boolean} options.ambient_occlusion - 是否应用环境光遮蔽，默认为 false。
      * @param {boolean} options.face_dimming - 是否根据面的方向进行亮度调整，默认为 false。
      * @param {string} options.render_method - 渲染方法，默认为 "alpha_test"。
+     * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。见 `createBasicBlock`。
      * @returns {Block} 创建的方块对象。
      */
     createBlock: function (identifier, category, variantDatas, options = {}) {
@@ -144,6 +147,7 @@ export const BlockAPI = {
      * @param {boolean} options.hide_in_command - 是否在命令中隐藏，默认为 false。
      * @param {string} options.rotationType - 旋转类型，默认为 "cardinal"。
      * @param {number} options.yRotationOffset - 初始旋转偏移量，默认为 0。
+     * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。见 `createBasicBlock`。
      * @returns {RotatableBlock} 创建的可旋转方块对象。
      */
     createRotatableBlock: function (identifier, category, textures_arr, options = {}) {
@@ -188,6 +192,13 @@ export const BlockAPI = {
      * @param {string} category - 方块的分类（如 "construction"）。
      * @param {Array} textures_arr - 纹理数组，顺序为 [上, 下, 东, 西, 南, 北]。
      * @param {Object} options - 可选参数（透传给内部 BasicBlock）。
+     * @param {string} [options.group] - 创造菜单分组（透传给 `BasicBlock` → `menu_category.group`）。
+     *   ⚠️ **`.d.ts` 里以前漏声明了它**（`createBasicBlock` 声明了、本工厂没有）⇒ 项目传
+     *   `{ group }` 会踩 TS2353（对象字面量多出未知属性），而运行期 `BasicBlock` 确实会读
+     *   `options.group`（`src/core/block/basicBlock.js:39`）—— 类型与运行期不一致。已补齐。
+     *   不传 = `undefined`（产物里 `menu_category` 只有 `category` / `is_hidden_in_commands`）。
+     * @param {boolean} [options.hide_in_command] - 是否在命令中隐藏（默认 false）。同上，已补齐声明。
+     * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。
      * @param {number} [options.inventory_size=27] - **实体容器**槽位数（正整数）。
      *   ⚠️ 官方文档只写 "Number of slots the container has"、**未给上限**
      *   （实体组件 `minecraft:inventory`），**不要**照搬方块路线 `minecraft:block_entity.container.slot_count`
@@ -216,17 +227,27 @@ export const BlockAPI = {
         return ore_block;
     },
     /**
-     * 创建一个作物方块。
+     * 创建一个「头颅/朝向」方块（`HeadBlock`：4 向旋转 + 32 档 `sapdon:head_rotation` 状态）。
+     *
+     * ⚠️ 下面这几条 `options` 的 JSDoc 曾经是从 `createCropBlock` 复制过来的**错误文档**
+     *    （`ambient_occlusion` / `face_dimming` / `render_method` 根本不是 `HeadBlock` 读的键）
+     *    且**漏了真正会被读的 `tick_interval` / `custom_components`**
+     *    （`src/core/block/headBlock.js:14,19`）。历史 tag 保留（删掉会让传了它们的项目从
+     *    "被忽略" 变成 TS2353 编译错误），但标注为**对本工厂无效**；真正生效的三个键补在下面。
+     *
      * @param {string} identifier - 方块的唯一标识符。
      * @param {string} category - 方块的分类（如 "construction"）。
-     * @param {Array} variantDatas - 方块的变体数据，包含每个变体的状态标签和纹理。
+     * @param {string} texture - 纹理名（单张，会铺满 6 面）。
      * @param {Object} options - 可选参数。
-     * @param {string} options.group - 分组，默认为 "construction"。
+     * @param {string} options.group - 分组，默认为 "construction"。（**历史 tag**，`HeadBlock` 会经 `BasicBlock` 读它）
      * @param {boolean} options.hide_in_command - 是否在命令中隐藏，默认为 false。
-     * @param {boolean} options.ambient_occlusion - 是否应用环境光遮蔽，默认为 false。
-     * @param {boolean} options.face_dimming - 是否根据面的方向进行亮度调整，默认为 false。
-     * @param {string} options.render_method - 渲染方法，默认为 "alpha_test"。
-     * @returns {CropBlock} 创建的方块对象。
+     * @param {boolean} options.ambient_occlusion - ⚠️ **本工厂不读**（历史误抄自 `createCropBlock`）。
+     * @param {boolean} options.face_dimming - ⚠️ **本工厂不读**（历史误抄）。
+     * @param {string} options.render_method - ⚠️ **本工厂不读**（历史误抄）。
+     * @param {Array} [options.tick_interval=[20,20]] - `minecraft:tick` 的 `interval_range`（`headBlock.js:14`）。
+     * @param {Array} [options.custom_components=[]] - 追加的自定义组件 id（框架已固定带上 `sapdon:head_rotation`，`headBlock.js:16-20`）。
+     * @param {string} [options.format_version] - 方块 JSON 的 `format_version`（默认 `1.26.30`）。见 `createBasicBlock`。
+     * @returns {HeadBlock} 创建的头颅方块对象。
      */
     createHeadBlock: function (identifier, category, texture, options = {}) {
         if (!identifier || !category || !texture) {
