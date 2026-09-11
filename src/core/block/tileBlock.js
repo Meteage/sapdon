@@ -91,7 +91,14 @@ export class TileBlock {
     constructor(identifier, category, textures_arr, options = {}){
 
         this.block =  new BasicBlock(identifier, category, textures_arr, options);
-        this.entity = new Entity(`${identifier}_entity`,textures_arr[0], TileBehData,{});
+        // ⚠️ Entity 的签名是 (identifier, texture, options, behData, resData) ——
+        //    `options` 只被读 is_spawnable / is_summonable / runtime_identifier；
+        //    而 TileBehData 装的是 components / component_groups / events，属于 **behData（第 4 参）**。
+        //    历史版本 Entity 的签名是 (identifier, texture, behData, resData, options)，那时写在第 3 参是对的；
+        //    签名改成 options 在前之后这里没跟着改 → TileBehData 被整份丢弃（实体产物只剩 block_sensor、
+        //    component_groups/events 全空，容器方块实体没有 inventory，游戏里打不开且是静默的）。
+        //    判据见 AGENTS.md：与 examples/mob_chest 的历史产物（含 minecraft:inventory 27）逐字段对齐。
+        this.entity = new Entity(`${identifier}_entity`, textures_arr[0], {}, TileBehData);
 
         // 注册方块状态 0:方块 1:实体
         this.block.registerState("sapdon:block_or_entity",[0,1]);
@@ -110,7 +117,10 @@ export class TileBlock {
         );
 
         //设置生物
-        this.entity.entity.addComponent(new Map().set("minecraft:block_sensor",{
+        // ⚠️ 是 `this.entity.behavior`：064a292 把 `Entity.entity` 改名为 `Entity.behavior`
+        //    （同时 `client_entity` → `resource`），本文件只改了 `client_entity` 那几处、
+        //    漏了这一行 —— 于是 TileBlock 一构造就 `Cannot read properties of undefined (reading 'addComponent')`。
+        this.entity.behavior.addComponent(new Map().set("minecraft:block_sensor",{
             "sensor_radius": 1,
             "on_break": [
                 {

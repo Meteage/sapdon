@@ -8,7 +8,9 @@ import { HeadBlock } from "../block/headBlock.js";
 import { OreBlock } from "../block/oreBlock.js";
 import { RotatableBlock } from "../block/rotatableBlock.js";
 import { StairBlock } from "../block/stairBlock.js";
+import { TileBlock } from "../block/tileBlock.js";
 import { TrapdoorBlock } from "../block/trapdoorBlock.js";
+import { registerEntity } from "./entityFactory.js";
 import { GRegistry } from "../registry.js";
 
 //blocks.json — cumulative, registered once by reference
@@ -41,8 +43,12 @@ export const registerBlock = (block) => {
     }
 
     // Register once by reference; mutations reflect at submit time
+    // ⚠️ 根目录必须是 resource：`blocks.json` 是**资源包**文件（RP 根目录）。
+    //    历史证据：commit e1199cc 的 `src/cli/load.js:60` 写的正是 `${projectName}_RP/blocks.json`；
+    //    05bd104 把这段逻辑挪进 blockFactory.js 时误标成 "behavior"，文件从此落在 BP 里、
+    //    被 Bedrock 完全忽略（BP 没有 blocks.json 这个概念）。此处是**回归修复**。
     if (!blocksJsonRegistered) {
-        GRegistry.register("blocks","behavior","",blocks_json);
+        GRegistry.register("blocks","resource","",blocks_json);
         blocksJsonRegistered = true
     }
 };
@@ -146,6 +152,32 @@ export const BlockAPI = {
         const block = new GeometryBlock(identifier, category, geometry, material_instances, options);
         registerBlock(block); // 调用注册方法
         return block;
+    },
+    /**
+     * 创建一个「带实体的方块」（方块 + 承载它的实体，用于可动模型 / 容器类方块）。
+     *
+     * 注册三份数据：
+     *   1. 方块本体 → `behavior` + `blocks/`（含 `blocks.json` 贴图累积）
+     *   2. 方块实体行为 → `behavior` + `entities/`
+     *   3. 方块实体资源 → `resource` + `entity/`
+     * ⚠️ `TileBlock` 本身只是**包装器**（`{ block, entity }`，没有 identifier/textures），
+     *    所以不能直接把它交给 `registerBlock` —— 必须注册它内部的 `block` 与 `entity`。
+     *
+     * @param {string} identifier - 方块的唯一标识符（实体会自动用 `${identifier}_entity`）。
+     * @param {string} category - 方块的分类（如 "construction"）。
+     * @param {Array} textures_arr - 纹理数组，顺序为 [上, 下, 东, 西, 南, 北]。
+     * @param {Object} options - 可选参数（透传给内部 BasicBlock）。
+     * @returns {TileBlock} 创建的带实体方块对象（`.block` / `.entity` 可直接继续配置）。
+     */
+    createTileBlock: function (identifier, category, textures_arr, options = {}) {
+        if (!identifier || !category || !textures_arr) {
+            throw new Error("必须提供 identifier、category 和 textures_arr。");
+        }
+
+        const tile = new TileBlock(identifier, category, textures_arr, options);
+        registerBlock(tile.block);                                    // 方块本体
+        registerEntity(tile.entity.behavior, tile.entity.resource);    // 方块实体（behavior + resource）
+        return tile;
     },
     createOreBlock(identifier, category, textures_arr, options = {}){
         const ore_block = new OreBlock(identifier, category, textures_arr, options)
