@@ -426,7 +426,7 @@ rollup (打包)
 | 生物群系 | `behavior` | `biomes/` | `dev/<proj>_BP/biomes/<name>.json` |
 | 特征 | `behavior` | `features/` | `dev/<proj>_BP/features/<name>.json` |
 | 特征规则 | `behavior` | `feature_rules/` | `dev/<proj>_BP/feature_rules/<name>.json` |
-| **方块贴图/音效表** `blocks.json` | `resource` | (空) | **`dev/<proj>_RP/blocks.json`** |
+| **方块音效表** `blocks.json` | `resource` | (空) | **`dev/<proj>_RP/blocks.json`**（★ 2026-09 起只含 `format_version`，不写方块条目） |
 | 实体 (资源) | `resource` | `entity/` | `dev/<proj>_RP/entity/<name>.json` |
 | 附着物 | `resource` | `attachables/` | `dev/<proj>_RP/attachables/<name>.json` |
 | 渲染控制器 | `resource` | `render_controllers/` | `dev/<proj>_RP/render_controllers/<name>.json` |
@@ -439,8 +439,15 @@ rollup (打包)
 - 路径里的 `<proj>` 是**项目名**（目录 basename），`<name>` 是**注册项的数据名**，两者是两个不同的值。
 - `_BP` / `_RP` 必须**大写**（`src/cli/init.js:105-114`）。历史版本曾用小写 `_bp`/`_rp`，Windows 大小写不敏感掩盖了它，Linux/macOS 下会分叉成两个目录（构建写 A、打包读 B → 空包）。
 - **`blocks.json` 属资源包（RP）**，不是行为包。依据：[Bedrock Wiki · Pack Folder Structure](https://wiki.bedrock.dev/documentation/pack-structure) 把 `blocks.json` 列在 **RP** 根目录（BP 侧无此文件）；[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的示例标题即 `RP/blocks.json`。
-  它的**键必须是完整标识符** `ns:name`（如 `"wiki:chestnut_log"`），**不是** `ns_name`——`ns_name` 是「文件名安全名」（`:` 在 Windows 文件名里非法）被误复用成 JSON 键的产物；键不含 `:` 时框架会 `console.warn`（`blockFactory.js:26-34`）。
-  ⚠️ 游戏内音效/贴图是否正常**未验证**（本项目无法启动 Minecraft），只验证到位置与键格式符合 wiki 规范（`blockFactory.js:71-77`）。
+- ★ **2026-09 起 `blocks.json` 里不再写任何方块条目**（只留 `{"format_version": "1.20.20"}`）：曾经每个方块写一条
+  `{ "ns:name": { "textures": { up/down/... } } }`，引擎随后对**每个自定义方块**报
+  `trying to override the Geometry component with blocks.json settings for a custom block`。
+  官方定位（Microsoft Learn · blocks.json File Reference）：`minecraft:geometry` / `minecraft:material_instances`
+  **会覆盖** blocks.json，官方推荐用组件写视觉，`blocks.json` 只当 **sound** 配置系统
+  <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blocksjsonfilestructure>。
+  自定义方块的贴图由 `minecraft:material_instances` + `terrain_texture.json` 提供（不经 blocks.json）。
+  （键格式的历史：曾要求 `ns:name`，对应护栏 `assertBlocksJsonKey()` 已随之删除。）
+  ⚠️ 只含 `format_version` 的文件引擎会不会抱怨、音效是否正常，**未验证**（本项目无法启动 Minecraft）。
 
 最终同步到 Minecraft 目录（`versionType` 决定路径）：
 
@@ -448,3 +455,10 @@ rollup (打包)
 - **beta**: `%USERPROFILE%\AppData\Local\Packages\Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe\LocalState\games\com.mojang\development_<behavior|resource>_packs\<name>_<BP|RP>\`
 
 可通过环境变量 `MC_PATH` 或 `MC_BETA_PATH` 覆盖。
+
+**★ 同步是「按清单 prune」而不是只增不减**（2026-09 修，见 `doc/dev/cli.md`）：
+`syncFiles.js` 的 `syncDevFilesServer()` 会把「上次部署过、这次 `dev/` 里已经没有」的文件
+从上面这两个开发包目录里删掉（清单 `dev/.sapdon_synced_<proj>.json`）；
+`syncResourceFiles()` 同理清理 `dev/<proj>_RP/` 里「上次从 `res/` 拷过、这次 `res/` 没有」的文件
+（清单 `dev/.sapdon_res_<proj>.json`）。**没有清单时一个文件都不删**，且**从不扫目录删未知文件**
+（玩家自己放进开发包的东西必须留住）。单测：`node tests/sync-manifest.test.mjs`。

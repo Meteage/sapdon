@@ -22,18 +22,42 @@
 - **改名/删条目**（清单管得到的）自动清理；**重命名项目**（清单记的是**当前**项目名）管不到 → 需**手工删** `dev/<旧名>_*`。实例：`examples/guidebook_demo/dev/ui_gated_demo_RP/`（旧项目名残留，已手工删除）。
 - **没有清单的项目**（例如一直在构建失败的示例）里的陈旧文件也清理不到 —— 清单是"上次构建写过什么"，从没有过成功构建就没有清单。
 - **历史遗留**：框架现在只往 RP 写 `blocks.json`，但早期误写在 BP 的那些文件不在任何清单里，故对 `${proj}_BP/blocks.json` 这个**确切路径**做无条件点名清理（不做目录扫描）。
+- **另外两份清单**（2026-09 新增，同样"只删自己上次记过的东西"）：`dev/.sapdon_synced_<项目名>.json`
+  管**游戏开发包目录**里的陈旧副本（`syncFiles.js` 的 `syncDevFilesServer()`，HMR 也走它），
+  `dev/.sapdon_res_<项目名>.json` 管 `dev/<项目名>_RP` 里从 `res/` 拷进来的陈旧资源（`syncResourceFiles()`）。
+  症状、取舍与负面约束见 `doc/dev/cli.md` 的「按清单 prune」小节；单测 `node tests/sync-manifest.test.mjs`。
 
-### 1.3 `blocks.json` 属**资源包**，且**键必须是完整标识符**
+### 1.3 `blocks.json` 属**资源包**；并且**自 2026-09 起框架不再往里面写任何方块条目**
 - **位置**：`src/core/factory/blockFactory.js` → `GRegistry.register("blocks","resource","",…)` → `dev/<proj>_RP/blocks.json`。
 - **规范**：`blocks.json` 是 RP 根目录文件；写在 BP 里会被 Bedrock 完全忽略。
 - **历史**：`e1199cc` 的 `src/cli/load.js` 写的就是 `${proj}_RP/blocks.json`；`05bd104` 挪进 `blockFactory.js` 时误标 `"behavior"`，从此落在 BP。**已回归修复**。
-- **键 = 完整标识符 `ns:name`**（不是文件名安全名 `ns_name`）：
+- **键格式的历史（保留记录，但已无实际用途）**：`3715e74` 曾把键从"文件名安全名 `ns_name`"改成**完整标识符 `ns:name`**：
   - 权威源：<https://wiki.bedrock.dev/blocks/block-sounds> 的 `RP/blocks.json` 示例键为 `"wiki:chestnut_log"`。
   - 历史产物（预言机）：`git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json` → `"mob_chest:chest"` / `"sapdon:falling_block"`。
   - `_` 形态的来历：复用 `block_name`，而当时根目录还写进 BP（不生效）→ **从没有项目依赖过 `_` 形态**。
   - ⚠️ `blocks/<name>.json` 的**文件名**仍必须是 `_` 形态（`:` 在 Windows 文件名里非法）—— 两者不可混用。
-- **护栏**：注册时若键不含 `:` 会 `console.warn`（去重，每个键一次）。
-- **⚠️ 待真机确认**：移到 RP 后音效/贴图是否仍正常（现代 Bedrock 的方块贴图走 `material_instances` + `terrain_texture.json`，`blocks.json` 主要影响音效与旧机制）。
+- ★ **2026-09 起：只写 `{"format_version": "1.20.20"}`，不写任何方块条目**（`blockFactory.js:34-59` 有完整依据）：
+  - **症状**：键修成完整标识符后引擎**真的匹配上了**这些方块，于是**每个自定义方块**报一条
+    ```
+    [Blocks][warning]-<ns>:<block>: trying to override the Geometry component with blocks.json settings
+      for a custom block. This isn't supported.
+      Please remove any legacy texture definition or block shape specification for this block.
+    ```
+    真机计数：探针轮 **3** 条 → FZ 全量 **77** 条（= 该项目方块总数）。
+  - **依据**（Microsoft Learn · blocks.json File Reference，原文）：
+    "components in Behavior Packs, specifying `minecraft:geometry` and `minecraft:material_instances`, will override
+    configurations here. Components are more powerful, and they're the recommended way to specify visual properties for
+    blocks, leaving **blocks.json** as just a sound configuration system."
+    <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blocksjsonfilestructure>
+    ⇒ 自定义方块的 `textures` 是**被 `material_instances` 全面覆盖**的 legacy 机制，写了只会招警告。
+  - **贴图到底谁提供**：`minecraft:material_instances`（BP 方块 JSON，6 面或 `*`）+ `terrain_texture.json`
+    （`src/core/texture.js` / `cli/tools/textureSet.js` 扫描 `RP/textures/blocks/**.png` + 用户注册项生成）
+    —— **不经过** blocks.json。
+  - **护栏 `assertBlocksJsonKey` 已删**（不留永远不会触发的死护栏）：不再写条目后，"键必须是 `ns:name`"没有触发场景。
+  - **⚠️ 未验证（需真机）**：只含 `format_version` 的 `blocks.json` 引擎会不会抱怨；以及矿挖/放置音效是否正常
+    （音效本来就没配过 —— 框架从未写过 `sound` 字段，故预期音效行为与改动前一致）。
+    真机验证方式：重进世界看那 77 条 `trying to override the Geometry component` 是否消失 + 挖掘/放置音效正常。
+
 
 ### 1.4 目录名大小写：只允许 `_BP` / `_RP`
 - Windows 大小写不敏感才掩盖了这个问题；Linux/macOS 下 `_bp` 与 `_BP` 会分叉成两个目录（构建写 A、打包读 B → 空包）。
@@ -62,22 +86,26 @@
   'minecraft:fz:itemGroup.name.reactor_items', but is now being set to 'fz:itemGroup.name.reactor_items'
 ```
 
-**根因**：物品的 `format_version` 是框架默认值 **`1.21.40`**（`src/core/item/item.ts:56` 的
+**根因**：物品的 `format_version` 曾是框架默认值 **`1.21.40`**（`src/core/item/item.ts` 的
 `formatVersion ?? "1.21.40"`）。该版本下引擎会把 `menu_category.group` 当"**隐含 `minecraft:` 前缀**"处理，
 于是与 `crafting_item_catalog.json` 里的显式组名不一致 → 每条物品报一次。**产物里根本没有 `minecraft:fz:`**
 （两侧都是裸 `fz:itemGroup.name.X`，与 [Bedrock Wiki · Item Catalog](https://wiki.bedrock.dev/items/item-catalog)
 的 `wiki:itemGroup.name.ore` 同形）—— 这是引擎行为（对应 Mojira MCPE-224150），不是产物写错。
 
-**修法**：把物品的 `format_version` 提到 **`1.21.90`**（框架**支持按物品覆盖**：`item.ts:46-47` 同时解构
-`format_version` 与 `formatVersion` 两个键名）。`examples/digitCircuit/main.mjs:101,113,124,133` 就是这么做的，
+**修法（★ 2026-09 已在框架侧根治）**：`src/core/item/item.ts` 的默认值提到 **`1.21.90`**
+（该行旁边有完整注释）。框架**仍支持按物品覆盖**：同时解构 `format_version` 与 `formatVersion`
+两个键名，后者优先；`examples/digitCircuit/main.mjs:101,113,124,133` 一直显式传 `1.21.90`，
 所以它的日志里**零**条该告警。
 
-**实测（2026-09-11）**：FZ 项目 157 个物品用默认值 → 每次加载 **156** 条；
+**实测（2026-09-11，真机）**：FZ 项目 157 个物品用默认值 → 每次加载 **156** 条；
 把**单个**物品改成 `1.21.90`（只改已部署副本）→ 同一次加载变成 **155** 条、且该物品不再出现；
-全量改完（`FZ_ITEM_FORMAT_VERSION` 常量）→ 待真机复测（预期 **0**）。
+全量改完（`FZ_ITEM_FORMAT_VERSION` 常量）→ 玩家重进世界后告警**清零**。
 
-**建议**：框架侧把 `item.ts:56` 的默认值提到 `1.21.90` 才是根治（**尚未改**，仅记录）。
-在此之前，**用自定义 item catalog 的项目都应显式传 `format_version: '1.21.90'`**。
+**产物侧影响**：改用默认值的项目，其 `dev/<proj>_BP/items/*.json` 的 `format_version` 会变成 `1.21.90`
+（**预期且期望**的变化）；显式传过版本的物品不受影响。
+`ItemCatalog` 自己的 `format_version`（`itemCatalog.ts:40`，默认 `1.26.30`）是 **catalog 文件**的格式版本，
+与物品无关，**不要**跟着改。
+
 
 ---
 
@@ -121,31 +149,65 @@
 
 ## 4. 方块容器
 
-### 4.1 容器需要 `minecraft:block_entity` 作前置
-- 只写 `BlockComponent.setInventory()` 而没有 `setBlockEntity()` → 方块实体不创建、游戏里**容器打不开**（静默失败）。
-- **框架只 warn 不代补**：`combineComponents` 是「后者覆盖前者」，自动塞 `{dynamic_properties:false}` 会把用户已声明的 `setBlockEntity(true)` 静默覆盖成 false。
-- 检查时机是 `registry.submit()`（`BasicBlock.validate()`）—— **不能**放在 `registerBlock`：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，那一刻组件还没挂上。
-- **⚠️ 待真机确认**：`inventory_size` 的**上限**由 Bedrock 约束，本环境无法实测，框架只校验正整数，**没有硬编码猜测值**。真机请确认 56 槽（FZ 机器所需）可用。
+> **一句话结论（2026-09 定型）**：`minecraft:inventory` 是**实体**组件，写在**方块** `components` 里
+> 在任何版本上都不成立；方块侧的规范写法 `minecraft:block_entity.container` 在当前引擎版本上**也被拒**。
+> ⇒ **当前唯一可用的方块容器走「方块 + 承载实体」**（`BlockAPI.createTileBlock(...)` 的 `inventory_size`）。
 
-### 4.2 `minecraft:inventory` 在 Bedrock Wiki 上**没有条目**（引用时别引错）
+### 4.1 三条路线与它们的真实状态
+
+| 路线 | 产物 | 引擎现状 | 框架 API |
+|---|---|---|---|
+| **实体（唯一可用）** | `<ns>:<id>_entity` 的行为文件里挂**实体**组件 `minecraft:inventory`（`inventory_size` / `container_type` / `can_be_siphoned_from`） | 可用 | ★ `BlockAPI.createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })`（新增，默认 27/`minecart_chest`/true）；已有 `TileBlock` 也可 `tile.entity.behavior.addComponent(EntityComponent.setInventoryProperties({...}))` |
+| 方块·规范 | 方块 `components` 的 `minecraft:block_entity: { container: { slot_count }, dynamic_properties }` | **被拒**：`-> minecraft:block_entity -> container: this component was found in the input, but is not present in the Schema`（format_version 1.26.30 / 1.26.40 报同样的错） | `BlockComponent.setBlockEntity(true, { container: { slot_count } })`（新增；`slot_count` 官方文档 `[1,54]`，**超限抛错**） |
+| 方块·历史 | 方块 `components` 的 `minecraft:inventory`（**实体组件放错上下文**） | **必然被拒**：`-> components -> minecraft:inventory: … not present in the Schema` | `BlockComponent.setInventory(...)` —— **已标 @deprecated**，产物**逐字节不变**（不制造"升框架就构建失败"），但每次调用打一条 warn 指向上面两条路 |
+
+**依据（官方文档，别再靠猜）**：
+- 方块侧 `minecraft:block_entity`（含 `container.slot_count`，原文 "Value must be >= 1. Value must be <= 54."）：
+  <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity>
+- 实体侧 `minecraft:inventory`（`inventory_size` 只写 "Number of slots the container has"，**未给上限**；
+  `container_type` 取值 `horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`）：
+  <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/entitycomponents/minecraftcomponent_inventory>
+
+**为什么 `setInventory` 选"标废弃 + 保持产物不变"，而不是改成产出 `block_entity.container`**：
+1. 改成 `block_entity.container` 后，若与用户自己的 `setBlockEntity(...)` 合并，会被 `combineComponents` 的
+   「后者覆盖前者」**静默吞掉容器**（同一个 JSON 键）；今天两者是不同键，这个坑不存在。
+2. 一旦按方块路线校验 `[1,54]`，`inventory_size: 56` 那类既有项目（FZ 机器需要 56 槽）
+   会从"静默无效"**直接变成构建失败** —— 这是明确要避免的。
+3. 真正的错误（把实体组件当方块组件用）已由 warn 明确说出，并给出两条新路线；
+   要规范写法的人可以显式用 `setBlockEntity(true, { container: { slot_count } })`。
+
+**`inventory_size` 上限**：官方文档**没给**（实体组件那页只写"槽位数"）。框架只校验正整数，
+**不要**把方块路线的 `[1,54]` 套到实体容器上。**⚠️ 待真机确认**：56 槽（FZ 机器所需）是否可用。
+
+**自检守卫**（`BasicBlock.validate()`，由 `registry.submit()` → `runValidators()` 调用）：
+1. 方块 components 里出现 `minecraft:inventory` → warn（"它是实体组件，必然被拒" + 两条替代路线）。
+   这条能兜住**手写裸 Map** 的写法（FZ 项目当初就是这么绕的）。
+2. `minecraft:block_entity.container.slot_count` 超出 `[1,54]` → warn（兜住手写组件对象）。
+
+### 4.2 `minecraft:inventory` / `minecraft:block_entity` 在 Bedrock Wiki 上**没有条目**（引用时别引错）
 2026-09 核对：<https://wiki.bedrock.dev/blocks/block-components> 的
 「List of Vanilla Components」共 36 条（Chest Obstruction → Transformation），**没有 Inventory**；
 全页也搜不到 `minecraft:inventory` / `minecraft:block_entity`。
-⇒ 引用这两者时**不要**标注该 wiki 页为出处；按事实标 **「未验证」**。
+⇒ 引用这两者时**不要**标注该 wiki 页为出处；**改引 Microsoft Learn**（上面的两个链接，两页都真有条目）。
 （组件本身是真实存在的 —— 框架生成的产物里有，`minecraft:block_entity` 也与 `TileBlock` 链路相关；
-问题只是**该页不覆盖它**。）
+问题只是**该 wiki 页不覆盖它**。）
 - 该页倒是**有** `minecraft:connection_rule`（`accepts_connections_from`: `all`/`only_fences`/`none` +
   `enabled_directions`），与 `minecraft:connection` trait（提供 `minecraft:connection_*` 状态）配合，
   可能是「让管道连接非同种方块」的正路 —— FZ 的管道/线缆（S6）值得先试这条，**但未验证**。
 
-### 4.3 ⚠️ 源码里有一条**指向错误**的 JSDoc（待修）
-`src/core/block/blockComponent.js:688-689`（`setInventory` 的 JSDoc）写：
-> 若只写了 `setInventory` 而没有 `setBlockEntity`，构建时框架会打印 warn 提醒（见 `blockFactory.registerBlock`）。
+### 4.3 `setInventory` 的 JSDoc 曾指向**不存在**的守卫（2026-09 已修）
+- 原文（旧 `blockComponent.js:688-689`）：
+  > 若只写了 `setInventory` 而没有 `setBlockEntity`，构建时框架会打印 warn 提醒（见 `blockFactory.registerBlock`）。
+- **指向是错的**：`src/core/factory/blockFactory.js` 里 `block_entity` 命中数 = **0**，`registerBlock` 没有该检查。
+  真正的守卫是 `src/core/block/basicBlock.js` 的 `BasicBlock.validate()`（`blockFactory.js:36` 与
+  `basicBlock.js` 的注释里现在都写明了这一点），由 `src/core/registry.ts:26` 的 `runValidators()`
+  在 `registry.submit()` 时调用 —— **不能**放在 `registerBlock`：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，
+  那一刻组件还没挂上。
+- 复核命令（负面断言，必须为 0）：
+  `Select-String -Path src\core\factory\blockFactory.js -Pattern 'block_entity' -AllMatches | Measure-Object`
+- 另外**旧 `setInventory` 自检的前提也错了**（它查"有 `minecraft:inventory` 但没 `block_entity`"，
+  而 `minecraft:inventory` 根本不是方块组件）→ 已改成上面 4.1 的两条。
 
-**指向是错的**：`src/core/factory/blockFactory.js` 里 `block_entity` 命中数 = **0**，`registerBlock` 没有该检查。
-真正的守卫在 `src/core/block/basicBlock.js:155` 的 `BasicBlock.validate()`，
-由 `src/core/registry.ts:26` 的 `runValidators()` 在 `registry.submit()` 时调用。
-⇒ **文档读者按 JSDoc 去 `blockFactory` 找会找不到**。修它要改源码 + 重建 `prod/`，故本轮只记档。
 
 ---
 
@@ -171,8 +233,19 @@ node scripts/buildTask.cjs           # rollup → prod/
 
 ## 6. 待真机确认（本环境无法启动 Minecraft）
 
-- [ ] 容器：放一个带容器的方块，右键能打开、能存取（`inventory_size` 上限一并确认）。
-- [ ] `blocks.json` 移到 RP、键改为 `ns:name` 后：方块音效/贴图是否仍正常。
+- [ ] 容器（★ 现在只剩**实体路线**可用）：用 `createTileBlock(..., { inventory_size })` 放一个带容器的方块，
+      右键能打开、能存取；**并确认大槽位**（FZ 机器需要 56）被引擎接受（实体组件文档没给上限）。
+- [ ] 方块路线的 `minecraft:block_entity.container`：当前引擎版本报
+      `-> minecraft:block_entity -> container: … not present in the Schema`（1.26.30 / 1.26.40 实测同样）；
+      等引擎支持后 `setBlockEntity(true, { container: { slot_count } })` 是否即可用（`slot_count` 需在 `[1,54]`）。
+- [ ] **物品告警清零**（P0-1 的最终验收）：用自定义 item catalog 的项目重进世界，
+      确认 `The item <X> was created with the group set to 'minecraft:…'` 这类 warning 变成 **0 条**（默认值改 1.21.90 后预期）。
+- [ ] **方块几何告警清零**（P0-3 的最终验收）：`blocks.json` 不再写方块条目后，
+      确认 `trying to override the Geometry component with blocks.json settings for a custom block` 的 N 条（= 方块数）变成 **0 条**；
+      并确认挖掘/放置**音效**与改动前一致（框架从未写过 `sound` 字段，预期无变化），以及只含
+      `format_version` 的 `blocks.json` 引擎会不会有别的抱怨。贴图应仍走 `material_instances` + `terrain_texture.json`。
+- [ ] **部署 prune 的真机效果**：从项目里删掉一个方块/配方/`res/` 资源后重新构建，
+      确认游戏里对应的旧文件**真的消失**（不再报 `not present in the Schema`），且玩家自己放进开发包的文件仍在。
 - [ ] 路线 B：`registerBlockComponent` 注册的组件在游戏内事件是否真的触发（本环境只用桩验证了注册时机与注册表）。
 - [ ] i18n：`labels` 传 lang 键时，JSON UI 是否按预期解析（需要 `RP/texts/*.lang` 里定义该键）。
 

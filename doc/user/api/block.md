@@ -197,19 +197,35 @@ BlockAPI.createTileBlock(
 | `identifier` | `string` | 方块唯一标识符，格式 `命名空间:名称` |
 | `category` | `string` | 创造栏分类 |
 | `textures_arr` | `string[]` | 6 纹理数组，顺序 `[down, up, north, south, west, east]` |
-| `options` | `object` | 透传给内部 `BasicBlock`（如 `group` / `hide_in_command`） |
+| `options` | `object` | 透传给内部 `BasicBlock`（如 `group` / `hide_in_command`），另加下面三个**实体容器**参数 |
+| `options.inventory_size` | `number` | **实体容器**槽位数（正整数），默认 `27` |
+| `options.container_type` | `string` | 容器音效/行为类型，默认 `"minecart_chest"`。官方文档列出的取值：`horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper` |
+| `options.can_be_siphoned_from` | `boolean` | 能否用漏斗抽取，默认 `true` |
 
-缺 `identifier` / `category` / `textures_arr` 任一项时抛错。
+缺 `identifier` / `category` / `textures_arr` 任一项时抛错；`inventory_size` 非正整数、`container_type` 非空字符串、
+`can_be_siphoned_from` 非布尔时抛错。
+
+> ★ **这是当前引擎版本下唯一可用的方块容器路线**：容器挂在**实体**上（实体组件 `minecraft:inventory`）。
+> 不传那三个参数时产物与历史版本**逐字节一致**（默认 27 槽 / `minecart_chest` / 可抽取），
+> 且每次都按**实例**拷贝，改一个方块不会污染另一个。
+> `inventory_size` 的**上限**官方文档**没给**（实体组件那页只写 "Number of slots the container has"）——
+> **不要**套用方块路线的 `[1,54]`；本环境只校验正整数，**上限「未验证」**。
+> 依据：[Microsoft Learn · Entity Documentation - minecraft:inventory](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/entityreference/examples/entitycomponents/minecraftcomponent_inventory)。
 
 **它会注册三份数据**
 
 | # | 内容 | 包（root） | 路径 |
 |---|---|---|---|
-| 1 | 方块本体 | `behavior` | `blocks/`（并累积 `blocks.json` 的贴图条目） |
-| 2 | 方块实体**行为** | `behavior` | `entities/` |
+| 1 | 方块本体 | `behavior` | `blocks/` |
+| 2 | 方块实体**行为** | `behavior` | `entities/`（容器就写在这里的实体组件里） |
 | 3 | 方块实体**资源** | `resource` | `entity/` |
 
-> `blocks.json` 是**资源包根目录**的文件，键是**完整的方块标识符**（`ns:name`，不是文件名安全名 `ns_name`）——见 [Bedrock Wiki: Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的 `RP/blocks.json` 示例（键为 `"wiki:chestnut_log"`）。
+> ⚠️ `blocks.json`（RP 根目录）**自 2026-09 起不再被写入任何方块条目**（只留 `format_version`）。
+> 曾经写进去的 `textures` 会让引擎对**每个自定义方块**报
+> `trying to override the Geometry component with blocks.json settings for a custom block`。
+> 官方文档把 `blocks.json` 定位成 "just a sound configuration system"：
+> [Microsoft Learn · blocks.json File Reference](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blocksjsonfilestructure)。
+> 自定义方块的贴图由 `minecraft:material_instances` + `terrain_texture.json` 提供。
 
 **实体 identifier 自动为 `${identifier}_entity`**
 
@@ -249,12 +265,23 @@ registry.submit()
 
 **容器类方块用哪条路？**
 
-`TileBlock` 的容器**挂在实体上**：实体行为里预置了 `minecraft:inventory`（`inventory_size: 27`、
-`container_type: "minecart_chest"`、`can_be_siphoned_from: true`）。这与「**方块组件**路线」的
-[`BlockComponent.setInventory()`](#setinventory) 是两条不同的路——后者写的是**方块**的 `minecraft:inventory` 组件，
-需要额外的 `minecraft:block_entity` 前置。选哪条取决于你的方块要不要真方块实体（存档 / 脚本接口不同）。
+| 路线 | 写法 | 引擎现状 |
+|---|---|---|
+| ★ **实体（唯一可用）** | `BlockAPI.createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })`；等价地：`tile.entity.behavior.addComponent(EntityComponent.setInventoryProperties({...}))` | **可用**（实体组件 `minecraft:inventory`） |
+| 方块·规范 | `BlockComponent.setBlockEntity(true, { container: { slot_count } })` → `minecraft:block_entity.container` | **当前引擎版本拒绝**：`-> minecraft:block_entity -> container: … is not present in the Schema`（1.26.30 / 1.26.40 实测同样报错） |
+| 方块·历史 | `BlockComponent.setInventory({...})` → 方块 `components` 里的 `minecraft:inventory` | **必然被拒**（那是**实体**组件）：`-> components -> minecraft:inventory: … not present in the Schema`。该 API **已废弃**（产物不变 + 构建期 warn） |
 
-> ⚠️ 两条路在**游戏内的实际表现均未验证**（本环境无法启动 Minecraft）。
+```typescript
+// 推荐：容器挂实体，槽位数按需给（官方文档对实体容器**没有**上限约束）
+const machine = BlockAPI.createTileBlock('demo:machine', 'construction', textures, {
+  inventory_size: 56,
+  container_type: 'minecart_chest',
+  can_be_siphoned_from: true,
+})
+```
+
+> ⚠️ **游戏内行为「未验证」**（本环境无法启动 Minecraft）。真机请确认：右键能打开容器、能存取、
+> 漏斗抽取行为符合预期，以及大槽位（如 56）是否被引擎接受。
 
 ---
 
@@ -936,6 +963,17 @@ new TileBlock(
 )
 ```
 
+**`options` 里的容器参数**（★ 实体容器的唯一可用路线）：
+
+| 参数 | 类型 | 默认 | 说明 |
+|------|------|------|------|
+| `options.inventory_size` | `number` | `27` | 实体容器槽位数（正整数，非正整数抛错）。官方文档**未给上限** |
+| `options.container_type` | `string` | `"minecart_chest"` | 容器音效/行为类型（非空字符串，否则抛错） |
+| `options.can_be_siphoned_from` | `boolean` | `true` | 能否用漏斗抽取（非布尔抛错） |
+
+> 不传这三个参数时，`<id>_entity` 的行为产物与历史版本**逐字节一致**；
+> 每个实例都会**拷贝**一份容器数据，改一个方块不会污染另一个（已用 `tests/block-api.test.mjs` 断言）。
+
 ### 属性
 
 | 属性 | 类型 | 说明 |
@@ -1197,22 +1235,68 @@ static setCraftingTable(craftingTags: string[], tableName?: string): Map
 ### setBlockEntity
 
 ```typescript
-static setBlockEntity(dynamic_properties?: boolean): Map
+static setBlockEntity(dynamic_properties?: boolean | Object, options?: {
+  dynamic_properties?: boolean
+  container?: { slot_count: number } | { inventory_size: number } | number
+}): Map
 ```
 
 创建**方块实体**（Block Entity）。`dynamic_properties` 控制是否启用方块实体的动态属性存储，默认 `false`。
 
-这是**容器（`setInventory`）的前置组件**：源码 JSDoc 明确要求容器必须同时具备 `minecraft:block_entity`，否则方块实体不创建、容器打不开。
+三种写法（第一、二种产物与历史**逐字节一致**）：
 
-⚠️ 源码 JSDoc 同时标注该组件为**实验性**，需开启 `Upcoming Creator Features` 实验开关。
-⚠️ **组件语义与游戏内效果未验证**（本环境无法启动 Minecraft）：我核对了 Bedrock Wiki 的
-[Block Components](https://wiki.bedrock.dev/blocks/block-components) 页，该页的页内组件清单（36 条，从
-Chest Obstruction 到 Transformation）**没有** `minecraft:block_entity` 条目，也没有 `minecraft:inventory` 条目，
-因此本条**拿不出可引用的 wiki 依据**。
+```typescript
+BlockComponent.setBlockEntity()                       // → { dynamic_properties: false }
+BlockComponent.setBlockEntity(true)                   // → { dynamic_properties: true }
+BlockComponent.setBlockEntity(true, { container: { slot_count: 27 } })
+BlockComponent.setBlockEntity({ container: 54 })      // 只给容器时可省掉第一个参数
+```
+
+**`container` 参数**（★ 方块容器的**规范**写法）
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `container.slot_count` | `number` | 槽位数。官方文档：`Value must be >= 1. Value must be <= 54.` —— **超限抛错** |
+| `container.inventory_size` | `number` | `slot_count` 的别名（框架其它容器 API 用这个名字）；两者同时给出且不一致时抛错 |
+| `container` | `number` | 直接给槽位数（等价于 `{ slot_count: n }`） |
+
+依据：[Microsoft Learn · Block Components - minecraft:block_entity](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity)
+（`container.slot_count` 与 `dynamic_properties` 两个成员都在该页）。
+
+> ⚠️ **当前引擎版本会拒绝 `container` 成员**：实测报
+> `-> minecraft:block_entity -> container: this component was found in the input, but is not present in the Schema`
+> （`format_version` 1.26.30 / 1.26.40 报同样的错）。
+> ⇒ 这个 API 产出的是**规范正确、但引擎暂时不认**的 JSON；**要现在就能用的容器，请走实体路线**
+> （[`createTileBlock` 的 `inventory_size`](#createtileblock)）。
+> 真机行为**「未验证」**：等引擎支持后应可直接使用。
+
+> ⚠️ `combineComponents` 是「后者覆盖前者」：要同时给 `dynamic_properties` 与 `container`，
+> 请**一次调用写完**（上面第 3、4 种写法）；把两个 `setBlockEntity(...)` 合并会让先出现的那个被整份丢掉。
+
+> ⚠️ 源码 JSDoc 标注该组件为**实验性**，需开启 `Upcoming Creator Features` 实验开关。
+> Bedrock Wiki 的 [Block Components](https://wiki.bedrock.dev/blocks/block-components) 页**没有**该条目 ——
+> 引用请用上面的 Microsoft Learn 链接。
 
 ### setInventory
 
-设置方块容器（`minecraft:inventory`）—— 可右键打开、可存取的方块背包。
+> ⚠️ **已废弃（deprecated）**，且**当前引擎版本必然拒绝**它产出的组件。新项目**不要**用它。
+> 保留签名只为不破坏既有项目：**产物一个字节都不变**，但每次调用会打一条构建期 `console.warn`。
+
+设置方块容器 —— 它产出的是方块 `components` 里的 `minecraft:inventory`。
+但 `minecraft:inventory` 是**实体**组件（官方文档列在 Entity Components 下），
+**不是**方块组件 —— 写在方块里**在任何版本上都不成立**（不是"版本太旧"），真机报：
+
+```
+-> components -> minecraft:inventory: this component was found in the input, but is not present in the Schema
+```
+
+**现在应该怎么做**
+
+| 目标 | 用什么 |
+|---|---|
+| **要一个能用的容器**（唯一可用路线） | `BlockAPI.createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })` —— 容器挂在承载**实体**上。见 [`createTileBlock`](#createtileblock) |
+| 已在用 `TileBlock`，想改槽位 | `tile.entity.behavior.addComponent(EntityComponent.setInventoryProperties({ inventorySize: 56, ... }))`（注意是**实体**组件 API，参数是 camelCase） |
+| **要规范的方块容器 JSON** | `BlockComponent.setBlockEntity(true, { container: { slot_count } })`（`[1,54]`）；当前引擎版本同样会拒该成员，但 JSON 与官方文档一致 |
 
 ```typescript
 static setInventory(options?: {
@@ -1229,63 +1313,63 @@ static setInventory(options?: {
 
 | 参数 | 类型 | 可选性 | 校验 / 说明 |
 |------|------|--------|-------------|
-| `inventory_size` | `number` | **必填** | 槽位数。必须满足 `Number.isInteger(x) && x >= 1`，否则抛错。**上限未验证**（见下） |
+| `inventory_size` | `number` | **必填** | 槽位数。必须满足 `Number.isInteger(x) && x >= 1`，否则抛错。**上限未验证**（实体组件文档没给上限，见下） |
 | `private` | `boolean` | 可选 | 是否仅所有者可访问。非布尔抛错 |
-| `container_type` | `string` | 可选 | 容器音效 / 行为类型。必须是非空字符串，且**必须是 Bedrock 认可的值**；源码注释里出现过的有 `"container"` / `"chest"` / `"furnace"` / `"hopper"` / `"dispenser"` / `"dropper"` / `"minecart_chest"` / `"shulker_box"`。框架**不做白名单**（避免写死过窄），所以拼错不会在构建期报错 |
+| `container_type` | `string` | 可选 | 容器音效 / 行为类型。必须是非空字符串。官方文档（实体 `minecraft:inventory`）列出的取值：`horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`。框架**不做白名单**（避免写死过窄），所以拼错不会在构建期报错 |
 | `can_be_siphoned_from` | `boolean` | 可选 | 能否用漏斗抽取 |
 | `additional_slots_per_strength` | `number` | 可选 | 每级强度的额外槽位。必须是非负整数，否则抛错 |
 | `restrict_to_owner` | `boolean` | 可选 | 是否限制为所有者可打开 |
 
 **没有隐式默认值**：只写入你**显式赋值**的字段，未赋值的字段不会出现在产物 JSON 里（`inventory_size` 除外，它必填）。框架**不会**替你补 `container_type` / `can_be_siphoned_from` 之类的"常见默认值"。
 
-> ⚠️ **`inventory_size` 的上限「未验证」**：源码注释说明上限由 Bedrock 约束、本环境无法实测，因此框架**故意不硬编码猜测值**，只校验正整数。需要几十槽的大容器时，请自行在真机确认。
+> ⚠️ **`inventory_size` 的上限「未验证」**：官方文档（实体 `minecraft:inventory`）只写
+> "Number of slots the container has"、**未给上限**；方块路线的 `[1,54]` **不适用**于实体容器。
+> 框架只校验正整数。需要几十槽的大容器时请自行在真机确认。
 
-#### ★ 前置条件：光有 `minecraft:inventory` 不够，必须有方块实体
+#### 自检（`BasicBlock.validate()`）
 
-只写 `setInventory` 而**没有** `setBlockEntity` ⇒ 方块实体不创建 ⇒ **游戏里容器打不开，而且是静默失败**（构建成功、JSON 正常、右键毫无反应）。这个坑在项目侧踩过，记录见 [known-pitfalls §4.1](../../dev/known-pitfalls.md)。
+提交前（`registry.submit()`）框架会检查两件事，**只 warn、不改产物**：
 
-框架会在缺失时 `console.warn` 提示，检查点在 **`registry.submit()`**：`src/core/block/basicBlock.js` 的 `BasicBlock.validate()` 经 `src/core/registry.ts` 的 `runValidators()` 被调用，命中时打印：
+1. 方块 components 里出现 `minecraft:inventory` → 提示"它是实体组件、必然被拒"，并给出上面两条替代路线。
+   ```
+   [sapdon] 方块 "demo:crate" 的 components 里写了 minecraft:inventory —— 它是**实体**组件（官方文档列在 Entity Components 下），
+   方块组件表里没有它，引擎会报 "-> components -> minecraft:inventory: this component was found in the input,
+   but is not present in the Schema"。可用的容器请走实体路线：BlockAPI.createTileBlock(...)；
+   要方块侧的规范写法用 BlockComponent.setBlockEntity(true, { container: { slot_count } })（当前引擎版本同样会拒该成员）。
+   ```
+   这条能兜住**手写裸 Map** 的写法（项目侧曾经就是那样绕过框架的）。
+2. `minecraft:block_entity.container.slot_count` 不在 `[1,54]` → warn（兜住手写组件对象 / 裸 Map 的写法）。
 
-```
-[sapdon] 方块 "demo:crate" 声明了 minecraft:inventory 但没有 minecraft:block_entity —— 容器在游戏内将无法打开。请同时合并 BlockComponent.setBlockEntity()。
-```
+> 检查点在 `src/core/block/basicBlock.js` 的 `BasicBlock.validate()`，由 `src/core/registry.ts` 的 `runValidators()` 调用。
+> ⚠️ 它**不在** `blockFactory.registerBlock`（旧 JSDoc 曾那样写，是错的：`blockFactory.js` 里 `block_entity` 命中数为 0）。
 
-> `validate()` 也认「组件写在 permutation 里」的写法（`TileBlock` 就是那样），不会误报。
-
-**为什么框架只 warn、不自动补 `minecraft:block_entity`？** 因为 `combineComponents` 是「**后者覆盖前者**」，自动塞一个默认的 `{ dynamic_properties: false }` 会把你已经声明的 `setBlockEntity(true)` **静默覆盖成 false**，反而制造更难查的问题。
-
-#### 最小可运行示例（方块 + 方块实体 + 容器）
+#### 历史写法（不再推荐，且产出会被引擎拒绝）
 
 ```typescript
-import { BlockAPI, BlockComponent, registry } from '@sapdon/core'
-
-// 1) 方块本体（6 面纹理）
-const crate = BlockAPI.createBasicBlock('demo:crate', 'construction', [
-  'crate_down', 'crate_up', 'crate_north', 'crate_south', 'crate_west', 'crate_east'
-])
-
-// 2) 方块实体（容器前置） + 3) 容器本身：合并后一次挂上
+// ❌ 不要再用：minecraft:inventory 是实体组件，写在方块里必然被拒
 crate.addComponent(BlockComponent.combineComponents(
   BlockComponent.setBlockEntity(false),
-  BlockComponent.setInventory({
-    inventory_size: 27,
-    container_type: 'minecart_chest',
-    can_be_siphoned_from: true
-  })
+  BlockComponent.setInventory({ inventory_size: 27, container_type: 'minecart_chest' })
 ))
+```
+
+#### 可用写法
+
+```typescript
+import { BlockAPI, EntityComponent, registry } from '@sapdon/core'
+
+// ★ 唯一可用：方块 + 承载实体，容器挂实体
+const crate = BlockAPI.createTileBlock('demo:crate', 'construction', [
+  'crate_down', 'crate_up', 'crate_north', 'crate_south', 'crate_west', 'crate_east'
+], { inventory_size: 27, container_type: 'minecart_chest', can_be_siphoned_from: true })
+
+// 或者构造后再改（实体组件 API，camelCase）
+crate.entity.behavior.addComponent(EntityComponent.setInventoryProperties({
+  inventorySize: 56, containerType: 'minecart_chest', canBeSiphonedFrom: true
+}))
 
 registry.submit()
 ```
-
-分开调用也可以（`addComponent` 会逐键并入，后写的同名键覆盖先写的）：
-
-```typescript
-crate.addComponent(BlockComponent.setBlockEntity())
-crate.addComponent(BlockComponent.setInventory({ inventory_size: 27 }))
-```
-
-> **`TileBlock` 的容器是另一条路**：`createTileBlock` 生成的实体行为里自带 `minecraft:inventory`，容器挂在**实体**上，不需要 `minecraft:block_entity`。两条路不要混用，见上文 [`createTileBlock`](#createtileblock)。
->
 > ⚠️ 上例的**游戏内表现（右键能否打开、能否存取）未验证**——本环境无法启动 Minecraft。
 
 ### setTick

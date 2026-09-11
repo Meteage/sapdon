@@ -134,8 +134,10 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 能力 | 位置 | 签名要点 |
 |---|---|---|
 | 手册标签 i18n | `src/core/ui/systems/sapdon/sapdonGuideBook.ts` | 构造第 4 参 `options.labels`，或链式 `setLabels(Partial<GuideBookLabels>)`；默认值 = 历史中文字面量 |
-| 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource） |
-| 方块容器 | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, container_type, …})` → `minecraft:inventory` |
+| 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource）；**★ 这是当前唯一可用的方块容器路线**，`options` 可带 `inventory_size` / `container_type` / `can_be_siphoned_from`（默认 27 / `minecart_chest` / true，不传 = 产物逐字节不变；每次构造按实例拷贝） |
+| 方块容器（实体路线，★ 唯一可用） | `src/core/block/tileBlock.js` + `src/core/factory/blockFactory.js` | `createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })` → 实体行为里的**实体**组件 `minecraft:inventory` |
+| 方块容器（方块路线，规范但当前引擎拒） | `src/core/block/blockComponent.js` | `BlockComponent.setBlockEntity(true, { container: { slot_count } })` → `minecraft:block_entity.container`；`slot_count` 官方文档 `[1,54]`，**超限抛错** |
+| 方块容器（**已废弃**） | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, …})` → 方块里的 `minecraft:inventory`（**实体**组件放错上下文，引擎必然拒）。产物保持不变 + 构建期一条 warn 指向上面两条路 |
 | 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked(target, key, value: string)`（**`value` 必填**）/ `loadChunked(target, key): string \| undefined` / `clearChunked(target, key)` + `CHUNK_SIZE = 24000`（另导出 `CHUNK_SUFFIX`/`MAX_CHUNK_SCAN` 与几个纯函数） |
 | 组件注册（路线 B） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerBlockComponent(id, handlers)` / `registerItemComponent(id, handlers)`；诊断：`pendingComponentCount()` / `registeredComponents()` |
 
@@ -159,8 +161,9 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 ### E. 构建行为（改动过的语义）
 1. **失败必须非 0 退出**：`runOnChild` 检查退出码并抛；`scriptBundler` 打包失败抛；CLI 顶层 catch → `exit(1)`。⚠️ `cp.fork` 会建 IPC 命名管道（受限环境 `EPERM`），而框架传输层走 HTTP，**从不用 IPC** —— 所以用 `spawn(process.execPath, [file], {stdio:'inherit'})`。
 2. **子目录名只允许大写 `_BP` / `_RP`**（`src/cli/init.js` 的 `getBuildDirBp/Rp` 之前是小写，Linux/macOS 会分叉目录）。
-3. **`blocks.json` 写在 RP**（`GRegistry.register('blocks','resource','')`）。历史误写在 BP；首次带清单构建会自动清理 BP 侧残留。
+3. **`blocks.json` 写在 RP**（`GRegistry.register('blocks','resource','')`）。历史误写在 BP；首次带清单构建会自动清理 BP 侧残留。**★ 2026-09 起文件里只写 `{"format_version":"1.20.20"}`、不写任何方块条目** —— 写 `textures` 会让引擎对每个自定义方块报 `trying to override the Geometry component with blocks.json settings for a custom block`（官方文档：`blocks.json` 只当 sound 配置系统，视觉一律走 `minecraft:geometry` + `minecraft:material_instances`）。随之删掉了「键必须是 `ns:name`」的 `assertBlocksJsonKey` 护栏（不再写条目 → 永不触发，不留死护栏）。
 4. **陈旧产物按清单清理**：`dev/.sapdon_generated_<proj>.json` 记录本次产物，下次只删「上次有、这次没有」的。**禁止**改成扫目录删（会误删用户 `res/` 拷进来的文件）。
+   另外两段同步同样按清单 prune（2026-09 新增，见 `doc/dev/cli.md`）：`dev/.sapdon_synced_<proj>.json` 管**游戏开发包目录**里「上次部署过、这次 `dev/` 没有」的文件；`dev/.sapdon_res_<proj>.json` 管 `dev/<proj>_RP` 里「上次从 `res/` 拷过、这次 `res/` 没有」的文件。**没有清单时一个文件都不删**；空包目录视为构建中断、跳过 prune。单测 `node tests/sync-manifest.test.mjs`。
 5. **注册索引合并**：`scripts/custom_components/index.js` 用标记块维护（`// >>> sapdon:custom-component-registry >>> … <<<`），标记块外内容一律保留；生成块用 `system as __sapdon_system` 避免重名 import。
 6. **Dev Server 端口**读 `SAPDON_DEV_SERVER_PORT`（默认 49037），服务端与客户端必须用同一个变量；端口被占直接 `exit 1`。多 agent 并行构建各设各的端口。
 

@@ -340,6 +340,35 @@ class MinecraftTickingScheduler implements Scheduler<string> {
 
 > `currentTick` 是**累积的时间膨胀值**（不是帧数）：只有累积跨过 1 才真正执行一次 tick，`dt` 是「距上次执行的真实毫秒差 × timeDilation」。
 
+#### ★ 固有开销：调度器的 `runInterval` **不传 `tickInterval`** ⇒ 每 tick 无条件回调（项目侧无法消除）
+
+```js
+// src/oc/minecraft/core.ts:46-49
+start(table) {
+  this._timeStamp = Date.now()
+  this._run = system.runInterval(this.executeTick.bind(this, table))   // ← 只传了 callback
+}
+```
+
+- `system.runInterval(callback, tickInterval?)` 的第二个参数是**可选**的，框架**没传** ⇒ 间隔由引擎缺省决定，
+  框架**自己无法控制**它 ⇒ **每个 game tick 都会回调一次**（`executeTick` 里只可能在
+  `timeDilation === 0` 时提前 `return`，但**回调本身照样发生**）。
+  （⚠️ 官方文档页把 `tickInterval` 只写成 "An interval of every N ticks"、**没有显式写出缺省数字** ——
+  缺省值是 **1** 这一点标**「未验证」**；但"不传 ⇒ 框架控制不了间隔、每 tick 被回调"这个结论
+  与 FZ S3a 的真机观察一致。）
+- **启动时机与项目无关**：`MinecraftGameInstance.onStart(ev)` → `setLevel(new MinecraftLevel())` →
+  `Level.start()`（`src/oc/level.ts:32-34`）→ `this.getScheduler().start(this.table)` ⇒
+  **世界一开始就常驻**，哪怕项目里一个机器/实体组件都没注册。
+- 框架里**第二处** `system.runInterval` 是 `src/oc/builtin/blocks/fallingBlock.ts:18`（间隔 **10** tick）——
+  但它是**条件触发**的：只有下落方块 `onTick` 里 spawn 出实体后才起，实体落地/失效时 `clearRun` 自清，
+  **不是常驻开销**。（全仓 grep 判据：`Select-String -Path src\oc -Recurse -Pattern 'runInterval'` → 恰好 2 处命中。）
+
+⇒ **结论**：项目侧能做到「**零机器 tick**」（活跃数 0 时 `clearRun` 掉自己那个 interval），
+但**做不到「零脚本回调」** —— 框架这处每 tick 的固定开销无法被项目消除。
+若将来要真正的「空闲零回调」，需要给调度器加「**无订阅者就停**」的能力；
+⚠️ 但它还兼管**实体**组件的 tick（`_handleTick` 遍历 `Level.table` 里的实体），
+停掉会连带停掉实体组件 —— 有副作用，**不能简单停**。本轮**未改代码**（改调度语义影响面大，仅记档）。
+
 #### ⚠️ 调度器只遍历实体 —— 「方块每 tick 干活」必须自建调度
 
 `_handleTick` 里**硬编码**了 `world.getEntity(id)`（`src/oc/minecraft/core.ts:20`）。而 `Level.table` 的键就是任意 string ID（`src/oc/level.ts:11-17`），**框架不校验它是不是实体**。于是：
