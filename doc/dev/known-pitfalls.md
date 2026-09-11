@@ -19,12 +19,21 @@
 - **位置**：`dev/.sapdon_generated_<项目名>.json`（`src/cli/load.js`）。
 - **规则**：本次构建写出的产物路径进清单；下次构建**只删「上次清单里有、这次没有」的文件**。
 - **不要**改成"扫目录按规则删"：`dev/*_RP/ui/`、`textures/` 里有用户 `res/` 拷进来的文件与手写文件，扫目录必误删。
-- **一次性迁移**：清单**不存在**时的首次构建，会删除历史误放的 `${proj}_BP/blocks.json`（见 1.3）。
+- **改名/删条目**（清单管得到的）自动清理；**重命名项目**（清单记的是**当前**项目名）管不到 → 需**手工删** `dev/<旧名>_*`。实例：`examples/guidebook_demo/dev/ui_gated_demo_RP/`（旧项目名残留，已手工删除）。
+- **没有清单的项目**（例如一直在构建失败的示例）里的陈旧文件也清理不到 —— 清单是"上次构建写过什么"，从没有过成功构建就没有清单。
+- **历史遗留**：框架现在只往 RP 写 `blocks.json`，但早期误写在 BP 的那些文件不在任何清单里，故对 `${proj}_BP/blocks.json` 这个**确切路径**做无条件点名清理（不做目录扫描）。
 
-### 1.3 `blocks.json` 属**资源包**
+### 1.3 `blocks.json` 属**资源包**，且**键必须是完整标识符**
+- **位置**：`src/core/factory/blockFactory.js` → `GRegistry.register("blocks","resource","",…)` → `dev/<proj>_RP/blocks.json`。
 - **规范**：`blocks.json` 是 RP 根目录文件；写在 BP 里会被 Bedrock 完全忽略。
-- **历史**：`e1199cc` 的 `src/cli/load.js` 写的是 `${proj}_RP/blocks.json`；`05bd104` 挪进 `blockFactory.js` 时误标 `"behavior"`，从此落在 BP。**现在是回归修复**。
-- **⚠️ 待真机确认**：`blocks.json` 的**键**目前是 `identifier.replace(':', '_')`（如 `blockdemo_glass`），而历史可用版本用的是**完整标识符**（如 `mob_chest:chest`，见 `examples/mob_chest/dev/mob_chest_RP/blocks.json`，那是 2026-07 留下的旧产物）。键形态是否需要改回 `ns:name` **未验证**（现代 Bedrock 的方块贴图走 `material_instances` + `terrain_texture.json`，`blocks.json` 主要影响音效与旧机制）。
+- **历史**：`e1199cc` 的 `src/cli/load.js` 写的就是 `${proj}_RP/blocks.json`；`05bd104` 挪进 `blockFactory.js` 时误标 `"behavior"`，从此落在 BP。**已回归修复**。
+- **键 = 完整标识符 `ns:name`**（不是文件名安全名 `ns_name`）：
+  - 权威源：<https://wiki.bedrock.dev/blocks/block-sounds> 的 `RP/blocks.json` 示例键为 `"wiki:chestnut_log"`。
+  - 历史产物（预言机）：`git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json` → `"mob_chest:chest"` / `"sapdon:falling_block"`。
+  - `_` 形态的来历：复用 `block_name`，而当时根目录还写进 BP（不生效）→ **从没有项目依赖过 `_` 形态**。
+  - ⚠️ `blocks/<name>.json` 的**文件名**仍必须是 `_` 形态（`:` 在 Windows 文件名里非法）—— 两者不可混用。
+- **护栏**：注册时若键不含 `:` 会 `console.warn`（去重，每个键一次）。
+- **⚠️ 待真机确认**：移到 RP 后音效/贴图是否仍正常（现代 Bedrock 的方块贴图走 `material_instances` + `terrain_texture.json`，`blocks.json` 主要影响音效与旧机制）。
 
 ### 1.4 目录名大小写：只允许 `_BP` / `_RP`
 - Windows 大小写不敏感才掩盖了这个问题；Linux/macOS 下 `_bp` 与 `_BP` 会分叉成两个目录（构建写 A、打包读 B → 空包）。
@@ -115,6 +124,18 @@ node scripts/buildTask.cjs           # rollup → prod/
 ## 6. 待真机确认（本环境无法启动 Minecraft）
 
 - [ ] 容器：放一个带容器的方块，右键能打开、能存取（`inventory_size` 上限一并确认）。
-- [ ] `blocks.json` 移到 RP 后：方块音效/贴图是否仍正常；键形态 `ns_name` vs `ns:name` 是否需要改。
+- [ ] `blocks.json` 移到 RP、键改为 `ns:name` 后：方块音效/贴图是否仍正常。
 - [ ] 路线 B：`registerBlockComponent` 注册的组件在游戏内事件是否真的触发（本环境只用桩验证了注册时机与注册表）。
 - [ ] i18n：`labels` 传 lang 键时，JSON UI 是否按预期解析（需要 `RP/texts/*.lang` 里定义该键）。
+
+---
+
+## 7. 仓库里**已知损坏**的东西（不是框架回归，别误判）
+
+按 2026-09 那次全量核对的口径记录（判据：`git log ae6ae16..HEAD --name-only` 未触及相关模块）。
+
+- **`examples/hello_ui` 构建必失败**（exit 1、0 行 `处理数据:`）：`main.mjs` import 了本框架**不存在**的 `ServerUISystem`，还调用了 `bindingTitlewithContent` —— 该示例停留在旧 API。**不是框架回归**；修它要改 examples 源码（本轮按"examples 是范本、不改源码"的约束未动）。
+  - 它的 `dev/hello_ui_*` 里躺着 07-11/08-21 的陈旧产物：这是**长期构建失败**造成的（没有成功构建 → 没有清单 → 清不掉），**不是**改项目名残留，故未删。修好该示例后建议手工清一次 `dev/`。
+- **`tests/ui-buttonpanel.test.mjs` 失败**：import 了早已不存在的 `dist/core/ui/systems/sapdon/sapdonButtonPanel.js`（该模块在 `63262bf` 之后就不在 `src/` 里）。
+- **`tests/item.test.mjs` 失败**：`src/core/entity/componets/entityComponet.js` 把 `type.ts` 的 **type-only** 导出 `RideableComponentDesc` 当**值** import → 运行期 `does not provide an export named 'RideableComponentDesc'`（rollup 构建日志里也有同名 warning）。
+- 上面两个测试**在 `ae6ae16` 之前就已损坏**，与本轮改动无关；本轮未修（超出范围）。
