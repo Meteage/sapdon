@@ -16,6 +16,18 @@ const dedupe = (data: any[]) => {
 }
 
 /**
+ * 提交前自检：注册项若有 `validate()` 就调用一次。
+ * 时机很关键 —— 这是用户**配置完**（`addComponent` 等都跑完）之后的唯一统一出口，
+ * 而 `registerBlock` 那一刻组件还没挂上（见 BasicBlock.validate 的注释）。
+ */
+const runValidators = (items: any[]) => {
+    for (const item of items) {
+        const data = item?.data
+        if (data && typeof data.validate === 'function') data.validate()
+    }
+}
+
+/**
  * Client
  */
 export class GRegistry {
@@ -35,7 +47,9 @@ export class GRegistry {
     }
 
     static submit() {
-        transportPost('submitGregistry', dedupe(clientRegistryData).map(item => {
+        const items = dedupe(clientRegistryData)
+        runValidators(items)
+        transportPost('submitGregistry', items.map(item => {
             if (GRegistry.debug) console.log("Preparing to submit registry item:", item.data)
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
@@ -49,7 +63,9 @@ export class GRegistry {
 
 export namespace registry {
     export function submit() {
-        const buildData = dedupe(clientRegistryData).map(item => {
+        const items = dedupe(clientRegistryData)
+        runValidators(items)
+        const buildData = items.map(item => {
             if (typeof (item.data as any).toObject === 'function') {
                 item.data = (item.data as any).toObject()
             }
