@@ -53,6 +53,34 @@
 
 ---
 
+### 1.7 物品的 `format_version` 决定「自定义 catalog 组名」的解析行为
+
+**症状**：世界每次加载，`RP`/`BP` 里**每个**带自定义创造菜单分组的物品都报一条 warning（N 个物品 = N 条）：
+```
+[Item][warning]-.../item_catalog/crafting_item_catalog.json |
+  The item fz:coolant_cell_singler was created with the group set to
+  'minecraft:fz:itemGroup.name.reactor_items', but is now being set to 'fz:itemGroup.name.reactor_items'
+```
+
+**根因**：物品的 `format_version` 是框架默认值 **`1.21.40`**（`src/core/item/item.ts:56` 的
+`formatVersion ?? "1.21.40"`）。该版本下引擎会把 `menu_category.group` 当"**隐含 `minecraft:` 前缀**"处理，
+于是与 `crafting_item_catalog.json` 里的显式组名不一致 → 每条物品报一次。**产物里根本没有 `minecraft:fz:`**
+（两侧都是裸 `fz:itemGroup.name.X`，与 [Bedrock Wiki · Item Catalog](https://wiki.bedrock.dev/items/item-catalog)
+的 `wiki:itemGroup.name.ore` 同形）—— 这是引擎行为（对应 Mojira MCPE-224150），不是产物写错。
+
+**修法**：把物品的 `format_version` 提到 **`1.21.90`**（框架**支持按物品覆盖**：`item.ts:46-47` 同时解构
+`format_version` 与 `formatVersion` 两个键名）。`examples/digitCircuit/main.mjs:101,113,124,133` 就是这么做的，
+所以它的日志里**零**条该告警。
+
+**实测（2026-09-11）**：FZ 项目 157 个物品用默认值 → 每次加载 **156** 条；
+把**单个**物品改成 `1.21.90`（只改已部署副本）→ 同一次加载变成 **155** 条、且该物品不再出现；
+全量改完（`FZ_ITEM_FORMAT_VERSION` 常量）→ 待真机复测（预期 **0**）。
+
+**建议**：框架侧把 `item.ts:56` 的默认值提到 `1.21.90` 才是根治（**尚未改**，仅记录）。
+在此之前，**用自定义 item catalog 的项目都应显式传 `format_version: '1.21.90'`**。
+
+---
+
 ## 2. 自定义组件
 
 ### 2.1 注册时机只有两个合法位置
