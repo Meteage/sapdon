@@ -48,6 +48,17 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **粒子 parametric 位置**：`particle_motion_parametric.relative_position` 要与 `variable.emitter_age`（发射器 loop 内年龄，秒）配合才能逐帧移动且 `math.sin` 正常工作；用 `variable.particle_age` 做 sin 相位常不振荡。sin/cos 按**角度制**（`sin(emitter_age*360)` 一周），弧度数值需 `×57.2958`。脚本 `spawnParticle`（手动发射）的 parametric 未必可靠，改用发射器驱动（`emitter_local_space.position:true` + `rate_steady/instant` + `emitter_shape.offset` 用 `emitter_age`）。
 - **Molang 数学函数**：无 `math.log`，自然对数用 `math.ln`；`math.exp/math.abs/math.pow/sin/cos` 可用。
 
+## SapdonGuideBook / FormButtonGrid（踩过的坑）
+
+- **`FormButtonGrid.addButton(index, btn, pos)` 的 `index` 必须是该按钮在运行期 form 里的「槽位序号」，不是视觉序号**。
+  - 机制：`index` 被编码成 `grid_position`（`col = index%c, row = index/c`），而 Bedrock 的集合格盘靠 `grid_position`（行优先序号）**把格子绑到对应的 form 按钮**；按钮画在哪一格由 `pos` 决定（`offset = -基准格 + pos`）。
+  - 框架里 3 处调用**全部**传槽位序号：导航 `addButton(i)`（槽 0-2）、CAT 列表行 `addButton(3 + j)`（章条目从槽 3 起）、索引卡 `addButton(3 + i)`（卡从槽 3 起）。那个 `3 +` 不是历史遗留，删不得（框架侧现以常量 `IDX_SLOT_BASE = 3` 表达）。
+  - **症状**：游戏内索引页「封面 + `类别` + 两条分割线都在，但一张卡都没有」。产物 JSON 结构完全正常，只差 `grid_position`/`offset` 数值 —— 纯结构断言查不出来，2026-09-10 就是这么翻车的（用户截图才暴露）。
+  - **自检**：`examples/guidebook_demo`（4 分类）重建后 `dev/guidebook_demo_RP/ui/book.json` 应与基线**逐字节一致**（587870 字节，sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）；不一致就去找槽位编码。另一份可参照的已知可用旧产物：`examples/more-golem/dev/more-golem_RP/ui/neo_guidebook.json`（卡片为 `grid_item_003..` + `grid_position [3,0]/[0,1]/…` + 负偏移）。
+  - 详述与故障速查：`doc/guidebook.md` §5（槽位硬约束 / 分页公式 / 卡片→槽位→格位对照 / 可调常量）、§6（可翻页 `openIndex`）、§8（索引页不显示的 4 类成因）。
+- **改 UI 框架后不能只靠 JSON 断言"没坏"**：结构等价 ≠ 游戏内渲染等价。涉及集合/门控的改动，务必留一份"已知可用"的旧产物做逐字节对比，并请用户进游戏走一遍关键页（本环境无法启动 Minecraft）。
+- **索引分页（每页 16 张，2026-09 新增）**：`p0` body = `INDEX`（历史协议，旧脚本不用改），`p1+` body = `IDX|p<k>` —— **不能**写 `INDEX|p<k>`（门控是包含匹配，会连 `p0` 的封面一起点亮）。容量与槽位的单一事实来源是 `sapdonGuideBook.ts:73-90` 的 `IDX_*` 常量；运行期必须镜像同一规则（FZ 侧见 `src/guide_data.ts` 的 `INDEX_*` / `indexBody()` / `indexRange()` / `indexPageCount()`）。
+
 ---
 
 ## digitCircuit 示例项目排障经验

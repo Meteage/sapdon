@@ -5,10 +5,11 @@
 - **三层结构**：`INDEX`（分类索引）→ `CAT`（词条列表）→ `ENT`（词条内容页）。
 - **浏览器式导航**：每屏固定 `prev / home / next`，`home` 随时回首页。
 - **多种页类型**：`text` / `crafting` / `spotlight` / `image`。
-- **自动分页**：正文超过一屏自动翻页；分类词条超过 8 条自动分页。
+- **自动分页**：分类卡每页 16 张（超出翻页）；分类词条每页最多 16 行；正文每页 10 行。
 - **路由驱动**：运行时通过 Server Form 的 `body` 路径 + 按钮槽位显隐，无需每个页面单独写路由。
 
 > 示例见 `examples/guidebook_demo`（打开游戏手持木棍右键即可看到成品）。
+> 索引分页的规则、槽位硬约束与可调常量见 [§5 路由协议](#5-路由协议运行时)。
 
 ---
 
@@ -136,24 +137,94 @@ interface GuideBookChapter {
 
 - **`title`**：固定为 `sapdon_ui:<name>`（如 `sapdon_ui:book`）。
 - **`body`（路径）**：
-  - `"INDEX"` → 分类索引页
+  - `"INDEX"` → 分类索引页第 1 页
+  - `"IDX|p<N>"` → 分类索引页第 `N` 页（`N`≥1；只有分类超过 16 个才需要）
   - `"CAT:<id>|p<N>"` → 分类页（`N` 为分类页码，`p0` 左简介右列表）
   - `"ENT:<id>:<gi>|p<N>"` → 词条内容页（`gi` 为词条序号，`N` 为内容页码）
+
+> ⚠️ 索引第 2 页起必须写 `IDX|p<N>`，**不能**写 `INDEX|p<N>`：容器的门控是「包含」
+> 匹配（`(not((#form_text - $gtag) = #form_text))`），`"INDEX|p1"` 同样命中索引第 1 页的
+> `INDEX`，会让封面与首页卡格一起亮起来。新体 `IDX|p1` 不含 `INDEX` 子串，两页互斥。
 
 ### 按钮槽位（顺序固定）
 
 | 页面 | 槽位 |
 |---|---|
-| INDEX | `[no_prev, no_home, no_next, idx0..3]`（三导航全隐藏） |
+| INDEX `p0` | `[no_prev, no_home, next\|no_next, idx0..idx15]`（≤16 分类时后三槽全隐藏） |
+| INDEX `p1+` | `[prev_button, home_button, next\|no_next, idx…]`（卡片仍从槽 3 起） |
 | CAT | `[prev\|no_prev, home, next\|no_next, <id>_e<num>...]` |
 | ENT | `[prev, home, next\|no_next]` |
 
-占位键 `no_prev / no_home / no_next` 不代表任何注册按钮，从而让对应导航按钮**隐藏**。
+占位键 `no_prev / no_home / no_next` 不代表任何注册按钮，从而让对应导航按钮**隐藏**（仍占槽位，保证后面按钮的槽序不变）。
+
+> ⚠️ **槽位序号是硬约束，不能改动顺序**：框架把每张卡注册进格盘时，用的是它在 form 里的
+> **槽位序号**（`addButton(index, …, pos)` 的 `index`，会被编码成 `grid_position`），
+> Bedrock 的集合格盘正是靠 `grid_position`（行优先序号）**把格子绑到对应的 form 按钮**上；
+> 卡片画在哪一格另由 `pos` 决定（`offset = -基准格 + pos`）。
+> 所以 INDEX 页的卡片槽位**必须**从槽 3 开始（prev/home/next 占 0-2，CAT 页的 `<id>_e<gi>` 同理）。
+> 若运行期增删了前导按钮、或框架侧误把视觉序号当槽位序号传，卡片会绑到错误（占位）槽，
+> 门控 `($binding_button_text = #form_button_text)` 不成立 → **整片卡片不显示**（详见 §8）。
 
 ### 分页规则
 
+- **INDEX 分类索引**：**每页最多 16 张卡**，超出自动分页。
+  - `p0`（body `"INDEX"`）：左半页是封面，右半页 4 列 × ≤4 行 = ≤16 张。
+  - `p1+`（body `"IDX|p<N>"`）：左半页 4 列 × ≤2 行 + 右半页 4 列 × ≤2 行 = ≤16 张/页，**先填左列再填右列**。
+  - 卡片绑定名 = 分类在 `build()` 入参里的**全局序号**（`idx0..idxN`，跨页唯一，与页码无关）。
 - **CAT 列表**：每列最多 8 行。`p0` 右列 8 行；`p1+` 左 8 + 右 8（=16 行/页）。
 - **ENT 正文（text）**：左右半页各最多 5 行，先填左半页、超出再填右半页；**整体超过 10 行才分页**。
+
+#### 索引分页的计算公式
+
+框架实现：`src/core/ui/systems/sapdon/sapdonGuideBook.ts` 的
+`IDX_*` 常量（`:73-90`）、`catCard()`（`:457`）、`addIndexColumn()`（`:486`）、`indexPageCount()`（`:515`）、
+`p0` 组装（`:574-585`）、`p1+` 组装（`:590-627`）。
+
+| 量 | 公式 | 备注 |
+|---|---|---|
+| 页数 | `total ≤ 16 ? 1 : 1 + ceil((total − 16) / 16)` | `total` = `build()` 入参的分类数 |
+| `p0` 收录 | 前 `min(total, 16)` 张 | 右半页 4 列 |
+| `p0` 行数 | `rows = max(1, ceil(收录数 / 4))` | 卡格栈高 `min(79%, 20% × rows)`，余量给底部 spacer |
+| `p<k>` 收录 | `[16 + (k−1)·16, +16)` | 左列前 8 张、右列后 8 张 |
+| `p<k>` 行数 | `rows = max(1, ceil(max(左列张数, 右列张数) / 4))` | 同页两列共用 `rows`，保证标题/分割线左右对齐 |
+| 末页右列为空 | 用 `idx_col_p<k>_r_empty` 占位（不画标题与分割线） | 只在末尾出现，不会出现在中间页 |
+
+#### 卡片 → 槽位 → 格位 对照
+
+第 `j` 张卡（`j` = 该卡在**本页（p0）/ 本列（p1+）内**的序号，从 0 起）：
+
+| 量 | 值 | 由谁决定 |
+|---|---|---|
+| 绑定名 | `idx<全局序号>` | `FormButton.setBinding()` |
+| form 槽位 | `3 + j`（`p1+` 右列继续 `3 + 8 + j`） | 运行期 `ActionFormData.button()` 的顺序 |
+| `grid_position` | `[(3+j) % 4, ⌊(3+j) / 4⌋]` | `FormButtonGrid.addButton(index, …)` 的 `index` |
+| 视觉格 | `[j % 4, ⌊j / 4⌋]` | `FormButtonGrid.addButton(…, pos)` 的 `pos` |
+
+> 例（4 分类的 `p0`）：`idx0 → 槽3 → grid_position[3,0] → 视觉格[0,0]`、`idx1 → 槽4 → [0,1] → [1,0]`、
+> `idx2 → 槽5 → [1,1] → [2,0]`、`idx3 → 槽6 → [2,1] → [3,0]`。
+> 这就是生成产物里 `grid_item_003..006` 与 `offset: -300% / (100%,-100%)` 的由来。
+
+#### 可调常量
+
+| 常量 | 默认 | 含义 / 影响 |
+|---|---|---|
+| `IDX_COLS` | `4` | 每行几张卡（改大→卡更小） |
+| `IDX_ROWS_P0` | `4` | `p0` 右半页行数上限（`× IDX_COLS` = 每页容量） |
+| `IDX_ROWS_COL` | `2` | `p1+` 每半页行数上限（`× IDX_COLS` = 每半页容量） |
+| `IDX_PER_PAGE` | `16` | 每页容量 = `IDX_COLS × IDX_ROWS_P0` |
+| `IDX_PER_COL` | `8` | `p1+` 每半页容量 = `IDX_COLS × IDX_ROWS_COL` |
+| `IDX_SLOT_BASE` | `3` | 首张卡的 form 槽位序号（导航占 0-2） |
+
+> 目前**没有**公开构造参数：改容量 = 改这几个模块级常量后重建框架。
+> 运行期必须同步**同一个容量规则**（见下方 `idxPageCount` / `idxRange` 示例）。
+
+#### 向后兼容
+
+- 分类 **≤16**：只有 `p0`，body 仍是历史上的 `"INDEX"` —— **旧脚本一行都不用改**。
+- 分类 **≤4**：索引页产物与引入分页前**逐字节一致**（`examples/guidebook_demo` 的
+  `dev/guidebook_demo_RP/ui/book.json` 可作回归基线：587870 字节，
+  sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）；
+  一旦这个文件不再逐字节相同，就说明索引布局（尤其是槽位编码）被动了。
 
 运行时脚本里需要维护两个与 `main.ts` 数据对齐的量：
 
@@ -162,6 +233,15 @@ interface GuideBookChapter {
 const CATS = ["intro", "pages", "routing", "controls"];                 // 与 main.ts 分类 id 对齐（含顺序）
 const CAT_CHAPTERS: Record<string, number> = { intro: 4, pages: 6, routing: 6, controls: 6 }; // 每分类词条数
 const ENT_PAGES: Record<string, number> = { pages_e4: 2 };              // 需要多页的 text 词条 → 页数(ceil(lines/10))
+
+// 索引分页（分类 >16 才用得上）：p0 容量 16，p1+ 每页 16
+const IDX_PER_PAGE = 16;
+const idxPageCount = (total: number) => (total <= IDX_PER_PAGE ? 1 : 1 + Math.ceil((total - IDX_PER_PAGE) / IDX_PER_PAGE));
+const idxRange = (page: number, total: number): [number, number] => {
+    const start = page === 0 ? 0 : IDX_PER_PAGE + (page - 1) * IDX_PER_PAGE;
+    return [start, Math.min(start + IDX_PER_PAGE, total)];
+};
+const idxBody = (page: number) => (page === 0 ? "INDEX" : `IDX|p${page}`);
 ```
 
 > 若某 text 词条行数超过 10，`main.ts` 会用 `ENT_PAGES` 里的页数来让 next/prev 生效。忘加会导致分页无法翻动。
@@ -185,7 +265,7 @@ const NO_PREV = "no_prev", NO_HOME = "no_home", NO_NEXT = "no_next";
 function openIndex(p: Player): void {
     const f = new ActionFormData().title(TITLE).body("INDEX");
     f.button(NO_PREV); f.button(NO_HOME); f.button(NO_NEXT);
-    CATS.forEach((_, i) => f.button(`idx${i}`));
+    CATS.forEach((_, i) => f.button(`idx${i}`));   // 分类 ≤16 时一页足够
     f.show(p).then((r) => {
         if (r.canceled) return;
         const s = r.selection!;
@@ -234,6 +314,54 @@ world.afterEvents.itemUse.subscribe((e) => {
 ```
 
 > **打开触发**默认是手持**木棍右键**（`minecraft:stick`）。若手册由某个具体物品打开（如 more-golem 的指南书），把 `e.itemStack.typeId` 换成该物品的 id，或改为在物品的 `onUse` 自定义组件里直接调 `openIndex(player)`。
+
+### 分类超过 16 个：把 `openIndex` 换成可翻页版本
+
+上面那版 `openIndex` 只在分类 ≤16 时够用（`p1+` 的 body 收不到）。改成下面这版即可支持任意数量：
+`p0` 保持 `body = "INDEX"`（**旧行为不变**），`p1+` 用 `body = "IDX|p<k>"`，并在槽 0/2 放 `prev`/`next`。
+
+```ts
+const IDX_PER_PAGE = 16;                       // 与框架常量一致（见 §5「可调常量」）
+const idxBody = (page: number) => (page === 0 ? "INDEX" : `IDX|p${page}`);
+const idxRange = (page: number, total: number): [number, number] => {
+    const start = page === 0 ? 0 : IDX_PER_PAGE + (page - 1) * IDX_PER_PAGE;
+    return [start, Math.min(start + IDX_PER_PAGE, total)];
+};
+
+/** 索引页（可翻页）。p0：三枚导航隐藏（历史行为）；p1+：prev/home 回索引首页、next 翻页 */
+function openIndex(p: Player, page = 0): void {
+    const total = CATS.length;
+    const [start, end] = idxRange(page, total);
+    const hasPrev = page > 0;
+    const hasNext = end < total;
+
+    // 槽位固定：[prev?, home?, next?, idx<start>..idx<end-1>] —— 卡片必须从槽 3 起（见 §5 槽位硬约束）
+    const f = new ActionFormData().title(TITLE).body(idxBody(page));
+    f.button(hasPrev ? "prev_button" : NO_PREV);
+    f.button(hasPrev ? "home_button" : NO_HOME);
+    f.button(hasNext ? "next_button" : NO_NEXT);
+    for (let i = start; i < end; i++) f.button(`idx${i}`);
+
+    f.show(p).then((r) => {
+        if (r.canceled) return;
+        const s = r.selection!;
+        if (s === 0 && hasPrev) openIndex(p, page - 1);
+        else if (s === 1 && hasPrev) openIndex(p, 0);
+        else if (s === 2 && hasNext) openIndex(p, page + 1);
+        else if (s >= 3) {
+            const ci = start + (s - 3);
+            if (ci < end) openCat(p, CATS[ci], 0);
+            else openIndex(p, page);
+        } else openIndex(p, page);
+    });
+}
+```
+
+> 两处容易踩的点：
+> 1. **`p0` 的三个槽位必须留着**（`no_*` 占位即可）—— 卡片就是靠「槽 3 起」绑定的，把卡片挪到槽 0 会整片不显示（§8）。
+> 2. **`p1+` 的 body 只能是 `IDX|p<k>`**，写成 `INDEX|p<k>` 会连 `p0` 的封面一起点亮（§5 的门控说明）。
+>
+> 可参考的实现：`examples/guidebook_demo`（≤16 的简版）、`fz-sapdon/scripts/index.ts` 的 `openIndex(player, page)`（完整版）。
 
 ---
 
@@ -300,3 +428,26 @@ sapdon build ./
 - **合成页输出是品红/黑格**：`craft.output` 引用了一个不存在的贴图。换成有效的（如 `textures/items/iron_leggings`）。
 - **文本词条点 next 翻不动**：`ENT_PAGES` 里没给它配页数。`ENT_PAGES[`${catId}_e${gi}`] = Math.ceil(lines.length / 10)`。
 - **想显示字面 `#`**：不要放在字符串开头，如 `form_text 门控`。
+
+### 索引页不显示？（四个高频故障，按症状区分）
+
+1. **右半页「类别」标题和分割线在，但一张卡都没有**（最容易被误判为"框架坏了"）
+   - 原因：卡片绑到了错误的 form 槽位 —— `addButton(index, …)` 的 `index` 必须是**槽位序号**
+     （`3 + 页内序号`），写成视觉序号（`0/1/2…`）就会让卡片去绑 `no_prev/no_home/no_next/idx0` 这些槽，
+     `$binding_button_text ≠ #form_button_text` → 4 张卡全部隐藏。**生成的 JSON 看不出异常**（只差 `grid_position`/`offset` 数值）。
+   - 自检：打开产物 `dev/<proj>_RP/ui/guide.json`，找 `cat_row`：
+     4 分类时应是 `grid_item_003/004/005/006` + `grid_position [3,0]/[0,1]/[1,1]/[2,1]` +
+     `offset ["-300%","0%"] / ["100%","-100%"] …`。若看到 `grid_item_000..003` +
+     `grid_position [0,0]/[1,0]…` + `offset ["0%","0%"]`，就是槽位编码被改坏了（见 `formButtonGrid.ts` 的 `addButton` 注释）。
+   - 也可以直接跑回归对比：`examples/guidebook_demo`（4 分类）重新构建后，
+     `dev/guidebook_demo_RP/ui/book.json` 应与基线**逐字节一致**（见 §5「向后兼容」）。
+2. **整个索引页（含封面）都不显示**
+   - 原因：运行期 `body` 与门控不匹配。`p0` 必须是 `"INDEX"`；若脚本发的是 `"INDEX|p0"` 之类，
+     将命中不了任何容器。
+3. **索引第 2 页起「封面和卡片一起亮」/ 两页重叠**
+   - 原因：`p1+` 的 `body` 写成了 `"INDEX|p<N>"`。门控是**包含**匹配，它会同时命中 `p0` 的 `"INDEX"`。
+     改用 `"IDX|p<N>"`（不含 `INDEX` 子串，两页互斥）。
+4. **索引能翻页，但点 `next` 没反应 / 翻到空页**
+   - 原因：运行期的容量规则与框架不一致（`p0` 16 张，`p<k>` 16 张 = 左 8 + 右 8），
+     或索引页的按钮顺序不是「3 个导航槽 + 卡片」。见 §5「索引分页的计算公式」与 §6 的完整版 `openIndex`。
+

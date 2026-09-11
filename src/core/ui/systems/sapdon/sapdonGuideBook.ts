@@ -22,11 +22,22 @@ import { UIElement } from '../../elements/uiElement.js'
  * SapdonGuideBook —— 帕秋莉式手册（分类索引 INDEX + 词条列表 CAT + 内容页 ENT + home/prev/next 导航）。
  *
  * 线协议（运行时发射）：
- *   body = "INDEX"          → 显示分类索引网格（子按钮 = 各分类，setBinding 精确门控）
- *   body = "CAT:<id>|p<N>"   → 分类页（p0 左简介/右 list，p1+ 左右 list）
+ *   body = "INDEX"              → 索引页 p0（左封面 + 右半页 ≤16 张分类卡）
+ *   body = "IDX|p<N>"           → 索引页 p1+（左右半页各 ≤8 张卡，先填左列再填右列）
+ *   body = "CAT:<id>|p<N>"      → 分类页（p0 左简介/右 list，p1+ 左右 list）
  *   body = "ENT:<id>:<gi>|p<N>" → 词条内容页（按 pageType 渲染、可分页）
  *   title = "sapdon_ui:<name>"
- *   button(...)             → 集合 form_buttons：分类按钮 or 导航，均 exact-match 门控
+ *   button(...)                 → 集合 form_buttons：分类按钮 idx<i> or 导航，均 exact-match 门控
+ *
+ * 索引页（INDEX）分页规则：
+ *   每页最多 IDX_PER_PAGE(16) 张分类卡；p0 用右半页（4 列 × ≤4 行 = ≤16），
+ *   p1+ 左右半页各一列（4 列 × ≤2 行 = ≤8/列），**先填左列再填右列**；
+ *   卡片绑定名 = 分类在 build() 入参里的全局序号（idx0..idxN），跨页唯一。
+ *   分类 ≤16 时只有 p0，body 仍是历史上的 "INDEX"（旧脚本无需改动）。
+ *
+ * ⚠️ p1+ 的 body 用 "IDX|p<N>" 而非 "INDEX|p<N>"：门控是「包含」匹配（见 gateLayout），
+ *    "INDEX|p1" 会同时命中 p0 的 "INDEX"，让封面与 p0 卡格一起亮起来；
+ *    "IDX|p1" 不含 "INDEX" 子串，两页互斥。
  */
 
 export type GuideBookPageType = 'text' | 'crafting' | 'spotlight' | 'image'
@@ -58,6 +69,25 @@ export interface GuideBookCategory {
     /** 右页章节条目 */
     chapters: GuideBookChapter[]
 }
+
+/**
+ * INDEX 索引卡排布参数（与 CAT 列表页的视觉节奏一致：半页宽一列、每行 4 张卡）。
+ *   p0 ：右半页 4 列 × ≤4 行 = ≤16 张（左半页是封面）
+ *   p1+：左半页 4 列 × ≤2 行 + 右半页 4 列 × ≤2 行 = ≤16 张/页（先左后右）
+ */
+const IDX_COLS = 4
+const IDX_ROWS_P0 = 4
+const IDX_ROWS_COL = 2
+const IDX_PER_PAGE = IDX_COLS * IDX_ROWS_P0 // = 16
+const IDX_PER_COL = IDX_COLS * IDX_ROWS_COL // = 8（p1+ 每半页容量）
+/**
+ * INDEX 页在运行期 form 里的**前导槽位数**：prev / home / next 固定占槽 0-2，
+ * 所以第一张分类卡永远落在槽 3（与 CAT/ENT 页的 `<id>_e<gi>` 起始槽一致）。
+ * ⚠️ 卡片注册进 FormButtonGrid 时用的 index 必须是**槽位序号**（历史上写死 `3 + i`）：
+ *    Bedrock 的集合格盘靠 grid_position（行优先序号）把格子绑到对应的 form 按钮，
+ *    视觉落点由 addButton 的 pos 决定 —— 见 addIndexColumn 的注释。
+ */
+const IDX_SLOT_BASE = 3
 
 const NAV_TEXTURES: Record<string, [string, string, string]> = {
     prev_button: ['textures/ui/book_pageleft_default', 'textures/ui/book_pageleft_hover', 'textures/ui/book_pageleft_pressed'],
@@ -423,6 +453,69 @@ export class SapdonGuideBook {
         return pages
     }
 
+    /** 一张索引卡：上图标、下名称（绑定名 = 分类全局序号 idx<i>） */
+    private catCard(c: GuideBookCategory, i: number): FormButton {
+        // 图标不再铺满整卡，名称独立放在下方，避免文字被图标遮挡
+        return new FormButton(`idx${i}`)
+            .setBinding(`idx${i}`)
+            .setSize('80%', '80%')
+            .setTexture('', 'textures/ui/promotion_slot', '')
+            .addControl(
+                new Image(`idx_icon_${i}`, undefined)
+                    .setSprite(new Sprite().setTexture(c.icon))
+                    .setLayout(new Layout().setSize(['60%', '60%']).setAnchorFrom('top_middle').setAnchorTo('top_middle').setOffset([0, -2]))
+            )
+            .addControl(
+                new Label(`idx_name_${i}`, undefined)
+                    .setText(new Text().setText(c.title).setColor([0, 0, 0]).setTextAlignment('center'))
+                    .setLayout(new Layout().setSize(['100%', '30%']).setAnchorFrom('bottom_middle').setAnchorTo('bottom_middle').setOffset([0, -2]))
+            )
+    }
+
+    /**
+     * 往 col 里挂一列索引卡：空 5% / 标题 10% / 分割线 3% / 卡格 rows 行 / 分割线 3% / 余量。
+     * 卡格 = 4 列 × rows 行的 FormButtonGrid，装 cards[start, end)（全局序号，先左后右逐行填）。
+     * ids 由调用方给定，便于 p0 沿用历史元素名（right_index / cat_row / sp_end …）。
+     *
+     * ⚠️ slotBase = 本列第一张卡在运行期 form 里的**槽位序号**（INDEX 页固定 3：prev/home/next 占 0-2）。
+     *    FormButtonGrid.addButton 的 index 会被编码成 grid_position，而 Bedrock 的集合格盘是靠
+     *    grid_position（行优先序号）**把格子绑到对应的 form 按钮**上；视觉落点由第二个参数 pos 决定。
+     *    所以 index 必须是槽位序号（历史上就是 `3 + i`），写成 0/1/2… 会让卡片绑到 no_prev/no_home/
+     *    no_next 等占位槽，门控 `($binding_button_text = #form_button_text)` 全部不成立 → 卡片整片消失。
+     */
+    private addIndexColumn(
+        col: StackPanel,
+        ids: { spTop: string; title: string; divTop: string; row: string; divBottom: string; spBottom: string },
+        cats: GuideBookCategory[],
+        start: number,
+        end: number,
+        rows: number,
+        slotBase: number,
+    ): void {
+        col.addStack(['100%', '5%'], new Panel(ids.spTop))
+        col.addStack(['100%', '10%'],
+            new Label(ids.title, undefined).setText(new Text().setText('类别').setColor([0, 0, 0]).setTextAlignment('center'))
+        )
+        col.addStack(['100%', '3%'], new UIElement(ids.divTop, undefined, 'settings_common.option_group_section_divider'))
+
+        const grid = new FormButtonGrid(ids.row, { size: ['90%', '90%'], dimensions: [IDX_COLS, rows] })
+        for (let i = start; i < end; i++) {
+            const j = i - start
+            grid.addButton(slotBase + j, this.catCard(cats[i], i), [j % IDX_COLS, Math.floor(j / IDX_COLS)])
+        }
+        // 卡格高度：每行 20%（= 历史单行高度），最多吃到 79%（给上下两条分割线留位）
+        const gridH = Math.min(79, rows * 20)
+        col.addStack(['100%', `${gridH}%`], grid.build())
+        col.addStack(['100%', '3%'], new UIElement(ids.divBottom, undefined, 'settings_common.option_group_section_divider'))
+        const rest = 79 - gridH
+        if (rest > 0) col.addStack(['100%', `${rest}%`], new Panel(ids.spBottom))
+    }
+
+    /** 索引卡分几页：p0 容量 16，p1+ 每页 16（左 8 + 右 8） */
+    private indexPageCount(total: number): number {
+        return total <= IDX_PER_PAGE ? 1 : 1 + Math.ceil((total - IDX_PER_PAGE) / IDX_PER_PAGE)
+    }
+
     build(categories: GuideBookCategory[]): this {
         const ns = `${this.namespace}.${this.name}`
 
@@ -445,6 +538,7 @@ export class SapdonGuideBook {
         }
 
         // INDEX：内容层（layer 5），100% 全幅，盖在纸页之上
+        // 门控 "INDEX" 命中所有索引页 body（p0 = "INDEX"，p1+ = "IDX|pN"，见类注释）
         const index = new Panel('index_layout')
             .setLayout(new Layout().setSize(['95%', '90%']))  //微调适配画面
             .setControl(new Control().setLayer(5))
@@ -477,42 +571,60 @@ export class SapdonGuideBook {
         ))
         spread.addStack(['50%', '100%'], left)
 
-        // 右半页：分类索引内容（layer 5）
+        // 右半页：索引页 p0 的分类卡（4 列 × ≤4 行 = ≤16 张；分类 ≤4 时就是历史版式）
+        const total = categories.length
+        const idxPageCount = this.indexPageCount(total)
+        const p0End = Math.min(IDX_PER_PAGE, total)
+        const p0Rows = Math.max(1, Math.ceil(p0End / IDX_COLS))
         const right = new StackPanel('right_index', undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
-        right.addStack(['100%', '5%'], new Panel('sp0'))
-        right.addStack(['100%', '10%'],
-            new Label('cat_title', undefined).setText(new Text().setText('类别').setColor([0, 0, 0]).setTextAlignment('center'))
-        )
-        right.addStack(['100%', '3%'], new UIElement('div1', undefined, 'settings_common.option_group_section_divider'))
-
-        const catRow = new FormButtonGrid(`cat_row`, { size: ['90%', '90%'], dimensions: [4, 1] })
-        categories.forEach((c, i) => {
-            // 卡片：上图标、下名称——图标不再铺满整卡，名称独立放在下方，避免文字被图标遮挡
-            const card = new FormButton(`idx${i}`)
-                .setBinding(`idx${i}`)
-                .setSize('80%', '80%')
-                .setTexture('', 'textures/ui/promotion_slot', '')
-                .addControl(
-                    new Image(`idx_icon_${i}`, undefined)
-                        .setSprite(new Sprite().setTexture(c.icon))
-                        .setLayout(new Layout().setSize(['60%', '60%']).setAnchorFrom('top_middle').setAnchorTo('top_middle').setOffset([0, -2]))
-                )
-                .addControl(
-                    new Label(`idx_name_${i}`, undefined)
-                        .setText(new Text().setText(c.title).setColor([0, 0, 0]).setTextAlignment('center'))
-                        .setLayout(new Layout().setSize(['100%', '30%']).setAnchorFrom('bottom_middle').setAnchorTo('bottom_middle').setOffset([0, -2]))
-                )
-            catRow.addButton(3 + i, card, [i, 0])
-        })
-        right.addStack(['100%', '20%'], catRow.build())
-        right.addStack(['100%', '3%'], new UIElement('div2', undefined, 'settings_common.option_group_section_divider'))
-        right.addStack(['100%', '59%'], new Panel('sp_end'))
+        this.addIndexColumn(right, {
+            spTop: 'sp0', title: 'cat_title', divTop: 'div1', row: 'cat_row', divBottom: 'div2', spBottom: 'sp_end',
+        }, categories, 0, p0End, p0Rows, IDX_SLOT_BASE)
         spread.addStack(['50%', '100%'], right)
 
         index.addControl(spread)
         content.addControl(index)
+
+        // INDEX p1+（≥17 个分类才有）：卡片占满左右半页，每页 16 = 左列 8（先填）+ 右列 8
+        for (let k = 1; k < idxPageCount; k++) {
+            const page = new Panel(`index_page_${k}`)
+                .setLayout(new Layout().setSize(['95%', '90%']))
+                .setControl(new Control().setLayer(5))
+            this.gateLayout(page, `IDX|p${k}`)
+            if (this.debug) page.enableDebug()
+
+            const pSpread = new StackPanel(`idx_spread_p${k}`, undefined)
+                .setOrientation('horizontal')
+                .setLayout(new Layout().setSize(['100%', '100%']))
+            const base = IDX_PER_PAGE + (k - 1) * IDX_PER_PAGE
+            const leftEnd = Math.min(base + IDX_PER_COL, total)
+            const rightEnd = Math.min(leftEnd + IDX_PER_COL, total)
+            // 同一页两列用同一个 rows，保证标题/分割线左右对齐
+            const rows = Math.max(1, Math.ceil(Math.max(leftEnd - base, rightEnd - leftEnd) / IDX_COLS))
+            // 空列（末页右列常为空）不放「类别」标题与分割线，留白纸页即可
+            const addCol = (side: 'l' | 'r', start: number, end: number) => {
+                if (end <= start) {
+                    pSpread.addStack(['50%', '100%'], new Panel(`idx_col_p${k}_${side}_empty`))
+                    return
+                }
+                const col = new StackPanel(`idx_col_p${k}_${side}`, undefined)
+                    .setOrientation('vertical')
+                    .setLayout(new Layout().setSize(['100%', '100%']))
+                // 槽位：左列从槽 3 起，右列接在左列卡片之后（槽位序号必须与运行期 form 的按钮顺序一致）
+                const slotBase = IDX_SLOT_BASE + (side === 'l' ? 0 : leftEnd - base)
+                this.addIndexColumn(col, {
+                    spTop: `idx_sp_top_p${k}_${side}`, title: `idx_title_p${k}_${side}`, divTop: `idx_div_top_p${k}_${side}`,
+                    row: `idx_row_p${k}_${side}`, divBottom: `idx_div_bottom_p${k}_${side}`, spBottom: `idx_sp_bottom_p${k}_${side}`,
+                }, categories, start, end, rows, slotBase)
+                pSpread.addStack(['50%', '100%'], col)
+            }
+            addCol('l', base, leftEnd)
+            addCol('r', leftEnd, rightEnd)
+            page.addControl(pSpread)
+            content.addControl(page)
+        }
 
         // TXT：动态文本页（layer 5）
         const txt = new Panel('text_layout')

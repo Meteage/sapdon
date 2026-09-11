@@ -35,7 +35,19 @@ export class FormButtonGrid {
         return this
     }
 
-    /** 加一枚内容：index 决定基准格（off_col = index%c, off_row = index/c）；给 pos 则叠加。仅 FormButton 注入集合/门控绑定。 */
+    /**
+     * 加一枚内容。
+     *
+     * ⚠️ index 必须是该按钮在**运行期 form 里的槽位序号**（不是视觉序号）：
+     *    index 被编码成 grid_position（col = index%c, row = index/c），而 Bedrock 的集合格盘
+     *    正是靠 grid_position（行优先序号）**把格子绑到对应的 form 按钮**；
+     *    按钮最终落在哪一格由第二个参数 pos 决定（offset = -基准格 + pos）。
+     *    例：表单前 3 个槽被 prev/home/next 占用时，第 i 张卡要写 addButton(3 + i, card, [i, 0])；
+     *    若误传视觉序号（0/1/2…），卡片会绑到 no_prev/no_home/no_next 等占位槽，
+     *    门控 `($binding_button_text = #form_button_text)` 不成立 → 卡片整片不显示。
+     *
+     * 仅 FormButton 注入集合/门控绑定。
+     */
     addButton(index: number, btn: FormButton | UIElement, pos?: [number, number]): this {
         // grid_position 顺序 = [col, row]；基准格行优先：col = index%c, row = index/c
         const base_col = index % this.cols
