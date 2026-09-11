@@ -13,25 +13,9 @@ import { TrapdoorBlock } from "../block/trapdoorBlock.js";
 import { registerEntity } from "./entityFactory.js";
 import { GRegistry } from "../registry.js";
 
-//blocks.json — cumulative, registered once by reference
+// blocks.json —— **只保留 `format_version`，一个方块条目都不写**（见下方 registerBlock 的注释）
 const blocks_json = {"format_version": "1.20.20"}
 let blocksJsonRegistered = false
-/** 已经就「键不含命名空间」告警过的键（去重，避免每次注册都刷屏） */
-const warnedBlockJsonKeys = new Set()
-
-/**
- * 护栏：`blocks.json` 的键必须是**带命名空间的完整标识符**（`ns:name`）。
- * 键一旦退回「文件名安全名」（`ns_name`），Bedrock 认不出这个方块，整条条目静默失效。
- */
-function assertBlocksJsonKey(key) {
-    if (key.includes(":")) return
-    if (warnedBlockJsonKeys.has(key)) return
-    warnedBlockJsonKeys.add(key)
-    console.warn(
-        `[sapdon] blocks.json 的键 "${key}" 不含命名空间 —— 它必须是方块的完整标识符（"ns:name"），` +
-        `否则 Bedrock 认不出该方块、该条贴图/音效条目会静默失效。`
-    )
-}
 
 /**
  * 注册方块到注册表中。
@@ -47,25 +31,32 @@ export const registerBlock = (block) => {
     const block_name = block.identifier.replace(":", "_");
     GRegistry.register(block_name, "behavior", "blocks/", block);
     
-    //blocks.json — accumulate textures
-    // ⚠️ 键用**完整标识符**（`ns:name`），不是文件名安全名：
-    //    - 基岩版权威源：https://wiki.bedrock.dev/blocks/block-sounds 的 RP/blocks.json 示例键即 `"wiki:chestnut_log"`
-    //    - 历史产物（预言机）：`git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json`
-    //      的键是 `"mob_chest:chest"` / `"sapdon:falling_block"`，正与 main.mjs 里的 identifier 一致
-    //    - `_` 形态的来历：05bd104 把这块逻辑挪进 blockFactory.js 时复用了 `block_name`，而当时
-    //      根目录还被误标成 "behavior"（文件落在 BP、被 Bedrock 完全忽略）→ 从没有项目依赖过 `_` 形态
-    const textures_arr = block.textures;
-    blocks_json[block.identifier] = {
-        textures: {
-            up: textures_arr[0],
-            down: textures_arr[1],
-            east: textures_arr[2],
-            west: textures_arr[3],
-            south: textures_arr[4],
-            north: textures_arr[5]
-        }
-    }
-    assertBlocksJsonKey(block.identifier)
+    // ⚠️ **不往 blocks.json 写任何方块条目**（历史上这里累积 `textures: {up,down,east,west,south,north}`）。
+    //
+    // 为什么删掉（2026-09，真机日志 + 官方文档双向确认）：
+    //   键修成完整标识符（3715e74）之后，引擎**真的匹配上了**这些方块，于是**每个自定义方块**开始报：
+    //     [Blocks][warning]-fz:<block>: trying to override the Geometry component with blocks.json settings
+    //       for a custom block. This isn't supported.
+    //       Please remove any legacy texture definition or block shape specification for this block.
+    //   （真机计数：探针轮 3 条 → FZ 全量 77 条 = 项目方块总数。）
+    //   官方依据（Microsoft Learn · blocks.json File Reference，原文）：
+    //     "components in Behavior Packs, specifying `minecraft:geometry` and `minecraft:material_instances`,
+    //      will override configurations here. Components are more powerful, and they're the recommended way
+    //      to specify visual properties for blocks, leaving **blocks.json** as just a sound configuration system."
+    //     <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blocksjsonfilestructure>
+    //   ⇒ `textures` 是**被 material_instances 全面覆盖**的 legacy 机制，写了只会招警告。
+    //   自定义方块的贴图由 `minecraft:material_instances`（BP 方块 JSON）+ `terrain_texture.json`
+    //   （`src/core/texture.js` / `cli/tools/textureSet.js` 扫描 RP/textures/blocks/**.png 生成）提供，
+    //   **不经过** blocks.json。
+    //
+    // 文件本身仍然生成（只有 `format_version`）：内容对所有项目一致 → 不再有任何"覆写"可言；
+    // 保留它 = 保留将来支持官方唯一认可的字段 `sound` 的位置，也不改变"RP 根目录有这个文件"的既有契约。
+    // ⚠️ 若将来要写 `sound`：**只写 sound，绝不写 textures**（`BlockComponent.setSound` 走的是
+    //    `minecraft:sound` 方块组件，与这里的 legacy 音效表是两套机制）。
+    //
+    // 文件名的安全名仍然只用于 `blocks/<name>.json` 的**路径**（`:` 在 Windows 文件名里非法），
+    // 与 blocks.json 再无关系 —— 所以"键必须是 ns:name"那条护栏（assertBlocksJsonKey）
+    // 在不再写条目后就没有触发场景了，已随之删除（不留死护栏）。
 
     // Register once by reference; mutations reflect at submit time
     // ⚠️ 根目录必须是 resource：`blocks.json` 是**资源包**文件（RP 根目录）。
