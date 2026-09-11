@@ -205,14 +205,50 @@ writeManifest(buildPath, projectName, generatedFiles)                # 写回本
   1. **重命名项目后**：新项目名对应的清单（`.sapdon_generated_<新名>.json`）管不到旧名字的 `dev/<旧名>_*` 目录 → 旧目录整个残留，需**手工删除**。
   2. **从未成功构建过的项目**没有清单 → 其陈旧文件也清不掉（清单不存在时 `readManifest` 返回空列表，`load.js:19`）。
 
-### `blocks.json` 的位置与键
+### ★ 同步到游戏开发包 / `res/` → `dev/` 的「按清单 prune」（2026-09 新增，缺口 P1）
 
-- **位置**：`blocks.json` 是**资源包（RP）**文件 → 框架写在 `dev/<proj>_RP/blocks.json`（`GRegistry.register("blocks","resource","",blocks_json)`，`blockFactory.js:76`）。
+三条**互不重叠**的清单，各管一段路，**全都只删"自己上次记过的文件"**，一律不扫目录：
+
+| 清单 | 位置 | 管什么 | 谁写的 |
+|---|---|---|---|
+| 生成物 | `dev/.sapdon_generated_<proj>.json` | 框架生成的 JSON 在 **`dev/`** 里的陈旧清理 | `load.js` |
+| 部署物 | `dev/.sapdon_synced_<proj>.json` | **游戏开发包目录**（`development_behavior_packs` / `development_resource_packs`）里「上次部署过、这次 `dev/` 里已经没有」的文件 | `syncFiles.js` 的 `syncDevFilesServer()` |
+| 资源 | `dev/.sapdon_res_<proj>.json` | **`dev/<proj>_RP/`** 里「上次从项目 `res/` 拷过、这次 `res/` 里已经没有」的文件 | `syncFiles.js` 的 `syncResourceFiles()` |
+
+**症状（修之前）**：从项目里删掉的方块/物品/配方**永远留在玩家游戏里**，并持续报
+`… not present in the Schema`；`res/` 删掉的资源同样残留 —— 因为同步/拷贝用的都是
+`fs.cpSync(..., {recursive:true, force:true})` / `copyFolder`，**只合并、从不删除**。
+
+**要点**
+- 部署清单记的是「**上次实际部署过的文件全集**」，不是直接复用生成物清单：后者不含
+  `manifest.json` / `pack_icon.png` / 打包好的 `scripts/index.js` / `res/` 拷进来的资源，
+  而且它在同步**之前**就被本次构建覆写了（同步时已经读不到"上次"）。
+- **没有清单时（首跑 / 从未成功构建过的老项目）一个文件都不删**，只记录。
+- 空包目录（`dev/<proj>_BP` 里一个文件都没有，正常总该有 `manifest.json`）视为**构建中断**，
+  跳过 prune 并 warn —— 免得把游戏里一份完好可用的包删空。
+- HMR 路径（`hmr.js:37`）调的是同一个 `syncDevFilesServer()`，所以热更新同样会 prune。
+- 单测：`node tests/sync-manifest.test.mjs`（临时目录 + `MC_PATH` 重定向，不需要真机）。
+
+### `blocks.json` 的位置与内容（★ 2026-09 起**不再写方块条目**）
+
+- **位置**：`blocks.json` 是**资源包（RP）**文件 → 框架写在 `dev/<proj>_RP/blocks.json`（`GRegistry.register("blocks","resource","",blocks_json)`）。
   依据：[Bedrock Wiki · Pack Folder Structure](https://wiki.bedrock.dev/documentation/pack-structure) 的目录树把 `blocks.json` 列在 **RP** 根目录下（BP 侧没有 `blocks.json` 这个概念）；[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的示例标题即 `RP/blocks.json`。历史上框架曾把它误写在 BP，那里会被 Bedrock **完全忽略**；首次带清单构建会自动清掉 BP 侧那个**确切路径**的历史残留（`cleanLegacyBpBlocksJson()`，`load.js:34-41`）。
-- **键**：必须是**完整标识符** `ns:name`，例如 `"mob_chest:chest"`，**不是** `ns_name`。
-  依据：[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的 RP/blocks.json 示例键为 `"wiki:chestnut_log"`；本仓库历史产物 `git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json` 用的也是 `"mob_chest:chest"` / `"sapdon:falling_block"`。
-  `ns_name` 形态是历史上把「**文件名安全名**」复用成 JSON 键的副产品 —— 文件名必须继续用 `_`（`:` 在 Windows 文件名里非法，`blockFactory.js:47`），但它不能兼任 JSON 键。框架现在有护栏：键不含 `:` 会 `console.warn`（`assertBlocksJsonKey()`，`blockFactory.js:26-34`）。
-- ⚠️ **未验证**：移到 RP + 键改成 `ns:name` 之后，**游戏内**的音效/贴图是否正常 —— 本项目无法启动 Minecraft，只验证到了「文件位置与键格式符合 wiki 规范」。
+- ★ **内容：只有 `{"format_version": "1.20.20"}`，没有任何方块条目**（`blockFactory.js:34-59` 有完整依据）。
+  - 原因：曾经每个方块写一条 `{ "ns:name": { "textures": { up/down/... } } }`；键修成完整标识符后引擎真的匹配上了这些方块，
+    于是**每个自定义方块**报一条 `trying to override the Geometry component with blocks.json settings for a custom block`。
+  - 官方依据（Microsoft Learn · blocks.json File Reference）：`minecraft:geometry` / `minecraft:material_instances`
+    **会覆盖** blocks.json 里的配置，官方推荐用组件写视觉，`blocks.json` 只当 **sound** 配置系统。
+    <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blocksjsonfilestructure>
+  - 自定义方块的贴图由 `minecraft:material_instances`（BP 方块 JSON）+ `terrain_texture.json` 提供，**不经过** blocks.json。
+- **键格式的历史**（保留记录，供查旧产物；现在没有触发场景，对应的 `assertBlocksJsonKey()` 护栏**已删除**）：
+  曾经的键必须是**完整标识符** `ns:name`（如 `"mob_chest:chest"`），不是 `ns_name`。
+  依据：[Bedrock Wiki · Block Sounds](https://wiki.bedrock.dev/blocks/block-sounds) 的示例键为 `"wiki:chestnut_log"`；
+  本仓库历史产物 `git show e1199cc:examples/mob_chest/dev/mob_chest_RP/blocks.json` 用的也是 `"mob_chest:chest"` / `"sapdon:falling_block"`。
+  `ns_name` 形态是把「**文件名安全名**」复用成 JSON 键的副产品 —— 文件名仍必须用 `_`
+  （`:` 在 Windows 文件名里非法），但它不再兼任任何 JSON 键。
+- ⚠️ **未验证**：只含 `format_version` 的 `blocks.json` 引擎会不会抱怨；以及音效/贴图在游戏内是否正常
+  （音效本来就没配过 —— 框架从未写过 `sound` 字段，故预期与改动前一致）。
+  真机验证方式：重进世界看那批 `trying to override the Geometry component` 警告是否消失 + 挖掘/放置音效正常。
 
 ### 自定义组件注册索引合并（缺口 10/11）
 

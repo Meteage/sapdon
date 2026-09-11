@@ -52,13 +52,19 @@ dev/
 ├── <项目名>_RP/          # 资源包（Resource Pack）—— 大写 RP
 │   ├── manifest.json
 │   ├── pack_icon.png
-│   ├── blocks.json       # ← 方块贴图/音效表（属资源包，不是行为包！）
+│   ├── blocks.json       # ← 方块音效表（属资源包，不是行为包！自 2026-09 起只含 format_version）
 │   ├── entity/*.json
 │   ├── textures/item_texture.json
 │   ├── textures/terrain_texture.json
 │   └── textures/blocks|items/*.png
-└── .sapdon_generated_<项目名>.json   # 框架的产物清单（请勿手工编辑）
+├── .sapdon_generated_<项目名>.json   # 框架的产物清单（请勿手工编辑）
+├── .sapdon_synced_<项目名>.json      # 部署清单：上次同步到游戏开发包的文件（请勿手工编辑）
+└── .sapdon_res_<项目名>.json         # 资源清单：上次从 res/ 拷进 RP 的文件（请勿手工编辑）
 ```
+
+> 三份清单都只用来**删除框架自己上次写过的、这次不再生成的文件**（从项目里删掉的方块/配方/资源
+> 会真正从游戏的开发包里消失，不再残留报 `not present in the Schema`）。它们**从不扫目录删未知文件**，
+> 所以你自己放进 `dev/` 或游戏开发包里的文件不会被碰。
 
 ⚠️ **`_BP` / `_RP` 一定是大写**。历史版本曾用小写 `_bp`/`_rp`，在 Windows 上因为大小写不敏感看不出问题，但在 Linux/macOS 下会**分叉成两个目录**（构建写一个、打包读另一个 → 打出空包）。
 
