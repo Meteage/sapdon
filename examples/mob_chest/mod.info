@@ -3,5 +3,7 @@
   "description": "生物箱子",
   "author": "meteage",
   "version": "1.0.0",
-  "min_engine_version": "1.19.50"
+  "min_engine_version": "1.19.50",
+  "bp": "48f7e5ff-b8c8-4170-bf0c-e759655987d3",
+  "rp": "2685d920-810e-4e3a-ac85-e2f774263518"
 }

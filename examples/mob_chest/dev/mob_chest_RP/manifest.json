@@ -27,7 +27,16 @@
       ]
     }
   ],
-  "dependencies": [],
+  "dependencies": [
+    {
+      "uuid": "48f7e5ff-b8c8-4170-bf0c-e759655987d3",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ],
   "metadata": {
     "authors": [
       "@sapdon"
