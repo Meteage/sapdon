@@ -576,11 +576,18 @@
   本面板拿不到 `#furnace_arrow_ratio`，**比例只能自己算**：把每格的
   `#item_durability_current_amount` / `#item_durability_total_amount` 两条 collection 绑定
   （**不带 override**，让名字进入该控件的属性作用域）挂在同一个控件上，再加一条 view 绑定
-  `source_property_name: "(#item_durability_current_amount / #item_durability_total_amount)"`
+  `source_property_name: "((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)"`
   → `target_property_name: "#clip_ratio"`。**Molang 算术写在 view 绑定里是框架自己用过的**：
   `src/core/ui/systems/hud/hud.ts:35` 就是 `"(not (%.7s * #hud_title_text_string = 'PREFIX'))"`。
-  - ⚠️ **待真机验证**：Molang 表达式能否读到 **collection** 绑定（框架那次用的是 **global** 绑定）。
+  - ⚠️ **真机已验证（2026-09-12）：Molang 表达式读得到 collection 绑定** —— 箭头随进度动起来了（先前只在框架的 HUD 里见过它读 **global** 绑定）。
     兜底设计：把静态的 `arrow_inactive` 垫在下面，即使裁切不生效也还看得见一支箭头。
+  - **★ 真机已验证：`#item_durability_current_amount` 是「已损耗量」，不是「剩余量」。**
+    判据是**方向**：按 `current / total` 写箭头会**越走越短**，正确写法是取反 `((total - current) / total)`。
+    引擎自带的 `durability_bar` 不取反也不反，是因为它的 `property_bag` 带了 `is_durability: true`
+    （`ui_common.json:3637-3641`），方向由渲染器内部处理。
+  - **`clip_direction: "left"` 的语义 = 显示左侧 `ratio` 那一部分**（不是裁掉左侧）。佐证：XP 条
+    `full_progress_bar`（`hud_screen.json:510-522`）用 `clip_direction: "left"` + `#exp_progress`，
+    而 XP 条是从左往右长的。
   - 附带：想让格子**没有浅灰底**，可把 `$background_images`（`container_item` 自己声明，`:4784`）
     指向一个 0×0 的空面板。
 - **框架侧硬约束**：`ContainerUISystem` 把模板硬编码成 `chest.chest_grid_item`

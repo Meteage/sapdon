@@ -68,8 +68,14 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       //   arrow_inactive 打底（静态，所以即使裁切没生效也还看得见一支箭头）
       //   arrow_active   按比例从左往右裁开
       // 比例得自己算：原版的 #furnace_arrow_ratio 是引擎给熔炉界面的、本面板拿不到（§4.12），
-      // 于是用每格的耐久 current/total 在 view 绑定里做 Molang 除法
-      // （框架自己的 HUD 就是这么用算术的：hud.ts:35）。
+      // 于是在 view 绑定里用每格的耐久做 Molang 除法（框架自己的 HUD 就是这么用算术的：hud.ts:35）。
+      //   · clip_direction:'left' 的语义 = 显示左侧 ratio 那一部分（XP 条同款：
+      //     hud_screen.json:510-522 用 clip_direction:'left' + #exp_progress，而 XP 条是从左往右长的）。
+      //   · ★ 真机实测（2026-09-12）：写成 current/total 时箭头是**越走越短** ⇒
+      //     #item_durability_current_amount 是**已损耗量**（damage），不是剩余量；
+      //     所以要取反：剩余比例 = (total − current) / total。
+      //     （引擎自带的 durability_bar 不取反也不影响，因为它的 property_bag 里带了
+      //      `is_durability: true`，由渲染器内部处理这个方向，ui_common.json:3637-3641。）
       const arrow_back = new Image("arrow_back")
         .setSprite(new Sprite().setTexture("textures/ui/arrow_inactive"))
         .setLayout(new Layout().setSize([22, 15]).setAnchorFrom("top_left").setAnchorTo("top_left"))
@@ -87,7 +93,7 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
           .setBindingCollectionName("container_items"))
         .addDataBinding(new DataBindingObject()
           .setBindingType("view")
-          .setSourcePropertyName("(#item_durability_current_amount / #item_durability_total_amount)")
+          .setSourcePropertyName("((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)")
           .setTargetPropertyName("#clip_ratio"))
       sapdon_furnace.system.addElement(new Panel("furnace_progress_arrow").addControls([arrow_back, arrow_fill]))
       // 零尺寸背景：把格子的浅灰底去掉，只留箭头
