@@ -288,7 +288,7 @@
             },
             {
               "binding_type": "view",
-              "source_property_name": "(#item_durability_current_amount / #item_durability_total_amount)",
+              "source_property_name": "((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)",
               "target_property_name": "#clip_ratio"
             }
           ]
