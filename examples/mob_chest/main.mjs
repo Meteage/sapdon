@@ -43,7 +43,10 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.setSlotDefaults({ cellSize: [18, 18] })  //= 原版 container_item 尺寸
       sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
-      sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
+      // ★ 输出槽必须显式写 `enabled: true`：`kind: 'output'` 的**缺省**是 `enabled: false`，
+      //   而这个属性是**整体禁用该格**（放入与取出一起关）⇒ 不写这一行，产物进得去、拿不出来。
+      //   「只出不进」应由加工逻辑保证，不靠界面标志位（依据见 doc/dev/known-pitfalls.md §4.14）。
+      sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', enabled: true, cellSize: [26, 26] })
       // 进度指示（箭头 / 火焰）：用框架的 addProgressSlot —— 它把整条链封好了：
       //   base 垫底 + fill 按 clipDirection 裁开，比例取**本格物品的耐久**（取反的理由写在框架里），
       //   并自动关掉引擎自带的耐久条、去掉格子浅灰底、把 overlay 控件注入到格内。
