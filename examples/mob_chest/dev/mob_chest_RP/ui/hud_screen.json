@@ -1,0 +1,22 @@
+{
+  "namespace": "hud",
+  "hud_title_text/title_frame": {
+    "modifications": [
+      {
+        "array_name": "bindings",
+        "operation": "insert_back",
+        "value": [
+          {
+            "binding_name": "#hud_title_text_string",
+            "binding_type": "global"
+          },
+          {
+            "binding_type": "view",
+            "source_property_name": "(not (%.7s * #hud_title_text_string = 'ui.hud.'))",
+            "target_property_name": "#visible"
+          }
+        ]
+      }
+    ]
+  }
+}

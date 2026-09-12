@@ -1,5 +1,5 @@
 {
-  "namespace": "sapdon_furnace",
+  "namespace": "calib_test",
   "container_root_panel": {
     "type": "panel",
     "size": [
@@ -16,7 +16,7 @@
       {
         "title": {
           "type": "label",
-          "text": "自定义熔炉",
+          "text": "坐标校准",
           "color": [
             0,
             0,
@@ -46,8 +46,8 @@
           ],
           "grid_item_template": "chest.chest_grid_item",
           "size": [
-            20,
-            80
+            18,
+            72
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
@@ -74,12 +74,12 @@
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        18,
+                        18
                       ]
                     }
                   }
@@ -97,18 +97,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        22,
-                        -20
+                        36,
+                        -18
                       ],
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        18,
+                        18
                       ]
                     }
                   }
@@ -126,19 +126,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        44,
-                        -40
+                        0,
+                        0
                       ],
-                      "enabled": false,
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        18,
+                        18
                       ]
                     }
                   }
@@ -156,19 +155,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        76,
-                        -60
+                        36,
+                        -18
                       ],
-                      "enabled": false,
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        36,
-                        10
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        36,
-                        10
+                        18,
+                        18
                       ]
                     }
                   }
@@ -191,7 +189,32 @@
             0,
             0
           ],
-          "layer": 4
+          "layer": 4,
+          "controls": [
+            {
+              "origin_label": {
+                "type": "label",
+                "text": "原点 [0,0]",
+                "color": [
+                  1,
+                  1,
+                  0
+                ],
+                "text_alignment": "left",
+                "size": [
+                  "100%",
+                  "default"
+                ],
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "offset": [
+                  8,
+                  8
+                ],
+                "layer": 12
+              }
+            }
+          ]
         }
       },
       {

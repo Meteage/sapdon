@@ -5,6 +5,12 @@ const BlockEntities = {
     "mob_chest:chest":"mob_chest:chest_entity",
 };
 
+// 门控键 = 容器标题 = 实体 nametag；切这一行换面板：
+//   "calib_test"     → 框架生成的坐标校准面板（4 槽 @36px 间距）
+//   "slot_test"      → 手写对照件（enabled:true vs enabled:false 的机制 A/B）
+//   "sapdon_furnace" → 框架生成的自定义熔炉面板（新 API + 新骨架）
+const CONTAINER_UI_GATE = "calib_test";
+
 /** @type {import("@minecraft/server").BlockCustomComponent} */
 const BlockWithEntityComponent = {
     onPlace({block,dimension,previousBlock}) {
@@ -32,9 +38,8 @@ const BlockWithEntityComponent = {
                const block_entity = dimension.getEntitiesAtBlockLocation(block.center())[0];
 
                //设置名字（= 容器门控键 $new_container_title：实体容器取 nametag）
-               //   "slot_test"      → 手写验证面板 res/ui/slot_test.json（enabled/enable 三种写法对照）
-               //   "sapdon_furnace" → 框架 ContainerUISystem 生成的那份（addOutputGrid 写的 enable:false）
-               block_entity.nameTag = "slot_test";
+               //   候选键见文件顶部的 CONTAINER_UI_GATE
+               block_entity.nameTag = CONTAINER_UI_GATE;
                //获取属性
                const chest_state = block_entity.getProperty("mob_chest:chest_state");
                world.sendMessage("chest_state:"+chest_state);

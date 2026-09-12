@@ -95,20 +95,6 @@
                           }
                         },
                         {
-                          "grid_item_3": {
-                            "type": "panel",
-                            "grid_position": [0, 3],
-                            "controls": [
-                              {
-                                "slot@chest.chest_grid_item": {
-                                  "offset": [18, -18],
-                                  "enabled": true
-                                }
-                              }
-                            ]
-                          }
-                        },
-                        {
                           // ★ 原版真名：期望「放不进」
                           "grid_item_4": {
                             "type": "panel",
@@ -118,21 +104,6 @@
                                 "slot@chest.chest_grid_item": {
                                   "offset": [54, -36],
                                   "enabled": false
-                                }
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          // ★ 框架现在的写法（不存在的键）：期望「和对照组一样能放」
-                          "grid_item_5": {
-                            "type": "panel",
-                            "grid_position": [0, 5],
-                            "controls": [
-                              {
-                                "slot@chest.chest_grid_item": {
-                                  "offset": [90, -36],
-                                  "enable": false
                                 }
                               }
                             ]
