@@ -75,10 +75,9 @@
                               {
                                 "grid_item@chest.chest_grid_item": {
                                   "offset": [
-                                    -36,
+                                    -18,
                                     18
-                                  ],
-                                  "enable": false
+                                  ]
                                 }
                               }
                             ]
@@ -95,10 +94,9 @@
                               {
                                 "grid_item@chest.chest_grid_item": {
                                   "offset": [
-                                    -36,
+                                    -18,
                                     18
-                                  ],
-                                  "enable": false
+                                  ]
                                 }
                               }
                             ]
@@ -115,10 +113,9 @@
                               {
                                 "grid_item@chest.chest_grid_item": {
                                   "offset": [
-                                    -36,
+                                    -18,
                                     18
-                                  ],
-                                  "enable": false
+                                  ]
                                 }
                               }
                             ]
@@ -135,10 +132,9 @@
                               {
                                 "grid_item@chest.chest_grid_item": {
                                   "offset": [
-                                    0,
+                                    18,
                                     -18
-                                  ],
-                                  "enable": false
+                                  ]
                                 }
                               }
                             ]
@@ -155,7 +151,7 @@
                               {
                                 "grid_item@chest.chest_grid_item": {
                                   "offset": [
-                                    36,
+                                    54,
                                     -36
                                   ],
                                   "enable": false
