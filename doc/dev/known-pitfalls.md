@@ -567,6 +567,9 @@
   `binding_type: "collection"` / `binding_collection_name: "container_items"`，照抄 `ui_common.json:3642-3661`），
   再用 `vars: { durability_bar_required: false, cell_overlay_ref: "<ns>.<控件名>" }` 把自带那条关掉、换成自己这条
   —— **尺寸与绑定都自己说了算**。`examples/mob_chest/main.mjs` 即此法（先铺满整格的色块条，后改为箭头，见下条）。
+  - ★ **框架已把这一整套封成 `ContainerUISystem.addProgressSlot()`**（参数语义见接口 JSDoc、
+    用法见 `doc/dev/ui-architecture.md` §4.3），项目不必再手写 overlay 控件、三条绑定与那两个变量；
+    判据 `node tests/container-ui-output.test.mjs` 的第 19–22 条。
 - **★ `progress_bar_renderer` 只能画色块、给不了贴图 ⇒ 想要「原版箭头」那种形状必须自己裁。**
   该渲染器的全部可用属性只有 `size` / `offset` / `property_bag`（`is_durability` / `is_storage_bar` /
   `round_value` / `primary_color` / `full_storage_color`）与 `primary_color` / `secondary_color`

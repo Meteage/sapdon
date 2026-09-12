@@ -1,3 +1,4 @@
+import { DataBindingObject } from '../dataBindingObject.js'
 import { Grid } from '../elements/grid.js'
 import { Image } from '../elements/image.js'
 import { Label } from '../elements/label.js'
@@ -48,6 +49,41 @@ export interface PanelOptions {
   /** 面板背景纹理 */
   background?: SlotBackground
 }
+
+/** 进度指示图的裁切方向：露出的是**该侧**的比例那一段（`'left'` = 从左往右填） */
+export type ProgressClipDirection = 'left' | 'right' | 'up' | 'down' | 'center'
+
+/** `addProgressSlot` 的入参 */
+export interface ProgressSlotOptions {
+  /** 容器槽位号 */
+  slot: number
+  /** 面板内像素坐标（左上角原点），与 `addSlot` 同义 */
+  pos: Offset2
+  /** 按比例裁开的填充图（纹理路径），例如 `textures/ui/arrow_active` */
+  fill: string
+  /** 垫在下面的静止底图（可选）；给了的话即使裁切没生效也还看得见轮廓 */
+  base?: string
+  /** 视觉尺寸（像素），默认 `[22, 15]`（原版熔炉箭头尺寸） */
+  size?: Offset2
+  /** 裁切方向，默认 `'left'`；从下往上烧的火焰用 `'down'` */
+  clipDirection?: ProgressClipDirection
+  /** 比例来源的集合名，默认 `"container_items"`（小箱子与大箱子都是它） */
+  collection?: string
+  /** 额外写进槽位的原版变量（可覆盖内置的两条） */
+  vars?: Record<string, unknown>
+}
+
+/** `addProgressSlot` 默认的比例来源集合名 */
+const PROGRESS_COLLECTION = 'container_items'
+
+/**
+ * 进度比例 = **剩余**耐久比例。
+ *
+ * ⚠️ `#item_durability_current_amount` 是**已损耗量**，所以这个看起来绕的写法是必须的；
+ * 依据与实测见 `doc/dev/known-pitfalls.md` §4.12。
+ */
+const PROGRESS_RATIO_EXPRESSION =
+  '((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)'
 
 /**
  * 自定义容器 UI 系统：把「容器槽位」声明成面板内的像素版面。
@@ -205,6 +241,107 @@ export class ContainerUISystem {
    */
   addElementToMain(element: UIElement | Any): this {
     return this.addControl(element)
+  }
+
+  // ── 进度指示槽 ──────────────────────────────────────────────────────────────
+
+  /**
+   * 声明一个「进度指示槽」：`base` 垫底、`fill` 按 `clipDirection` 裁开，比例取**本格物品的耐久**。
+   *
+   * 与 `addSlot` 的区别：除了声明槽位，还会生成一个自定控件、经 `$cell_overlay_ref`
+   * 注入到格子内部（`common.container_item` 的 `item_cell`）。它在格内，
+   * 所以保留每格的 collection 上下文，读的是**本格自己**的绑定 —— 每格可以各显示各的进度。
+   *
+   * 典型用法：脚本往该槽写一个可损耗物品、让「剩余耐久 = 进度」
+   * （见 `examples/mob_chest/scripts/progress_bar.js`），即可用原版箭头/火焰贴图画出进度，
+   * **不需要任何进度条贴图**。
+   *
+   * 同时会关掉引擎自带的耐久条（`$durability_bar_required`）并把格子的浅灰底换成零尺寸面板
+   * （`$background_images`），否则会看到「灰方块 + 图」。`vars` 可覆盖这两条内置变量。
+   * @param {ProgressSlotOptions} options 槽位声明
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addProgressSlot(options: ProgressSlotOptions): this {
+    const {
+      slot,
+      pos,
+      fill,
+      base,
+      size = [22, 15] as Offset2,
+      clipDirection = 'left' as ProgressClipDirection,
+      collection = PROGRESS_COLLECTION,
+      vars = {},
+    } = options ?? ({} as ProgressSlotOptions)
+
+    if (!Number.isInteger(slot) || slot < 0) {
+      this.#warn(`addProgressSlot 的 slot 必须是非负整数（收到 ${JSON.stringify(slot)}），已忽略`)
+      return this
+    }
+    if (!Array.isArray(pos) || !Number.isFinite(pos[0]) || !Number.isFinite(pos[1])) {
+      this.#warn(`addProgressSlot 的 pos 必须是 [x, y] 两个有限数（收到 ${JSON.stringify(pos)}），已忽略`)
+      return this
+    }
+    if (typeof fill !== 'string' || fill.length === 0) {
+      this.#warn('addProgressSlot 的 fill 必须是非空纹理路径，已忽略')
+      return this
+    }
+    if (!Array.isArray(size) || !Number.isFinite(size[0]) || !Number.isFinite(size[1])) {
+      this.#warn(`addProgressSlot 的 size 必须是 [宽, 高] 两个有限数（收到 ${JSON.stringify(size)}），已忽略`)
+      return this
+    }
+
+    const buildImage = (id: string, texture: string, withClip: boolean): Image => {
+      const sprite = new Sprite().setTexture(texture)
+      if (withClip) sprite.setClipDirection(clipDirection)
+      return new Image(id)
+        .setSprite(sprite)
+        .setLayout(new Layout().setSize(size).setAnchorFrom('top_left').setAnchorTo('top_left'))
+    }
+
+    const fillImage = buildImage('fill', fill, true)
+    fillImage.dataBinding
+      .addDataBinding(
+        new DataBindingObject()
+          .setBindingName('#item_durability_current_amount')
+          .setBindingType('collection')
+          .setBindingCollectionName(collection),
+      )
+      .addDataBinding(
+        new DataBindingObject()
+          .setBindingName('#item_durability_total_amount')
+          .setBindingType('collection')
+          .setBindingCollectionName(collection),
+      )
+      .addDataBinding(
+        new DataBindingObject()
+          .setBindingType('view')
+          .setSourcePropertyName(PROGRESS_RATIO_EXPRESSION)
+          .setTargetPropertyName('#clip_ratio'),
+      )
+
+    const controls: (UIElement | Record<string, Any>)[] = []
+    if (typeof base === 'string' && base.length > 0) controls.push(buildImage('base', base, false))
+    controls.push(fillImage)
+
+    const progressControlId = `progress_${slot}`
+    const backgroundId = 'progress_empty_background'
+    this.system.addElement(new Panel(progressControlId).addControls(controls))
+    this.system.addElement(new Panel(backgroundId).setLayout(new Layout().setSize([0, 0])))
+
+    return this.addSlot({
+      slot,
+      pos,
+      kind: 'display',
+      cellSize: size,
+      // 数量恒为 1 时不会有角标，但物品图标仍会画出来；进度指示槽只要图，所以把它归零藏掉。
+      itemRenderer: { size: [0, 0] },
+      vars: {
+        durability_bar_required: false,
+        background_images: `${this.system.namespace}.${backgroundId}`,
+        cell_overlay_ref: `${this.system.namespace}.${progressControlId}`,
+        ...vars,
+      },
+    })
   }
 
   // ── 旧接口（薄封装，行为不变；仅 `enable` → `enabled` 一处订正） ────────────────
