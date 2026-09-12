@@ -335,6 +335,19 @@
 - 另外**旧 `setInventory` 自检的前提也错了**（它查"有 `minecraft:inventory` 但没 `block_entity`"，
   而 `minecraft:inventory` 根本不是方块组件）→ 已改成上面 4.1 的两条。
 
+### 4.4 承载实体默认外观与方块**共面** ⇒ z-fighting 闪烁（2026-09-12，fz-sapdon 真机）
+- **症状**：`createTileBlock` 的方块在游戏里贴图不停闪烁（两个面在抢深度）。容器功能本身正常。
+- **根因**：框架给承载实体（`` `${identifier}_entity` ``）的客户端定义是
+  `geometry.cube`（满方块）+ `textures.default = textures_arr[0]`（`tileBlock.js` → `entity.js:19-21`），
+  而实体又 spawn 在**方块正中心** ⇒ 实体与方块是两个**完全共面**的立方体。
+  ⚠️ `textures_arr[0]` 在方块侧是 terrain 短名、在实体侧必须是资源路径；项目侧通常把它补成
+  `textures/blocks/<短名>` —— 那正好就是方块贴图，于是闪烁必现。
+- **做法**：**「方块可见 + 实体只当容器」这种模式（fz-sapdon 叫模式 A）必须给实体一张全透明贴图**
+  （16×16 alpha 全 0，`entity_alphatest` 会整张丢弃）；「实体接管外观」那套反过来传方块贴图。
+  透明贴图放 `textures/entity/` 下，别放 `textures/blocks/` —— 后者会被构建自动注册进
+  `terrain_texture.json`（方块地图集），实体贴图按资源路径引用、不该占地图集。
+- **别删实体的几何／材质／渲染控制器**：删了等于堵死「实体接管外观」那条路，静默无外观可用。
+- 出处：fz-sapdon 真机日志（实体 spawn 坐标 = 方块中心）+ 该项目 README §S3b「真机修复」小节。
 
 ---
 
