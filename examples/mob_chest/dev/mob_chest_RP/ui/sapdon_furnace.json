@@ -175,8 +175,8 @@
                         0
                       ],
                       "$durability_bar_required|default": false,
-                      "$background_images|default": "sapdon_furnace.empty_cell_bg",
-                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_progress_arrow"
+                      "$background_images|default": "sapdon_furnace.progress_empty_background",
+                      "$cell_overlay_ref|default": "sapdon_furnace.progress_3"
                     }
                   }
                 ]
@@ -212,8 +212,8 @@
                         0
                       ],
                       "$durability_bar_required|default": false,
-                      "$background_images|default": "sapdon_furnace.empty_cell_bg",
-                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_burn_flame"
+                      "$background_images|default": "sapdon_furnace.progress_empty_background",
+                      "$cell_overlay_ref|default": "sapdon_furnace.progress_4"
                     }
                   }
                 ]
@@ -267,11 +267,11 @@
       }
     ]
   },
-  "furnace_progress_arrow": {
+  "progress_3": {
     "type": "panel",
     "controls": [
       {
-        "arrow_back": {
+        "base": {
           "type": "image",
           "texture": "textures/ui/arrow_inactive",
           "size": [
@@ -283,7 +283,7 @@
         }
       },
       {
-        "arrow_fill": {
+        "fill": {
           "type": "image",
           "texture": "textures/ui/arrow_active",
           "clip_direction": "left",
@@ -314,11 +314,18 @@
       }
     ]
   },
-  "furnace_burn_flame": {
+  "progress_empty_background": {
+    "type": "panel",
+    "size": [
+      0,
+      0
+    ]
+  },
+  "progress_4": {
     "type": "panel",
     "controls": [
       {
-        "flame_back": {
+        "base": {
           "type": "image",
           "texture": "textures/ui/flame_empty_image",
           "size": [
@@ -330,7 +337,7 @@
         }
       },
       {
-        "flame_fill": {
+        "fill": {
           "type": "image",
           "texture": "textures/ui/flame_full_image",
           "clip_direction": "down",
@@ -359,13 +366,6 @@
           ]
         }
       }
-    ]
-  },
-  "empty_cell_bg": {
-    "type": "panel",
-    "size": [
-      0,
-      0
     ]
   }
 }
