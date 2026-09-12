@@ -349,6 +349,28 @@
 - **别删实体的几何／材质／渲染控制器**：删了等于堵死「实体接管外观」那条路，静默无外观可用。
 - 出处：fz-sapdon 真机日志（实体 spawn 坐标 = 方块中心）+ 该项目 README §S3b「真机修复」小节。
 
+### 4.5 自定义容器界面：门控键 = `UISystem.name`；`ContainerUISystem` 的版面写死且 `addElementToMain` 是空的（2026-09-12，fz-sapdon S3e 实测）
+- **机制**（可用部分的正确姿势）：`ChestUISystem.registerContainerUI(key, rootPanel)` 会在
+  `chest:chest_screen` 里插一条 `requires: ($new_container_title = '<key>')` 的门控，命中就把原版小箱子界面的
+  `$screen_content` / `$root_panel` 换成你的根面板。
+  - ★ **门控键 = `UISystem` 的 `name`（identifier 冒号后半段），不是 `setTitle()` 的值**
+    （`chest.ts:5` 引入 `$container_title`、`:16` 字符串相等、`containerUISystem.ts:166` 传 `this.system.name`、
+    `system.ts:19` 是 `identifier.split(':')[1]`）。`setTitle()` 只写面板自己的标题文本。
+  - ★ **实体容器的标题取自「实体名字」**（原版同路：`ui/horse_screen.json:35`）⇒ 用实体容器时要把键写进
+    **承载实体的 nameTag**（写完**立即回读**；写错的表现是**静默退回原版箱子界面、零报错**）。
+  - 代价：nameTag 若被渲染，机器上方会出现浮空名字（fz-sapdon 用开关 + 候选键兜底处理）。
+- **坑 1：`ContainerUISystem.addElementToMain(el)` 加进去的控件不会显示。** `#updateSystem()` 组装的
+  `container_root_panel` 只含 `common_panel` + `inventory_selected_icon_button` + 一个
+  `container_panel`（标题 10% / 网格 40% / 背包 50% 三段垂直堆叠），**从来没有把 `this.main_panel` 挂进去**
+  （`containerUISystem.ts:174-214`）⇒ 加进去即"消失"。
+- **坑 2：版面写死**，表达不了「背景图 + 绝对像素版面」（FZ 那种 256×128 机器面板）。
+  ⇒ 要自定义版面就只用 `ChestUISystem.registerContainerUI` 这一层机制、自己写根面板 JSON/控件；
+  fz-sapdon 的 S3e（`src/ui/recycler_panel.ts` + `fz_recycler_geometry.ts`）是现成范例。
+- **坑 3：换掉 `$screen_content` 时玩家背包也一起没了** —— 自定义根面板要自己把背包区摆回来，
+  且根面板尺寸必须覆盖原版（否则 100% 宽的背包区与自定义区重叠）；FZ 面板组还必须排在
+  `common_panel` **之后**（层序错 = 原版灰底盖住你的背景图，表现为"面板在、图没了"）。
+- 出处：fz-sapdon `README.md` §S3e（含槽位换算、门控 4 条候选键、11 条真机清单）。
+
 ---
 
 ## 5. 本仓库的构建方式（受限环境）
