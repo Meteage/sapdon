@@ -5,10 +5,10 @@ const BlockEntities = {
 };
 
 // 门控键 = 容器标题 = 实体 nametag；切这一行换面板：
-//   "calib_test"     → 框架生成的坐标校准面板（4 槽 @36px 间距）
+//   "calib_test"     → 框架生成的坐标校准面板（3 行等距梯，20px 格位）
 //   "slot_test"      → 手写对照件（enabled:true vs enabled:false 的机制 A/B）
-//   "sapdon_furnace" → 框架生成的自定义熔炉面板（新 API + 新骨架）
-const CONTAINER_UI_GATE = "calib_test"
+//   "sapdon_furnace" → 框架生成的自定义熔炉面板（原版熔炉排布：2 输入叠放 + 1 产物 + 进度条）
+const CONTAINER_UI_GATE = "sapdon_furnace"
 
 /** @type {import("@minecraft/server").BlockCustomComponent} */
 export const BlockWithEntityComponent = {

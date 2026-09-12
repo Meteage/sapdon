@@ -29,21 +29,24 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
         })
 
 
-// ── 系统 A：自定义熔炉（既有面板，迁移到新槽位 API）──────────────────────────
+// ── 系统 A：自定义熔炉 ───────────────────────────────────────────────────────
 // 槽位声明 = 面板内像素绝对坐标（左上角原点），框架换算 grid_position / offset。
-// 网格几何只认 setSlotDefaults 的统一格位尺寸；逐槽 cellSize 只是视觉尺寸（可溢出格位）。
-// ⚠️ 这套坐标换算尚未真机校准（见 doc/dev/known-pitfalls.md §4.9）。
+// 版面照原版熔炉的排布，宽度/间距取自真机对照截图的像素量取：
+//   左侧两格输入上下叠放（间距 38）；右侧一格产物、视觉 26×26（比输入大）、垂直居中于两输入之间；
+//   两者之间放进度条（原版箭头的位置）。
+// 网格几何只认 setSlotDefaults 的统一格位尺寸；逐槽 cellSize 只是视觉尺寸（可溢出格位，
+// 不会移动自己的格位基座）—— 已由真机实测确认，见 doc/dev/known-pitfalls.md §4.9。
 const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui/");
       sapdon_furnace.setTitle("自定义熔炉");
-      sapdon_furnace.setPanel({ size: [180, 166] }) //设置界面大小
-      sapdon_furnace.setGridOrigin([8, 40])         //网格在面板内的原点
-      sapdon_furnace.setSlotDefaults({ cellSize: [20, 20] }) //统一格位尺寸（几何）
-      sapdon_furnace.addSlot({ slot: 0, pos: [8, 40], kind: 'input' })
-      sapdon_furnace.addSlot({ slot: 1, pos: [30, 40], kind: 'input' })
-      sapdon_furnace.addSlot({ slot: 2, pos: [52, 40], kind: 'output' })
-      // 宽进度槽：统一格位是 20×20，这里视觉要 36×10 ⇒ 从格位左上角向外溢出。
-      // 也当作「脚本每 tick 换物品做伪进度条」的原型（display = 不进不出）。
-      sapdon_furnace.addSlot({ slot: 3, pos: [84, 40], kind: 'display', cellSize: [36, 10] })
+      sapdon_furnace.setPanel({ size: [180, 166] })           //与原版熔炉同高
+      sapdon_furnace.setGridOrigin([8, 22])                   //让开顶部标题
+      sapdon_furnace.setSlotDefaults({ cellSize: [18, 18] })  //= 原版 container_item 尺寸
+      sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
+      sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
+      sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
+      // 进度条：占原版箭头的位置，视觉 28×8（统一格位 18×18，靠逐槽 cellSize 横向溢出）。
+      // 也是「脚本每 tick 换物品做伪进度条」的原型（display = 不进不出）。
+      sapdon_furnace.addSlot({ slot: 3, pos: [74, 45], kind: 'display', cellSize: [28, 8] })
 
 // ── 系统 B：坐标校准面板（新增）──────────────────────────────────────────────
 // 只测两件真机仍未确认的事（原版格位 18 的换算已实测确认，见 doc/dev/known-pitfalls.md §4.9）：
