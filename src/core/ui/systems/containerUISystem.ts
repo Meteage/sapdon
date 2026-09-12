@@ -67,6 +67,14 @@ export interface ProgressSlotOptions {
   size?: Offset2
   /** 裁切方向，默认 `'left'`；从下往上烧的火焰用 `'down'` */
   clipDirection?: ProgressClipDirection
+  /**
+   * 贴图是否**保持纵横比**，默认 `false`（= 按 `size` 拉伸铺满）。
+   *
+   * 默认拉伸，是因为这个槽的契约就是「这块就是 `size` 像素」；原版箭头的贴图恰与尺寸同比例，
+   * 两者无差别。**贴图与 `size` 比例不同时**（例如把一根竖长条压进矮格子）必须显式决定：
+   * `false` = 拉伸变形；`true` = 按比例缩放（会留边，实际宽度不再是 `size`）。
+   */
+  keepRatio?: boolean
   /** 比例来源的集合名，默认 `"container_items"`（小箱子与大箱子都是它） */
   collection?: string
   /** 额外写进槽位的原版变量（可覆盖内置的两条） */
@@ -269,6 +277,7 @@ export class ContainerUISystem {
       base,
       size = [22, 15] as Offset2,
       clipDirection = 'left' as ProgressClipDirection,
+      keepRatio = false,
       collection = PROGRESS_COLLECTION,
       vars = {},
     } = options ?? ({} as ProgressSlotOptions)
@@ -291,7 +300,7 @@ export class ContainerUISystem {
     }
 
     const buildImage = (id: string, texture: string, withClip: boolean): Image => {
-      const sprite = new Sprite().setTexture(texture)
+      const sprite = new Sprite().setTexture(texture).setKeepRatio(keepRatio)
       if (withClip) sprite.setClipDirection(clipDirection)
       return new Image(id)
         .setSprite(sprite)

@@ -223,6 +223,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | **进度指示槽** | 同上 | `addProgressSlot({ slot, pos, fill, base?, size?, clipDirection?, collection?, vars? })`：`base` 垫底 + `fill` 按 `clipDirection` 裁开，比例取**本格物品的剩余耐久**（框架内部取反，因为 `#item_durability_current_amount` 是已损耗量）。自动关掉引擎自带耐久条、去掉格子灰底、把控件经 `$cell_overlay_ref` 注入格内 —— 脚本往该槽写可损耗物品即可，**不需要进度条贴图**。依据见 `known-pitfalls.md` §4.12 |
 
 - **`kind` 语义**：`input` 不写标志位；`output` / `display` 写 **`"enabled": false`**（`display` = 不进不出、纯显示，供脚本每 tick 换物品做伪进度条）。⚠️ 该标志位**能否真拦下"往槽里放东西"尚未真机确认** ⇒ 文档与 JSDoc **不得**断言它有效。
+- **`addProgressSlot` 的 `keepRatio`**：默认 `false` = 按 `size` 拉伸铺满（引擎默认会保纵横比，贴图与 `size` 比例不同时会被缩窄 ⇒ 要拉伸必须显式传 `false`）；`true` = 保比例缩放（会留边、实际宽度不再是 `size`）。
 - **网格几何只认一处**：统一格位尺寸取 `setSlotDefaults({ cellSize })`（缺省 = 标定表），网格尺寸与基座换算都用它；**逐槽 `cellSize` 只当视觉尺寸**（可溢出格位）。混着用会把基座算歪，见 `known-pitfalls.md` §4.11。
 - **★ 待真机校准**：格位基座假设「网格原点 + 序号 × 统一格位尺寸、锚点左上角」全部集中在 `containerLayout.ts` 的 `SLOT_CALIBRATION`（含 `defaultGridOrigin`，默认 `[0,24]` 给标题让位），校准只改这一处（`anchor` 会同时翻转换算与产物的 `anchor_from`/`anchor_to`）。
 - **门控键 = `UISystem.name`**，且**同时是 `ui/<name>.json` 的文件名** ⇒ 只允许 `A-Z a-z 0-9 _ -`（`checkUIName()` 会 warn）。
