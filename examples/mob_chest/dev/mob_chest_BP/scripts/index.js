@@ -1,4 +1,4 @@
-import { world, EquipmentSlot, GameMode } from '@minecraft/server';
+import { world, EquipmentSlot, GameMode, system } from '@minecraft/server';
 import '@minecraft/server-ui';
 
 const BlockEntities = {
@@ -109,16 +109,16 @@ const HeavyBlockComponent = {
 };
 
 const registerCustomBlockComponent = ()=>{
-    world.beforeEvents.worldInitialize.subscribe(({ blockComponentRegistry }) => {
-        blockComponentRegistry.registerCustomComponent(
+    system.beforeEvents.startup.subscribe((init) => {
+        init.blockComponentRegistry.registerCustomComponent(
             "sapdon:heavy_block",
             HeavyBlockComponent
         );
-        blockComponentRegistry.registerCustomComponent(
+        init.blockComponentRegistry.registerCustomComponent(
             "sapdon:block_with_entity",
             BlockWithEntityComponent
         );
-        blockComponentRegistry.registerCustomComponent(
+        init.blockComponentRegistry.registerCustomComponent(
             "sapdon:crop_growth",
             CustomCropGrowthBlockComponent
         );
