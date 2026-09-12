@@ -661,6 +661,53 @@
 
 ---
 
+### 4.15 ★ 承载实体被破坏时 `drop_inventory: true` 是**整容器倒出来**，没有「按格过滤」的字段（2026-09-12）
+
+- **症状**：玩家破坏机器，地上除真物品外**还多出一个内部物品**（FZ 的进度 / 能量**显示载体**
+  `fz:machine_progress`）。用户原话：「破坏方块的时候不要把进度物品掉落出来」。
+- **机制**：`TileBlock` 给每个承载实体挂的实体数据里有
+
+  ```json
+  "item_despawn": {
+    "minecraft:despawn": {}, "minecraft:instant_despawn": { "remove_child_entities": false },
+    "minecraft:transformation": { "drop_inventory": true, "into": "minecraft:air" }
+  }
+  ```
+  破坏方块 ⇒ `minecraft:block_sensor.on_break` → `despawn_event` → 这一组 ⇒
+  **整个容器倒出来**。官方字段全集（`metadata/doc_modules/entities.json`，`minecraft:transformation`）：
+  `add` / `begin_transform_sound` / `delay` / `drop_equipment` / **`drop_inventory`** / `into` /
+  `keep_level` / `keep_owner` / `preserve_equipment` / `transformation_sound`
+  —— **没有**任何「按槽位/按物品过滤掉落」的入口；`drop_inventory` 的原文是
+  "Cause the entity to drop all items in inventory upon transformation"。
+- **规避（框架已加接口）**：靠 **`delay` 开一个时间窗**，让破坏事件里的脚本**先把内部格清空**，
+  再让容器掉：
+
+  ```js
+  BlockAPI.createTileBlock(id, category, textures, { despawn_delay: 0.1 })  // 0.1 秒 = 2 tick @20tps
+  ```
+
+  框架把它写到 `item_despawn` 组的 `minecraft:transformation.delay.value`
+  （官方口径："Time in seconds before the entity transforms"）。
+  **不传 = 不写该键** ⇒ 既有项目产物逐字节不变。
+- **为什么 2 tick 够**：破坏走 `afterEvents.playerBreakBlock`（与破坏**同一 tick**），
+  而 despawn 由实体自己的 `block_sensor` 触发（最多晚 1 tick）⇒ 2 tick 必然跨过脚本那一拍，
+  且玩家察觉不到。⚠️ 这条**时序推理尚未真机验证** —— 首次真机要看有没有
+  `破坏清理 @…：已清空显示格 2/3` 的 `[evt]` 行。
+- **项目侧配套**（FZ 的写法，可直接照搬）：
+  ① 契约里一个常量 `RECYCLER_DESPAWN_DELAY_S = 0.1`（**单一事实源**）；
+  ② `createTileBlock` 传 `despawn_delay`；
+  ③ 破坏路径的**第一步**读容器 → 把显示格 `writeSlot(i, undefined)`，排在 `saveNow` / 快照删除**之前**。
+  ⚠️ 读容器时**必须传「被破坏前那个方块的 id」**，不能传 `event.block.typeId`
+  （破坏后它恒为 `minecraft:air`）。
+- **反面做法（不要用）**：把 `drop_inventory` 改成 `false` 再由脚本自己掉真物品 ——
+  失败模式是「脚本没跑 ⇒ 玩家的东西凭空消失」；而现在这个失败模式只是
+  「多掉一个内部物品」（有 `[err]` 留痕）。**宁可多掉，不可少掉。**
+- **出处**：FZ 回收机（2026-09-12 用户反馈）；字段定义取自原版包
+  `bedrock-samples-1.21.130.26-preview/metadata/doc_modules/entities.json`（`minecraft:transformation` 小节）；
+  判据在 `tests/block-api.test.mjs`（`despawn_delay` 的产物形状 / 校验 / 不污染共享常量）。
+
+---
+
 ## 5. 本仓库的构建方式（受限环境）
 
 `npm run build` / `node scripts/build.cjs` 在受限沙箱里跑不了（`cp.exec` 走管道 → `spawn EPERM`）。

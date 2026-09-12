@@ -3,6 +3,7 @@
 //
 // 覆盖：
 //   1. `createTileBlock` 走的实体路线：默认容器参数逐字段不变 + 按实例覆盖 + **不污染共享常量**
+//   1b. `options.despawn_delay`：不传 = 产物不变；传了 = 只多 `delay.value`；校验 + 不污染共享常量
 //   2. `setBlockEntity()` 的历史产物逐字节不变；`{ container }` 新参数与 [1,54] 校验
 //   3. `setInventory()` 产物保持不变（已废弃）+ 构建期 warn
 //   4. `BasicBlock.validate()` 的两条自检
@@ -81,6 +82,54 @@ test('TileBlock `entity_texture` 校验：必须是**非空字符串**', () => {
         assert.throws(
             () => new TileBlock('test:x', 'construction', [...TEX], { entity_texture: bad }),
             /entity_texture/
+        )
+    }
+})
+
+// ── `options.despawn_delay`：破坏时收窄「整容器倒出来」的时间窗 ─────────────────────
+// 承载实体被破坏走 `minecraft:block_sensor` → `despawn_event` → `item_despawn` 组，而那一组的
+// `minecraft:transformation` 带 `drop_inventory: true` —— 官方文档的语义是**整容器倒出来**
+// （`metadata/doc_modules/entities.json`："Cause the entity to drop all items in inventory upon
+// transformation"）。`delay.value` 则是 "Time in seconds before the entity transforms"
+// ⇒ 项目靠它让「破坏事件里的脚本」先跑完（例如先清掉内部显示格，再让容器掉）。
+
+/** 承载实体 `item_despawn` 组里的 `minecraft:transformation` */
+const transformationOf = (tile) =>
+    tile.entity.behavior.component_groups.get('item_despawn')['minecraft:transformation']
+/** `item_despawn` 那一组本身（用于核对「共享常量 vs 实例拷贝」） */
+const despawnGroupOf = (tile) => tile.entity.behavior.component_groups.get('item_despawn')
+
+test('TileBlock 不传 despawn_delay ⇒ 产物**不含** delay 键（历史产物逐字节不变）', () => {
+    const tile = new TileBlock('test:nodelay', 'construction', [...TEX])
+    assert.equal(
+        JSON.stringify(transformationOf(tile)),
+        '{"drop_inventory":true,"into":"minecraft:air"}'
+    )
+})
+
+test('TileBlock `despawn_delay` ⇒ 只多一个 delay.value，其余字段与键序不变', () => {
+    const tile = new TileBlock('test:delay', 'construction', [...TEX], { despawn_delay: 0.1 })
+    assert.equal(
+        JSON.stringify(transformationOf(tile)),
+        '{"drop_inventory":true,"into":"minecraft:air","delay":{"value":0.1}}'
+    )
+})
+
+test('TileBlock `despawn_delay` 按实例拷贝：不传的实例仍与共享常量同一份（零拷贝）', () => {
+    const plain1 = new TileBlock('test:p1', 'construction', [...TEX])
+    const plain2 = new TileBlock('test:p2', 'construction', [...TEX])
+    const delayed = new TileBlock('test:p3', 'construction', [...TEX], { despawn_delay: 0.25 })
+    assert.equal(despawnGroupOf(plain1), despawnGroupOf(plain2), '都不传 ⇒ 应当共用同一份')
+    assert.notEqual(despawnGroupOf(plain1), despawnGroupOf(delayed), '传了延迟的实例必须有自己的一份')
+    assert.equal('delay' in transformationOf(plain1), false, '共享常量不许被就地改写')
+    assert.deepEqual(transformationOf(delayed).delay, { value: 0.25 })
+})
+
+test('TileBlock `despawn_delay` 校验：必须是**大于 0 的有限数**', () => {
+    for (const bad of [0, -0.1, '0.1', null, NaN, Infinity]) {
+        assert.throws(
+            () => new TileBlock('test:x', 'construction', [...TEX], { despawn_delay: bad }),
+            /despawn_delay/
         )
     }
 })
