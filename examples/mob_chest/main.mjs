@@ -32,20 +32,26 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
 const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui/");
       sapdon_furnace.setTitle("自定义熔炉");
       sapdon_furnace.setSize([180, 180]) //设置界面大小
-      /*
+      
       sapdon_furnace.setGridDimension([1,5]); //设置槽的行列数 1列，3行
       sapdon_furnace.addGridItem([0,0],[-18,18]) // 定位槽[0,0] 1列1行槽 [0,0]不偏移
       sapdon_furnace.addGridItem([0,1],[-18,18]) // 定位槽[0,1] 1列2行槽 [0,0]不偏移
       sapdon_furnace.addGridItem([0,2],[-18,18]) // 定位槽[0,2] 1列3行槽 [0,0]不偏移
       sapdon_furnace.addGridItem([0,3],[18,-18]) // 定位槽[0,3] 1列4行槽 [20,20]偏移
-      sapdon_furnace.addGridItem([0,4],[18*3,-18*2]) // 定位槽[0,3] 1列4行槽 [20,20]偏移*/
-      sapdon_furnace.setItemMatrix(5,[
-        [0,0,0,0,0],
-        [1,0,0,0,0],
-        [2,0,4,0,5],
-        [3,0,0,0,0],
-        [0,0,0,0,0]
-      ])
+      // ★ A/B 验证用：下面 4 个是普通输入槽，**只有最后一个**标成输出槽。
+      //   框架的 addOutputGrid() 会在这个格位的内层控件上写 enable:false
+      //   （`containerUISystem.ts:78-84`）—— 真机上能不能挡住"往输出槽里放东西"，
+      //   就看这一个槽和其它 4 个的行为是否不同：
+      //     · 只有它放不进 ⇒ 这个标志位有效
+      //     · 5 个槽都能放  ⇒ 标志位无效（`enable` 不是 Bedrock JSON UI 的属性）
+      sapdon_furnace.addOutputGrid([0,4],[18*3,-18*2]) // 定位槽[0,4] —— 本界面的输出槽
+      // sapdon_furnace.setItemMatrix(5,[
+      //   [0,0,0,0,0],
+      //   [1,0,0,0,0],
+      //   [2,0,4,0,5],
+      //   [3,0,0,0,0],
+      //   [0,0,0,0,0]
+      // ])
       
 
 
