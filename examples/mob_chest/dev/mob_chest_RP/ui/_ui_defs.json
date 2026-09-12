@@ -3,6 +3,7 @@
     "ui/hud_screen.json",
     "ui/chest_screen.json",
     "ui/sapdon_furnace.json",
+    "ui/calib_test.json",
     "ui/slot_test.json"
   ]
 }

@@ -29,35 +29,51 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
         })
 
 
+// ── 系统 A：自定义熔炉（既有面板，迁移到新槽位 API）──────────────────────────
+// 槽位声明 = 面板内像素绝对坐标（左上角原点），框架换算 grid_position / offset。
+// 网格几何只认 setSlotDefaults 的统一格位尺寸；逐槽 cellSize 只是视觉尺寸（可溢出格位）。
+// ⚠️ 这套坐标换算尚未真机校准（见 doc/dev/known-pitfalls.md §4.9）。
 const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui/");
       sapdon_furnace.setTitle("自定义熔炉");
-      sapdon_furnace.setSize([180, 180]) //设置界面大小
-      
-      sapdon_furnace.setGridDimension([1,5]); //设置槽的行列数 1列，3行
-      sapdon_furnace.addGridItem([0,0],[-18,18]) // 定位槽[0,0] 1列1行槽 [0,0]不偏移
-      sapdon_furnace.addGridItem([0,1],[-18,18]) // 定位槽[0,1] 1列2行槽 [0,0]不偏移
-      sapdon_furnace.addGridItem([0,2],[-18,18]) // 定位槽[0,2] 1列3行槽 [0,0]不偏移
-      sapdon_furnace.addGridItem([0,3],[18,-18]) // 定位槽[0,3] 1列4行槽 [20,20]偏移
-      // ★ A/B 验证用：下面 4 个是普通输入槽，**只有最后一个**标成输出槽。
-      //   框架的 addOutputGrid() 会在这个格位的内层控件上写 enable:false
-      //   （`containerUISystem.ts:78-84`）—— 真机上能不能挡住"往输出槽里放东西"，
-      //   就看这一个槽和其它 4 个的行为是否不同：
-      //     · 只有它放不进 ⇒ 这个标志位有效
-      //     · 5 个槽都能放  ⇒ 标志位无效（`enable` 不是 Bedrock JSON UI 的属性）
-      sapdon_furnace.addOutputGrid([0,4],[18*3,-18*2]) // 定位槽[0,4] —— 本界面的输出槽
-      // sapdon_furnace.setItemMatrix(5,[
-      //   [0,0,0,0,0],
-      //   [1,0,0,0,0],
-      //   [2,0,4,0,5],
-      //   [3,0,0,0,0],
-      //   [0,0,0,0,0]
-      // ])
+      sapdon_furnace.setPanel({ size: [180, 166] }) //设置界面大小
+      sapdon_furnace.setGridOrigin([8, 40])         //网格在面板内的原点
+      sapdon_furnace.setSlotDefaults({ cellSize: [20, 20] }) //统一格位尺寸（几何）
+      sapdon_furnace.addSlot({ slot: 0, pos: [8, 40], kind: 'input' })
+      sapdon_furnace.addSlot({ slot: 1, pos: [30, 40], kind: 'input' })
+      sapdon_furnace.addSlot({ slot: 2, pos: [52, 40], kind: 'output' })
+      // 宽进度槽：统一格位是 20×20，这里视觉要 36×10 ⇒ 从格位左上角向外溢出。
+      // 也当作「脚本每 tick 换物品做伪进度条」的原型（display = 不进不出）。
+      sapdon_furnace.addSlot({ slot: 3, pos: [84, 40], kind: 'display', cellSize: [36, 10] })
 
-// ── 手写 UI 验证件（res/ui/slot_test.json）───────────────────────────────────
-// 框架的 addOutputGrid 写的是 `enable`（containerUISystem.ts:65），而 JSON UI 的属性名是 `enabled`
-// （原版 UI 树 enabled×26 / enable×0；示例里的 cooking_pot.json 也是 enabled×3 / enable×0）。
-// 这份手写面板把三种写法摆在同一个界面上，进游戏一次就能判定：
-//   槽 0-3 "enabled": true（对照） · 槽 4 "enabled": false（原版真名） · 槽 5 "enable": false（框架现在的写法）
+// ── 系统 B：坐标校准面板（新增）──────────────────────────────────────────────
+// 4 个输入槽按 36px 间距摆放，用于真机上量「声明 pos」与「实际渲染位置」的差。
+// 与系统 A 的门控键不同 ⇒ 两条 gate 累加进同一个 ui/chest_screen.json。
+const calib_test = new ContainerUISystem("calib_test:calib_test","ui/");
+      calib_test.setTitle("坐标校准");
+      calib_test.setPanel({ size: [180, 166] })
+      calib_test.setGridOrigin([8, 40])
+      calib_test.setSlotDefaults({ cellSize: [18, 18] })
+      calib_test.addSlot({ slot: 0, pos: [8, 40],  kind: 'input' })
+      calib_test.addSlot({ slot: 1, pos: [44, 40], kind: 'input' })
+      calib_test.addSlot({ slot: 2, pos: [8, 76],  kind: 'input' })
+      calib_test.addSlot({ slot: 3, pos: [44, 76], kind: 'input' })
+      // 标出面板原点（main_panel 的 [0,0]）：addControl(el, pos) 直接落进主面板
+      calib_test.addControl(
+        new Label("origin_label")
+          .setControl(new Control().setLayer(12))
+          .setText(new Text().setText("原点 [0,0]").setColor([1, 1, 0]).setTextAlignment("left"))
+          .setLayout(new Layout().setSize(["100%", "default"]).setAnchorFrom("top_left").setAnchorTo("top_left")),
+        [8, 8]
+      )
+
+// ── 手写 UI 对照件（res/ui/slot_test.json）───────────────────────────────────
+// JSON UI 里「控件不可交互」的属性名是 `enabled`（原版 UI 树 enabled×26 / enable×0；
+// 示例里的 cooking_pot.json 也是 enabled×3 / enable×0）。框架侧现由 addSlot({ kind }) 统一出口：
+// input 不写该键、output / display 写 "enabled": false。
+// 这份手写面板把两种取值摆在同一个界面上，进游戏一次就能判定：
+//   槽 0/1/2 "enabled": true（对照） · 槽 4 "enabled": false（原版真名）
+//   （该文件当前只剩这 4 个格位；文件头注释里提到的槽 5 / "enable" 写法已不在文件里）
+// ⚠️ `enabled: false` 能否真拦住「往这个槽里放东西」尚未真机确认。
 // 登记与门控都走公开 API：UISystemRegistry.addOuterUIdefs（uiSystemRegistry.ts:20）
 // + ChestUISystem.registerContainerUI（chest.ts:10，与框架自己注册的 gate 会累加进同一个 chest_screen.json）。
 UISystemRegistry.addOuterUIdefs(["ui/slot_test.json"])
