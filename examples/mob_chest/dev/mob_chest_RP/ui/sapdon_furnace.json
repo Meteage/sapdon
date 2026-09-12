@@ -156,26 +156,27 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        62,
-                        -31
+                        69,
+                        -34
                       ],
                       "enabled": false,
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        36,
-                        10
+                        22,
+                        15
                       ],
                       "$cell_image_size|default": [
-                        36,
-                        10
+                        22,
+                        15
                       ],
                       "$item_renderer_size|default": [
                         0,
                         0
                       ],
                       "$durability_bar_required|default": false,
-                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_progress_bar"
+                      "$background_images|default": "sapdon_furnace.empty_cell_bg",
+                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_progress_arrow"
                     }
                   }
                 ]
@@ -248,42 +249,58 @@
       }
     ]
   },
-  "furnace_progress_bar": {
-    "type": "custom",
-    "renderer": "progress_bar_renderer",
+  "furnace_progress_arrow": {
+    "type": "panel",
+    "controls": [
+      {
+        "arrow_back": {
+          "type": "image",
+          "texture": "textures/ui/arrow_inactive",
+          "size": [
+            22,
+            15
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left"
+        }
+      },
+      {
+        "arrow_fill": {
+          "type": "image",
+          "texture": "textures/ui/arrow_active",
+          "clip_direction": "left",
+          "size": [
+            22,
+            15
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "bindings": [
+            {
+              "binding_name": "#item_durability_current_amount",
+              "binding_type": "collection",
+              "binding_collection_name": "container_items"
+            },
+            {
+              "binding_name": "#item_durability_total_amount",
+              "binding_type": "collection",
+              "binding_collection_name": "container_items"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "(#item_durability_current_amount / #item_durability_total_amount)",
+              "target_property_name": "#clip_ratio"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "empty_cell_bg": {
+    "type": "panel",
     "size": [
-      36,
-      10
-    ],
-    "offset": [
       0,
       0
-    ],
-    "anchor_from": "top_left",
-    "anchor_to": "top_left",
-    "property_bag": {
-      "is_durability": true,
-      "round_value": true
-    },
-    "bindings": [
-      {
-        "binding_name": "#item_durability_visible",
-        "binding_name_override": "#touch_progress_bar_visible",
-        "binding_type": "collection",
-        "binding_collection_name": "container_items"
-      },
-      {
-        "binding_name": "#item_durability_total_amount",
-        "binding_name_override": "#progress_bar_total_amount",
-        "binding_type": "collection",
-        "binding_collection_name": "container_items"
-      },
-      {
-        "binding_name": "#item_durability_current_amount",
-        "binding_name_override": "#progress_bar_current_amount",
-        "binding_type": "collection",
-        "binding_collection_name": "container_items"
-      }
     ]
   }
 }
