@@ -512,6 +512,48 @@
 - **判据**：`node tests/container-layout.test.mjs` 的「逐槽视觉尺寸不参与基座」与
   `node tests/container-ui-output.test.mjs` 的「网格尺寸也只用统一格位」。
 
+### 4.12 ★ 自定义容器面板**能/不能**拿到哪些格子数据（2026-09-12，原版包 bedrock-samples 1.21.130.26 通读）
+
+问法通常是「能不能读容器某个格子的内容，做一条由真实数据驱动的进度条」。答案是**分两层**：
+
+- **格子内部 —— 能**。`common.container_item` 的子控件声明了一批 `binding_type: "collection"` +
+  `binding_collection_name: "$item_collection_name"` 的每格绑定（`ui_common.json`）：
+  堆叠数量 `#inventory_stack_count`（:3615，原始名 `#item_stack_count`）、物品 id `#item_id_aux`（:3796）、
+  整份 stack 数据 `#item_renderer_data`（:3758）、耐久 `#item_durability_visible|total_amount|current_amount`
+  （:3644/3650/3656）、容量 `#item_storage_*`（:3704/3710/3716）。
+  能驱动的目标属性以 `#visible` 最成熟；`#texture` 有确证先例（`inventory_screen.json:1578-1585`
+  的 `#container_item_background_texture` → `#texture`）。
+- **格子外部（贯穿面板的进度条）—— 不能**。四条互相独立的证据：
+  1. 全 `ui\` 里形如 `#*_ratio` 的**供给名只有 7 个**（furnace_arrow / furnace_flame / brewing_bubbles /
+     brewing_arrow / brewing_fuel / bundle_weight_bar / progressive_select_bar），**无一属于 chest/container**；
+  2. `#furnace_arrow_ratio` / `#furnace_flame_ratio` 在整个原版包 grep **只有 2 命中，且两处都是消费端**
+     （`furnace_screen.json:42`、`:62`）⇒ 引擎按界面硬编码，资源包只能消费、**不能自己提供**；
+  3. `chest_screen.json` 全文**没有任何 `bindings` 声明**，`container_items` 上不存在 `#progress_percentage`；
+  4. **`#clip_ratio` 不接受算术**，且 `binding_name_override: "#size"` 在全包 **0 命中**
+     ⇒ 就算读到数量也换算不成长度。
+  格子外唯一能读的是**光标上那一格**（`#inventory_selected_item` / `#inventory_selected_item_stack_count`，
+  全局绑定、无 collection 限定，`chest_screen.json:117/162` 已挂载该按钮）与集合级总数 `#collection_total_items`。
+- **★ 替代路线：借引擎自带的耐久条当进度条（零新贴图）**。`common.container_item` **自身就内联了**
+  `durability_bar@common.durability_bar`（`ui_common.json:4838`）与 `storage_bar@common.storage_bar`（:4843），
+  唯一门控是 `ignored: "(not $durability_bar_required)"`（:3629），而父级默认 **true**（:4778-4779）
+  ⇒ 容器格子**默认就带**这两条（不是 HUD 专属；显式关闭的先例见 `inventory_screen.json:1951-1952`）。
+  条的比例由引擎按每格 `#item_durability_*` 算好；`$durability_bar_size` / `$durability_bar_offset`
+  **可被外部覆盖**（:3633-3634；原版口袋版就覆盖了它们 :4895-4896）⇒ 框架的 `addSlot({ vars })`
+  写的正是这一类 `$x|default`。于是**脚本往槽里写一个「剩余耐久 = 进度」的可损耗物品，条就会自己动**，
+  不需要任何进度条贴图。示例实现：`examples/mob_chest/main.mjs`（进度物品 + `vars`）与
+  `examples/mob_chest/scripts/progress_bar.js`（`system.runInterval` 驱动）。
+  - ⚠️ **未真机验证**：条是否真在自定义容器格子里画出来；`#item_durability_visible` 的判定条件
+    在原版包内**查不到**（纯引擎内部计算）；`progress_bar_renderer` 是引擎渲染器、包内无定义
+    （current/total 怎么合成宽度未知）。
+  - 附：`$item_renderer_size` 默认 `[16,16]`（:4782），归零即可把物品图标藏掉、只留条。
+- **框架侧硬约束**：`ContainerUISystem` 把模板硬编码成 `chest.chest_grid_item`
+  （`containerUISystem.ts:422`），槽位内层控件内部构造，对外只给
+  `cellSize / background / itemRenderer / vars` ⇒ **今天无法给槽位挂 bindings**；
+  `UIElement` 自己有 `dataBinding.addDataBinding()`（`dataBinding.ts:15`），但容器 API 没开口子。
+  上面那条「借耐久条」的路线之所以可行，正是因为它**不需要自定义绑定**（模板自带）。
+- **出处**：`examples/mob_chest` 的进度槽设计（2026-09-12），三路只读调研 + 原版包逐行核对；
+  相关：§4.6（`enabled`）、§4.9（坐标/版面）。
+
 ---
 
 ## 5. 本仓库的构建方式（受限环境）
