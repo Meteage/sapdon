@@ -1,4 +1,4 @@
-import { BlockComponent, TileBlock, BlockAPI, EntityAPI, ItemAPI, ItemComponent, ItemCategory, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, DataBindingObject, registry } from '@sapdon/core'
+import { BlockComponent, TileBlock, BlockAPI, EntityAPI, ItemAPI, ItemComponent, ItemCategory, Grid, Label, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, registry } from '@sapdon/core'
 
 
 const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
@@ -44,83 +44,24 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
-      // 进度槽：做成**原版箭头**的样子（display = 不进不出），位置与尺寸 = 原版箭头
-      // （textures/ui/arrow_inactive / arrow_active，22×15 @ 原版 (77,36)，真机量取后 +[0,6]）。
-      // 引擎自带的那条 durability_bar（common.container_item 内联，原版 ui_common.json:4838）**关掉**：
-      //   $durability_bar_size / $durability_bar_offset 是**后代控件** common.durability_bar 自己用
-      //   |default 声明的（ui_common.json:3633-3634），而框架的 vars 只会写 $x|default
-      //   （containerUISystem.ts:466-469）⇒ 覆盖不到（实测条仍按原版默认 12×1 画出来）。
-      //   而 $durability_bar_required 是 container_item 自己声明的（:4778），能被覆盖 ⇒ 用它关掉。
-      // 另外关掉格子灰底（$background_images 也是 container_item 自己声明的 :4784），否则会看到
-      // 「灰方块 + 箭头」而不是原版那样只有箭头。
-      sapdon_furnace.addSlot({
-        slot: 3, pos: [77, 42], kind: 'display', cellSize: [22, 15], //= 原版箭头尺寸
-        itemRenderer: { size: [0, 0] }, //藏掉物品图标，只留箭头
-        vars: {
-          durability_bar_required: false,
-          background_images: "sapdon_furnace.empty_cell_bg",
-          cell_overlay_ref: "sapdon_furnace.furnace_progress_arrow",
-        },
+      // 进度指示（箭头 / 火焰）：用框架的 addProgressSlot —— 它把整条链封好了：
+      //   base 垫底 + fill 按 clipDirection 裁开，比例取**本格物品的耐久**（取反的理由写在框架里），
+      //   并自动关掉引擎自带的耐久条、去掉格子浅灰底、把 overlay 控件注入到格内。
+      // 为什么比例只能自己算、clip_direction 的语义、以及 current 是「已损耗量」这些坑，
+      // 见 doc/dev/known-pitfalls.md §4.12；脚本侧见 scripts/progress_bar.js。
+      // 位置与尺寸 = 原版：箭头 22×15 @ 原版 (77,36)、火焰 13×13 @ 原版 (52,37)，真机量取后 +[0,6]。
+      sapdon_furnace.addProgressSlot({
+        slot: 3, pos: [77, 42], size: [22, 15],
+        base: "textures/ui/arrow_inactive",
+        fill: "textures/ui/arrow_active",
+        clipDirection: "left", //从左往右填
       })
-      // ★ 进度指示的通用做法（箭头、火焰共用）——靠 $cell_overlay_ref 注入到格子里
-      // （item_cell 的 overlay 位，ui_common.json:4851；默认值是空壳 common.cell_overlay :3315）。
-      // 它是 grid item 的后代，所以照样拿得到**该格自己**的 collection 绑定 ——
-      // 于是每格各显示各的进度：箭头看 slot 3、火焰看 slot 4。
-      //   静止的那张打底（即使裁切没生效也还看得见），有色那张按比例裁开。
-      // 比例得自己算：原版的 #furnace_arrow_ratio / #furnace_flame_ratio 是引擎给熔炉界面的、
-      // 本面板拿不到（§4.12），所以在 view 绑定里用每格的耐久做 Molang 除法
-      // （框架自己的 HUD 就是这么用算术的：hud.ts:35）。
-      //   · clip_direction 的语义 = 从那条边露出来（'left' = 显示左侧 ratio 那部分）。
-      //     佐证：XP 条 full_progress_bar（hud_screen.json:510-522）用 'left' + #exp_progress，
-      //     而 XP 条是从左往右长的；火焰用 'down'（原版 flame_full_image 就是这个值）。
-      //   · ★ 真机实测（2026-09-12）：写成 current/total 时箭头**越走越短** ⇒
-      //     #item_durability_current_amount 是**已损耗量**（damage），不是剩余量；必须取反。
-      //     （引擎自带的 durability_bar 不取反也不影响：它的 property_bag 带了 `is_durability: true`，
-      //      方向由渲染器内部处理，ui_common.json:3637-3641。）
-      const progressClipImage = (id, texture, size, clipDirection) => {
-        const image = new Image(id)
-          .setSprite(new Sprite().setTexture(texture).setClipDirection(clipDirection))
-          .setLayout(new Layout().setSize(size).setAnchorFrom("top_left").setAnchorTo("top_left"))
-        image.dataBinding
-          .addDataBinding(new DataBindingObject()
-            .setBindingName("#item_durability_current_amount")
-            .setBindingType("collection")
-            .setBindingCollectionName("container_items"))
-          .addDataBinding(new DataBindingObject()
-            .setBindingName("#item_durability_total_amount")
-            .setBindingType("collection")
-            .setBindingCollectionName("container_items"))
-          .addDataBinding(new DataBindingObject()
-            .setBindingType("view")
-            .setSourcePropertyName("((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)")
-            .setTargetPropertyName("#clip_ratio"))
-        return image
-      }
-      const flatImage = (id, texture, size) => new Image(id)
-        .setSprite(new Sprite().setTexture(texture))
-        .setLayout(new Layout().setSize(size).setAnchorFrom("top_left").setAnchorTo("top_left"))
-      // 箭头（slot 3）：arrow_inactive 打底 + arrow_active 从左往右填
-      sapdon_furnace.system.addElement(new Panel("furnace_progress_arrow").addControls([
-        flatImage("arrow_back", "textures/ui/arrow_inactive", [22, 15]),
-        progressClipImage("arrow_fill", "textures/ui/arrow_active", [22, 15], "left"),
-      ]))
-      // 燃烧槽（火焰）：slot 4，位置尺寸 = 原版火焰 13×13 @ 原版 (52,37)，真机量取后 +[0,6]
-      // 火焰从下往上烧 ⇒ clip_direction: 'down'（与原版 flame_full_image 一致）。
-      sapdon_furnace.addSlot({
-        slot: 4, pos: [52, 43], kind: 'display', cellSize: [13, 13], //= 原版火焰尺寸
-        itemRenderer: { size: [0, 0] }, //藏掉物品图标，只留火焰
-        vars: {
-          durability_bar_required: false,
-          background_images: "sapdon_furnace.empty_cell_bg",
-          cell_overlay_ref: "sapdon_furnace.furnace_burn_flame",
-        },
+      sapdon_furnace.addProgressSlot({
+        slot: 4, pos: [52, 43], size: [13, 13],
+        base: "textures/ui/flame_empty_image",
+        fill: "textures/ui/flame_full_image",
+        clipDirection: "down", //从下往上烧
       })
-      sapdon_furnace.system.addElement(new Panel("furnace_burn_flame").addControls([
-        flatImage("flame_back", "textures/ui/flame_empty_image", [13, 13]),
-        progressClipImage("flame_fill", "textures/ui/flame_full_image", [13, 13], "down"),
-      ]))
-      // 零尺寸背景：把格子的浅灰底去掉，只留箭头/火焰
-      sapdon_furnace.system.addElement(new Panel("empty_cell_bg").setLayout(new Layout().setSize([0, 0])))
 
 // 进度物品：scripts/progress_bar.js 把它写进上面两个格（slot 3 箭头 / slot 4 火焰），
 // 靠「剩余耐久 = 该格的进度」让引擎的耐久数据驱动箭头与火焰的裁切比例。
