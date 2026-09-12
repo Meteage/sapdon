@@ -587,7 +587,8 @@
     （`ui_common.json:3637-3641`），方向由渲染器内部处理。
   - **`clip_direction: "left"` 的语义 = 显示左侧 `ratio` 那一部分**（不是裁掉左侧）。佐证：XP 条
     `full_progress_bar`（`hud_screen.json:510-522`）用 `clip_direction: "left"` + `#exp_progress`，
-    而 XP 条是从左往右长的。
+    而 XP 条是从左往右长的。同理 right / up / down 各显示对应那一侧：原版火焰
+    `flame_full_image` 用 `down`（从下往上烧），`examples/mob_chest` 的燃烧槽用的就是它。
   - 附带：想让格子**没有浅灰底**，可把 `$background_images`（`container_item` 自己声明，`:4784`）
     指向一个 0×0 的空面板。
 - **框架侧硬约束**：`ContainerUISystem` 把模板硬编码成 `chest.chest_grid_item`

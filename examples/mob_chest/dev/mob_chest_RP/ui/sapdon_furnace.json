@@ -42,12 +42,12 @@
           "collection_name": "container_items",
           "grid_dimensions": [
             1,
-            4
+            5
           ],
           "grid_item_template": "chest.chest_grid_item",
           "size": [
             18,
-            72
+            90
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
@@ -181,6 +181,43 @@
                   }
                 ]
               }
+            },
+            {
+              "grid_item_4": {
+                "type": "panel",
+                "grid_position": [
+                  0,
+                  4
+                ],
+                "controls": [
+                  {
+                    "grid_item@chest.chest_grid_item": {
+                      "offset": [
+                        44,
+                        -51
+                      ],
+                      "enabled": false,
+                      "anchor_from": "top_left",
+                      "anchor_to": "top_left",
+                      "size": [
+                        13,
+                        13
+                      ],
+                      "$cell_image_size|default": [
+                        13,
+                        13
+                      ],
+                      "$item_renderer_size|default": [
+                        0,
+                        0
+                      ],
+                      "$durability_bar_required|default": false,
+                      "$background_images|default": "sapdon_furnace.empty_cell_bg",
+                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_burn_flame"
+                    }
+                  }
+                ]
+              }
             }
           ]
         }
@@ -198,26 +235,7 @@
             0,
             0
           ],
-          "layer": 4,
-          "controls": [
-            {
-              "flame_image": {
-                "type": "image",
-                "texture": "textures/ui/flame_empty_image",
-                "size": [
-                  13,
-                  13
-                ],
-                "offset": [
-                  52,
-                  43
-                ],
-                "anchor_from": "top_left",
-                "anchor_to": "top_left",
-                "layer": 6
-              }
-            }
-          ]
+          "layer": 4
         }
       },
       {
@@ -272,6 +290,53 @@
           "size": [
             22,
             15
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left",
+          "bindings": [
+            {
+              "binding_name": "#item_durability_current_amount",
+              "binding_type": "collection",
+              "binding_collection_name": "container_items"
+            },
+            {
+              "binding_name": "#item_durability_total_amount",
+              "binding_type": "collection",
+              "binding_collection_name": "container_items"
+            },
+            {
+              "binding_type": "view",
+              "source_property_name": "((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)",
+              "target_property_name": "#clip_ratio"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "furnace_burn_flame": {
+    "type": "panel",
+    "controls": [
+      {
+        "flame_back": {
+          "type": "image",
+          "texture": "textures/ui/flame_empty_image",
+          "size": [
+            13,
+            13
+          ],
+          "anchor_from": "top_left",
+          "anchor_to": "top_left"
+        }
+      },
+      {
+        "flame_fill": {
+          "type": "image",
+          "texture": "textures/ui/flame_full_image",
+          "clip_direction": "down",
+          "size": [
+            13,
+            13
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
