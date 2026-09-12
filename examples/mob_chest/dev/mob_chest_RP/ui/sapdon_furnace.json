@@ -174,14 +174,8 @@
                         0,
                         0
                       ],
-                      "$durability_bar_size|default": [
-                        36,
-                        4
-                      ],
-                      "$durability_bar_offset|default": [
-                        0,
-                        3
-                      ]
+                      "$durability_bar_required|default": false,
+                      "$cell_overlay_ref|default": "sapdon_furnace.furnace_progress_bar"
                     }
                   }
                 ]
@@ -251,6 +245,44 @@
             }
           ]
         }
+      }
+    ]
+  },
+  "furnace_progress_bar": {
+    "type": "custom",
+    "renderer": "progress_bar_renderer",
+    "size": [
+      36,
+      10
+    ],
+    "offset": [
+      0,
+      0
+    ],
+    "anchor_from": "top_left",
+    "anchor_to": "top_left",
+    "property_bag": {
+      "is_durability": true,
+      "round_value": true
+    },
+    "bindings": [
+      {
+        "binding_name": "#item_durability_visible",
+        "binding_name_override": "#touch_progress_bar_visible",
+        "binding_type": "collection",
+        "binding_collection_name": "container_items"
+      },
+      {
+        "binding_name": "#item_durability_total_amount",
+        "binding_name_override": "#progress_bar_total_amount",
+        "binding_type": "collection",
+        "binding_collection_name": "container_items"
+      },
+      {
+        "binding_name": "#item_durability_current_amount",
+        "binding_name_override": "#progress_bar_current_amount",
+        "binding_type": "collection",
+        "binding_collection_name": "container_items"
       }
     ]
   }

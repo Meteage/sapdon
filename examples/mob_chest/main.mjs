@@ -1,4 +1,4 @@
-import { BlockComponent, TileBlock, BlockAPI, EntityAPI, ItemAPI, ItemComponent, ItemCategory, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, registry } from '@sapdon/core'
+import { BlockComponent, TileBlock, BlockAPI, EntityAPI, ItemAPI, ItemComponent, ItemCategory, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, DataBindingObject, registry } from '@sapdon/core'
 
 
 const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
@@ -45,20 +45,45 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
       // 进度槽：占原版箭头的位置（display = 不进不出）。
-      // 进度条**不用自己画**，引擎自带：common.container_item 里内联了
-      //   durability_bar@common.durability_bar（原版 ui_common.json:4838），
-      // 它按每格的 #item_durability_current_amount / total_amount 画条（:3650-3660，collection 绑定），
-      // 而 $durability_bar_size / $durability_bar_offset 是可被外部覆盖的变量（:3633-3634；
-      // 原版口袋版就覆盖了它们 :4895-4896）—— 框架的 vars 写的正是这一类 $x|default。
-      // 于是脚本只要往这个槽写「剩余耐久 = 进度」的可损耗物品，条就会自己动（见 scripts/progress_bar.js）。
-      // ⚠️ 待真机验证：条是否真在自定义容器格子里画出来。
-      //    若没画出来，第一件要试的事是删掉下面 itemRenderer 那一行（图标尺寸归零可能让整格不渲染）；
-      //    其次试 $durability_bar_required。
+      // 引擎自带的那条 durability_bar（common.container_item 内联，原版 ui_common.json:4838）**关掉**，
+      // 换成下面自定的 furnace_progress_bar（铺满整格）。为什么不能直接改自带那条的尺寸：
+      //   $durability_bar_size / $durability_bar_offset 是**后代控件** common.durability_bar 自己用
+      //   |default 声明的（ui_common.json:3633-3634），而框架的 vars 只会写 $x|default
+      //   （containerUISystem.ts:466-469）⇒ 覆盖不到，实测条仍按原版默认 12×1 画在格子底部中央。
+      //   （原版口袋版能改掉，是因为它**裸写**这两个变量、不带 |default，ui_common.json:4895-4896。）
+      //   而 $durability_bar_required 是 container_item 自己声明的（:4778），能被覆盖 ⇒ 用它关掉。
       sapdon_furnace.addSlot({
         slot: 3, pos: [70, 45], kind: 'display', cellSize: [36, 10],
-        itemRenderer: { size: [0, 0] },                                        //藏掉物品图标，只留条
-        vars: { durability_bar_size: [36, 4], durability_bar_offset: [0, 3] }, //撑满 36×10 的底部
+        itemRenderer: { size: [0, 0] }, //藏掉物品图标，只留条
+        vars: {
+          durability_bar_required: false,
+          cell_overlay_ref: "sapdon_furnace.furnace_progress_bar", //在 item_cell 内注入自定进度条
+        },
       })
+      // 自定进度条：尺寸与绑定都自己声明，靠 $cell_overlay_ref 注入到格子里
+      // （item_cell 的 overlay 位，ui_common.json:4851；默认值是空壳 common.cell_overlay :3315）。
+      // 它是 grid item 的后代，所以照样拿得到每格的 collection 绑定。
+      const furnace_progress_bar = new UIElement("furnace_progress_bar", "custom")
+        .addProp("renderer", "progress_bar_renderer")
+        .addProp("size", [36, 10])
+        .addProp("offset", [0, 0])
+        .addProp("anchor_from", "top_left")
+        .addProp("anchor_to", "top_left")
+        .addProp("property_bag", { is_durability: true, round_value: true })
+      for (const [bindingName, override] of [
+        ["#item_durability_visible", "#touch_progress_bar_visible"],
+        ["#item_durability_total_amount", "#progress_bar_total_amount"],
+        ["#item_durability_current_amount", "#progress_bar_current_amount"],
+      ]) {
+        furnace_progress_bar.dataBinding.addDataBinding(
+          new DataBindingObject()
+            .setBindingName(bindingName)
+            .setBindingNameOverride(override)
+            .setBindingType("collection")
+            .setBindingCollectionName("container_items"),
+        )
+      }
+      sapdon_furnace.system.addElement(furnace_progress_bar)
       // 原版火焰图形：贴图名与尺寸直接取自原版 furnace_screen.json
       //   flame_empty_image = textures/ui/flame_empty_image  13×13
       // 位置 = 真机截图量到的原版位置 + [0,6]（本面板槽位整体比原版低 6px）。

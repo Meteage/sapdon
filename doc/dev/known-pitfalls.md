@@ -542,10 +542,31 @@
   写的正是这一类 `$x|default`。于是**脚本往槽里写一个「剩余耐久 = 进度」的可损耗物品，条就会自己动**，
   不需要任何进度条贴图。示例实现：`examples/mob_chest/main.mjs`（进度物品 + `vars`）与
   `examples/mob_chest/scripts/progress_bar.js`（`system.runInterval` 驱动）。
-  - ⚠️ **未真机验证**：条是否真在自定义容器格子里画出来；`#item_durability_visible` 的判定条件
-    在原版包内**查不到**（纯引擎内部计算）；`progress_bar_renderer` 是引擎渲染器、包内无定义
-    （current/total 怎么合成宽度未知）。
+  - **真机已确认它会画出来**（2026-09-12，见下面实测 ②）；仍未知的只有：`#item_durability_visible`
+    的判定条件（原版包内**查不到**，纯引擎内部计算）、`progress_bar_renderer` 怎么把 current/total
+    合成宽度（引擎渲染器、包内无定义）。
   - 附：`$item_renderer_size` 默认 `[16,16]`（:4782），归零即可把物品图标藏掉、只留条。
+- **★ 真机实测 ②（2026-09-12）：条确实会画出来，但尺寸改不动 —— `$x|default` 覆盖不到
+  「后代自己声明了 `|default`」的同名变量。** 现象：框架用
+  `addSlot({ vars: { durability_bar_size: [36,4], durability_bar_offset: [0,3] } })`（写成 `$durability_bar_size|default`）
+  之后，真机截图里条**仍按原版默认 12×1** 画在格子底部中央（量得条宽 12.33 UI px、
+  位置 = 格心 +5，正是默认 `$durability_bar_offset` `[0,5]`）。
+  原因：这两个变量是**后代控件** `common.durability_bar` **自己**用 `|default` 声明的（`ui_common.json:3633-3634`），
+  后代自身的 `|default` 胜过祖先实例层的 `|default`。旁证：`$cell_image_size|default` 覆盖得动，是因为消费它的
+  `common.cell_image` 没自己声明同名 `|default`。原版口袋版之所以改得动，是它**裸写**这两个变量
+  （**不带** `|default`，`ui_common.json:4895-4896`）—— 而**框架的 `vars` 只会写 `$x|default`**
+  （`containerUISystem.ts:466-469`）。
+  - **判据（一个变量能不能被 `vars` 覆盖）**：看它由谁声明。由**被实例化的那个控件自己**声明
+    （如 `$durability_bar_required` 在 `container_item:4778`）⇒ 实例层能覆盖；
+    由**更深的后代**自己声明 ⇒ 覆盖不到，只能改用下面的注入法。
+- **★ 注入自定控件：`$cell_overlay_ref` / `$background_images`（都在 `item_cell` 内，保留每格 collection 上下文）**。
+  这两个变量都是 `container_item` **自己**声明的（`:4775` / `:4784`，后者配 `$background_image_control_name` `:4785`），
+  故实例层可覆盖。`$cell_overlay_ref` 默认是空壳 `common.cell_overlay`（`:3315` 只有 `ignored: true`），
+  用在 `item_cell` 的 `item_cell_overlay_ref@$cell_overlay_ref`（`:4851`）。
+  ⇒ 项目可注册一个自定控件（`type: "custom"` + `renderer: "progress_bar_renderer"` + 自己的三条 `bindings`：
+  `binding_type: "collection"` / `binding_collection_name: "container_items"`，照抄 `ui_common.json:3642-3661`），
+  再用 `vars: { durability_bar_required: false, cell_overlay_ref: "<ns>.<控件名>" }` 把自带那条关掉、换成自己这条
+  —— **尺寸与绑定都自己说了算**。`examples/mob_chest/main.mjs` 的 `furnace_progress_bar` 即此法（铺满整格 36×10）。
 - **框架侧硬约束**：`ContainerUISystem` 把模板硬编码成 `chest.chest_grid_item`
   （`containerUISystem.ts:422`），槽位内层控件内部构造，对外只给
   `cellSize / background / itemRenderer / vars` ⇒ **今天无法给槽位挂 bindings**；
