@@ -99,31 +99,15 @@ const TileBehData = {
 const TILE_CONTAINER_OPTION_KEYS = ["inventory_size", "container_type", "can_be_siphoned_from"]
 
 /**
- * 解析 `options.despawn_delay`（承载实体 despawn 的延迟，**秒**）。
+ * ★ **不要给 `item_despawn` 组里的 `minecraft:transformation` 加 `delay`**（2026-09-12 真机教训）。
  *
- * ## 这个是干什么的
+ * 那一组里还有 `minecraft:instant_despawn`（**立即**移除实体）。加 `delay` 之后实测的结果是
+ * **什么都不掉**：实体被立即移除，而推迟的 transformation 再也没机会执行 ⇒
+ * 容器里的**真物品一起没了**（用户报告）。完整记录见 `doc/dev/known-pitfalls.md` §4.15。
  *
- * 承载实体被破坏时走 `minecraft:block_sensor` → `despawn_event` → `item_despawn` 组，
- * 而那一组里的 `minecraft:transformation` 带 **`drop_inventory: true`** ⇒ 整容器**同时**倒出来。
- * 「先让脚本把某些格子清空、再让它掉」这件事因此需要**时间窗**：
- * `minecraft:transformation.delay.value` 就是官方文档里的「Time in seconds before the entity transforms」
- * （`metadata/doc_modules/entities.json`，与 `range_min`/`range_max` 同组）。
- *
- * ⇒ 传 `0.1`（= 2 tick @20tps）即可让「破坏事件里的脚本」**必然**先于掉落跑完。
- *
- * @param {(key: string) => any} readOption
- * @returns {number|undefined} `undefined` = **不写 delay**（产物与历史版本逐字节一致）
+ * 因此本模块**不提供**任何「延迟 despawn」的入口 —— 想让破坏时的脚本先跑完，
+ * 要在**不影响这条掉落链**的前提下另找机制。
  */
-function resolveDespawnDelay(readOption) {
-    const value = readOption("despawn_delay")
-    if (value === undefined) return undefined
-    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-        throw new Error(
-            "createTileBlock: options.despawn_delay 必须是大于 0 的有限数（秒，如 0.1 = 2 tick @20tps）",
-        )
-    }
-    return value
-}
 
 /**
  * 解析客户端实体要用的贴图。
@@ -184,25 +168,10 @@ function buildTileBehData(readOption) {
         overrides[key] = value
     }
 
-    // ★ despawn 延迟：只在显式传了 `despawn_delay` 时才重建 component_groups
-    //   （逐层 `{...原对象}` 展开 —— 键序与历史产物一致，只多一个 `delay`）。
-    const despawnDelay = resolveDespawnDelay(readOption)
-    const componentGroups = despawnDelay === undefined
-        ? TileBehData.component_groups
-        : {
-            ...TileBehData.component_groups,
-            item_despawn: {
-                ...TileBehData.component_groups.item_despawn,
-                "minecraft:transformation": {
-                    ...TileBehData.component_groups.item_despawn["minecraft:transformation"],
-                    delay: { value: despawnDelay },
-                },
-            },
-        }
-
+    // ★ 这里**刻意不重建** `component_groups`：`item_despawn` 组是**已验证能正确掉落**的那一份，
+    //   任何改动（尤其往 transformation 上加 `delay`）都会让它失效 —— 见本文件顶部那条警告。
     return {
-        // 不给 despawn_delay 时**原样引用**共享常量（与历史产物逐字节一致、也不多一次拷贝）
-        component_groups: componentGroups,
+        component_groups: TileBehData.component_groups,
         components: {
             ...TileBehData.components,
             "minecraft:inventory": Object.assign(
@@ -248,13 +217,10 @@ export class TileBlock {
      *   `horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`
      *   （此处不做白名单，避免把未文档化但可用的值写死掉）。
      * @param {boolean} [options.can_be_siphoned_from=true] 能否用漏斗抽取。
-     * @param {number} [options.despawn_delay] 承载实体 despawn 的**延迟（秒）**。
-     *   只影响 `item_despawn` 组里 `minecraft:transformation` 的 `delay.value`
-     *   （官方文档：`delay.value` = "Time in seconds before the entity transforms"）。
-     *   **不传 = 不写该键**（产物与历史版本逐字节一致）。
-     *   需要它的场景：`minecraft:transformation` 带 `drop_inventory: true` ⇒ 破坏时整容器同时倒出来，
-     *   而「先把某几个格子清空再让它掉」要求破坏事件里的脚本**先跑完** ⇒ 用 `0.1`（2 tick）开一个时间窗。
-     *   取值必须是大于 0 的有限数，否则构造期抛错。
+     *   ⚠️ **没有**「延迟 despawn」这类入口，而且**不要**去加：
+     *   往 `item_despawn` 组的 `minecraft:transformation` 上加 `delay` 会让同组的
+     *   `minecraft:instant_despawn` 先把实体删掉 ⇒ **整容器一个都不掉**（真机教训，
+     *   见 `doc/dev/known-pitfalls.md` §4.15）。
      */
     constructor(identifier, category, textures_arr, options = {}){
 

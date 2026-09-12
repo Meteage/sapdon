@@ -661,50 +661,60 @@
 
 ---
 
-### 4.15 ★ 承载实体被破坏时 `drop_inventory: true` 是**整容器倒出来**，没有「按格过滤」的字段（2026-09-12）
+### 4.15 ★★ `item_despawn` 那一组**一个字都不能改**：加 `delay` 会让**整容器一个都不掉**（2026-09-12 真机，丢了真物品）
 
-- **症状**：玩家破坏机器，地上除真物品外**还多出一个内部物品**（FZ 的进度 / 能量**显示载体**
-  `fz:machine_progress`）。用户原话：「破坏方块的时候不要把进度物品掉落出来」。
-- **机制**：`TileBlock` 给每个承载实体挂的实体数据里有
+- **原始症状（需求起点）**：玩家破坏机器，地上除真物品外**还多出一个内部物品**
+  （FZ 的进度 / 能量**显示载体** `fz:machine_progress`）。用户原话：
+  > 「破坏方块的时候不要把进度物品掉落出来」
+- **机制**：`TileBlock` 给每个承载实体挂的实体数据里
 
   ```json
   "item_despawn": {
-    "minecraft:despawn": {}, "minecraft:instant_despawn": { "remove_child_entities": false },
+    "minecraft:despawn": {},
+    "minecraft:instant_despawn": { "remove_child_entities": false },
     "minecraft:transformation": { "drop_inventory": true, "into": "minecraft:air" }
   }
   ```
-  破坏方块 ⇒ `minecraft:block_sensor.on_break` → `despawn_event` → 这一组 ⇒
-  **整个容器倒出来**。官方字段全集（`metadata/doc_modules/entities.json`，`minecraft:transformation`）：
+  破坏方块 ⇒ `minecraft:block_sensor.on_break` → `despawn_event` → 这一组 ⇒ **整个容器倒出来**。
+  官方字段全集（`metadata/doc_modules/entities.json`，`minecraft:transformation`）：
   `add` / `begin_transform_sound` / `delay` / `drop_equipment` / **`drop_inventory`** / `into` /
   `keep_level` / `keep_owner` / `preserve_equipment` / `transformation_sound`
-  —— **没有**任何「按槽位/按物品过滤掉落」的入口；`drop_inventory` 的原文是
+  —— **没有**任何「按槽位 / 按物品过滤掉落」的入口；`drop_inventory` 的原文是
   "Cause the entity to drop all items in inventory upon transformation"。
-- **规避（框架已加接口）**：靠 **`delay` 开一个时间窗**，让破坏事件里的脚本**先把内部格清空**，
-  再让容器掉：
 
-  ```js
-  BlockAPI.createTileBlock(id, category, textures, { despawn_delay: 0.1 })  // 0.1 秒 = 2 tick @20tps
-  ```
+- **★ 第一次的修法（错的，真机翻了车）**：往 `minecraft:transformation` 上加
+  `delay: { value: 0.1 }`，想用这段延迟让「破坏事件里的脚本先清掉内部格」。
+  结果：**地上什么都不掉，玩家的真物品一起没了**。用户原话：
+  > 「我的真物品也没有了」
 
-  框架把它写到 `item_despawn` 组的 `minecraft:transformation.delay.value`
-  （官方口径："Time in seconds before the entity transforms"）。
-  **不传 = 不写该键** ⇒ 既有项目产物逐字节不变。
-- **为什么 2 tick 够**：破坏走 `afterEvents.playerBreakBlock`（与破坏**同一 tick**），
-  而 despawn 由实体自己的 `block_sensor` 触发（最多晚 1 tick）⇒ 2 tick 必然跨过脚本那一拍，
-  且玩家察觉不到。⚠️ 这条**时序推理尚未真机验证** —— 首次真机要看有没有
-  `破坏清理 @…：已清空显示格 2/3` 的 `[evt]` 行。
-- **项目侧配套**（FZ 的写法，可直接照搬）：
-  ① 契约里一个常量 `RECYCLER_DESPAWN_DELAY_S = 0.1`（**单一事实源**）；
-  ② `createTileBlock` 传 `despawn_delay`；
-  ③ 破坏路径的**第一步**读容器 → 把显示格 `writeSlot(i, undefined)`，排在 `saveNow` / 快照删除**之前**。
-  ⚠️ 读容器时**必须传「被破坏前那个方块的 id」**，不能传 `event.block.typeId`
-  （破坏后它恒为 `minecraft:air`）。
-- **反面做法（不要用）**：把 `drop_inventory` 改成 `false` 再由脚本自己掉真物品 ——
-  失败模式是「脚本没跑 ⇒ 玩家的东西凭空消失」；而现在这个失败模式只是
-  「多掉一个内部物品」（有 `[err]` 留痕）。**宁可多掉，不可少掉。**
-- **出处**：FZ 回收机（2026-09-12 用户反馈）；字段定义取自原版包
-  `bedrock-samples-1.21.130.26-preview/metadata/doc_modules/entities.json`（`minecraft:transformation` 小节）；
-  判据在 `tests/block-api.test.mjs`（`despawn_delay` 的产物形状 / 校验 / 不污染共享常量）。
+  **原因**：同一组里还有 `minecraft:instant_despawn`（**立即**移除实体）。
+  加了 delay 之后，实体先被立即删掉，**推迟的 transformation 再也没机会执行** ⇒
+  连 `drop_inventory` 都不发生。之前之所以能掉，正是因为 transformation 与那两个移除组件
+  **在同一瞬间**生效 —— 一旦把它推迟，它就落在那两者之后，等于没写。
+
+- **规避（最终做法）**：
+
+  1. ★ **绝对不要碰 `item_despawn` 组**（不要加 `delay`、不要删 `instant_despawn`、
+     不要改 `drop_inventory`）。框架**不提供**任何「延迟 despawn」入口，`tileBlock.js` 顶部有警告。
+  2. **脚本侧**：破坏路径的**第一步**读容器 → 把内部格（进度 / 能量）`writeSlot(i, undefined)`。
+     ⚠️ 读容器时**必须传「被破坏前那个方块的 id」**，不能传 `event.block.typeId`
+     （破坏后它恒为 `minecraft:air`）。
+     ⚠️ 这一步与引擎的 despawn **谁先谁后未验证** ⇒ 它只是**尽力**，不能当成保证。
+  3. **兜底（与顺序无关）**：破坏后下一拍，在该方块坐标附近**把掉落出来的内部物品实体删掉**
+     （`typeId === 那个显示载体 id` 的 item 实体 → `remove()`）。
+     这一条不依赖任何时序，且**不碰掉落链**，是安全的正确性来源。
+
+- **反面做法（都不要用）**：
+  - 把 `drop_inventory` 改成 `false` 再由脚本自己掉真物品 ⇒ 失败模式是
+    「脚本没跑 ⇒ 玩家的东西凭空消失」；
+  - 给 transformation 加 `delay` ⇒ **就是本条目踩的那一脚**，失败模式同样是真物品消失。
+  **判断准则**：任何改动只要可能让「真物品不掉」，就一律不做 ——
+  最坏情况只允许是「多掉一个内部物品」（有 `[err]` 留痕、玩家丢掉即可）。
+
+- **出处**：FZ 回收机（2026-09-12 用户两轮反馈：先是「不要把进度物品掉出来」，后是「我的真物品也没有了」）；
+  字段定义取自原版包 `bedrock-samples-1.21.130.26-preview/metadata/doc_modules/entities.json`
+  （`minecraft:transformation` 小节）；判据在 `tests/block-api.test.mjs`
+  （`item_despawn` 组与历史产物**逐字节一致**、`transformation` 上不许出现 `delay`）。
 
 ---
 
