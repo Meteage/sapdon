@@ -66,31 +66,22 @@ export class ItemComponent {
   }
   /**
    * 设置放置方块组件
-   * @param block 被放置的方块：标识符字符串，**或**带状态的 BlockDescriptor
-   *              （`{ name, states }` / `{ tags }`）
+   * @param block 被放置的方块：标识符字符串，或 BlockDescriptor
+   *              （`{ name, states }` / `{ tags }`）。
+   *              ⚠️ `minecraft:block_placer.block` 是否接受 BlockDescriptor 取决于引擎版本
+   *              —— 传之前先按目标引擎验一次（`doc/dev/known-pitfalls.md` §2.3）。
    * @param options 放置配置
-   * @param options.replaceBlockItem 是否替换原方块物品
+   * @param options.replaceBlockItem 是否替换原方块物品（要求物品 id 与方块 id 相同）
    * @param options.alignedPlacement 是否启用对齐放置
    * @param options.useOn 允许放置的目标方块描述符列表；省略则可放置于任何方块
    * @returns 组件 Map
-   *
-   * ★ 为什么 `block` 允许 BlockDescriptor（2026-09-12 放宽，此前只收字符串）：
-   *   官方 schema 里 `minecraft:block_placer.block` 与 `minecraft:digger.block`
-   *   是**同一类字段**（BlockDescriptor：字符串、`{ name, states }` 或 `{ tags }`）——
-   *   `@minecraft/bedrock-schemas` 的 `forms/item/minecraft_block_placer.form.json`
-   *   与 `forms/item/diggeritemcomponent_blockinfo.form.json` 都把该字段标成
-   *   `dataType: "object"`（而真正只收字符串的字段如 `entity_placer.entity` 标的是 string），
-   *   且 `forms/item/blockdescriptorproxy.form.json` 的描述原文写着它
-   *   「Used by components like minecraft:block_placer to specify which block an item places」。
-   *   放开之前，要「同一个方块、不同状态」只能绕过框架手搓 Map（FZ 的项目里
-   *   5 种导线材质正需要它：同一个 `fz:wire` + 不同 `fz:wire_material`）。
+   * @throws block 不是「非空字符串」也不是「含 string 类型 name 或 tags 的对象」
    */
   static setBlockPlacer(block: string | BlockDescriptor, options: BlockPlacerOptions = {}): ItemComponentMap {
     if (typeof block === "string") {
       if (block.length === 0) throw new Error('block 必须是非空字符串');
     } else if (block === null || typeof block !== "object" ||
       (typeof (block as { name?: unknown }).name !== "string" && typeof (block as { tags?: unknown }).tags !== "string")) {
-      // 失败必须响亮：静默写坏会让方块「右键没反应、物品不消耗」，几乎无法定位
       throw new Error('block 必须是「非空字符串」或「BlockDescriptor 对象」（须含 string 的 name 或 tags）');
     }
     const { replaceBlockItem, alignedPlacement, useOn } = options;

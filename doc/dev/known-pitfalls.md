@@ -234,6 +234,26 @@
 - 物品要能触发 `onUse`，**必须**加 `minecraft:interact_button`（`ItemComponent.setInteractButton`），否则右键毫无反应。
 - 物品用 `@minecraft/server` 的 `init.itemComponentRegistry`，与方块是两个注册表，别混。
 
+### 2.9 ★ `minecraft:block_placer.block` 传**对象**会被引擎拒（schema 允许 ≠ 引擎接受）
+- **症状**：物品带 `"minecraft:block_placer": { "block": { "name": "ns:blk", "states": { … } } }` 时，加载世界报
+  ```
+  [Item][error]- Failed to parse field ' -> components -> minecraft:block_placer -> block: invalid string'
+  [Item][error]- Error Parsing Item 'ns:某物品':
+  ```
+  并且**整份物品定义作废** —— 连带 `Missing icon for data-driven item 'ns:某物品'`（每个物品刷几百~上千行，
+  实测 5 个物品共 3962 行）⇒ 表现为「物品图标没了 / 右键没反应」，但**报错信息与图标无关**，极易误判成图标问题。
+- **根因**：官方 DataForm（`@minecraft/bedrock-schemas` 的 `forms/item/minecraft_block_placer.form.json`）
+  把 `block` 标成 `dataType: "object"`，`forms/item/blockdescriptorproxy.form.json` 的描述也点名
+  `minecraft:block_placer` 用 BlockDescriptor —— 但**当前引擎只收字符串**。
+  ⇒ 通例：**schema 是能力清单，不是可用性保证**；新字段先按最保守形态跑通，再谈花哨写法。
+- **做法**：`block` 传字符串（`ItemComponent.setBlockPlacer('ns:blk')`，落方块默认状态）。
+  「同一方块 + 不同状态（多种材质/变体）」要靠**脚本补写**：
+  `beforeEvents.playerInteractWithBlock` 记手持物（此时还读得到）→ `afterEvents.playerPlaceBlock`
+  按物品映射出状态值并 `setPermutation` + 写后回读。
+  必须用 before-event 记：**生存模式放下最后一个时 after-event 里手中已经空了**。
+- **出处**：真机 ContentLog（`%APPDATA%\Minecraft Bedrock\logs\ContentLog*.txt`），两轮加载
+  `invalid string` 20 条 / `Error Parsing Item` 10 条 / `Missing icon` 3962 条。
+
 ---
 
 ## 3. 持久化（动态属性）
