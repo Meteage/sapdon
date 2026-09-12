@@ -700,16 +700,37 @@
      ⚠️ 读容器时**必须传「被破坏前那个方块的 id」**，不能传 `event.block.typeId`
      （破坏后它恒为 `minecraft:air`）。
      ⚠️ 这一步与引擎的 despawn **谁先谁后未验证** ⇒ 它只是**尽力**，不能当成保证。
-  3. **兜底（与顺序无关）**：破坏后下一拍，在该方块坐标附近**把掉落出来的内部物品实体删掉**
-     （`typeId === 那个显示载体 id` 的 item 实体 → `remove()`）。
-     这一条不依赖任何时序，且**不碰掉落链**，是安全的正确性来源。
+  3. **★ 真正保证结果的是「掉落物过滤」（2026-09-12 用户提的，实测方向正确）**：
+     不去阻止掉落，而是**掉了之后删掉**。两个钩子，都只按物品 id 判：
+
+     | 事件 | 说明 |
+     |---|---|
+     | `world.afterEvents.entityItemDrop` | 最贴切：`event.items` **直接给出被掉出来的物品实体**（`Entity[]`） |
+     | `world.afterEvents.entitySpawn` | 兜底：覆盖没走前者的路径（爆炸 / `/setblock` / 活塞等**非玩家破坏**也走它） |
+
+     ```ts
+     world.afterEvents.entityItemDrop.subscribe((e) => {
+         for (const item of e.items) if (isOurs(item)) item.remove()
+     })
+     ```
+
+     **为什么可以无条件删、不必判位置**：内部载体物品（本例是 `fz:machine_progress`）
+     是 `category: none`、不进创造菜单、没有配方 ⇒ 正常途径**拿不到**它，
+     「世界上出现这个物品实体」本身就是泄漏。
+     **为什么不可能误删真物品**：判据是**物品 id 逐字相等**。
+     ⚠️ 热路径要求：`entitySpawn` 是**每一次实体生成**都触发的事件 ⇒ 判据必须
+     「一次字符串比较 + 不命中立刻返回」，绝不能对每只怪都 `getComponent`。
+     ⚠️ 掉落物实体的 `typeId` **通常就是物品 id**；若某版本给的是通用的
+     `minecraft:item`，真正的物品 id 在 `minecraft:item` 组件的 `itemStack` 里
+     —— 先比 `typeId`、**只在它是 `minecraft:item` 时**才去翻组件（省掉热路径开销）。
 
 - **反面做法（都不要用）**：
   - 把 `drop_inventory` 改成 `false` 再由脚本自己掉真物品 ⇒ 失败模式是
     「脚本没跑 ⇒ 玩家的东西凭空消失」；
-  - 给 transformation 加 `delay` ⇒ **就是本条目踩的那一脚**，失败模式同样是真物品消失。
+  - 给 transformation 加 `delay` ⇒ **就是本条目踩的那一脚**，失败模式同样是真物品消失；
+  - 依赖「破坏事件里的脚本一定先于引擎 despawn 跑完」⇒ 实测**赶不上**（第一层清格试过，没赶上）。
   **判断准则**：任何改动只要可能让「真物品不掉」，就一律不做 ——
-  最坏情况只允许是「多掉一个内部物品」（有 `[err]` 留痕、玩家丢掉即可）。
+  最坏情况只允许是「多掉一个内部物品」（最终由上面第 3 条删掉）。
 
 - **出处**：FZ 回收机（2026-09-12 用户两轮反馈：先是「不要把进度物品掉出来」，后是「我的真物品也没有了」）；
   字段定义取自原版包 `bedrock-samples-1.21.130.26-preview/metadata/doc_modules/entities.json`
