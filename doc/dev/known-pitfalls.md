@@ -349,27 +349,118 @@
 - **别删实体的几何／材质／渲染控制器**：删了等于堵死「实体接管外观」那条路，静默无外观可用。
 - 出处：fz-sapdon 真机日志（实体 spawn 坐标 = 方块中心）+ 该项目 README §S3b「真机修复」小节。
 
-### 4.5 自定义容器界面：门控键 = `UISystem.name`；`ContainerUISystem` 的版面写死且 `addElementToMain` 是空的（2026-09-12，fz-sapdon S3e 实测）
+### 4.5 自定义容器界面：门控键 = `UISystem.name`（2026-09-12，fz-sapdon S3e 实测）
 - **机制**（可用部分的正确姿势）：`ChestUISystem.registerContainerUI(key, rootPanel)` 会在
   `chest:chest_screen` 里插一条 `requires: ($new_container_title = '<key>')` 的门控，命中就把原版小箱子界面的
   `$screen_content` / `$root_panel` 换成你的根面板。
   - ★ **门控键 = `UISystem` 的 `name`（identifier 冒号后半段），不是 `setTitle()` 的值**
-    （`chest.ts:5` 引入 `$container_title`、`:16` 字符串相等、`containerUISystem.ts:166` 传 `this.system.name`、
-    `system.ts:19` 是 `identifier.split(':')[1]`）。`setTitle()` 只写面板自己的标题文本。
+    （`chest.ts:5` 引入 `$container_title`、`:16` 字符串相等、`containerUISystem.ts` 的 `#register()` 传
+    `this.system.name`、`system.ts:19` 是 `identifier.split(':')[1]`）。`setTitle()` 只写面板自己的标题文本。
   - ★ **实体容器的标题取自「实体名字」**（原版同路：`ui/horse_screen.json:35`）⇒ 用实体容器时要把键写进
     **承载实体的 nameTag**（写完**立即回读**；写错的表现是**静默退回原版箱子界面、零报错**）。
   - 代价：nameTag 若被渲染，机器上方会出现浮空名字（fz-sapdon 用开关 + 候选键兜底处理）。
-- **坑 1：`ContainerUISystem.addElementToMain(el)` 加进去的控件不会显示。** `#updateSystem()` 组装的
-  `container_root_panel` 只含 `common_panel` + `inventory_selected_icon_button` + 一个
-  `container_panel`（标题 10% / 网格 40% / 背包 50% 三段垂直堆叠），**从来没有把 `this.main_panel` 挂进去**
-  （`containerUISystem.ts:174-214`）⇒ 加进去即"消失"。
-- **坑 2：版面写死**，表达不了「背景图 + 绝对像素版面」（FZ 那种 256×128 机器面板）。
-  ⇒ 要自定义版面就只用 `ChestUISystem.registerContainerUI` 这一层机制、自己写根面板 JSON/控件；
-  fz-sapdon 的 S3e（`src/ui/recycler_panel.ts` + `fz_recycler_geometry.ts`）是现成范例。
+  - **追加硬约束**：该键同时是 `ui/<name>.json` 的**文件名** ⇒ 见 §4.10。
+- **坑 1（2026-09-12 已修）：`ContainerUISystem.addElementToMain(el)` 加进去的控件不会显示** —— 详见 §4.8。
+- **坑 2（2026-09-12 已改善）：版面写死**，表达不了「背景图 + 绝对像素版面」（FZ 那种 256×128 机器面板）。
+  现在 `ContainerUISystem` 的槽位与网格是**绝对像素定位**（`setPanel` / `setGridOrigin` / `addSlot`），
+  不再只能靠 `ChestUISystem.registerContainerUI` 那一层自己写根面板；
+  fz-sapdon 的 S3e（`src/ui/recycler_panel.ts` + `fz_recycler_geometry.ts`）仍是"完全手写根面板"的现成范例。
 - **坑 3：换掉 `$screen_content` 时玩家背包也一起没了** —— 自定义根面板要自己把背包区摆回来，
   且根面板尺寸必须覆盖原版（否则 100% 宽的背包区与自定义区重叠）；FZ 面板组还必须排在
   `common_panel` **之后**（层序错 = 原版灰底盖住你的背景图，表现为"面板在、图没了"）。
+  框架现在把背包区固定为 `inventory_panel`（`bottom_left` 锚、`100%×50%`、layer 2）。
 - 出处：fz-sapdon `README.md` §S3e（含槽位换算、门控 4 条候选键、11 条真机清单）。
+
+### 4.6 ★ JSON UI 里「控件不可交互」的属性名是 `enabled`，**不是** `enable`（2026-09-12）
+- **症状**：用输出槽语义声明的格位，真机上照样能往里放东西 —— 标志位**从未生效**；产物里那个键叫
+  `"enable": false`，是引擎不认识的拼写。
+- **根因**：`containerUISystem.ts` 的 `addGridItem` 写成 `addProp('enable', …)`。
+- **计数证据（可复现的负面断言）**：
+  | 来源 | `"enabled"` | `"enable"` |
+  |---|---|---|
+  | 原版 UI 全树 `resource_pack/ui/*.json`（bedrock-samples 1.21.130.26 preview） | **26** | **0** |
+  | `examples/mob_chest/res/ui/cooking_pot.json`（108 KB 手写容器面板） | **3** | **0** |
+  - `cooking_pot.json:255` 的 `bot_left@chest.chest_grid_item` 明确写了 `"enabled": false`；
+    `:318` / `:345` 两个进度槽写 `"enabled": true` —— 原版真名在同一份真实界面里被用过三次。
+  - 对照件 `examples/mob_chest/res/ui/slot_test.json` 是**为这次判定专门写的手写面板**：
+    槽 0-3 写 `"enabled": true`、槽 4 写 `"enabled": false`、槽 5 写 `"enable": false`，
+    进一次游戏即可看出只有槽 4 与其它槽行为不同。
+- **规避**：一律写 `enabled`。框架侧唯一出口是 `containerLayout.ts` 的 `SlotSpec.enabled` /
+  `ResolvedSlot.enabled`：`output` / `display` 恒写 `false`，`input` **不写该键**（继承原版默认 `true`）。
+- **⚠️ 仍未定论**：`enabled: false` 究竟能不能拦住「往这个槽里放东西」，**真机验证尚未完成**
+  ⇒ 任何 JSDoc / README **都不得**断言它一定拦得住。接口保留 `output` / `display` 语义位就是为了
+  真机结果出来后能换机制而不动调用方。
+- **判据**：`node tests/container-ui-output.test.mjs` —— output / display 内层控件 `enabled === false`；
+  **整个产物递归不存在 `enable` 这个键**（对象键遍历 + 文本层 `/"enable"\s*:/` 双查）。
+
+### 4.7 `ContainerUISystem.setItemMatrix` 为何删除（2026-09-12）
+三个独立缺陷叠在同一个函数里，**任一都不能在不改语义的前提下修好**，故整体删除：
+1. `:153` 把 `indexOf` 当布尔用 —— `if (this.output_grids.indexOf(v))`：`-1` 是**真值**、`0` 是**假值**。
+   于是「没声明输出槽」时**所有**格位都被当成输出槽；而第一个输出槽（索引 0）反倒走"普通输入槽"分支。
+2. `:135-150` 把「矩阵格位」与「槽序号」混算 —— 偏移表按 `n` 建（`offset_marix[value - 1]`），
+   矩阵值只是标记而非槽号，值 1 / 2 / 3 会算出**同一个** `[-36, 18]`。
+3. `:134` 写死 `this.setGridDimension([1, n])`，丢掉矩阵真实形状（该行注释自己写的是 `n*n列`）。
+- **替代**：`addSlot({ slot, pos, kind })` —— 槽号定槽位、像素坐标定版面，换算集中在 `containerLayout.ts`。
+- **判据**：`node tests/container-ui-output.test.mjs` 断言 `typeof ui.setItemMatrix === 'undefined'`；
+  旧调用点若仍在用会在**编译期**报错（不会静默走错分支）。
+
+### 4.8 `addElementToMain` 曾经加进去的控件**永远不显示**（2026-09-12 修复）
+- **症状**：`ContainerUISystem.addElementToMain(el)` 返回 `this`、不抛错、产物里也"看不出问题"，
+  但界面上那个控件**不存在**。
+- **根因**：`#updateSystem()` 组装的 `container_root_panel` 只含 `common_panel` +
+  `inventory_selected_icon_button` + 一个 `container_panel`（标题 10% / 网格 40% / 背包 50% 三段堆叠），
+  **从来没有把 `this.main_panel` 挂进根面板** —— 控件被加进一个游离 Panel。同类症状见 §4.5 坑 1。
+- **修法**：`main_panel` 现在是根面板的正式子控件（`top_left` 锚、size = 面板尺寸、layer 4），
+  `addControl(el, pos?)` 与 `addElementToMain(el)` 都真的落进产物。
+  ⚠️ 别用 `main_panel.setControl(new Control())` 去改层级 —— 那会换掉 Control 对象、
+  把已挂上的 `controls` 丢掉（框架内部因此只就地 `control.setLayer()`）。
+- **判据**：`node tests/container-ui-output.test.mjs` 的「addControl(el, pos) 真的挂进主面板并带定位」
+  与「addElementToMain 是 addControl 的别名，同样生效」两条 —— 直接查
+  `container_root_panel.controls[*].main_panel.controls`。
+
+### 4.9 ★ 容器版面坐标空间：**未真机校准**，校准点只有一处（2026-09-12）
+- **现状**：框架把 `pos`（面板左上角原点的像素）换算成格位 `offset`，前提有三条：
+  1. 网格锚点在左上角；
+  2. 格位基座 = 网格原点 + 该格在单行网格里的序号 × **网格统一格位尺寸**；
+  3. 统一格位尺寸 = `setSlotDefaults({ cellSize })`（缺省 = 标定表 `cellSize`）；逐槽 `cellSize` 只是视觉尺寸。
+- **这两条只是假设**：`offset` 相对的是格位模板（`chest.chest_grid_item` → `common.container_item`）的锚点，
+  而原版 `common.container_item`（`ui_common.json:4770`）的 `anchor_from` / `anchor_to` **默认是 `center`**。
+  若真机实测整体差半格，就是这条假设与引擎不符（不是算错）。
+- **规避（校准只改一行）**：全部换算集中在 `src/core/ui/systems/containerLayout.ts` 的 `SLOT_CALIBRATION`
+  （`anchor` / `originPadding` / `cellSize` / `columns` / `defaultGridOrigin`）。改 `anchor` 会**同时**改换算与写进产物的
+  `anchor_from`/`anchor_to`（内层控件的锚点由 `anchorProps()` 取，不各写一份，避免两处不一致）。
+  `originPadding` 是整体平移用的最后手段；`defaultGridOrigin` 是未调 `setGridOrigin` 时的网格原点
+  （默认 `[0, 24]`，给顶部标题让开一行）。
+- **未验证**：本环境无法启动 Minecraft ⇒ 这套换算**没有任何真机证据**。
+  校准步骤建议：做一个只声明 2~3 个槽、`pos` 取整十数的探针面板，进游戏量实际渲染位置与 `pos` 的差，
+  再决定动 `anchor` 还是 `originPadding`。
+- **判据**：`node tests/container-layout.test.mjs`（锁住当前假设下的换算值）；
+  `node tests/container-ui-output.test.mjs`（锁住产物里的 `offset` / `anchor_*`）。
+
+### 4.10 ★ 门控键同时是 `ui/<name>.json` 的**文件名**：带点的键 = UI 静默不加载（2026-09-12）
+- **机制**：`UISystem` 的 `name` 有两个身份 —— `chest:chest_screen` 里 gate 的比较值
+  （`chest.ts:16` 字符串相等），以及 UI 文件名（`uiSystemRegistry.ts:12` 的 `path + name + '.json'`）。
+- **坑**：`GRegistry.register` 会把**文件名**里的非法字符换成 `_`（`registry.ts:44` 的 `safeName`），
+  而 `_ui_defs.json` 里记的是**未替换**的 `ui/<name>.json`（`uiSystemRegistry.ts:14` 用的是原始
+  `ui_system.name`）⇒ 清单与磁盘文件不一致，UI **静默不加载、零报错**。
+  写文件那一侧用的一直是替换后的名字（`cli/load.js:249` 的 `` `${name}.json` ``）。
+- **规避**：门控键只允许 `A-Z a-z 0-9 _ -`。`containerLayout.ts` 的 `checkUIName()` 在
+  `ContainerUISystem` 构造时打一条 warn（**只 warn 不抛**，避免直接打断既有项目的构建）。
+- **判据**：`node tests/container-ui-output.test.mjs` 的「非法门控键只 warn 不抛错」。
+
+### 4.11 逐槽 `cellSize` 曾把格位基座算歪 —— 网格几何必须取**统一值**（2026-09-12）
+- **症状**：同一个面板里混用不同 `cellSize`（例如普通 18×18 槽 + 一个 36×10 的长条进度槽）时，
+  某些槽的实际渲染位置与声明的 `pos` 差 `(统一格高 − 本槽格高) × 行号` 像素。
+- **原因**：两套算法各取一个尺寸 —— 网格尺寸取 `max(各槽 cellSize)`（`containerUISystem.ts` 的 `#buildGrid`），
+  而格位基座取**该槽自己的** `cellSize` 递推（`containerLayout.ts` 的 `cellBase`）。
+  引擎的网格格位是**均匀**的（只有一个格位尺寸），所以混合尺寸下两者必然矛盾。
+  量到的例子：`gridOrigin [8,34]` + 4 槽、第 4 槽 `cellSize [36,10]`、`pos [10,40]`
+  ⇒ 旧算法给出 offset `[2,-24]`（隐含基座 y=64），而网格真实格高 20 ⇒ 基座应是 94（偏 30px）。
+- **规避（现行语义）**：几何只认一处 —— `setSlotDefaults({ cellSize })`（缺省 = 标定表 `cellSize`），
+  网格尺寸与基座换算都用它；逐槽 `cellSize` **只**写内层控件的 `$cell_image_size` / `size`，
+  允许溢出格位（原版槽位模板不裁剪，长条进度槽就是这么画的）。
+- **判据**：`node tests/container-layout.test.mjs` 的「逐槽视觉尺寸不参与基座」与
+  `node tests/container-ui-output.test.mjs` 的「网格尺寸也只用统一格位」。
 
 ---
 
@@ -397,6 +488,17 @@ node scripts/buildTask.cjs           # rollup → prod/
 
 - [ ] 容器（★ 现在只剩**实体路线**可用）：用 `createTileBlock(..., { inventory_size })` 放一个带容器的方块，
       右键能打开、能存取；**并确认大槽位**（FZ 机器需要 56）被引擎接受（实体组件文档没给上限）。
+- [ ] **★ `"enabled": false` 能否拦住「往这个槽里放东西」（§4.6 的核心待定项）**：
+      用 `examples/mob_chest` 的手写对照件 `res/ui/slot_test.json`（槽 0-3 `enabled:true` / 槽 4 `enabled:false` /
+      槽 5 `enable:false`）或框架 `addOutputGrid` / `addSlot({kind:'output'})` 生成的产物进游戏，
+      确认「只有写 `enabled:false` 的槽放不进东西」。
+      结果决定 `output` / `display` 语义位是否要换机制 —— **在验证之前，框架文档不得断言它有效**。
+- [ ] **★ 容器版面坐标空间校准（§4.9）**：拿一个 `setGridOrigin([0,0])` + 2~3 个 `pos` 取整十数的探针面板，
+      量实际渲染位置与 `pos` 的差 ⇒ 决定 `SLOT_CALIBRATION.anchor` 取 `top_left` 还是 `center`、
+      `originPadding` 要不要补偏移。**在此之前所有 `offset` 数值都只是"按假设算出来的"**。
+- [ ] 容器面板的**层序**：`common_panel`（原版灰底）→ `panel_background`(layer 1) → `container_panel`/`inventory_panel`(layer 2)
+      → `grids`(layer 3) → `main_panel`(layer 4) → `title`(layer 12) 这套层号在真机上是否真的按预期叠放
+      （「面板在、图没了」就是层序错的典型表现，见 §4.5 坑 3）。
 - [ ] 方块路线的 `minecraft:block_entity.container`：当前引擎版本报
       `-> minecraft:block_entity -> container: … not present in the Schema`（1.26.30 / 1.26.40 实测同样）；
       等引擎支持后 `setBlockEntity(true, { container: { slot_count } })` 是否即可用（`slot_count` 需在 `[1,54]`）。

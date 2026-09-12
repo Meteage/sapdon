@@ -685,7 +685,8 @@ UIElement (基类: name, type, template, control, layout, properties)
 | `UISystem` | `systems/system.js` | 核心 UI 文件系统，管理 elements + animations |
 | `SapdonServerUI` | `systems/sapdon/sapdonServerUI.ts` | 页面壳路由系统，生成 `server_form.json` |
 | `ChestUISystem` | `systems/chest.js` | 容器 UI 系统 |
-| `ContainerUISystem` | `systems/containerUISystem.js` | 自定义容器 UI |
+| `ContainerUISystem` | `systems/containerUISystem.ts` | 自定义容器 UI（绝对像素版面 + 槽位声明） |
+| `containerLayout`（纯函数） | `systems/containerLayout.ts` | 槽号 ↔ `grid_position`、像素 `pos` ↔ 格位 `offset`、槽位声明校验；零 import，可离线单测 |
 | `SapdonGuideBook` | `systems/sapdon/sapdonGuideBook.ts` | 数据驱动手册框架类，详见 [guidebook.md](../guidebook.md) |
 | `HudUISystem` | `systems/hud/hud.ts` | HUD 系统 |
 | `HudStatePanel` | `systems/hud/hudElement.ts` | HUD 状态面板 |
