@@ -52,6 +52,16 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       //   [3,0,0,0,0],
       //   [0,0,0,0,0]
       // ])
+
+// ── 手写 UI 验证件（res/ui/slot_test.json）───────────────────────────────────
+// 框架的 addOutputGrid 写的是 `enable`（containerUISystem.ts:65），而 JSON UI 的属性名是 `enabled`
+// （原版 UI 树 enabled×26 / enable×0；示例里的 cooking_pot.json 也是 enabled×3 / enable×0）。
+// 这份手写面板把三种写法摆在同一个界面上，进游戏一次就能判定：
+//   槽 0-3 "enabled": true（对照） · 槽 4 "enabled": false（原版真名） · 槽 5 "enable": false（框架现在的写法）
+// 登记与门控都走公开 API：UISystemRegistry.addOuterUIdefs（uiSystemRegistry.ts:20）
+// + ChestUISystem.registerContainerUI（chest.ts:10，与框架自己注册的 gate 会累加进同一个 chest_screen.json）。
+UISystemRegistry.addOuterUIdefs(["ui/slot_test.json"])
+ChestUISystem.registerContainerUI("slot_test", "slot_test.container_root_panel")
       
 
 
