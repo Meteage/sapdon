@@ -576,7 +576,15 @@ export class ContainerUISystem {
         .setOffset([this.#gridOrigin[0], this.#gridOrigin[1]]),
     )
 
-    resolved.forEach((slot, index) => {
+    // ★ 必须按**格位顺序（行优先）**发布格位，不能按**声明顺序**：
+    //   引擎是把 grid item 依次铺进格位的 —— 落点跟着 `controls` 数组顺序走，`grid_position`
+    //   不参与定位（依据见 doc/dev/known-pitfalls.md §4.13）。项目若先声明了靠后的格位
+    //   （例如「先声明进度槽、后声明输出槽」），声明顺序就会把整块版面错开。
+    //   排序后「`pos` = 渲染位置」对任何声明顺序都成立。
+    const ordered = [...resolved].sort(
+      (a, b) => a.gridPosition[1] - b.gridPosition[1] || a.gridPosition[0] - b.gridPosition[0],
+    )
+    ordered.forEach((slot, index) => {
       grid.addGridItem(slot.gridPosition, this.#buildSlotControl(slot), `grid_item_${index}`)
     })
     return grid
