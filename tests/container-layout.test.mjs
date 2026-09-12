@@ -228,13 +228,18 @@ test('resolveSlot：kind 缺省为 input，且不写 enabled', () => {
   assert.equal('enabled' in slot, true) // 字段存在但值为 undefined ⇒ 产物里不出现该键
 })
 
-test('resolveSlot：output / display 恒写 enabled:false，input 尊重显式值', () => {
+test('resolveSlot：output / display 的 enabled **缺省**为 false，显式值一律优先', () => {
+  // 缺省（既有项目产物不变）
   assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'output' }).enabled, false)
   assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'display' }).enabled, false)
+  assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'input' }).enabled, undefined)
+  // 显式值：input 两侧都生效
   assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'input', enabled: false }).enabled, false)
   assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'input', enabled: true }).enabled, true)
-  // output 上的显式 enabled:true 会被语义覆盖
-  assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'output', enabled: true }).enabled, false)
+  // ★ output / display 上的显式 enabled:true **不被语义覆盖**（2026-09-12：`enabled:false` 是整体
+  //   禁用这一格，连产物都取不出来 ⇒ 产物格必须能把 false 翻成 true，见 known-pitfalls §4.14）
+  assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'output', enabled: true }).enabled, true)
+  assert.equal(resolveSlot({ slot: 1, pos: [0, 0], kind: 'display', enabled: true }).enabled, true)
   assert.equal(isGatedKind('output'), true)
   assert.equal(isGatedKind('display'), true)
   assert.equal(isGatedKind('input'), false)

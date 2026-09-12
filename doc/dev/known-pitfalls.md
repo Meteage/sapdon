@@ -386,12 +386,14 @@
     槽 0-3 写 `"enabled": true`、槽 4 写 `"enabled": false`、槽 5 写 `"enable": false`，
     进一次游戏即可看出只有槽 4 与其它槽行为不同。
 - **规避**：一律写 `enabled`。框架侧唯一出口是 `containerLayout.ts` 的 `SlotSpec.enabled` /
-  `ResolvedSlot.enabled`：`output` / `display` 恒写 `false`，`input` **不写该键**（继承原版默认 `true`）。
-- **⚠️ 仍未定论**：`enabled: false` 究竟能不能拦住「往这个槽里放东西」，**真机验证尚未完成**
-  ⇒ 任何 JSDoc / README **都不得**断言它一定拦得住。接口保留 `output` / `display` 语义位就是为了
-  真机结果出来后能换机制而不动调用方。
-- **判据**：`node tests/container-ui-output.test.mjs` —— output / display 内层控件 `enabled === false`；
-  **整个产物递归不存在 `enable` 这个键**（对象键遍历 + 文本层 `/"enable"\s*:/` 双查）。
+  `ResolvedSlot.enabled`：`output` / `display` **缺省**写 `false`、`input` 不写该键（继承原版默认 `true`），
+  **显式 `enabled` 一律优先于这个缺省**（2026-09-12 补，见 §4.14）。
+- **后续结论（2026-09-12 真机，已定案）**：该标志位**确实生效**，但它的语义是
+  **整体禁用这一格** —— 既拦「放进去」、**也拦「取出来」**。
+  ⇒ 产物格必须显式写 `enabled: true`，否则**产物拿不到手**（完整证据与修法见 §4.14）。
+- **判据**：`node tests/container-ui-output.test.mjs` —— output / display 内层控件**缺省** `enabled === false`；
+  **整个产物递归不存在 `enable` 这个键**（对象键遍历 + 文本层 `/"enable"\s*:/` 双查）；
+  `node tests/container-layout.test.mjs` —— `resolveSlot` 的覆盖规则（显式值优先）。
 
 ### 4.7 `ContainerUISystem.setItemMatrix` 为何删除（2026-09-12）
 三个独立缺陷叠在同一个函数里，**任一都不能在不改语义的前提下修好**，故整体删除：
@@ -461,7 +463,8 @@
   1. **逐槽 `cellSize` 是否会影响它之后各行的格高** —— 实测只证明「不影响自己的基座」；
      要证明「不影响后续行」需要在一个怪尺寸槽**之后再放一行**（现有面板的怪尺寸槽都在最后一行）。
   2. 其它 GUI 缩放下的复现（两次实测都是 scale 3）。
-  3. `enabled: false` 能否真拦下「往槽里放东西」（见 §4.6，与坐标无关）。
+  3. ~~`enabled: false` 能否真拦下「往槽里放东西」~~ → **已定案**（2026-09-12 真机）：它拦得住，
+     而且是**双向一起拦**（连「取出来」也拦）⇒ 见 §4.14。
 - **附带量取（2026-09-12，同一批截图，GUI scale 3）**：原版熔炉界面的排布换算成面板内 UI 坐标是
   —— 两格输入同列上下叠放、**间距 38**（18×18），产物格在右侧 **+58**（26×26，比输入大），
   且**垂直居中对齐于两输入的跨度**；火焰在输入列正中（13×13），箭头在输入与产物之间（22×15），
@@ -627,6 +630,37 @@
 
 ---
 
+### 4.14 ★ `enabled: false` 是**整体禁用这一格**：产物格的产物也取不出来（2026-09-12，fz-sapdon 真机）
+
+- **症状**：容器面板里那个**输出格**看得到产物，但**点不动、拿不出来**。用户原话：
+  > 「帮我把输出槽改成启用，不然拿不了物品」
+- **根因**：框架对 `kind: 'output'` / `kind: 'display'` 的槽位写内层控件的 `enabled: false`
+  （`resolveSlot` 的 `isGatedKind()`）。这个 JSON UI 属性是**禁用整个控件**，
+  不是「只拦放入、放行取出」—— 它把**双向交互一起**关掉了。
+  §4.6 留的「该标志位能否真拦下"往槽里放东西"尚未真机确认」在这条上得到了**反向**答案：
+  它拦得住，而且**连"取出来"也一起拦**。对一个输出槽来说这是**致命的**：
+  产物永远拿不到手。
+- **规避（框架已改）**：`resolveSlot` 里显式 `enabled` 现在**一律优先**于 `kind` 的缺省门控
+  （`merged.enabled ?? (isGatedKind(kind) ? false : undefined)`）。想做出「产物能取走」的输出格：
+
+  ```ts
+  ui.addSlot({ slot: 1, pos: [108, 27], kind: 'output', enabled: true })
+  ```
+
+  **缺省行为一个字没变**（不传 `enabled` 时 `output` / `display` 仍写 `false`）⇒ 既有项目产物逐字节不变
+  （`kind` 只影响这一个键，见 `containerLayout.ts` 的 `ResolvedSlot`）。
+- **什么时候该用哪种**：
+  - **产物格 / 输出槽** ⇒ `enabled: true`（**必须**，否则产物烂在格子里）；
+    「只出不进」改由**加工逻辑**保证（只往它写），别再指望界面标志位。
+  - **进度槽 / 纯显示格** ⇒ 保留缺省 `false`（正是想要的效果：玩家既放不进也取不走那件进度载体物品）。
+- **副作用提醒**：`enabled: false` 会把整格从交互链里摘掉，所以**脚本仍必须每拍读回真实格子**
+  （`readSlot` → 不是自己的物品就无条件补写）——不能因为「反正玩家动不了它」就省掉这步：
+  结构快照还原、旧存档、调试工具都可能让格子里不是预期的东西。
+- **出处**：fz-sapdon 回收机输出槽（2026-09-12 真机，用户反馈）；判据在
+  `tests/container-layout.test.mjs`（`resolveSlot` 覆盖规则）与 `tests/container-ui-output.test.mjs`（产物形状）。
+
+---
+
 ## 5. 本仓库的构建方式（受限环境）
 
 `npm run build` / `node scripts/build.cjs` 在受限沙箱里跑不了（`cp.exec` 走管道 → `spawn EPERM`）。
@@ -651,11 +685,10 @@ node scripts/buildTask.cjs           # rollup → prod/
 
 - [ ] 容器（★ 现在只剩**实体路线**可用）：用 `createTileBlock(..., { inventory_size })` 放一个带容器的方块，
       右键能打开、能存取；**并确认大槽位**（FZ 机器需要 56）被引擎接受（实体组件文档没给上限）。
-- [ ] **★ `"enabled": false` 能否拦住「往这个槽里放东西」（§4.6 的核心待定项）**：
-      用 `examples/mob_chest` 的手写对照件 `res/ui/slot_test.json`（槽 0-3 `enabled:true` / 槽 4 `enabled:false` /
-      槽 5 `enable:false`）或框架 `addOutputGrid` / `addSlot({kind:'output'})` 生成的产物进游戏，
-      确认「只有写 `enabled:false` 的槽放不进东西」。
-      结果决定 `output` / `display` 语义位是否要换机制 —— **在验证之前，框架文档不得断言它有效**。
+- [x] ~~**★ `"enabled": false` 能否拦住「往这个槽里放东西」**~~ → **2026-09-12 真机定案**：
+      它拦得住「放进去」，**但同时也拦住了「取出来」** —— 语义是**整体禁用这一格**，
+      不是「只拦放入」。⇒ 产物格必须显式写 `enabled: true`（框架已改成「显式值优先」），
+      完整证据 / 修法 / 取舍见 §4.14。
 - [ ] **★ 容器版面坐标空间校准（§4.9）**：拿一个 `setGridOrigin([0,0])` + 2~3 个 `pos` 取整十数的探针面板，
       量实际渲染位置与 `pos` 的差 ⇒ 决定 `SLOT_CALIBRATION.anchor` 取 `top_left` 还是 `center`、
       `originPadding` 要不要补偏移。**在此之前所有 `offset` 数值都只是"按假设算出来的"**。

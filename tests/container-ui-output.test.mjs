@@ -4,13 +4,15 @@
 // （2 input + 1 output + 1 display，带面板背景与每格变量覆盖）的 `ContainerUISystem`，
 // 把 `UISystem.toObject()` 的结果当产物逐条断言：
 //   1. 每个 slot 对应且仅对应一个 grid_position，映射一一对应且可预测；
-//   2. output / display 槽内层控件含 `"enabled": false`，且**全产物不存在 `enable` 这个键**；
+//   2. output / display 槽内层控件**缺省**含 `"enabled": false`（显式 `enabled` 可覆盖），
+//      且**全产物不存在 `enable` 这个键**；
 //   3. input 槽**不含** `enabled` 键（文档口径：input 一律不写该键，继承原版默认 true）；
 //   4. 面板背景控件存在，每格覆盖的变量真的出现在产物里；
 //   5. `addControl(el, pos)` 真的挂进主面板并带定位（`addElementToMain` 的历史空挂已修）；
 //   6. 连续两次 `ChestUISystem.registerContainerUI` 不产生重复元素、两条 gate 并存；
 //   7. 产物确实来自**新**代码（用新代码独有的字符串字面量做存在性断言，防「rollup 9/9 成功但 prod 是旧的」）。
 //   8. `addProgressSlot` 的产物形状：overlay 控件 + 三个注入变量 + **取反**的比例绑定（见 §4.12）。
+//   9. ★ 显式 `enabled` 覆盖 `kind` 的**缺省**门控（产物格要能取出 ⇒ 见 §4.14；缺省行为不变）。
 //
 // ⚠️ 不要用 `node --test`（受限环境 fork 会 EPERM），直接 `node tests/container-ui-output.test.mjs`。
 import { test } from 'node:test'
@@ -103,6 +105,8 @@ test('prod/core/index.js 含新代码独有的字面量（防「prod 是旧的�
     assert.ok(dts.includes(name), `prod/core/index.d.ts 缺 ${name} 声明`)
   }
   assert.equal(dts.includes('setItemMatrix'), false, 'prod/core/index.d.ts 不该再有 setItemMatrix')
+  // `enabled` 覆盖规则（2026-09-12）：文档文案只存在于新版 d.ts ⇒ 顺带当「prod 是新的」判据
+  assert.ok(dts.includes('给了就以此为准'), 'prod/core/index.d.ts 缺 enabled 覆盖规则的文案（prod 可能是旧的）')
 })
 
 // ── 1. slot ↔ grid_position 一一对应 ──────────────────────────────────────────
@@ -165,6 +169,36 @@ test('整个产物里不存在 enable 这个键（框架曾经的拼写错误）
   const text = JSON.stringify(json)
   assert.equal(/"enable"\s*:/.test(text), false)
   assert.ok(/"enabled"\s*:/.test(text), 'output / display 槽的 enabled 标志位应真的写进了产物')
+})
+
+// ── 2b. ★ 显式 `enabled` 覆盖 `kind` 的缺省门控（2026-09-12）──────────────────
+//
+// 来历：`enabled: false` 在真机上是**整体禁用这一格** —— 连「把产物取出来」都会被拦
+// （fz-sapdon 回收机的输出槽就是这么被卡住的，见 known-pitfalls §4.14）。
+// 所以 `output` / `display` 的 false 必须只是**缺省**，显式值一律优先。
+
+let enabledProbeSeq = 0
+
+/** 只声明一个槽，返回它内层控件的 `enabled`（`undefined` = 产物里根本没有这个键） */
+function enabledOfOpenSlot(spec) {
+  // 每次换一个 UI 名：同名重复注册会让门控条件逐条累加（见本文件后面那条测试）
+  const ui = new ContainerUISystem(`sapdon_probe:enabled_probe_${enabledProbeSeq++}`, 'ui/')
+  ui.addSlot(spec)
+  const inner = cellsOf(gridOf(ui.system.toObject().container_root_panel))[0].inner
+  return 'enabled' in inner ? inner.enabled : undefined
+}
+
+test('★ 显式 enabled 覆盖 kind 的缺省门控：产物格可写成「output + enabled:true」', () => {
+  // 缺省行为一个字没变（既有项目产物不受影响）
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'output' }), false, 'output 缺省仍是 false')
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'display' }), false, 'display 缺省仍是 false')
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'input' }), undefined, 'input 缺省不写该键')
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0] }), undefined, 'kind 缺省 = input ⇒ 不写该键')
+
+  // 显式值优先（三个 kind 都能被推翻）
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'output', enabled: true }), true)
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'display', enabled: true }), true)
+  assert.equal(enabledOfOpenSlot({ slot: 0, pos: [0, 0], kind: 'input', enabled: false }), false)
 })
 
 // ── 4. 面板背景与每格覆盖 ─────────────────────────────────────────────────────
