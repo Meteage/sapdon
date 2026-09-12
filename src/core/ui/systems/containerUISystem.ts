@@ -34,7 +34,7 @@ type Any = any
 export interface LegacyGridItemOptions {
   /** @deprecated 用 `enabled`；JSON UI 的属性名是 `enabled` 不是 `enable` */
   enable?: boolean
-  /** 是否写 `enabled`（不给则该键不出现） */
+  /** 是否写 `enabled`；给了就覆盖 `kind` 的缺省门控，不给则只有 `output` / `display` 写 `false` */
   enabled?: boolean
   /** 内层控件尺寸 */
   size?: Any
@@ -199,6 +199,7 @@ export class ContainerUISystem {
    * 声明一个容器槽位：`slot` 定槽号、`pos` 定面板内像素位置，框架负责换算 `grid_position` 与 `offset`。
    *
    * `kind` 为 `output` / `display` 时写 `enabled: false`；`input`（默认）不写该键。
+   * 显式传 `enabled` 则一律以它为准（`{ kind: 'output', enabled: true }` = 产物格可交互）。
    * 声明不合规时只 `console.warn`，不抛错。
    * @param {SlotSpec} spec - 槽位声明
    * @returns {ContainerUISystem} 返回当前实例以支持链式调用
@@ -390,10 +391,13 @@ export class ContainerUISystem {
   }
 
   /**
-   * 旧式输出槽：在该格位内层控件上写 `enabled: false`（是否被引擎拦下待真机确认）。
+   * 旧式输出槽：在该格位内层控件上写 `enabled: false`。
+   *
+   * ⚠️ 该标志位**整体禁用这一格**（既放不进、也取不出）⇒ 需要能取出产物的输出槽
+   * 请用 `addSlot({ kind: 'output', enabled: true })`。
    * @param {Offset2} grid_position - 网格位置 [列, 行]
    * @param {Offset2} offset - 内层控件的偏移 [x, y]
-   * @param {LegacyGridItemOptions} [options] - 可选覆盖（`enabled` 恒被覆盖为 false）
+   * @param {LegacyGridItemOptions} [options] - 可选覆盖（本方法不转发 `enabled` ⇒ 恒为 `false`）
    */
   addOutputGrid(grid_position: Offset2, offset: Offset2, options: LegacyGridItemOptions = {}): void {
     this.addSlot({

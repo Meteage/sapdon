@@ -260,9 +260,11 @@ ui.setPanel({ size: [256, 128], background: 'textures/ui/machine_panel' })
 
 - **`slot` = 容器槽位号**（与版面解耦）：框架按 `[slot % columns, slot / columns]`（默认单列）换成
   `grid_position`；`pos` = 面板内像素坐标，框架内部换算成格位 `offset`，调用方不手算偏移。
-- **`kind`**：`input` 不写标志位；`output` / `display` 一律写 `"enabled": false`
+- **`kind`**：`input` 不写标志位；`output` / `display` **缺省**写 `"enabled": false`
   （`display` 语义 = 不进不出、纯显示，供项目脚本每 tick 换物品做伪进度条）。
-  ⚠️ 该标志位**是否真能拦下"往输出槽里放东西"尚未真机确认**，见 `known-pitfalls.md` §4.6。
+  ★ 显式传 `enabled` 时**一律以它为准**（`resolveSlot`）—— 真机已确认 `enabled: false` 是
+  **整体禁用这一格**（连"把产物取出来"都会被拦）⇒ **产物格必须写
+  `addSlot({ kind: 'output', enabled: true })`**，见 `known-pitfalls.md` §4.14。
 - **每格可覆盖的原版变量**（`SlotSpec`）：`cellSize`（**视觉**尺寸 → `size` + `$cell_image_size|default`，
   可溢出格位）、`background`（→ 生成背景 image 控件 + `$background_images|default`）、
   `itemRenderer.{ref,size,offset,panelSize}`（→ `$item_renderer*|default`），

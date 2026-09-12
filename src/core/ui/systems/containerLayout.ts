@@ -10,13 +10,21 @@
 export type Offset2 = [number, number]
 export type Size2 = [number | string, number | string]
 
-/** 槽位语义：`input` 不写标志位；`output` / `display` 写 `enabled: false` */
+/**
+ * 槽位语义：`input` 不写标志位；`output` / `display` 写 `enabled: false`。
+ *
+ * ⚠️ 这只是**缺省值**：声明里显式给了 `enabled` 时一律以显式值为准（见 `SlotSpec.enabled`）。
+ */
 export type SlotKind = 'input' | 'output' | 'display'
 
 /** 声明的槽位语义全集（用于校验与遍历） */
 export const SLOT_KINDS: readonly SlotKind[] = Object.freeze(['input', 'output', 'display'])
 
-/** 会被写成 `enabled: false` 的槽位语义：`output` 与 `display` */
+/**
+ * 该槽位语义的**缺省**门控值：`output` / `display` → `false`（`input` → 不写该键）。
+ *
+ * 它只在调用方**没有**显式给 `enabled` 时生效 —— 显式值永远优先（`resolveSlot`）。
+ */
 export function isGatedKind(kind: SlotKind): boolean {
   return kind === 'output' || kind === 'display'
 }
@@ -68,8 +76,10 @@ export interface SlotSpec {
   /** 内层控件尺寸（不给则等于 `cellSize`） */
   size?: Size2
   /**
-   * 显式写进内层控件的 `enabled` 值（只对 `input` 生效）。
-   * `output` / `display` 恒写 `false`；不给则该键不出现（继承原版默认 `true`）。
+   * 显式写进内层控件的 `enabled` 值。**给了就以此为准**，覆盖 `kind` 的缺省门控。
+   *
+   * 缺省行为：`input` 不写该键（继承原版默认 `true`）、`output` / `display` 写 `false`。
+   * 传 `true` 可让被门控的槽位恢复交互（例如「产物要能取出来」的输出槽）。
    */
   enabled?: boolean
   /** 格位背景纹理（框架据此生成背景 image 控件） */
@@ -368,7 +378,9 @@ export function resolveSlot(spec: SlotSpec, options: CellLayoutOptions & { defau
     offset,
     cellSize,
     cellSizeDeclared: merged.cellSize !== undefined,
-    enabled: isGatedKind(kind) ? false : merged.enabled,
+    // 显式 `enabled` 永远优先于 `kind` 的缺省门控：`output` / `display` 只是**默认**写 false，
+    // 调用方明确传了值就以它的为准（例如输出槽要能取出产物 ⇒ `{ kind: 'output', enabled: true }`）。
+    enabled: merged.enabled ?? (isGatedKind(kind) ? false : undefined),
     derived,
     background,
     backgroundImages: merged.backgroundImages,
