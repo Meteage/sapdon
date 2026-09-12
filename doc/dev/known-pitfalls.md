@@ -566,7 +566,23 @@
   ⇒ 项目可注册一个自定控件（`type: "custom"` + `renderer: "progress_bar_renderer"` + 自己的三条 `bindings`：
   `binding_type: "collection"` / `binding_collection_name: "container_items"`，照抄 `ui_common.json:3642-3661`），
   再用 `vars: { durability_bar_required: false, cell_overlay_ref: "<ns>.<控件名>" }` 把自带那条关掉、换成自己这条
-  —— **尺寸与绑定都自己说了算**。`examples/mob_chest/main.mjs` 的 `furnace_progress_bar` 即此法（铺满整格 36×10）。
+  —— **尺寸与绑定都自己说了算**。`examples/mob_chest/main.mjs` 即此法（先铺满整格的色块条，后改为箭头，见下条）。
+- **★ `progress_bar_renderer` 只能画色块、给不了贴图 ⇒ 想要「原版箭头」那种形状必须自己裁。**
+  该渲染器的全部可用属性只有 `size` / `offset` / `property_bag`（`is_durability` / `is_storage_bar` /
+  `round_value` / `primary_color` / `full_storage_color`）与 `primary_color` / `secondary_color`
+  （见 `ui_common.json:3631-3641`、`toast_screen.json:346-354`）—— **没有任何 texture 属性**。
+  原版箭头是**两张图 + 裁切**：`arrow_inactive`（打底）与 `arrow_active`
+  （`clip_direction: "left"`，`#clip_ratio` ← `#furnace_arrow_ratio`，`furnace_screen.json:30-46`）。
+  本面板拿不到 `#furnace_arrow_ratio`，**比例只能自己算**：把每格的
+  `#item_durability_current_amount` / `#item_durability_total_amount` 两条 collection 绑定
+  （**不带 override**，让名字进入该控件的属性作用域）挂在同一个控件上，再加一条 view 绑定
+  `source_property_name: "(#item_durability_current_amount / #item_durability_total_amount)"`
+  → `target_property_name: "#clip_ratio"`。**Molang 算术写在 view 绑定里是框架自己用过的**：
+  `src/core/ui/systems/hud/hud.ts:35` 就是 `"(not (%.7s * #hud_title_text_string = 'PREFIX'))"`。
+  - ⚠️ **待真机验证**：Molang 表达式能否读到 **collection** 绑定（框架那次用的是 **global** 绑定）。
+    兜底设计：把静态的 `arrow_inactive` 垫在下面，即使裁切不生效也还看得见一支箭头。
+  - 附带：想让格子**没有浅灰底**，可把 `$background_images`（`container_item` 自己声明，`:4784`）
+    指向一个 0×0 的空面板。
 - **框架侧硬约束**：`ContainerUISystem` 把模板硬编码成 `chest.chest_grid_item`
   （`containerUISystem.ts:422`），槽位内层控件内部构造，对外只给
   `cellSize / background / itemRenderer / vars` ⇒ **今天无法给槽位挂 bindings**；

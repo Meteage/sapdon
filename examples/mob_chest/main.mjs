@@ -44,53 +44,58 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
-      // 进度槽：占原版箭头的位置（display = 不进不出）。
-      // 引擎自带的那条 durability_bar（common.container_item 内联，原版 ui_common.json:4838）**关掉**，
-      // 换成下面自定的 furnace_progress_bar（铺满整格）。为什么不能直接改自带那条的尺寸：
+      // 进度槽：做成**原版箭头**的样子（display = 不进不出），位置与尺寸 = 原版箭头
+      // （textures/ui/arrow_inactive / arrow_active，22×15 @ 原版 (77,36)，真机量取后 +[0,6]）。
+      // 引擎自带的那条 durability_bar（common.container_item 内联，原版 ui_common.json:4838）**关掉**：
       //   $durability_bar_size / $durability_bar_offset 是**后代控件** common.durability_bar 自己用
       //   |default 声明的（ui_common.json:3633-3634），而框架的 vars 只会写 $x|default
-      //   （containerUISystem.ts:466-469）⇒ 覆盖不到，实测条仍按原版默认 12×1 画在格子底部中央。
-      //   （原版口袋版能改掉，是因为它**裸写**这两个变量、不带 |default，ui_common.json:4895-4896。）
+      //   （containerUISystem.ts:466-469）⇒ 覆盖不到（实测条仍按原版默认 12×1 画出来）。
       //   而 $durability_bar_required 是 container_item 自己声明的（:4778），能被覆盖 ⇒ 用它关掉。
+      // 另外关掉格子灰底（$background_images 也是 container_item 自己声明的 :4784），否则会看到
+      // 「灰方块 + 箭头」而不是原版那样只有箭头。
       sapdon_furnace.addSlot({
-        slot: 3, pos: [70, 45], kind: 'display', cellSize: [36, 10],
-        itemRenderer: { size: [0, 0] }, //藏掉物品图标，只留条
+        slot: 3, pos: [77, 42], kind: 'display', cellSize: [22, 15], //= 原版箭头尺寸
+        itemRenderer: { size: [0, 0] }, //藏掉物品图标，只留箭头
         vars: {
           durability_bar_required: false,
-          cell_overlay_ref: "sapdon_furnace.furnace_progress_bar", //在 item_cell 内注入自定进度条
+          background_images: "sapdon_furnace.empty_cell_bg",
+          cell_overlay_ref: "sapdon_furnace.furnace_progress_arrow",
         },
       })
-      // 自定进度条：尺寸与绑定都自己声明，靠 $cell_overlay_ref 注入到格子里
-      // （item_cell 的 overlay 位，ui_common.json:4851；默认值是空壳 common.cell_overlay :3315）。
+      // 自定箭头进度指示，靠 $cell_overlay_ref 注入到格子里（item_cell 的 overlay 位，
+      // ui_common.json:4851；默认值是空壳 common.cell_overlay :3315）——
       // 它是 grid item 的后代，所以照样拿得到每格的 collection 绑定。
-      const furnace_progress_bar = new UIElement("furnace_progress_bar", "custom")
-        .addProp("renderer", "progress_bar_renderer")
-        .addProp("size", [36, 10])
-        .addProp("offset", [0, 0])
-        .addProp("anchor_from", "top_left")
-        .addProp("anchor_to", "top_left")
-        .addProp("property_bag", { is_durability: true, round_value: true })
-      for (const [bindingName, override] of [
-        ["#item_durability_visible", "#touch_progress_bar_visible"],
-        ["#item_durability_total_amount", "#progress_bar_total_amount"],
-        ["#item_durability_current_amount", "#progress_bar_current_amount"],
-      ]) {
-        furnace_progress_bar.dataBinding.addDataBinding(
-          new DataBindingObject()
-            .setBindingName(bindingName)
-            .setBindingNameOverride(override)
-            .setBindingType("collection")
-            .setBindingCollectionName("container_items"),
-        )
-      }
-      sapdon_furnace.system.addElement(furnace_progress_bar)
+      //   arrow_inactive 打底（静态，所以即使裁切没生效也还看得见一支箭头）
+      //   arrow_active   按比例从左往右裁开
+      // 比例得自己算：原版的 #furnace_arrow_ratio 是引擎给熔炉界面的、本面板拿不到（§4.12），
+      // 于是用每格的耐久 current/total 在 view 绑定里做 Molang 除法
+      // （框架自己的 HUD 就是这么用算术的：hud.ts:35）。
+      const arrow_back = new Image("arrow_back")
+        .setSprite(new Sprite().setTexture("textures/ui/arrow_inactive"))
+        .setLayout(new Layout().setSize([22, 15]).setAnchorFrom("top_left").setAnchorTo("top_left"))
+      const arrow_fill = new Image("arrow_fill")
+        .setSprite(new Sprite().setTexture("textures/ui/arrow_active").setClipDirection("left"))
+        .setLayout(new Layout().setSize([22, 15]).setAnchorFrom("top_left").setAnchorTo("top_left"))
+      arrow_fill.dataBinding
+        .addDataBinding(new DataBindingObject()
+          .setBindingName("#item_durability_current_amount")
+          .setBindingType("collection")
+          .setBindingCollectionName("container_items"))
+        .addDataBinding(new DataBindingObject()
+          .setBindingName("#item_durability_total_amount")
+          .setBindingType("collection")
+          .setBindingCollectionName("container_items"))
+        .addDataBinding(new DataBindingObject()
+          .setBindingType("view")
+          .setSourcePropertyName("(#item_durability_current_amount / #item_durability_total_amount)")
+          .setTargetPropertyName("#clip_ratio"))
+      sapdon_furnace.system.addElement(new Panel("furnace_progress_arrow").addControls([arrow_back, arrow_fill]))
+      // 零尺寸背景：把格子的浅灰底去掉，只留箭头
+      sapdon_furnace.system.addElement(new Panel("empty_cell_bg").setLayout(new Layout().setSize([0, 0])))
       // 原版火焰图形：贴图名与尺寸直接取自原版 furnace_screen.json
       //   flame_empty_image = textures/ui/flame_empty_image  13×13
       // 位置 = 真机截图量到的原版位置 + [0,6]（本面板槽位整体比原版低 6px）。
-      // ⚠️ 原版箭头（textures/ui/arrow_inactive / arrow_active，22×15 @ 原版 (77,36)）**没有放**：
-      //    · 它的位置就是上面这个进度槽（两者是同一个「进度」位的两种做法，不能共存）；
-      //    · 且 arrow_active 的进度靠 `#clip_ratio` ← `#furnace_arrow_ratio` 绑定裁剪，
-      //      该绑定由**熔炉界面**提供，本面板挂在 chest_screen 上取不到（见 known-pitfalls §4.9）。
+      // （空态火焰是静态的：flame_full_image 的进度同样要靠 #furnace_flame_ratio，本面板拿不到。）
       const ui_image = (id, texture, size) => new Image(id)
         .setSprite(new Sprite().setTexture(texture))
         .setLayout(new Layout().setSize(size))
