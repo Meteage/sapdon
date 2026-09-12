@@ -33,7 +33,7 @@ const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["te
 // 槽位声明 = 面板内像素绝对坐标（左上角原点），框架换算 grid_position / offset。
 // 版面照原版熔炉的排布，宽度/间距取自真机对照截图的像素量取：
 //   左侧两格输入上下叠放（间距 38）；右侧一格产物、视觉 26×26（比输入大）、垂直居中于两输入之间；
-//   两者之间放进度条（原版箭头的位置）。
+//   两输入之间是原版的火焰图形，输入与产物之间是原版的箭头图形（都是静态空态贴图）。
 // 网格几何只认 setSlotDefaults 的统一格位尺寸；逐槽 cellSize 只是视觉尺寸（可溢出格位，
 // 不会移动自己的格位基座）—— 已由真机实测确认，见 doc/dev/known-pitfalls.md §4.9。
 const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui/");
@@ -44,9 +44,19 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
-      // 进度条：占原版箭头的位置，视觉 28×8（统一格位 18×18，靠逐槽 cellSize 横向溢出）。
-      // 也是「脚本每 tick 换物品做伪进度条」的原型（display = 不进不出）。
-      sapdon_furnace.addSlot({ slot: 3, pos: [74, 45], kind: 'display', cellSize: [28, 8] })
+      // 原版熔炉的两个图形：贴图名与尺寸直接取自原版 furnace_screen.json
+      //   flame_empty_image          = textures/ui/flame_empty_image  13×13
+      //   furnace_arrow_empty_image  = textures/ui/arrow_inactive     22×15
+      // 位置 = 真机截图量到的原版位置 + [0,6]（本面板的槽位整体比原版低 6px）。
+      // ⚠️ 原版的 arrow_active / flame_full_image 靠 #furnace_arrow_ratio / #furnace_flame_ratio
+      //    裁剪来显示进度，那两个绑定由熔炉界面提供 —— 本面板挂在 chest_screen 上取不到，
+      //    所以这里只放静态的「空态」图形（真机上没在烧东西时看到的正是这两张）。
+      const ui_image = (id, texture, size) => new Image(id)
+        .setSprite(new Sprite().setTexture(texture))
+        .setLayout(new Layout().setSize(size))
+        .setControl(new Control().setLayer(6))
+      sapdon_furnace.addControl(ui_image("flame_image", "textures/ui/flame_empty_image", [13, 13]), [52, 43])
+      sapdon_furnace.addControl(ui_image("arrow_image", "textures/ui/arrow_inactive", [22, 15]), [77, 42])
 
 // ── 系统 B：坐标校准面板（新增）──────────────────────────────────────────────
 // 只测两件真机仍未确认的事（原版格位 18 的换算已实测确认，见 doc/dev/known-pitfalls.md §4.9）：

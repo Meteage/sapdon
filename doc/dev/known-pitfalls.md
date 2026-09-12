@@ -464,7 +464,18 @@
   3. `enabled: false` 能否真拦下「往槽里放东西」（见 §4.6，与坐标无关）。
 - **附带量取（2026-09-12，同一批截图，GUI scale 3）**：原版熔炉界面的排布换算成面板内 UI 坐标是
   —— 两格输入同列上下叠放、**间距 38**（18×18），产物格在右侧 **+58**（26×26，比输入大），
-  且**垂直居中对齐于两输入的跨度**。`examples/mob_chest` 的系统 A 即按这套比例排布。
+  且**垂直居中对齐于两输入的跨度**；火焰在输入列正中（13×13），箭头在输入与产物之间（22×15），
+  两者垂直中心与两输入跨度中心重合。`examples/mob_chest` 的系统 A 即按这套比例排布。
+  - 火焰/箭头**不是**从 GUI 大图里切的：原版 `furnace_screen.json` 用的是两张独立贴图
+    `textures/ui/flame_empty_image`（13×13）与 `textures/ui/arrow_inactive`（22×15），
+    直接 `setTexture` 引用即可，**不需要 uv/uv_size 切片**。
+  - ⚠️ 原版的进度显示靠**另一对**贴图 + 绑定裁剪：`furnace.flame_full_image`
+    (`textures/ui/flame_full_image`，`clip_direction: down`) 与
+    `furnace.furnace_arrow_full_image` (`textures/ui/arrow_active`，`clip_direction: left`)，
+    它们的 `#clip_ratio` 来自 `bindings` 的 `#furnace_flame_ratio` / `#furnace_arrow_ratio`。
+    这两个绑定由**熔炉界面**提供；把面板挂在别的容器界面（如 `chest_screen`）上时取不到，
+    `clip_ratio` 会留在默认值 ⇒ **只能放静态的「空态」贴图，进度要用别的手段**
+    （例如用一个 `display` 槽、由脚本每 tick 换物品；见 §4.6 的 `kind` 语义）。
 - **实测 ① 暴露的版面坑：自定义内容必须压在背包区之上（H = 166 时约 `y < 86`）**。
   面板下半区是原版背包（`inventory_panel`：`bottom_left` + `100%×50%`），其原版内容高约 88 UI px 且贴着底边，
   ⇒ **内容顶明显高于半区上边界**（H = 166 时半区从 y = 83 起，而背包槽首行顶实测在 **y ≈ 86**、

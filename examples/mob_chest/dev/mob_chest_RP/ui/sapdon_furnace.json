@@ -42,12 +42,12 @@
           "collection_name": "container_items",
           "grid_dimensions": [
             1,
-            4
+            3
           ],
           "grid_item_template": "chest.chest_grid_item",
           "size": [
             18,
-            72
+            54
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
@@ -144,36 +144,6 @@
                   }
                 ]
               }
-            },
-            {
-              "grid_item_3": {
-                "type": "panel",
-                "grid_position": [
-                  0,
-                  3
-                ],
-                "controls": [
-                  {
-                    "grid_item@chest.chest_grid_item": {
-                      "offset": [
-                        66,
-                        -31
-                      ],
-                      "enabled": false,
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "size": [
-                        28,
-                        8
-                      ],
-                      "$cell_image_size|default": [
-                        28,
-                        8
-                      ]
-                    }
-                  }
-                ]
-              }
             }
           ]
         }
@@ -191,7 +161,43 @@
             0,
             0
           ],
-          "layer": 4
+          "layer": 4,
+          "controls": [
+            {
+              "flame_image": {
+                "type": "image",
+                "texture": "textures/ui/flame_empty_image",
+                "size": [
+                  13,
+                  13
+                ],
+                "offset": [
+                  52,
+                  43
+                ],
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "layer": 6
+              }
+            },
+            {
+              "arrow_image": {
+                "type": "image",
+                "texture": "textures/ui/arrow_inactive",
+                "size": [
+                  22,
+                  15
+                ],
+                "offset": [
+                  77,
+                  42
+                ],
+                "anchor_from": "top_left",
+                "anchor_to": "top_left",
+                "layer": 6
+              }
+            }
+          ]
         }
       },
       {
