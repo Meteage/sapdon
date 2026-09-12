@@ -1,0 +1,23 @@
+{
+  "format_version": "1.21.90",
+  "minecraft:item": {
+    "description": {
+      "identifier": "mob_chest:furnace_progress",
+      "menu_category": {
+        "category": "none",
+        "is_hidden_in_commands": false
+      }
+    },
+    "components": {
+      "minecraft:icon": "stick",
+      "minecraft:max_stack_size": 64,
+      "minecraft:durability": {
+        "damage_chance": {
+          "min": 0,
+          "max": 100
+        },
+        "max_durability": 100
+      }
+    }
+  }
+}

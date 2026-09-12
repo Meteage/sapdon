@@ -169,6 +169,18 @@
                       "$cell_image_size|default": [
                         36,
                         10
+                      ],
+                      "$item_renderer_size|default": [
+                        0,
+                        0
+                      ],
+                      "$durability_bar_size|default": [
+                        36,
+                        4
+                      ],
+                      "$durability_bar_offset|default": [
+                        0,
+                        3
                       ]
                     }
                   }

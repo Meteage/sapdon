@@ -1,4 +1,4 @@
-import { BlockComponent, TileBlock, BlockAPI, EntityAPI, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, registry } from '@sapdon/core'
+import { BlockComponent, TileBlock, BlockAPI, EntityAPI, ItemAPI, ItemComponent, ItemCategory, Grid, Image, Label, Panel, StackPanel, UIElement, UISystem, Modifications, Control, GridProp, Layout, Sprite, Text, UISystemRegistry, ChestUISystem, ContainerUISystem, registry } from '@sapdon/core'
 
 
 const mob_chest = BlockAPI.createTileBlock("mob_chest:chest","construction",["textures/blocks/entity/normal"],{});
@@ -44,9 +44,21 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 0, pos: [50, 22], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 1, pos: [50, 60], kind: 'input' })
       sapdon_furnace.addSlot({ slot: 2, pos: [108, 37], kind: 'output', cellSize: [26, 26] })
-      // 进度槽：占原版箭头的位置，由脚本每 tick 换物品做伪进度条（display = 不进不出）。
-      // 视觉 36×10 靠逐槽 cellSize 横向溢出格位；网格统一格位仍是 18×18。
-      sapdon_furnace.addSlot({ slot: 3, pos: [70, 45], kind: 'display', cellSize: [36, 10] })
+      // 进度槽：占原版箭头的位置（display = 不进不出）。
+      // 进度条**不用自己画**，引擎自带：common.container_item 里内联了
+      //   durability_bar@common.durability_bar（原版 ui_common.json:4838），
+      // 它按每格的 #item_durability_current_amount / total_amount 画条（:3650-3660，collection 绑定），
+      // 而 $durability_bar_size / $durability_bar_offset 是可被外部覆盖的变量（:3633-3634；
+      // 原版口袋版就覆盖了它们 :4895-4896）—— 框架的 vars 写的正是这一类 $x|default。
+      // 于是脚本只要往这个槽写「剩余耐久 = 进度」的可损耗物品，条就会自己动（见 scripts/progress_bar.js）。
+      // ⚠️ 待真机验证：条是否真在自定义容器格子里画出来。
+      //    若没画出来，第一件要试的事是删掉下面 itemRenderer 那一行（图标尺寸归零可能让整格不渲染）；
+      //    其次试 $durability_bar_required。
+      sapdon_furnace.addSlot({
+        slot: 3, pos: [70, 45], kind: 'display', cellSize: [36, 10],
+        itemRenderer: { size: [0, 0] },                                        //藏掉物品图标，只留条
+        vars: { durability_bar_size: [36, 4], durability_bar_offset: [0, 3] }, //撑满 36×10 的底部
+      })
       // 原版火焰图形：贴图名与尺寸直接取自原版 furnace_screen.json
       //   flame_empty_image = textures/ui/flame_empty_image  13×13
       // 位置 = 真机截图量到的原版位置 + [0,6]（本面板槽位整体比原版低 6px）。
@@ -59,6 +71,16 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
         .setLayout(new Layout().setSize(size))
         .setControl(new Control().setLayer(6))
       sapdon_furnace.addControl(ui_image("flame_image", "textures/ui/flame_empty_image", [13, 13]), [52, 43])
+
+// 进度物品：scripts/progress_bar.js 把它写进上面的进度槽，靠「剩余耐久 = 进度」让引擎那条耐久条动起来。
+//   · setDurability(100) 给它耐久组件（ItemComponent.setDurability，itemComponents.ts:58）。
+//   · 图标借用原版已有的 item_texture 键 "stick"（原版 textures/item_texture.json:837 确实有），
+//     免得为一次试验新增二进制贴图 —— 槽里图标已被 itemRenderer.size=[0,0] 藏掉，看不到。
+//     以后想换自己的图：把 "stick" 换成自定名，并把同名 png 丢进 res/textures/items/（会自动登记）。
+//   · ItemCategory.None ⇒ 不进创造菜单。
+const FURNACE_PROGRESS_MAX = 100
+const furnace_progress = ItemAPI.createItem("mob_chest:furnace_progress", ItemCategory.None, "stick", {})
+      furnace_progress.addComponent(ItemComponent.setDurability(FURNACE_PROGRESS_MAX))
 
 // ── 系统 B：坐标校准面板（新增）──────────────────────────────────────────────
 // 只测两件真机仍未确认的事（原版格位 18 的换算已实测确认，见 doc/dev/known-pitfalls.md §4.9）：
