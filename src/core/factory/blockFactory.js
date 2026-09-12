@@ -213,6 +213,12 @@ export const BlockAPI = {
      * @param {string} [options.container_type="minecart_chest"] - 容器音效/行为类型。官方文档列出的取值：
      *   `horse` / `minecart_chest` / `chest_boat` / `minecart_hopper` / `inventory` / `container` / `hopper`。
      * @param {boolean} [options.can_be_siphoned_from=true] - 能否用漏斗抽取。
+     * @param {number} [options.despawn_delay] - 承载实体 despawn 的**延迟（秒）**，
+     *   写到实体 `item_despawn` 组的 `minecraft:transformation.delay.value`
+     *   （官方文档：`delay.value` = "Time in seconds before the entity transforms"）。
+     *   **不传 = 不写该键**（产物与历史版本逐字节一致）。必须是大于 0 的有限数。
+     *   用途：`drop_inventory: true` 会在破坏的同一瞬间把整容器倒出来；传 `0.1`（2 tick）
+     *   可让破坏事件里的脚本先跑完（例如「先清掉内部显示格，再让容器掉」）。
      *   （不传上面三个键 = 产物与历史版本**逐字节一致**；每次构造都按实例拷贝，改一个方块不会污染别的方块。）
      * @returns {TileBlock} 创建的带实体方块对象（`.block` / `.entity` 可直接继续配置）。
      *
