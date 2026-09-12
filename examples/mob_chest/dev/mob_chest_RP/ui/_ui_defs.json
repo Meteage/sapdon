@@ -2,6 +2,7 @@
   "ui_defs": [
     "ui/hud_screen.json",
     "ui/chest_screen.json",
-    "ui/sapdon_furnace.json"
+    "ui/sapdon_furnace.json",
+    "ui/slot_test.json"
   ]
 }

@@ -31,8 +31,10 @@ export const BlockWithEntityComponent = {
            case "mob_chest:chest":
                const block_entity = dimension.getEntitiesAtBlockLocation(block.center())[0];
 
-               //设置名字
-               block_entity.nameTag = "sapdon_furnace"
+               //设置名字（= 容器门控键 $new_container_title：实体容器取 nametag）
+               //   "slot_test"      → 手写验证面板 res/ui/slot_test.json（enabled/enable 三种写法对照）
+               //   "sapdon_furnace" → 框架 ContainerUISystem 生成的那份（addOutputGrid 写的 enable:false）
+               block_entity.nameTag = "slot_test"
                //获取属性
                const chest_state = block_entity.getProperty("mob_chest:chest_state");
                world.sendMessage("chest_state:"+chest_state);

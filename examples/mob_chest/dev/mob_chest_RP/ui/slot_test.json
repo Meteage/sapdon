@@ -1,0 +1,176 @@
+{
+  // 手写容器面板：验证「输出槽只出不进」到底该写哪个属性名。
+  // 结构照抄框架 ContainerUISystem 生成的那份（同样的 10%/40%/50% 三段 + container_items 集合），
+  // 唯一差别是每个格位上挂的属性：
+  //   槽 0/1/2/3 → "enabled": true   交互（对照组）
+  //   槽 4       → "enabled": false  原版真名（原版 UI 树 enabled×26 / enable×0；cooking_pot.json enabled×3 / enable×0）
+  //   槽 5       → "enable":  false  框架 containerUISystem.ts:65 现在写的名字（引擎不认识的键）
+  // 预期：只有槽 4 放不进东西；槽 5 与对照组一样能放 ⇒ 证明框架那处是拼错属性名。
+  "namespace": "slot_test",
+  "container_root_panel": {
+    "type": "panel",
+    "size": [180, 180],
+    "controls": [
+      {
+        "common_panel@common.common_panel": {}
+      },
+      {
+        "inventory_selected_icon_button@common.inventory_selected_icon_button": {}
+      },
+      {
+        "container_panel": {
+          "type": "stack_panel",
+          "orientation": "vertical",
+          "size": ["100%", "100%"],
+          "layer": 2,
+          "controls": [
+            {
+              "stack0": {
+                "type": "panel",
+                "size": ["100%", "10%"],
+                "controls": [
+                  {
+                    "title": {
+                      "type": "label",
+                      "text": "槽位测试",
+                      "color": [0, 0, 0],
+                      "layer": 12
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack1": {
+                "type": "panel",
+                "size": ["100%", "40%"],
+                "controls": [
+                  {
+                    "grids": {
+                      "type": "grid",
+                      "collection_name": "container_items",
+                      "grid_dimensions": [1, 6],
+                      "grid_item_template": "chest.chest_grid_item",
+                      "controls": [
+                        {
+                          "grid_item_0": {
+                            "type": "panel",
+                            "grid_position": [0, 0],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [-18, 18],
+                                  "enabled": true
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_1": {
+                            "type": "panel",
+                            "grid_position": [0, 1],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [-18, 18],
+                                  "enabled": true
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_2": {
+                            "type": "panel",
+                            "grid_position": [0, 2],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [-18, 18],
+                                  "enabled": true
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "grid_item_3": {
+                            "type": "panel",
+                            "grid_position": [0, 3],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [18, -18],
+                                  "enabled": true
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          // ★ 原版真名：期望「放不进」
+                          "grid_item_4": {
+                            "type": "panel",
+                            "grid_position": [0, 4],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [54, -36],
+                                  "enabled": false
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          // ★ 框架现在的写法（不存在的键）：期望「和对照组一样能放」
+                          "grid_item_5": {
+                            "type": "panel",
+                            "grid_position": [0, 5],
+                            "controls": [
+                              {
+                                "slot@chest.chest_grid_item": {
+                                  "offset": [90, -36],
+                                  "enable": false
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "stack2": {
+                "type": "panel",
+                "size": ["100%", "50%"],
+                "controls": [
+                  {
+                    "inventory_panel": {
+                      "type": "panel",
+                      "controls": [
+                        {
+                          "inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label": {}
+                        },
+                        {
+                          "hotbar_grid@common.hotbar_grid_template": {}
+                        },
+                        {
+                          "inventory_take_progress_icon_button@common.inventory_take_progress_icon_button": {}
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
