@@ -42,18 +42,18 @@
           "collection_name": "container_items",
           "grid_dimensions": [
             1,
-            4
+            3
           ],
           "grid_item_template": "chest.chest_grid_item",
           "size": [
-            18,
-            72
+            20,
+            60
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
           "offset": [
             8,
-            40
+            24
           ],
           "layer": 3,
           "controls": [
@@ -74,12 +74,12 @@
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        18,
-                        18
+                        20,
+                        20
                       ],
                       "$cell_image_size|default": [
-                        18,
-                        18
+                        20,
+                        20
                       ]
                     }
                   }
@@ -97,18 +97,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        36,
-                        -18
+                        40,
+                        0
                       ],
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        18,
-                        18
+                        20,
+                        20
                       ],
                       "$cell_image_size|default": [
-                        18,
-                        18
+                        20,
+                        20
                       ]
                     }
                   }
@@ -132,41 +132,12 @@
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        18,
-                        18
-                      ],
-                      "$cell_image_size|default": [
-                        18,
-                        18
-                      ]
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "grid_item_3": {
-                "type": "panel",
-                "grid_position": [
-                  0,
-                  3
-                ],
-                "controls": [
-                  {
-                    "grid_item@chest.chest_grid_item": {
-                      "offset": [
                         36,
-                        -18
-                      ],
-                      "anchor_from": "top_left",
-                      "anchor_to": "top_left",
-                      "size": [
-                        18,
-                        18
+                        10
                       ],
                       "$cell_image_size|default": [
-                        18,
-                        18
+                        36,
+                        10
                       ]
                     }
                   }
@@ -194,7 +165,7 @@
             {
               "origin_label": {
                 "type": "label",
-                "text": "原点 [0,0]",
+                "text": "原点 [8,8]",
                 "color": [
                   1,
                   1,

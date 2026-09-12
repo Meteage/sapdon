@@ -46,22 +46,27 @@ const sapdon_furnace = new ContainerUISystem("sapdon_furnace:sapdon_furnace","ui
       sapdon_furnace.addSlot({ slot: 3, pos: [84, 40], kind: 'display', cellSize: [36, 10] })
 
 // ── 系统 B：坐标校准面板（新增）──────────────────────────────────────────────
-// 4 个输入槽按 36px 间距摆放，用于真机上量「声明 pos」与「实际渲染位置」的差。
-// 与系统 A 的门控键不同 ⇒ 两条 gate 累加进同一个 ui/chest_screen.json。
+// 只测两件真机仍未确认的事（原版格位 18 的换算已实测确认，见 doc/dev/known-pitfalls.md §4.9）：
+//   (a) 非原版统一格位 20×20 是否真被引擎采纳 —— 三行全部 offset.y = 0，
+//       于是「相邻两行的 y 差」直接就是引擎真实格高（声明应为 20；若引擎仍按原版 18，会落在 24/42/60）。
+//   (b) 逐槽 cellSize 是否真的只是视觉尺寸 —— 第 3 行声明 36×10。若它没落在声明的 y=64，
+//       就说明逐槽 size 参与了格位排版（§4.11 的反例）。
+//   x 位移 40（第 2 行）用于检验 pos→offset 的水平换算（水平方向不参与格位推导）。
+// 版面刻意压在 y < 86：面板下半区是原版背包（bottom_left + 100%×50%，其内容顶实测约 y≈86），
+// 上一版把第 2 行放在 y=76，与背包首行纵向重叠 7.7 UI px、横向仅差 1 UI px。
 const calib_test = new ContainerUISystem("calib_test:calib_test","ui/");
       calib_test.setTitle("坐标校准");
-      calib_test.setPanel({ size: [180, 166] })
-      calib_test.setGridOrigin([8, 40])
-      calib_test.setSlotDefaults({ cellSize: [18, 18] })
-      calib_test.addSlot({ slot: 0, pos: [8, 40],  kind: 'input' })
-      calib_test.addSlot({ slot: 1, pos: [44, 40], kind: 'input' })
-      calib_test.addSlot({ slot: 2, pos: [8, 76],  kind: 'input' })
-      calib_test.addSlot({ slot: 3, pos: [44, 76], kind: 'input' })
+      calib_test.setPanel({ size: [180, 166] })           //与原版同高：下半区留给玩家背包
+      calib_test.setGridOrigin([8, 24])                   //y=24 = 框架默认原点，正好让开标题
+      calib_test.setSlotDefaults({ cellSize: [20, 20] })  //★ 非原版格位：验证引擎是否真听 setSlotDefaults
+      calib_test.addSlot({ slot: 0, pos: [8,  24], kind: 'input' })
+      calib_test.addSlot({ slot: 1, pos: [48, 44], kind: 'input' })
+      calib_test.addSlot({ slot: 2, pos: [8,  64], kind: 'input', cellSize: [36, 10] })
       // 标出面板原点（main_panel 的 [0,0]）：addControl(el, pos) 直接落进主面板
       calib_test.addControl(
         new Label("origin_label")
           .setControl(new Control().setLayer(12))
-          .setText(new Text().setText("原点 [0,0]").setColor([1, 1, 0]).setTextAlignment("left"))
+          .setText(new Text().setText("原点 [8,8]").setColor([1, 1, 0]).setTextAlignment("left"))
           .setLayout(new Layout().setSize(["100%", "default"]).setAnchorFrom("top_left").setAnchorTo("top_left")),
         [8, 8]
       )

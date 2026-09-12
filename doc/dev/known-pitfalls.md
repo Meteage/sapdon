@@ -418,22 +418,47 @@
   与「addElementToMain 是 addControl 的别名，同样生效」两条 —— 直接查
   `container_root_panel.controls[*].main_panel.controls`。
 
-### 4.9 ★ 容器版面坐标空间：**未真机校准**，校准点只有一处（2026-09-12）
+### 4.9 ★ 容器版面坐标空间：校准点只有一处（2026-09-12；原版格位 18 已真机实测）
 - **现状**：框架把 `pos`（面板左上角原点的像素）换算成格位 `offset`，前提有三条：
   1. 网格锚点在左上角；
   2. 格位基座 = 网格原点 + 该格在单行网格里的序号 × **网格统一格位尺寸**；
   3. 统一格位尺寸 = `setSlotDefaults({ cellSize })`（缺省 = 标定表 `cellSize`）；逐槽 `cellSize` 只是视觉尺寸。
-- **这两条只是假设**：`offset` 相对的是格位模板（`chest.chest_grid_item` → `common.container_item`）的锚点，
-  而原版 `common.container_item`（`ui_common.json:4770`）的 `anchor_from` / `anchor_to` **默认是 `center`**。
-  若真机实测整体差半格，就是这条假设与引擎不符（不是算错）。
+- **`offset` 相对的是格位模板的锚点**：`chest.chest_grid_item` → `common.container_item`
+  （`ui_common.json:4770`）的 `anchor_from` / `anchor_to` **默认是 `center`**，框架会显式覆写成标定表的 `anchor`。
 - **规避（校准只改一行）**：全部换算集中在 `src/core/ui/systems/containerLayout.ts` 的 `SLOT_CALIBRATION`
   （`anchor` / `originPadding` / `cellSize` / `columns` / `defaultGridOrigin`）。改 `anchor` 会**同时**改换算与写进产物的
   `anchor_from`/`anchor_to`（内层控件的锚点由 `anchorProps()` 取，不各写一份，避免两处不一致）。
   `originPadding` 是整体平移用的最后手段；`defaultGridOrigin` 是未调 `setGridOrigin` 时的网格原点
   （默认 `[0, 24]`，给顶部标题让开一行）。
-- **未验证**：本环境无法启动 Minecraft ⇒ 这套换算**没有任何真机证据**。
-  校准步骤建议：做一个只声明 2~3 个槽、`pos` 取整十数的探针面板，进游戏量实际渲染位置与 `pos` 的差，
-  再决定动 `anchor` 还是 `originPadding`。
+- **真机实测（2026-09-12，`examples/mob_chest` 的 `calib_test` 面板进游戏，GUI scale 3，截图逐像素量取）**：
+  探针面板 = `setPanel({ size:[180,166] })` / `setGridOrigin([8,40])` / `setSlotDefaults({ cellSize:[18,18] })`，
+  4 槽 `pos` = `[8,40]` / `[44,40]` / `[8,76]` / `[44,76]`。量得：
+  - 面板原点落在截图 (72, 75) px，缩放 **3.0 px/UI px**（由「渲染行距 108 px ÷ 声明 36」定出，两轴同尺度）；
+  - **四槽渲染位置与声明 `pos` 的残差均为 0.00 UI px**：两列各自解出同一 x 原点、两行各自解出同一 y 原点；
+  - 标题（`offset [0,0]` + `100%` 宽 + `center` 对齐，走 label / `main_panel` 通路）**独立**解出原点 x = 71.5，
+    与网格给出的 72 相差 0.5 px ⇒ 两条互不相干的代码路径互证，说明这不是拟合出来的巧合；
+  - **统一格位尺寸被三路独立解出 = 18.00**：`slot1`（行 1，`offset.y = −18`）落回声明的 40 ⇒ cellH = 18；
+    `slot2`（行 2）落回 76 ⇒ 2·cellH = 36；`slot3`（行 3，`offset.y = −18`）落回 76 ⇒ 3·cellH = 54
+    ⇒ **§4.11 的「网格几何只认统一格位」在真机成立**；
+  - **`anchor = top_left` 成立**：若真实锚点是 `center`，每个槽会整体偏半格 = 9 UI px ≈ 27 屏幕 px，未见；
+  - 槽盒实测 54×54 px = **18.00 UI px** = 声明的 `cellSize`。
+  ⇒ **结论：`pos` → `offset` → 渲染 这条链在「`cellSize` = 18 = 模板原生尺寸」下是逐像素正确的。**
+- **仍未验证（`calib_test` 面板已按这两条重做成 3 行等距梯）**：
+  1. **非原版统一格位是否真被引擎采纳** —— 上面那次实测的 18 恰等于模板原生尺寸，所以「引擎听
+     `setSlotDefaults`」与「引擎只按模板原生尺寸排版」两种解释都还成立。这对项目影响很大：
+     `examples/mob_chest` 的系统 A 用的是 `cellSize: [20,20]`。新版三行全部 `offset.y = 0`，
+     于是**相邻两行的 y 差就是引擎真实格高**（声明应为 20 / 44 / 64；若引擎仍按 18，会落在 24 / 42 / 60）。
+  2. **逐槽 `cellSize` 是否真的不参与排版** —— 新版第 3 行声明 `36×10`。若它没落在声明的 y = 64，
+     即证明逐槽 `size` 参与了格位排版，是 §4.11 的反例。
+  3. 其它 GUI 缩放下的复现（本次只有 scale 3 的一次观测）。
+- **同一次实测暴露的版面坑：自定义内容必须压在背包区之上（H = 166 时约 `y < 86`）**。
+  面板下半区是原版背包（`inventory_panel`：`bottom_left` + `100%×50%`），其原版内容高约 88 UI px 且贴着底边，
+  ⇒ **内容顶明显高于半区上边界**（H = 166 时半区从 y = 83 起，而背包槽首行顶实测在 **y ≈ 86**、
+  其标签文字更探到 **y ≈ 76**，即内容**溢出**了半区）。
+  ⚠️ 把槽声明在 `y = 76` 会与玩家背包首行**纵向重叠 7.7 UI px、横向仅差 1 UI px**（实测）——
+  表现为你的槽正好盖在背包格上、背包标签的字从两槽缝隙里漏出来。H = 166 的可用安全区只有约 `y ∈ [24, 86)`，
+  **只放得下 3 行 20px 格位**；要放更多行必须加大 `setPanel({ size })`（`H` 加大后安全区如何变化尚无实测，
+  只有一个 H = 166 的数据点，别照公式外推）。
 - **判据**：`node tests/container-layout.test.mjs`（锁住当前假设下的换算值）；
   `node tests/container-ui-output.test.mjs`（锁住产物里的 `offset` / `anchor_*`）。
 
