@@ -220,6 +220,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 槽位声明 | `containerUISystem.ts` | `addSlot({ slot, pos, kind?, cellSize?, background?, itemRenderer?, vars? })`：`slot` = 容器槽位号、`pos` = 面板内像素坐标，框架换算 `grid_position` / `offset` |
 | 版面 | 同上 | `setPanel({ size, background })` / `setGridOrigin([x,y])` / `setSlotDefaults({...})` / `addControl(el, pos?)`（`addElementToMain` 是它的别名，**已真的有挂载**） |
 | 旧接口 | 同上 | `addGridItem` / `addInputGrid` / `addOutputGrid` / `setGridDimension` / `setSize` / `setTitle` 全部保留为薄封装（显式 `grid_position` + 显式 `offset`，不参与换算）；`setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名；**`setItemMatrix` 已删**（三个独立缺陷） |
+| **进度指示槽** | 同上 | `addProgressSlot({ slot, pos, fill, base?, size?, clipDirection?, collection?, vars? })`：`base` 垫底 + `fill` 按 `clipDirection` 裁开，比例取**本格物品的剩余耐久**（框架内部取反，因为 `#item_durability_current_amount` 是已损耗量）。自动关掉引擎自带耐久条、去掉格子灰底、把控件经 `$cell_overlay_ref` 注入格内 —— 脚本往该槽写可损耗物品即可，**不需要进度条贴图**。依据见 `known-pitfalls.md` §4.12 |
 
 - **`kind` 语义**：`input` 不写标志位；`output` / `display` 写 **`"enabled": false`**（`display` = 不进不出、纯显示，供脚本每 tick 换物品做伪进度条）。⚠️ 该标志位**能否真拦下"往槽里放东西"尚未真机确认** ⇒ 文档与 JSDoc **不得**断言它有效。
 - **网格几何只认一处**：统一格位尺寸取 `setSlotDefaults({ cellSize })`（缺省 = 标定表），网格尺寸与基座换算都用它；**逐槽 `cellSize` 只当视觉尺寸**（可溢出格位）。混着用会把基座算歪，见 `known-pitfalls.md` §4.11。

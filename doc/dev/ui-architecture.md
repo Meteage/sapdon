@@ -279,6 +279,34 @@ ui.setPanel({ size: [256, 128], background: 'textures/ui/machine_panel' })
   `setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名。**`setItemMatrix` 已删除**
   （三个独立缺陷，见 `known-pitfalls.md` §4.7）。
 
+**进度指示槽 API**：
+
+```ts
+ui.addProgressSlot({
+  slot: 3, pos: [77, 42], size: [22, 15],      // 位置/尺寸 = 原版熔炉箭头
+  base: 'textures/ui/arrow_inactive',          // 静止底图（可选；垫在下面当兜底）
+  fill: 'textures/ui/arrow_active',            // 按比例裁开的填充图
+  clipDirection: 'left',                       // 'left' = 从左往右填；火焰那类从下往上用 'down'
+})
+```
+
+- **比例取「本格物品的剩余耐久」**：`fill` 上挂了两条 collection 绑定
+  （`#item_durability_current_amount` / `#item_durability_total_amount`）与一条 view 绑定
+  （Molang 除法 → `#clip_ratio`）。脚本往该槽写一个可损耗物品、让「剩余耐久 = 进度」即可
+  （见 `examples/mob_chest/scripts/progress_bar.js`），**不需要任何进度条贴图**。
+  ⚠️ `current_amount` 是**已损耗量**，所以框架内部做了取反 —— 别照直觉写 `current / total`，
+  依据见 `known-pitfalls.md` §4.12。
+- **它比 `addSlot` 多做三件事**：① 生成一个自定控件、经 `$cell_overlay_ref` 注入到
+  `common.container_item` 的 `item_cell` 内（因此保留**每格**的 collection 上下文，每格各显示各的进度）；
+  ② 关掉引擎自带的耐久条（`$durability_bar_required: false`）；③ 把格子的浅灰底换成零尺寸面板
+  （`$background_images`），否则会看到「灰方块 + 图」而不是原版那样只有图。`vars` 可覆盖后两条。
+- `kind` 固定为 `display`、物品图标尺寸归零（只要图不要图标）。
+- **为什么要自己算比例**：原版熔炉的 `#furnace_arrow_ratio` / `#furnace_flame_ratio` 是引擎按界面
+  硬编码下发的，挂在 `chest_screen` 上的自定义面板拿不到；同理 `progress_bar_renderer` 只能画色块、
+  没有 texture 属性，画不出箭头形状。完整考证与真机实测见 `known-pitfalls.md` §4.12。
+- **判据**：`node tests/container-ui-output.test.mjs` 的进度槽三条
+  （产物里有 `<ns>.progress_<slot>` 控制、`$cell_overlay_ref` 指过去、比例是取反表达式）。
+
 ---
 
 ## 5. 对称门控模型（`examples/guidebook_demo`）

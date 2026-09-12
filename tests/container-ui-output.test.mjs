@@ -10,6 +10,7 @@
 //   5. `addControl(el, pos)` 真的挂进主面板并带定位（`addElementToMain` 的历史空挂已修）；
 //   6. 连续两次 `ChestUISystem.registerContainerUI` 不产生重复元素、两条 gate 并存；
 //   7. 产物确实来自**新**代码（用新代码独有的字符串字面量做存在性断言，防「rollup 9/9 成功但 prod 是旧的」）。
+//   8. `addProgressSlot` 的产物形状：overlay 控件 + 三个注入变量 + **取反**的比例绑定（见 §4.12）。
 //
 // ⚠️ 不要用 `node --test`（受限环境 fork 会 EPERM），直接 `node tests/container-ui-output.test.mjs`。
 import { test } from 'node:test'
@@ -93,8 +94,10 @@ test('prod/core/index.js 含新代码独有的字面量（防「prod 是旧的�
   assert.ok(prod.includes('既没有 pos 也没有 offset'), 'prod/core/index.js 缺槽位校验文案')
   assert.ok(prod.includes('A-Z a-z 0-9 _ -'), 'prod/core/index.js 缺门控键护栏文案')
   assert.ok(prod.includes('addSlot'), 'prod/core/index.js 缺 addSlot')
+  assert.ok(prod.includes('addProgressSlot'), 'prod/core/index.js 缺 addProgressSlot')
   for (const name of [
-    'addSlot', 'setPanel', 'setGridOrigin', 'setSlotDefaults', 'addControl',
+    'addSlot', 'setPanel', 'setGridOrigin', 'setSlotDefaults', 'addControl', 'addProgressSlot',
+    'ProgressSlotOptions', 'ProgressClipDirection',
     'setOutputSlots', 'resolveSlot', 'slotToGridPosition', 'posToOffset', 'validateSlotSpec',
   ]) {
     assert.ok(dts.includes(name), `prod/core/index.d.ts 缺 ${name} 声明`)
@@ -348,4 +351,102 @@ test('setItemMatrix 已删除；setInputGrid 仍在（@deprecated 别名）', ()
   ui.setOutputSlots([[0, 2]])
   assert.deepEqual(ui.outputSlots, [[0, 2]])
   assert.equal(ui.output_grids, undefined, '旧死字段 output_grids 已更名')
+})
+
+// ── 9. addProgressSlot（进度指示槽）──────────────────────────────────────────
+//
+// 这一组锁住「进度指示槽」的产物形状：overlay 控件、三个注入变量、以及
+// **取反**的比例绑定（`#item_durability_current_amount` 是已损耗量，见 known-pitfalls §4.12）。
+
+/** 构造进度槽探针：箭头（有底图、left）+ 火焰（无底图、down） */
+function buildProgressProbe() {
+  const ui = new ContainerUISystem('sapdon_progress_probe:progress_probe', 'ui/')
+  ui.setGridOrigin([8, 8])
+  ui.addProgressSlot({
+    slot: 3,
+    pos: [77, 42],
+    size: [22, 15],
+    base: 'textures/ui/arrow_inactive',
+    fill: 'textures/ui/arrow_active',
+    clipDirection: 'left',
+  })
+  ui.addProgressSlot({ slot: 4, pos: [52, 43], size: [13, 13], fill: 'textures/ui/flame_full_image', clipDirection: 'down' })
+  return ui
+}
+
+const progressJson = buildProgressProbe().system.toObject()
+const progressCells = cellsOf(gridOf(progressJson.container_root_panel))
+
+/** 取面板里名为 name 的子控件（不存在则断言失败） */
+function childOf(panel, name) {
+  const holder = panel.controls.find((c) => c[name])
+  assert.ok(holder, `控件 ${name} 不在产物里`)
+  return holder[name]
+}
+
+test('addProgressSlot 生成 overlay 控件，并注入 cell_overlay_ref / background_images / 关掉自带耐久条', () => {
+  assert.equal(progressCells.length, 2)
+  assert.ok(progressJson.progress_3, '产物应有 progress_3 控件')
+  assert.ok(progressJson.progress_4, '产物应有 progress_4 控件')
+  assert.ok(progressJson.progress_empty_background, '产物应有零尺寸底 progress_empty_background')
+
+  const [arrow, flame] = progressCells
+  assert.equal(arrow.inner['$cell_overlay_ref|default'], 'sapdon_progress_probe.progress_3')
+  assert.equal(flame.inner['$cell_overlay_ref|default'], 'sapdon_progress_probe.progress_4')
+  assert.equal(arrow.inner['$background_images|default'], 'sapdon_progress_probe.progress_empty_background')
+  assert.equal(arrow.inner['$durability_bar_required|default'], false, '必须关掉引擎自带的耐久条')
+
+  assert.deepEqual(arrow.inner.size, [22, 15], '视觉尺寸 = size')
+  assert.deepEqual(arrow.inner['$item_renderer_size|default'], [0, 0], '物品图标尺寸归零')
+  assert.equal(arrow.inner.enabled, false, 'kind 固定 display ⇒ enabled:false')
+  assert.equal('enable' in arrow.inner, false, '不该写 enable')
+  assert.deepEqual(progressJson.progress_empty_background.size, [0, 0], '零尺寸底')
+})
+
+test('addProgressSlot 的 fill 带裁切方向与「取反」的比例绑定；base 可选', () => {
+  const arrowFill = childOf(progressJson.progress_3, 'fill')
+  assert.equal(arrowFill.texture, 'textures/ui/arrow_active')
+  assert.equal(arrowFill.clip_direction, 'left')
+  assert.deepEqual(arrowFill.size, [22, 15])
+
+  const arrowBase = childOf(progressJson.progress_3, 'base')
+  assert.equal(arrowBase.texture, 'textures/ui/arrow_inactive')
+  assert.equal('clip_direction' in arrowBase, false, '静止底图不参与裁切')
+
+  // 三条绑定：两条 collection（本格数据）+ 一条 view（算比例 → #clip_ratio）
+  assert.equal(arrowFill.bindings.length, 3)
+  const [cur, total, ratio] = arrowFill.bindings
+  assert.equal(cur.binding_name, '#item_durability_current_amount')
+  assert.equal(cur.binding_type, 'collection')
+  assert.equal(cur.binding_collection_name, 'container_items')
+  assert.equal('binding_name_override' in cur, false, '不覆盖属性 ⇒ 名字进入该控件作用域供 Molang 读')
+  assert.equal(total.binding_name, '#item_durability_total_amount')
+  assert.equal(ratio.binding_type, 'view')
+  assert.equal(ratio.target_property_name, '#clip_ratio')
+  assert.ok(
+    ratio.source_property_name.includes('#item_durability_total_amount - #item_durability_current_amount'),
+    'current 是已损耗量 ⇒ 比例必须取反（total − current），否则方向反了',
+  )
+
+  // 没给 base ⇒ 只有 fill；裁切方向可换（火焰从下往上）
+  assert.equal(progressJson.progress_4.controls.length, 1, '没给 base 就只生成 fill')
+  const flameFill = childOf(progressJson.progress_4, 'fill')
+  assert.equal(flameFill.clip_direction, 'down')
+  assert.deepEqual(flameFill.size, [13, 13])
+})
+
+test('addProgressSlot 参数不合规只 warn 不抛，且不产生槽位', () => {
+  const ui = new ContainerUISystem('sapdon_progress_bad:progress_bad', 'ui/')
+  assert.doesNotThrow(() => ui.addProgressSlot({ slot: -1, pos: [0, 0], fill: 'textures/ui/x' }))
+  assert.doesNotThrow(() => ui.addProgressSlot({ slot: 0, pos: 'bad', fill: 'textures/ui/x' }))
+  assert.doesNotThrow(() => ui.addProgressSlot({ slot: 0, pos: [0, 0], fill: '' }))
+  assert.doesNotThrow(() => ui.addProgressSlot({ slot: 0, pos: [0, 0], fill: 'textures/ui/x', size: [1] }))
+  // 没有槽位 ⇒ 网格里不该出现格位控件（无槽位时 grids.controls 这个键根本不出现）
+  const grid = gridOf(ui.system.toObject().container_root_panel)
+  assert.equal(grid.controls, undefined, '不合规调用不该产生格位')
+})
+
+test('addProgressSlot 是链式可调的（返回 this）', () => {
+  const ui = new ContainerUISystem('sapdon_progress_chain:progress_chain', 'ui/')
+  assert.equal(ui.addProgressSlot({ slot: 0, pos: [0, 0], fill: 'textures/ui/x' }), ui)
 })
