@@ -46,14 +46,14 @@
           ],
           "grid_item_template": "chest.chest_grid_item",
           "size": [
-            20,
-            80
+            18,
+            72
           ],
           "anchor_from": "top_left",
           "anchor_to": "top_left",
           "offset": [
             8,
-            40
+            22
           ],
           "layer": 3,
           "controls": [
@@ -68,18 +68,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        0,
+                        42,
                         0
                       ],
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        18,
+                        18
                       ]
                     }
                   }
@@ -97,18 +97,18 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        22,
-                        -20
+                        42,
+                        20
                       ],
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        18,
+                        18
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        18,
+                        18
                       ]
                     }
                   }
@@ -126,19 +126,19 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        44,
-                        -40
+                        100,
+                        -21
                       ],
                       "enabled": false,
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        20,
-                        20
+                        26,
+                        26
                       ],
                       "$cell_image_size|default": [
-                        20,
-                        20
+                        26,
+                        26
                       ]
                     }
                   }
@@ -156,19 +156,19 @@
                   {
                     "grid_item@chest.chest_grid_item": {
                       "offset": [
-                        76,
-                        -60
+                        66,
+                        -31
                       ],
                       "enabled": false,
                       "anchor_from": "top_left",
                       "anchor_to": "top_left",
                       "size": [
-                        36,
-                        10
+                        28,
+                        8
                       ],
                       "$cell_image_size|default": [
-                        36,
-                        10
+                        28,
+                        8
                       ]
                     }
                   }
