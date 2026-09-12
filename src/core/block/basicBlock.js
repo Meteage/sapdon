@@ -145,9 +145,7 @@ export class BasicBlock {
      * 提交前的自检（由 `registry.submit()` → `runValidators()` 在序列化之前调用一次）。
      *
      * ⚠️ 不能在 `registerBlock` 里做这类检查：`BlockAPI.createXxx()` 是「先注册、后 addComponent」，
-     *    注册那一刻用户还没挂组件，检查必然看不到容器组件。
-     *    （历史上 `blockComponent.js` 的 JSDoc 把守卫指向 `blockFactory.registerBlock` —— **那是错的**，
-     *    `blockFactory.js` 里 `block_entity` 命中数为 0；真守卫就是这里。已于 2026-09 订正。）
+     *    注册那一刻用户还没挂组件，检查必然看不到容器组件。真守卫就是这里。
      *
      * 检查两件事，都**只 warn、不改产物**：
      *

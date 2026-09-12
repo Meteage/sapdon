@@ -1,6 +1,7 @@
 export * from './hud/hud.js'
 export * from './hud/hudElement.js'
 export * from './chest.js'
+export * from './containerLayout.js'
 export * from './containerUISystem.js'
 export * from './system.js'
 export * from './sapdon/sapdonServerUI.js'

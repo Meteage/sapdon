@@ -211,3 +211,18 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **`处理数据:` 行数**是「产物真的生成了」的唯一判据。
 - 单测：`node --test` 会 fork（受限环境 EPERM）→ 直接 `node tests/persist.test.mjs`（先 `tsc` 生成 `dist/`）。
 - 运行期代码（`src/oc`）的单测要靠**纯逻辑 + 内存 target**，不要依赖 `@minecraft/server`（该包只发 `index.d.ts`、Node 里导入不了）。
+
+### G. 自定义容器界面（`ContainerUISystem`，2026-09-12 重构）
+
+| 能力 | 位置 | 签名要点 |
+|---|---|---|
+| 纯函数换算 | `src/core/ui/systems/containerLayout.ts`（**零 import**） | `slotToGridPosition` / `cellBase` / `posToOffset` / `anchorProps` / `validateSlotSpec`（返回警告数组，**不抛**）/ `resolveSlot` / `checkUIName`；标定常量 `SLOT_CALIBRATION` |
+| 槽位声明 | `containerUISystem.ts` | `addSlot({ slot, pos, kind?, cellSize?, background?, itemRenderer?, vars? })`：`slot` = 容器槽位号、`pos` = 面板内像素坐标，框架换算 `grid_position` / `offset` |
+| 版面 | 同上 | `setPanel({ size, background })` / `setGridOrigin([x,y])` / `setSlotDefaults({...})` / `addControl(el, pos?)`（`addElementToMain` 是它的别名，**已真的有挂载**） |
+| 旧接口 | 同上 | `addGridItem` / `addInputGrid` / `addOutputGrid` / `setGridDimension` / `setSize` / `setTitle` 全部保留为薄封装（显式 `grid_position` + 显式 `offset`，不参与换算）；`setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名；**`setItemMatrix` 已删**（三个独立缺陷） |
+
+- **`kind` 语义**：`input` 不写标志位；`output` / `display` 写 **`"enabled": false`**（`display` = 不进不出、纯显示，供脚本每 tick 换物品做伪进度条）。⚠️ 该标志位**能否真拦下"往槽里放东西"尚未真机确认** ⇒ 文档与 JSDoc **不得**断言它有效。
+- **网格几何只认一处**：统一格位尺寸取 `setSlotDefaults({ cellSize })`（缺省 = 标定表），网格尺寸与基座换算都用它；**逐槽 `cellSize` 只当视觉尺寸**（可溢出格位）。混着用会把基座算歪，见 `known-pitfalls.md` §4.11。
+- **★ 待真机校准**：格位基座假设「网格原点 + 序号 × 统一格位尺寸、锚点左上角」全部集中在 `containerLayout.ts` 的 `SLOT_CALIBRATION`（含 `defaultGridOrigin`，默认 `[0,24]` 给标题让位），校准只改这一处（`anchor` 会同时翻转换算与产物的 `anchor_from`/`anchor_to`）。
+- **门控键 = `UISystem.name`**，且**同时是 `ui/<name>.json` 的文件名** ⇒ 只允许 `A-Z a-z 0-9 _ -`（`checkUIName()` 会 warn）。
+- 判据：`node tests/container-layout.test.mjs`（纯函数）、`node tests/container-ui-output.test.mjs`（跑 prod core 断言产物）。坑的全文见 `doc/dev/known-pitfalls.md` §4.5–§4.11。

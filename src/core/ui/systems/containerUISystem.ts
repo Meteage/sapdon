@@ -1,33 +1,81 @@
 import { Grid } from '../elements/grid.js'
+import { Image } from '../elements/image.js'
 import { Label } from '../elements/label.js'
 import { Panel } from '../elements/panel.js'
-import { StackPanel } from '../elements/stackPanel.js'
 import { UIElement } from '../elements/uiElement.js'
 import { Control } from '../properties/control.js'
 import { GridProp } from '../properties/gridProp.js'
 import { Layout } from '../properties/layout.js'
+import { Sprite } from '../properties/sprite.js'
 import { Text } from '../properties/text.js'
-import type { Offset2 } from '../types.js'
 import { ChestUISystem } from './chest.js'
+import {
+  SLOT_CALIBRATION,
+  anchorProps,
+  checkUIName,
+  gridDimensionsFor,
+  normalizeBackground,
+  normalizeCellSize,
+  resolveSlot,
+  validateSlotSpec,
+  type Offset2,
+  type ResolvedSlot,
+  type Size2,
+  type SlotBackground,
+  type SlotDefaults,
+  type SlotSpec,
+} from './containerLayout.js'
 import { UISystem } from './system.js'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any
 
+/** 旧式格位声明（`addGridItem` / `addInputGrid` / `addOutputGrid` 的 options） */
+export interface LegacyGridItemOptions {
+  /** @deprecated 用 `enabled`；JSON UI 的属性名是 `enabled` 不是 `enable` */
+  enable?: boolean
+  /** 是否写 `enabled`（不给则该键不出现） */
+  enabled?: boolean
+  /** 内层控件尺寸 */
+  size?: Any
+  /** `$background_images` 背景控件引用 */
+  background_images?: Any
+}
+
+/** `setPanel` 的入参 */
+export interface PanelOptions {
+  /** 根面板尺寸（像素） */
+  size?: Size2
+  /** 面板背景纹理 */
+  background?: SlotBackground
+}
+
 /**
- * 自定义容器 UI 系统类，用于创建和管理容器界面。
- * 支持动态添加网格项、设置标题、调整尺寸等功能。
+ * 自定义容器 UI 系统：把「容器槽位」声明成面板内的像素版面。
+ *
+ * 坐标系为面板左上角原点的像素坐标（`top_left` 锚）；`grid_position` 与格位基座的换算见
+ * `containerLayout.ts`（其中 `SLOT_CALIBRATION` 是唯一的待真机校准点）。
+ * 面板背景与已声明槽位在每次修改后整体重建，故可自由链式调用。
  */
 export class ContainerUISystem {
-  /** @private 网格项的数量 */
-  #gridItemNum: number = 3
-
   system: UISystem
   title: string
   root_panel_size: [number, number]
   gridDimension: [number, number]
-  output_grids: number[][]
+  /** 输出槽记录（`setOutputSlots` 写入）；不参与版面，版面由槽位声明的 `kind` 决定 */
+  outputSlots: number[][]
   main_panel: Panel
   grids: Grid
+
+  /** 已声明的槽位（按声明顺序；重复槽号就地覆盖） */
+  #slots: SlotSpec[] = []
+  #slotKeys: string[] = []
+  #anonymousKey = 0
+  #gridOrigin: Offset2 = [SLOT_CALIBRATION.defaultGridOrigin[0], SLOT_CALIBRATION.defaultGridOrigin[1]]
+  #slotDefaults: SlotDefaults = {}
+  #gridDimensionSet = false
+  #panelBackground: SlotBackground | undefined
+  /** 背景纹理描述 → 生成的背景控件名（同图复用同一控件） */
+  #backgroundControlIds = new Map<string, string>()
 
   constructor(identifier: string, path: string) {
     this.system = new UISystem(identifier, path)
@@ -35,7 +83,7 @@ export class ContainerUISystem {
     this.root_panel_size = [200, 200]
     this.gridDimension = [3, 1]
 
-    this.output_grids = [] // 记录输出槽
+    this.outputSlots = []
 
     this.main_panel = new Panel('main_panel')
     this.grids = new Grid('grids')
@@ -45,71 +93,204 @@ export class ContainerUISystem {
     this.#updateSystem()
   }
 
-  setInputGrid(output_arr: number[][]): void {
-    this.output_grids = output_arr
-  }
+  // ── 版面 ────────────────────────────────────────────────────────────────────
 
   /**
-   * 向网格中添加一个网格项。
-   * @param {number[]} grid_position - 网格项的位置 [行, 列] 用于定位实体的背包槽。
-   * @param {number[]} offset - 网格项的偏移量 [x, y]。
-   * @param {Object} [options] - 可选参数，用于配置网格项。
-   * @param {boolean} [options.enable=true] - 是否启用该网格项，默认为 true。
-   * @param {number[]} [options.size] - 网格项的大小 [宽度, 高度]。
-   * @param {UIElement[]} [options.background_images] - 网格项的背景图片控件。
-   * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
+   * 设置面板尺寸与背景图。
+   * @param {PanelOptions} [options] - `size` 为像素尺寸；`background` 为纹理路径或 `{ texture, nineslice_size? }`
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
    */
-  addGridItem(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): this {
-    const gridItem = new UIElement('grid_item', undefined, 'chest.chest_grid_item')
-    gridItem.addProp('offset', offset)
-    gridItem.addProp('enable', options.enable)
-    gridItem.addProp('size', options.size)
-    gridItem.addVariable('background_images|default', options.background_images)
-
-    this.grids.addGridItem(grid_position, gridItem)
+  setPanel(options: PanelOptions = {}): this {
+    const { size } = options
+    if (size !== undefined) {
+      if (Array.isArray(size) && Number.isFinite(Number(size[0])) && Number.isFinite(Number(size[1]))) {
+        this.root_panel_size = [Number(size[0]), Number(size[1])]
+      } else {
+        this.#warn(`setPanel 的 size 必须是两个有限数字 [宽, 高]（收到 ${JSON.stringify(size)}），已忽略`)
+      }
+    }
+    if (options.background !== undefined) {
+      if (normalizeBackground(options.background) === undefined) {
+        this.#warn('setPanel 的 background 必须是纹理路径字符串或 { texture, nineslice_size? }，已忽略')
+      } else {
+        this.#panelBackground = options.background
+      }
+    }
     this.#updateSystem()
     return this
   }
 
-  addInputGrid(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): void {
-    this.addGridItem(grid_position, offset, options)
-  }
-
-  addOutputGrid(grid_position: Offset2, offset: Offset2, options: { enable?: boolean; size?: Any; background_images?: Any } = {}): void {
-    // 输出槽一律 enable=false。
-    // ⚠️ 原来写的是 `options!.enable = false`：options 是可选参数，
-    //    不传时这行会抛 `Cannot set properties of undefined (setting 'enable')`
-    //    （setItemMatrix 就是这么调的 → 整条链必然崩）。改成浅拷贝后再覆盖。
-    this.addGridItem(grid_position, offset, { ...options, enable: false })
+  /**
+   * 设置网格在面板内的原点（未调用时取标定表的默认原点，已为顶部标题让开一行）。
+   * @param {Offset2} origin - 像素坐标 [x, y]
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  setGridOrigin(origin: Offset2): this {
+    if (!Array.isArray(origin) || !Number.isFinite(origin[0]) || !Number.isFinite(origin[1])) {
+      this.#warn(`setGridOrigin 需要 [x, y] 两个有限数（收到 ${JSON.stringify(origin)}），已忽略`)
+      return this
+    }
+    this.#gridOrigin = [origin[0], origin[1]]
+    this.#updateSystem()
+    return this
   }
 
   /**
-   * 向主面板中添加一个 UI 元素。
-   * @param {Any} element - 要添加的 UI 元素。
-   * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
+   * 合并槽位默认值（对之后声明的每个槽生效）。
+   *
+   * ★ `cellSize` 是**整张网格的统一格位尺寸（几何）**：基座换算与网格尺寸都用它。
+   * 逐槽声明 `addSlot({ cellSize })` 只改该格的视觉尺寸（可溢出格位），不参与几何。
+   * @param {SlotDefaults} defaults - 除 `slot` / `pos` / `gridPosition` / `offset` 外的槽位字段
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
    */
-  addElementToMain(element: Any): this {
+  setSlotDefaults(defaults: SlotDefaults = {}): this {
+    this.#slotDefaults = { ...this.#slotDefaults, ...(defaults ?? {}) }
+    this.#updateSystem()
+    return this
+  }
+
+  // ── 槽位 ────────────────────────────────────────────────────────────────────
+
+  /**
+   * 声明一个容器槽位：`slot` 定槽号、`pos` 定面板内像素位置，框架负责换算 `grid_position` 与 `offset`。
+   *
+   * `kind` 为 `output` / `display` 时写 `enabled: false`；`input`（默认）不写该键。
+   * 声明不合规时只 `console.warn`，不抛错。
+   * @param {SlotSpec} spec - 槽位声明
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addSlot(spec: SlotSpec): this {
+    for (const warning of validateSlotSpec(spec, { existingSlots: this.#declaredSlots() })) {
+      this.#warn(warning)
+    }
+    const key = this.#slotKey(spec)
+    const index = this.#slotKeys.indexOf(key)
+    if (index >= 0) {
+      this.#slots[index] = spec
+    } else {
+      this.#slotKeys.push(key)
+      this.#slots.push(spec)
+    }
+    this.#updateSystem()
+    return this
+  }
+
+  /**
+   * 向主面板中添加一个控件。
+   * @param {UIElement | Any} element - 控件（UIElement 实例或原生 JSON UI 控件对象）
+   * @param {Offset2} [pos] - 面板内像素坐标 [x, y]；给了就按 `top_left` 锚定位
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addControl(element: UIElement | Any, pos?: Offset2): this {
+    if (Array.isArray(pos) && Number.isFinite(pos[0]) && Number.isFinite(pos[1])) {
+      if (element instanceof UIElement) {
+        element.layout.setOffset([pos[0], pos[1]]).setAnchorFrom('top_left').setAnchorTo('top_left')
+      } else if (element && typeof element === 'object') {
+        element.offset = [pos[0], pos[1]]
+        element.anchor_from = 'top_left'
+        element.anchor_to = 'top_left'
+      }
+    } else if (pos !== undefined) {
+      this.#warn(`addControl 的 pos 必须是 [x, y] 两个有限数（收到 ${JSON.stringify(pos)}），已忽略定位`)
+    }
     this.main_panel.addControl(element)
     this.#updateSystem()
     return this
   }
 
   /**
-   * 设置网格的维度（行和列）。
-   * @param {number[]} dimension - 网格的维度 [行数, 列数]。
-   * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
+   * 向主面板中添加一个控件（`addControl` 的别名）。
+   * @param {UIElement | Any} element - 控件
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addElementToMain(element: UIElement | Any): this {
+    return this.addControl(element)
+  }
+
+  // ── 旧接口（薄封装，行为不变；仅 `enable` → `enabled` 一处订正） ────────────────
+
+  /**
+   * 旧式网格项：直接给 `grid_position` 与 `offset`，不做坐标换算。
+   * @param {Offset2} grid_position - 网格位置 [列, 行]
+   * @param {Offset2} offset - 内层控件的偏移 [x, y]
+   * @param {LegacyGridItemOptions} [options] - 可选覆盖
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addGridItem(grid_position: Offset2, offset: Offset2, options: LegacyGridItemOptions = {}): this {
+    return this.addSlot({
+      gridPosition: grid_position,
+      offset,
+      enabled: options.enabled ?? options.enable,
+      size: options.size,
+      backgroundImages: options.background_images,
+    })
+  }
+
+  /**
+   * 旧式输入槽（等价 `addGridItem`）。
+   * @param {Offset2} grid_position - 网格位置 [列, 行]
+   * @param {Offset2} offset - 内层控件的偏移 [x, y]
+   * @param {LegacyGridItemOptions} [options] - 可选覆盖
+   */
+  addInputGrid(grid_position: Offset2, offset: Offset2, options: LegacyGridItemOptions = {}): void {
+    this.addSlot({
+      gridPosition: grid_position,
+      offset,
+      kind: 'input',
+      enabled: options.enabled ?? options.enable,
+      size: options.size,
+      backgroundImages: options.background_images,
+    })
+  }
+
+  /**
+   * 旧式输出槽：在该格位内层控件上写 `enabled: false`（是否被引擎拦下待真机确认）。
+   * @param {Offset2} grid_position - 网格位置 [列, 行]
+   * @param {Offset2} offset - 内层控件的偏移 [x, y]
+   * @param {LegacyGridItemOptions} [options] - 可选覆盖（`enabled` 恒被覆盖为 false）
+   */
+  addOutputGrid(grid_position: Offset2, offset: Offset2, options: LegacyGridItemOptions = {}): void {
+    this.addSlot({
+      gridPosition: grid_position,
+      offset,
+      kind: 'output',
+      size: options.size,
+      backgroundImages: options.background_images,
+    })
+  }
+
+  /**
+   * 记录输出槽数组（供上层读取）；不改变已声明槽位的版面与语义。
+   * @param {number[][]} output_arr - 输出槽记录
+   */
+  setOutputSlots(output_arr: number[][]): void {
+    this.outputSlots = output_arr
+  }
+
+  /**
+   * @deprecated 名字写反了（它存的是输出槽），改用 `setOutputSlots`
+   * @param {number[][]} output_arr - 输出槽记录
+   */
+  setInputGrid(output_arr: number[][]): void {
+    this.setOutputSlots(output_arr)
+  }
+
+  /**
+   * 设置网格的行列数（显式覆盖；不调用则按已声明槽位自动推导）。
+   * @param {number[]} dimension - 网格维度 [列数, 行数]
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
    */
   setGridDimension(dimension: number[]): this {
     this.gridDimension = dimension as [number, number]
-    this.#gridItemNum = dimension[0] * dimension[1]
+    this.#gridDimensionSet = true
     this.#updateSystem()
     return this
   }
 
   /**
    * 设置容器的标题。
-   * @param {string} title - 容器的标题。
-   * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
+   * @param {string} title - 容器的标题
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
    */
   setTitle(title: string): this {
     this.title = title
@@ -119,43 +300,54 @@ export class ContainerUISystem {
 
   /**
    * 设置根面板的尺寸。
-   * @param {number[]} size - 根面板的尺寸 [宽度, 高度]。
-   * @returns {ContainerUISystem} 返回当前实例以支持链式调用。
+   * @param {number[]} size - 根面板的尺寸 [宽度, 高度]（像素）
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
    */
   setSize(size: number[]): this {
-    this.root_panel_size = size as [number, number]
-    this.#updateSystem()
-    return this
+    return this.setPanel({ size: size as Size2 })
   }
 
-  setItemMatrix(n: number, matrix: number[][]): void {
-    // 5*5
-    // 设置
-    this.setGridDimension([1, n]) // n*n列
-    const offset_marix: number[][] = []
-    for (let i = 0; i < n; i++) offset_marix.push([(-18) * Math.floor(n / 2), i * (-18)])
-    // 现在他们在右上角了
-    console.log('offoset:' + offset_marix)
+  // ── 内部 ────────────────────────────────────────────────────────────────────
 
-    matrix.forEach((row, rowIndex) => {
-      console.log('row:' + row)
-      row.forEach((value, colIndex) => {
-        if (value === 0) return
-        console.log('value:' + value)
-        // y
-        offset_marix[value - 1][1] += rowIndex * 18
-        // x
-        offset_marix[value - 1][0] += colIndex * 18
-      })
-    })
+  #warn(message: string): void {
+    console.warn(`[sapdon] ContainerUISystem(${this.system.identifier}): ${message}`)
+  }
 
-    offset_marix.forEach((v, i) => {
-      if (this.output_grids.indexOf(v)) {
-        this.addOutputGrid([0, i], v as Offset2)
-        return
-      }
-      this.addGridItem([0, i], v as Offset2)
-    })
+  #slotKey(spec: SlotSpec): string {
+    if (Number.isInteger(spec?.slot)) return `slot:${spec.slot}`
+    if (Array.isArray(spec?.gridPosition)) return `grid:${spec.gridPosition[0]},${spec.gridPosition[1]}`
+    return `anon:${this.#anonymousKey++}`
+  }
+
+  #declaredSlots(): number[] {
+    return this.#slots.filter((s) => Number.isInteger(s?.slot)).map((s) => s.slot as number)
+  }
+
+  #resolvedSlots(): ResolvedSlot[] {
+    return this.#slots.map((spec) =>
+      resolveSlot(spec, {
+        gridOrigin: this.#gridOrigin,
+        columns: SLOT_CALIBRATION.columns,
+        gridCellSize: this.#panelCellSize(),
+        defaults: this.#slotDefaults,
+      }),
+    )
+  }
+
+  /**
+   * 整张网格的统一格位尺寸（几何）。
+   *
+   * 引擎的网格格位是均匀的 ⇒ 几何只取一处：`setSlotDefaults({ cellSize })`，缺省回落标定表。
+   * 逐槽 `cellSize` 只当视觉尺寸，不参与这里，也不参与基座换算。
+   */
+  #panelCellSize(): Offset2 {
+    return normalizeCellSize(this.#slotDefaults.cellSize, SLOT_CALIBRATION.cellSize)
+  }
+
+  /** 显式 `setGridDimension` 优先；否则按已声明槽位推导（无槽位时沿用历史默认值） */
+  #effectiveGridDimension(): [number, number] {
+    if (this.#gridDimensionSet || this.#slots.length === 0) return this.gridDimension
+    return gridDimensionsFor(this.#resolvedSlots().map((s) => s.gridPosition))
   }
 
   /**
@@ -163,66 +355,152 @@ export class ContainerUISystem {
    * @private
    */
   #register(): void {
+    const nameWarning = checkUIName(this.system.name)
+    if (nameWarning) this.#warn(nameWarning)
     ChestUISystem.registerContainerUI(this.system.name, `${this.system.namespace}.container_root_panel`)
   }
 
+  /** 面板背景图（可选） */
+  #buildPanelBackground(): Image | undefined {
+    const background = normalizeBackground(this.#panelBackground)
+    if (!background) return undefined
+    return this.#buildBackgroundImage('panel_background', background.texture, background.nineslice_size, this.root_panel_size)
+  }
+
+  /** 为槽位背景按需生成控件，返回 `命名空间.控件名` 引用 */
+  #slotBackgroundRef(resolved: ResolvedSlot): string | undefined {
+    if (resolved.backgroundImages) return resolved.backgroundImages
+    const background = resolved.background
+    if (!background) return undefined
+    const key = JSON.stringify(background)
+    let id = this.#backgroundControlIds.get(key)
+    if (id === undefined) {
+      id = `slot_background_${this.#backgroundControlIds.size}`
+      this.#backgroundControlIds.set(key, id)
+    }
+    this.system.addElement(this.#buildBackgroundImage(id, background.texture, background.nineslice_size))
+    return `${this.system.namespace}.${id}`
+  }
+
+  #buildBackgroundImage(id: string, texture: string, nineslice_size?: number | [number, number, number, number], size?: Size2): Image {
+    const image = new Image(id)
+    image.setSprite(new Sprite().setTexture(texture))
+    if (nineslice_size !== undefined) image.sprite.setNineSliceSize(nineslice_size)
+    image.setLayout(new Layout().setSize(size ?? ['100%', '100%']).setAnchorFrom('top_left').setAnchorTo('top_left').setOffset([0, 0]))
+    image.setControl(new Control().setLayer(1))
+    return image
+  }
+
+  #buildTitle(): Label {
+    return new Label('title')
+      .setControl(new Control().setLayer(12))
+      .setText(new Text().setText(this.title).setColor([0, 0, 0]).setTextAlignment('center'))
+      .setLayout(new Layout().setSize(['100%', 'default']).setAnchorFrom('top_left').setAnchorTo('top_left').setOffset([0, 0]))
+  }
+
+  /** 玩家背包区（原版控件，占面板下半部分） */
+  #buildInventoryPanel(): Panel {
+    return new Panel('inventory_panel')
+      .setControl(new Control().setLayer(2))
+      .setLayout(
+        new Layout().setSize(['100%', '50%']).setAnchorFrom('bottom_left').setAnchorTo('bottom_left').setOffset([0, 0]),
+      )
+      .addControls([
+        { 'inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label': {} },
+        { 'hotbar_grid@common.hotbar_grid_template': {} },
+        { 'inventory_take_progress_icon_button@common.inventory_take_progress_icon_button': {} },
+      ])
+  }
+
+  /** 网格本身（绝对定位在 `gridOrigin`；格位尺寸取面板统一值，与基座换算同源） */
+  #buildGrid(): Grid {
+    const dimension = this.#effectiveGridDimension()
+    const resolved = this.#resolvedSlots()
+    const [cellWidth, cellHeight] = this.#panelCellSize()
+
+    const grid = this.grids
+    grid.setGridProp(new GridProp().setGridDimensions(dimension).setGridItemTemplate('chest.chest_grid_item'))
+    grid.setCollectionName('container_items')
+    grid.setControl(new Control().setLayer(3))
+    grid.setLayout(
+      new Layout()
+        .setSize([dimension[0] * cellWidth, dimension[1] * cellHeight])
+        .setAnchorFrom('top_left')
+        .setAnchorTo('top_left')
+        .setOffset([this.#gridOrigin[0], this.#gridOrigin[1]]),
+    )
+
+    resolved.forEach((slot, index) => {
+      grid.addGridItem(slot.gridPosition, this.#buildSlotControl(slot), `grid_item_${index}`)
+    })
+    return grid
+  }
+
+  /** 单个格位的内层控件（`chest.chest_grid_item` 模板 + 变量覆盖） */
+  #buildSlotControl(slot: ResolvedSlot): UIElement {
+    const item = new UIElement('grid_item', undefined, 'chest.chest_grid_item')
+    item.addProp('offset', slot.offset)
+    if (slot.enabled !== undefined) item.addProp('enabled', slot.enabled)
+    // 由 pos 换算出的 offset 以 `top_left` 锚为前提，必须与标定表同步写锚点
+    if (slot.derived) {
+      const anchors = anchorProps()
+      item.addProp('anchor_from', anchors.anchor_from)
+      item.addProp('anchor_to', anchors.anchor_to)
+    }
+    if (slot.cellSizeDeclared) {
+      item.addVariable('cell_image_size|default', slot.cellSize)
+      if (slot.size === undefined) item.addProp('size', slot.cellSize)
+    }
+    if (slot.size !== undefined) item.addProp('size', slot.size)
+
+    const backgroundRef = this.#slotBackgroundRef(slot)
+    if (backgroundRef !== undefined) item.addVariable('background_images|default', backgroundRef)
+
+    const renderer = slot.itemRenderer
+    if (renderer) {
+      if (renderer.ref !== undefined) item.addVariable('item_renderer|default', renderer.ref)
+      if (renderer.size !== undefined) item.addVariable('item_renderer_size|default', renderer.size)
+      if (renderer.offset !== undefined) item.addVariable('item_renderer_offset|default', renderer.offset)
+      if (renderer.panelSize !== undefined) item.addVariable('item_renderer_panel_size|default', renderer.panelSize)
+    }
+
+    for (const [key, value] of Object.entries(slot.vars)) {
+      item.addVariable(`${key.replace(/^\$/, '').replace(/\|default$/, '')}|default`, value)
+    }
+    return item
+  }
+
   /**
-   * 更新 UI 系统，根据当前属性重新构建 UI。
+   * 更新 UI 系统：按当前声明整体重建根面板（`UISystem.addElement` 按 id 覆盖，重入安全）。
    * @private
    */
   #updateSystem(): void {
     const container_root_panel = new Panel('container_root_panel')
-    // 设置根面板的尺寸
     container_root_panel.setLayout(new Layout().setSize(this.root_panel_size))
 
-    // 网格（一条链式引用，原始模式：赋值给 main_panel.control 并同时作为 stack 内容）
-    const gridWithProps = this.grids.setGridProp(
-      new GridProp().setGridDimensions(this.gridDimension).setGridItemTemplate('chest.chest_grid_item')
-    ).setCollectionName('container_items')
-    this.main_panel.control = gridWithProps as unknown as Control
+    this.main_panel.setLayout(
+      new Layout()
+        .setSize(this.root_panel_size)
+        .setAnchorFrom('top_left')
+        .setAnchorTo('top_left')
+        .setOffset([0, 0]),
+    )
+    // 就地改层级：`setControl` 会换掉 Control 对象，把 `addControl` 已挂上的控件丢掉
+    this.main_panel.control.setLayer(4)
 
-    // 添加控件
-    container_root_panel.addControls([
+    const controls: (UIElement | Record<string, Any>)[] = [
       // 通用面板
-      {
-        'common_panel@common.common_panel': {},
-      },
+      { 'common_panel@common.common_panel': {} },
       // 飞行动画图标按钮
-      {
-        'inventory_selected_icon_button@common.inventory_selected_icon_button': {},
-      },
-      // 主内容面板
-      new StackPanel('container_panel')
-        .setControl(new Control().setLayer(2))
-        // 标题
-        .addStack(
-          ['100%', '10%'],
-          new Label('title')
-            .setControl(new Control().setLayer(12))
-            .setText(new Text().setText(this.title).setColor([0, 0, 0]))
-        )
-        // 自定义网格
-        .addStack(['100%', '40%'], gridWithProps)
-        // 玩家库存面板
-        .addStack(
-          ['100%', '50%'],
-          new Panel('inventory_panel').addControls([
-            // 玩家背包
-            {
-              'inventory_panel_bottom_half_with_label@common.inventory_panel_bottom_half_with_label': {},
-            },
-            // 物品栏
-            {
-              'hotbar_grid@common.hotbar_grid_template': {},
-            },
-            {
-              'inventory_take_progress_icon_button@common.inventory_take_progress_icon_button': {},
-            },
-          ])
-        ),
-    ])
+      { 'inventory_selected_icon_button@common.inventory_selected_icon_button': {} },
+    ]
 
-    // 更新系统
+    const background = this.#buildPanelBackground()
+    if (background) controls.push(background)
+
+    controls.push(this.#buildTitle(), this.#buildGrid(), this.main_panel, this.#buildInventoryPanel())
+
+    container_root_panel.addControls(controls)
     this.system.addElement(container_root_panel)
   }
 }

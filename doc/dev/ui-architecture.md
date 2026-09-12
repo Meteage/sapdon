@@ -23,6 +23,7 @@ src/core/ui/
 └── systems/                 # 系统层：UISystem + 各类落地系统
     ├── system.ts            # UISystem = 一个 UI 文件（.json），序列化入口
     ├── chest.ts             # ChestUISystem（接管 vanilla 箱子 screen）
+    ├── containerLayout.ts   # 纯函数：槽号 ↔ grid_position、像素 pos ↔ offset、槽位校验（零 import）
     ├── containerUISystem.ts # ContainerUISystem（自定义容器 UI）
     ├── hud/                 # HudUISystem + HudStatePanel
     ├── neoGuibook/          # （旧）NeoGuidebook + NeoGuidebookPage（兼容保留，新用 SapdonGuideBook）
@@ -225,6 +226,58 @@ long_form ─(modification: bindings)→ title 含 'sapdon_ui:' 时隐藏原生�
 ### 4.2 HUD 常驻（`HudUISystem` + `HudStatePanel`）
 
 `HudStatePanel` 的核心是"状态字符串"驱动：根面板定义 `$update_string`，监听 `#hud_title_text_string` 变化；每个 `addStateControl(state, control)` 给子控件挂两条 view 绑定——一条回填文本、一条 `(#text = 'ui.hud.<name>.<state>') → #visible`。组件作者只需在 tick 里往 `#hud_title_text_string` 写 `<name>.<state>`，对应状态层即显隐。
+
+### 4.3 自定义容器面板（`ContainerUISystem`）
+
+`ContainerUISystem(identifier, path)` 生成一份**绝对像素版面**的容器根面板，并通过
+`ChestUISystem.registerContainerUI(name, '<ns>.container_root_panel')` 接管原版小箱子界面。
+门控键 = identifier 冒号后半段（同时也是 `ui/<name>.json` 的文件名，只允许 `A-Z a-z 0-9 _ -`）。
+
+**生成的根面板骨架**（`container_root_panel`，尺寸 = `setPanel({ size })`）：
+
+| 子控件 | 定位 | layer | 说明 |
+|---|---|---|---|
+| `common_panel@common.common_panel` | 原版 | — | 原版灰底 |
+| `inventory_selected_icon_button@…` | 原版 | — | 飞行动画图标按钮 |
+| `panel_background`（可选） | `top_left` @ `[0,0]`，size = 面板尺寸 | 1 | `setPanel({ background })` |
+| `title` | `top_left` @ `[0,0]`，`100%` 宽 | 12 | `setTitle()`；`text_alignment: center` |
+| `grids`（`type: grid`） | `top_left` @ `setGridOrigin([x,y])` | 3 | `collection_name: container_items`，尺寸 = 列×格位尺寸 |
+| `main_panel` | `top_left` @ `[0,0]`，size = 面板尺寸 | 4 | `addControl(el, pos)` 的落点 |
+| `inventory_panel` | `bottom_left` @ `[0,0]`，`100%×50%` | 2 | 原版背包 + 快捷栏 + 取物进度按钮 |
+
+**槽位 API**（推荐路径）：
+
+```ts
+ui.setPanel({ size: [256, 128], background: 'textures/ui/machine_panel' })
+  .setGridOrigin([8, 40])
+  .setSlotDefaults({ cellSize: 20, background: 'textures/ui/slot_bg' })
+  .addSlot({ slot: 0, pos: [8, 40],  kind: 'input' })
+  .addSlot({ slot: 1, pos: [30, 40], kind: 'input' })
+  .addSlot({ slot: 2, pos: [60, 40], kind: 'output' })
+  .addSlot({ slot: 3, pos: [82, 40], kind: 'display' })   // 伪进度条：脚本每 tick 换物品
+  .addControl(new Label('hint').setText(new Text().setText('…')), [8, 8])
+```
+
+- **`slot` = 容器槽位号**（与版面解耦）：框架按 `[slot % columns, slot / columns]`（默认单列）换成
+  `grid_position`；`pos` = 面板内像素坐标，框架内部换算成格位 `offset`，调用方不手算偏移。
+- **`kind`**：`input` 不写标志位；`output` / `display` 一律写 `"enabled": false`
+  （`display` 语义 = 不进不出、纯显示，供项目脚本每 tick 换物品做伪进度条）。
+  ⚠️ 该标志位**是否真能拦下"往输出槽里放东西"尚未真机确认**，见 `known-pitfalls.md` §4.6。
+- **每格可覆盖的原版变量**（`SlotSpec`）：`cellSize`（**视觉**尺寸 → `size` + `$cell_image_size|default`，
+  可溢出格位）、`background`（→ 生成背景 image 控件 + `$background_images|default`）、
+  `itemRenderer.{ref,size,offset,panelSize}`（→ `$item_renderer*|default`），
+  以及 `vars` 原样透传（键写进 `$<key>|default`）。
+- **网格几何只认一处**：`setSlotDefaults({ cellSize })`（缺省 = 标定表 `cellSize`）——
+  网格尺寸与格位基座换算都用它；**逐槽 `cellSize` 不参与几何**（引擎的网格格位是均匀的）。
+  混用尺寸把基座算歪的经过见 `known-pitfalls.md` §4.11。
+- **坐标标定**：`containerLayout.ts` 的 `SLOT_CALIBRATION` 是**唯一的待真机校准点**
+  （`anchor` / `originPadding` / `cellSize` / `columns` / `defaultGridOrigin`）；改 `anchor` 会同时翻转换算
+  与产物里的 `anchor_from` / `anchor_to`。`defaultGridOrigin`（`[0, 24]`）是未调 `setGridOrigin` 时的网格原点，
+  已给顶部标题让开一行。详见 `known-pitfalls.md` §4.9。
+- **旧接口**：`addInputGrid` / `addOutputGrid` / `addGridItem` / `setGridDimension` / `setSize` /
+  `setTitle` / `addElementToMain` 全部保留为薄封装（显式 `grid_position` + 显式 `offset`，不参与换算）；
+  `setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名。**`setItemMatrix` 已删除**
+  （三个独立缺陷，见 `known-pitfalls.md` §4.7）。
 
 ---
 

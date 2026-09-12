@@ -739,10 +739,9 @@ export class BlockComponent {
    * ⚠️ **`container` 是「方块容器」的规范写法**（官方文档
    * <https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity>
    * ：`container.slot_count`，`>= 1` 且 `<= 54`，超限**抛错**），
-   * 但**当前引擎版本仍会拒绝该成员**（实测：`-> minecraft:block_entity -> container: … is not present in the Schema`，
-   * format_version 1.26.30 / 1.26.40 报同样的错）。**要现在就能用的容器，请走实体路线**：
-   * `BlockAPI.createTileBlock(identifier, category, textures_arr, { inventory_size })`
-   * （方块带承载实体、实体挂 `minecraft:inventory`，见 `examples/mob_chest`）。
+   * 但**当前引擎版本仍会拒绝该成员**。**要现在就能用的容器，请走实体路线**：
+   * `BlockAPI.createTileBlock(identifier, category, textures_arr, { inventory_size })`。
+   * 引擎拒绝的原文与版本见 `doc/dev/known-pitfalls.md`。
    *
    * ⚠️ `combineComponents` 是「**后者覆盖前者**」：要同时给 `dynamic_properties` 与 `container`，
    *    请像上面那样**一次调用写完**；把两个 `setBlockEntity(...)` 合并会让先出现的那个被整份丢掉
@@ -801,19 +800,18 @@ export class BlockComponent {
    * ## 现在该怎么做
    * - **要能用的容器 → 实体路线**（当前引擎版本下**唯一可用**）：
    *   `BlockAPI.createTileBlock(identifier, category, textures_arr, { inventory_size, container_type, can_be_siphoned_from })`
-   *   —— 方块带承载实体、实体的行为文件里挂 `minecraft:inventory`（`examples/mob_chest` 的形状）。
+   *   —— 方块带承载实体、实体的行为文件里挂 `minecraft:inventory`。
    *   已在用的 `TileBlock` 也可以直接改 `tile.entity.behavior.addComponent(EntityComponent.setInventoryProperties({...}))`。
    * - **要规范的方块容器 JSON → `BlockComponent.setBlockEntity(true, { container: { slot_count } })`**
    *   （`slot_count` 官方文档限制 `[1,54]`）。它会生成正确的 `minecraft:block_entity.container`，
-   *   但**当前引擎版本同样会拒**（`not present in the Schema`）—— 等引擎支持后即可直接用。
+   *   但**当前引擎版本同样会拒** —— 等引擎支持后即可直接用。
    *
    * ## 为什么保留签名（而不是删掉 / 改成别的产物）
    * 1. 已有项目调用它时，产物里的键、字段**一个字节都不变** —— 不会出现"升个框架版本构建就报错"，
    *    也不会因为改成 `block_entity.container` 而与用户自己写的 `setBlockEntity(...)` 抢同一个 JSON 键
    *    （`combineComponents` 是后者覆盖前者，改键会让容器信息在某些写法下**被静默吞掉**）。
    * 2. 真正的错误（把实体组件当方块组件用）由**构建期 warn** 明确指出，并给出两条新路线。
-   * 3. `inventory_size` 超过 54 的写法在这里仍可表达（实体组件文档**没有**上限）；
-   *    若按方块路线校验 `[1,54]`，FZ 那类 56 槽的既有项目会从"静默无效"直接变成"构建失败"。
+   * 3. `inventory_size` 超过 54 的写法在这里仍可表达（实体组件文档**没有**上限）。
    *
    * @deprecated 改用实体路线（`createTileBlock` 的 `inventory_size`），或
    *   `BlockComponent.setBlockEntity(true, { container: { slot_count } })` 产出规范写法。
