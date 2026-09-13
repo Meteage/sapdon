@@ -276,7 +276,7 @@ export class SapdonGuideBook {
     }
 
     /** 章节列表列（章节标题 + 分割线 + ≤8 行条目） */
-    private catListColumn(c: GuideBookCategory, k: number, side: string, start: number, end: number): UIElement {
+    private catListColumn(c: GuideBookCategory, k: number, side: string, start: number, end: number, slotBase: number): UIElement {
         const col = new StackPanel(`cat_list_${c.id}_p${k}_${side}`, undefined)
             .setOrientation('vertical')
             .setLayout(new Layout().setSize(['100%', '100%']))
@@ -307,7 +307,7 @@ export class SapdonGuideBook {
             rowPanel.addControl(contentStack)
             // 顶层透明整行按钮（default 透明、hover 高亮），整行可点
             const topBtn = new FormButtonGrid(key, { size: ['100%', '100%'], dimensions: [1, 1] })
-            topBtn.addButton(3 + j, new FormButton(key).setBinding(key).setTexture('', 'textures/ui/promotion_slot', ''), [0, 0])
+            topBtn.addButton(slotBase + j, new FormButton(key).setBinding(key).setTexture('', 'textures/ui/promotion_slot', ''), [0, 0])
             rowPanel.addControl(topBtn.build())
             rows.addStack(['100%', '10%'], rowPanel)
         }
@@ -357,13 +357,13 @@ export class SapdonGuideBook {
 
             if (k === 0) {
                 spread.addStack(['50%', '100%'], this.catIntroColumn(c, k))
-                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', 0, Math.min(PER_ROW, total)))
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', 0, Math.min(PER_ROW, total), IDX_SLOT_BASE))
             } else {
                 const base = PER_ROW + (k - 1) * PER_PAGE
                 const leftEnd = Math.min(base + PER_ROW, total)
                 const rightEnd = Math.min(leftEnd + PER_ROW, total)
-                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'l', base, leftEnd))
-                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', leftEnd, rightEnd))
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'l', base, leftEnd, IDX_SLOT_BASE))
+                spread.addStack(['50%', '100%'], this.catListColumn(c, k, 'r', leftEnd, rightEnd, IDX_SLOT_BASE + (leftEnd - base)))
             }
             page.addControl(spread)
             pages.push(page)
