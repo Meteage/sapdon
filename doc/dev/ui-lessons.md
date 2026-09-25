@@ -111,13 +111,21 @@ Unknown property [pressed_button_name]
 
 ```ts
 grid = new FormButtonGrid(id, { dimensions: [c, r], size: [w, h] })
-grid.addButton(index, btn, pos?)   // pos 叠加式：col = index%c + pos[0], row = index/c + pos[1]
+grid.addButton(index, btn, pos?)   // index = 运行期槽位序号；pos = 目标格（见下方补注）
 ```
 
 - 内部一个 `Grid`，`collection_name: form_buttons`；
-- `grid_position` 用基准格 `[index%c, index/c]` 锚定；
-- 用**负百分 offset** `[-col*100%, -row*100%]` 把按钮修正回基坐标系（抵消 Grid 默认排布），再叠加 `pos` 移到目标格；
-- `addButton` 顺手注入第 3 节的"激活三件套"；`enableDebug()` 通过 `addGridItem(..., RED)` 给每个格子描红框。
+- `grid_position` 用基准格 `[index%c, index/c]` 锚定（**基准格**，不是最终位置）；
+- `offset` 写成百分数 `[-base_col + pos[0], -base_row + pos[1]] × 100%`：把按钮从基准格挪到 `pos` 那一格；
+- `addButton` 顺手注入第 3 节的"激活三件套"；`enableDebug()` 通过 `addGridItem(..., RED)` 给每个格子描红框（★ 必须在 `addButton` **之前**调，它只在 addButton 里读 `this.debug`）。
+
+> ★ **`pos` 的准确语义（2026-09 产物取证补注）**：`offset = (pos − 由 slot 推出的基准格) × 100%`，
+> 所以**最终视觉格 = `pos`**；`pos` 缺省 = `[0,0]` ⇒ 不传 `pos` 的按钮全部落在**第 0 格**，靠自身锚点在那一格里摆位置。
+> 证据：`examples/more-golem/dev/more-golem_RP/ui/neo_guidebook.json` 的 `nav_grid` ——
+> 三个导航按钮 `grid_position [0,0]/[1,0]/[2,0]`、`offset` 全是 `["0%","0%"]`（base == pos）；
+> 而索引/内容页的卡片是 `grid_position [3,0]/[0,1]/…` + 负偏移（`addButton(3 + i, card, [i, 0])`）。
+> 这也正是"`3 +` 删不得"的产物侧解释。可视化编辑器（`tools/designer/`）的画布就是按这条画的。
+> ⚠️ 另一层怪癖见 `known-pitfalls.md` §4.13（**落点跟 `controls` 数组顺序走**）：两件事一起看才完整。
 
 `main.ts` 侧按页声明：
 

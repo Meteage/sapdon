@@ -11,7 +11,7 @@ import { Input } from '../../properties/input.js'
 import { Label } from '../../elements/label.js'
 import { Layout } from '../../properties/layout.js'
 import { Panel } from '../../elements/panel.js'
-import { SapdonServerUI } from './sapdonServerUI.js'
+import { ServerFormUI } from './serverFormUI.js'
 import { Sprite } from '../../properties/sprite.js'
 import { StackPanel } from '../../elements/stackPanel.js'
 import { Text } from '../../properties/text.js'
@@ -125,6 +125,8 @@ const NAV_TEXTURES: Record<string, [string, string, string]> = {
 export class SapdonGuideBook {
     private system: UISystem
     private namespace: string
+    /** UI 文件的 namespace = `ns_nm`（文件名同它；框架的命名约定，见 `SapdonFormUI`） */
+    private uiNamespace: string
     private name: string
     private size: [number | string, number | string]
     private background: string
@@ -147,24 +149,27 @@ export class SapdonGuideBook {
         const [namespace, name] = identifier.split(':')
         this.namespace = namespace
         this.name = name
+        // UI 文件与 namespace 都用 `ns_nm`：`gateddemo:book` → `ui/gateddemo_book.json`
+        this.uiNamespace = `${namespace}_${name}`
         this.size = size
         this.background = background
         this.setLabels(options.labels ?? {})
-        this.system = new UISystem(identifier, 'ui/')
+        this.system = new UISystem(`${this.uiNamespace}:${this.uiNamespace}`, 'ui/')
 
-        // 路由：server_form 只加 factory；页面根 <name> 在本类注册
-        SapdonServerUI.registerPage({
+        // 路由：server_form 只加 factory（指向本文件的 root）；根面板在本类注册
+        // （手册的内容/按键面板在 build() 里才建，构造期只拿得到引用串 ⇒ 这里用低层接口而非 SapdonFormUI；
+        //   挂载顺序 root → 各面板 也决定了产物里的键序，动它会破坏 guidebook_demo 的逐字节基线）
+        ServerFormUI.registerPage({
             panelId: `sapdon_ui:${name}`,
             name,
-            contentPanel: `${namespace}.${name}_content_panel`,
-            buttonsPanel: `${namespace}.${name}_buttons_panel`,
+            contentPanel: `${this.uiNamespace}.${name}_content_panel`,
+            buttonsPanel: `${this.uiNamespace}.${name}_buttons_panel`,
         })
         this.system.addElement(
-            SapdonServerUI.createPageRoot({
-                name,
+            ServerFormUI.createPageRoot({
                 panelId: `sapdon_ui:${name}`,
-                contentRef: `${namespace}.${name}_content_panel`,
-                buttonsRef: `${namespace}.${name}_buttons_panel`,
+                contentRef: `${this.uiNamespace}.${name}_content_panel`,
+                buttonsRef: `${this.uiNamespace}.${name}_buttons_panel`,
             })
         )
     }
@@ -565,7 +570,7 @@ export class SapdonGuideBook {
     }
 
     build(categories: GuideBookCategory[]): this {
-        const ns = `${this.namespace}.${this.name}`
+        const ns = `${this.uiNamespace}.${this.name}`
 
         // ---- 内容面板：大背景(layer0) + 纸页基底(layer0) + 内容层(layer5) ----
         const content = new Panel(`${this.name}_content_panel`).setLayout(new Layout().setSize(this.size as any))

@@ -261,8 +261,9 @@ interface GuideBookChapter {
 
 - 分类 **≤16**：只有 `p0`，body 仍是历史上的 `"INDEX"` —— **旧脚本一行都不用改**。
 - 分类 **≤4**：索引页产物与引入分页前**逐字节一致**（`examples/guidebook_demo` 的
-  `dev/guidebook_demo_RP/ui/book.json` 可作回归基线：587870 字节，
-  sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）；
+  `dev/guidebook_demo_RP/ui/gateddemo_book.json` 可作回归基线：587885 字节，
+  sha256 `C04672A23AE4FD4F68EF76646316B0DA82DFADA9C8AE80D81A2CEB88A9109988`；
+  2026-09 因**根面板元素名固定为 `root`** 与 **UI 文件/namespace 改为 `ns_nm`** 重锁过两次）；
   一旦这个文件不再逐字节相同，就说明索引布局（尤其是槽位编码）被动了。
 
 运行时脚本里需要维护两个与 `main.ts` 数据对齐的量：

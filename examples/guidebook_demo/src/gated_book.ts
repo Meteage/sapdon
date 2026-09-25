@@ -1,6 +1,6 @@
 import {
     Button, ButtonMapping, Control, DataBindingObject, FormButton, FormButtonGrid, Image, Input,
-    Label, Layout, Panel, SapdonServerUI, Sprite, Text, UISystem, UIElement,
+    Label, Layout, Panel, SapdonFormUI, Sprite, Text, UISystem, UIElement,
 } from '@sapdon/core'
 
 /**
@@ -27,38 +27,23 @@ export type GatedPage = {
  * 只做本模型，不复用原版 NeoGuidebook 逻辑（原代码保留不动）。
  */
 export class SymGatedBook {
-    private system: UISystem
+    private system!: UISystem
     private pages: GatedPage[] = []
     private size: [number|string, number|string]
     private background: string
     private name: string
     private namespace: string
+    private identifier: string
 
     constructor(identifier: string, size: [number|string, number|string] = [320, 207], background: string = 'textures/ui/book_back') {
         const [namespace, name] = identifier.split(':')
+        this.identifier = identifier
         this.name = name
         this.namespace = namespace
         this.size = size
         this.background = background
-        this.system = new UISystem(identifier, 'ui/')
-
-        // 注册为 sapdon_ui: 前缀的自定义页面（内容面板 + 按键面板）
-        SapdonServerUI.registerPage({
-            panelId: `sapdon_ui:${name}`,
-            name,
-            contentPanel: `${namespace}.${name}_content_panel`,
-            buttonsPanel: `${namespace}.${name}_buttons_panel`,
-        })
-
-        // 页面根壳：在本书的 UI 文件里注册 <name>（供 server_form 工厂 long_form 引用）
-        this.system.addElement(
-            SapdonServerUI.createPageRoot({
-                name,
-                panelId: `sapdon_ui:${name}`,
-                contentRef: `${namespace}.${name}_content_panel`,
-                buttonsRef: `${namespace}.${name}_buttons_panel`,
-            })
-        )
+        // 路由 + 页面根壳由 SapdonFormUI 一次办齐 —— 但两个根面板要到 build() 才建得出来
+        // （页是 addPage() 逐页喂进来的），所以推迟到 build() 里构造。
     }
 
     /** 注册一页：内容元素 + 该页按钮组（每枚 { btn, pos? }，按钮需已 setBinding） */
@@ -135,8 +120,7 @@ export class SymGatedBook {
         buttons_panel.addControl(groups_root)
         buttons_panel.addControl(this.createCloseButton())
 
-        this.system.addElement(content_panel)
-        this.system.addElement(buttons_panel)
+        this.system = new SapdonFormUI(this.identifier, content_panel, buttons_panel).getSystem()
     }
 
     getSystem(): UISystem {

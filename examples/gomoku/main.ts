@@ -1,6 +1,6 @@
 import {
     Button, ButtonMapping, DataBindingObject, FormButton, Grid, GridProp, Image, Input, Label, Layout,
-    Panel, SapdonPanel, SapdonServerUI, Sprite, Text, UIElement, registry
+    Panel, SapdonFormUI, Sprite, Text, UIElement, registry
 } from '@sapdon/core'
 
 const N = 16
@@ -125,26 +125,8 @@ const buttonsPanel = new Panel("gomoku_buttons_panel", undefined)
     .addControl(boardGridBuilt);
 
 // ---------- 组装页面 + 注册 ----------
-const gomokuSystem = new SapdonPanel("gomoku")
-    .setContent(contentPanel)
-    .setButtons(buttonsPanel)
-    .build();
-gomokuSystem.addElement(cellTemplate);
-// 页面根壳：在本页 UI 文件注册 <name>，供 server_form 工厂 long_form 引用
-gomokuSystem.addElement(
-    SapdonServerUI.createPageRoot({
-        name: "gomoku",
-        panelId: "sapdon_ui:gomoku",
-        contentRef: "gomoku.gomoku_content_panel",
-        buttonsRef: "gomoku.gomoku_buttons_panel",
-    })
-);
-
-SapdonServerUI.registerPage({
-    panelId: "sapdon_ui:gomoku",
-    name: "gomoku",
-    contentPanel: "gomoku.gomoku_content_panel",
-    buttonsPanel: "gomoku.gomoku_buttons_panel",
-});
+// 一个 SapdonFormUI = 一个 UI 文件（ui/gomoku_gomoku.json = ns_nm）= 一条路由（sapdon_ui:gomoku）
+const gomoku = new SapdonFormUI("gomoku:gomoku", contentPanel, buttonsPanel);
+gomoku.getSystem().addElement(cellTemplate);
 
 registry.submit()

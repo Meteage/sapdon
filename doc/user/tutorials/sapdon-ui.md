@@ -70,8 +70,8 @@ test_ui/
 
 ```typescript
 import {
-    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonPanel,
-    SapdonServerUI, StackPanel, Text, registry
+    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonFormUI,
+    StackPanel, Text, registry
 } from '@sapdon/core'
 ```
 
@@ -130,25 +130,21 @@ const apple_buttons_panel = new Panel("apple_buttons_panel")
 
 ## 5. 组装页面并注册
 
-`SapdonPanel` 把内容/按键两块组装进该页面自己的 UI 文件；`SapdonServerUI.registerPage` 注册到路由。
+`new SapdonFormUI("ns:nm", 内容根面板, 按钮根面板)` **一个 UI 文件 = 一条路由**：挂两个根面板 + 建页面根壳 + 注册路由一次办齐。
 
 ```typescript
-new SapdonPanel("sapdon_ui_apple")           // 生成 ui/sapdon_ui_apple.json
-    .setContent(apple_content_panel)
-    .setButtons(apple_buttons_panel)
-    .build();
+import { SapdonFormUI } from '@sapdon/core'
 
-SapdonServerUI.registerPage({
-    panelId: "sapdon_ui:apple",              // title 精确匹配
-    name: "apple",
-    contentPanel: "sapdon_ui_apple.apple_content_panel",
-    buttonsPanel: "sapdon_ui_apple.apple_buttons_panel",
-});
+new SapdonFormUI("sapdon_ui:apple", apple_content_panel, apple_buttons_panel)  // 生成 ui/sapdon_ui_apple.json
 
-registry.submit()                            // 输出 server_form.json + 各页面 ui 文件 + _ui_defs.json
+registry.submit()                            // 输出 server_form.json + ui/sapdon_ui_apple.json + _ui_defs.json
 ```
 
-> 纯内容页（无按键）：也需提供一个空的按键面板并注册，否则壳的 `$user_buttons_panel` 引用会报缺失。
+- 标识串 `ns:nm` → **UI 文件名与 namespace 都取 `ns_nm`**（这里 `sapdon_ui_apple`）：文件 `ui/sapdon_ui_apple.json`、引用前缀 `sapdon_ui_apple.xxx`。
+- `nm`（这里 `apple`）还决定路由面板 `panelId = sapdon_ui:apple` —— 也就是运行期 `.title(...)` 要写的串 —— 以及 factory id 后缀。
+- `ns`（这里 `sapdon_ui_apple`）是文件的 namespace，也是面板引用前缀 `sapdon_ui_apple.apple_content_panel`。
+- 两个根面板**都要给**（纯内容页也给一个空 `Panel`）：页面壳固定渲染 content+buttons 两块，缺一块引擎会报引用缺失。
+- 要多个界面就各 `new` 一个（`nm` 不同）；**`nm` 相同会互相覆盖**（同名文件 + `_ui_defs` 重复）。
 
 ---
 
@@ -187,8 +183,8 @@ npm run build  # 构建并复制到开发包目录
 构建产物（`dev/test_ui_RP/ui/`）：
 
 ```
-server_form.json        # 路由壳（third_party_server_screen / main_screen_content / sapdon_long_form_panel，扁平化注入）
-sapdon_ui_apple.json    # 页面：内容面板 + 按键面板（含 FormButtonGrid）
+server_form.json        # 路由壳（third_party_server_screen / main_screen_content / long_form + 每屏一个 gated factory）
+sapdon_ui_apple.json    # 本屏：内容面板 + 按键面板（含 FormButtonGrid）+ 根面板 root；文件名/namespace = 标识串的 ns_nm
 _ui_defs.json           # 自动登记
 ```
 

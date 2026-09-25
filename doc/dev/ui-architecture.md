@@ -27,7 +27,7 @@ src/core/ui/
     ├── containerUISystem.ts # ContainerUISystem（自定义容器 UI）
     ├── hud/                 # HudUISystem + HudStatePanel
     ├── neoGuibook/          # （旧）NeoGuidebook + NeoGuidebookPage（兼容保留，新用 SapdonGuideBook）
-    └── sapdon/              # SapdonServerUI（表单路由壳）+ SapdonPanel/FormButton/FormButtonGrid
+    └── sapdon/              # ServerFormUI（表单路由壳）+ SapdonFormUI/SapdonGuideBook/FormButton/FormButtonGrid
 ```
 
 另：工厂入口 `src/core/factory/uiFactory.js`（`UiAPI`）提供 `createUISystem / createPanel / createImage / createLabel` 等创建入口。
@@ -39,7 +39,7 @@ src/core/ui/
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Layer 4: systems/  UISystem + 落地系统                     │
-│  UISystem = 一个 UI 文件；ContainerUISystem / SapdonServerUI │
+│  UISystem = 一个 UI 文件；ServerFormUI / SapdonFormUI          │
 │  / SapdonGuideBook / HudUISystem 等在其上叠业务能力            │
 ├──────────────────────────────────────────────────────────┤
 │ Layer 3: elements/  元素层                                │
@@ -139,7 +139,7 @@ registerUISystem(ui_system) {
 addOuterUIdefs(ui_defs)  // 追加外部原版 ui_def
 ```
 
-> 任一 UI 文件（`ChestUISystem.chest_screen`、`HudUISystem`、`SapdonServerUI`、用户页面等）在模块加载/构造时注册进 `GRegistry`，故 `main.ts` 末行 `registry.submit()` 会统一把它们落到 `RP/ui/`。
+> 任一 UI 文件（`ChestUISystem.chest_screen`、`HudUISystem`、`ServerFormUI`、用户页面等）在模块加载/构造时注册进 `GRegistry`，故 `main.ts` 末行 `registry.submit()` 会统一把它们落到 `RP/ui/`。
 
 ---
 
@@ -193,6 +193,9 @@ elem.dataBinding.addDataBinding(
 )
 ```
 
+> 纹理路径**区分大小写**：原版是 `textures/ui/white`（本文件早先的示例写成 `White`，2026-09 订正）。
+> 编辑器（`tools/designer/`）会扫资源包校验引用，写错大小写给 info、找不到给 warn。
+
 运行时由 Script API 的 `ActionFormData().body() / .button()` 把值 emit 进 `#form_text` / `#form_button_text`，UI 侧据此显隐 → **"UI 逻辑零 JS，全在绑定表达式里"**。
 
 ### 3.5 工厂统一入口
@@ -205,23 +208,24 @@ elem.dataBinding.addDataBinding(
 
 | 形式 | 走法 | 代表 |
 |------|------|------|
-| **server_form（表单 / 容器 / 书）** | `SapdonServerUI` 用 modification 把自定义页注入 vanilla `main_screen_content`，用 `#title_text` / `#form_text` 前缀门控可见性；每页 = "内容面板 + 按键面板" | `SapdonGuideBook`、`ContainerUISystem/ChestUISystem`、`SapdonPanel/FormButton/FormButtonGrid` |
+| **server_form（表单 / 容器 / 书）** | `ServerFormUI` 用 modification 把自定义页注入 vanilla `main_screen_content`，用 `#title_text` / `#form_text` 前缀门控可见性；每页 = "内容面板 + 按键面板" | `SapdonGuideBook`、`ContainerUISystem/ChestUISystem`、`SapdonFormUI/FormButton/FormButtonGrid` |
 | **HUD 常驻** | `HudUISystem` 改 vanilla `hud_title_text` 绑定，`mountRootElement` 往根面板 `insert_front` 挂元素；`HudStatePanel` 用 title 字符串做状态机驱动 `#visible` | `HudProgressBar` |
 
-### 4.1 server_form 路由壳（`SapdonServerUI`）
+### 4.1 server_form 路由壳（`ServerFormUI`）
 
 采用 Bedrock Wiki Action Form 官方路由：
 
 ```
-main_screen_content(size:[fill,fill]) ─(modification: controls.insert_back)→ sapdon_form_factory
-  └─ factory{ server_form_factory, long_form } → @server_form.sapdon_long_form_panel
-       └─ (modifications controls.insert_back) 所有注册页 Panel（$panel_id 前缀门控，扁平化）
-            ├─ content@$user_content_panel   (下)
-            └─ buttons@$user_buttons_panel   (上)
+main_screen_content(size:[fill,fill]) ─(modification: controls.insert_back)→ sapdon_form_factory_<屏名>
+  └─ factory{ server_form_factory, long_form } → @<ns_nm>.root（屏幕自己 UI 文件里的根面板）
+       └─ root Panel（$panel_id 前缀门控 title；一个文件只有一个 root）
+            ├─ content@<ns_nm>.<内容面板>   (下)
+            └─ buttons@<ns_nm>.<按键面板>   (上)
 long_form ─(modification: bindings)→ title 含 'sapdon_ui:' 时隐藏原生表单
 ```
 
-关键收益：自定义页处于 `main_screen_content` 作用域，`#form_text` / `#title_text` 均可解析。
+关键收益：自定义屏处于 `main_screen_content` 作用域，`#form_text` / `#title_text` 均可解析。
+**多页面不靠多个根**：同一份内容面板里放多块面板、各挂 `#form_text` 门控（`PagePanelManage` / 手册）。
 
 ### 4.2 HUD 常驻（`HudUISystem` + `HudStatePanel`）
 
@@ -324,7 +328,7 @@ ui.addProgressSlot({
 
 `SymGatedBook`（`src/gated_book.ts`）：
 
-- 构造时 `SapdonServerUI.registerPage({ panelId: 'sapdon_ui:book', ... })` → 页面注册进 server_form 路由壳。
+- `build()` 里 `new SapdonFormUI(identifier, content_panel, buttons_panel)` → 一次办齐「挂两个根面板 + 建页面根壳 + 注册 server_form 路由」。
 - `addPage(id, content, buttons)`：一页 = 一个内容元素 + 一组 `FormButton`（`{btn, pos?}`）。
 - `build()`：
   - 内容面板：多页内容叠在 `gated_book_pages_panel`，每页 `gate(content, id)`。
@@ -344,8 +348,8 @@ private gate(elem, pageId) {           // 内容/按钮组共用门控
 
 ### 5.2 产物对照
 
-- **`dev/<proj>_RP/ui/server_form.json`**：`main_screen_content` 注入 `sapdon_form_factory`；`long_form` 按 `sapdon_ui:` 前缀隐藏原生；`sapdon_long_form_panel` 挂注册页 `book`，`$panel_id=sapdon_ui:book`，`$user_content_panel=gateddemo.book_content_panel` / `$user_buttons_panel=gateddemo.book_buttons_panel`。
-- **`book.json`（ns=gateddemo）**：`book_content_panel` + `book_buttons_panel`。每页 grid 内按钮带三组 bindings：
+- **`dev/<proj>_RP/ui/server_form.json`**：`main_screen_content` 注入 `sapdon_form_factory_book`；`long_form` 按 `sapdon_ui:` 前缀隐藏原生；factory 的 `long_form = @gateddemo_book.root`，`$panel_id=sapdon_ui:book`，`$user_content_panel=gateddemo_book.book_content_panel` / `$user_buttons_panel=gateddemo_book.book_buttons_panel`。
+- **`gateddemo_book.json`（namespace = ns_nm = `gateddemo_book`）**：`book_content_panel` + `book_buttons_panel` + 根面板 `root`。每页 grid 内按钮带三组 bindings：
   - `collection_details`（form_buttons）+ `collection`（`#form_button_text`）→ 接 collection
   - `view`：`($binding_button_text = #form_button_text) → #visible` → 按钮门控
 - **`_ui_defs.json`**：汇集 `hud_screen / chest_screen / book / server_form` 四个文件。

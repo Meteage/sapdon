@@ -81,7 +81,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
   - 机制：`index` 被编码成 `grid_position`（`col = index%c, row = index/c`），而 Bedrock 的集合格盘靠 `grid_position`（行优先序号）**把格子绑到对应的 form 按钮**；按钮画在哪一格由 `pos` 决定（`offset = -基准格 + pos`）。
   - 框架里 3 处调用**全部**传槽位序号：导航 `addButton(i)`（槽 0-2）、CAT 列表行 `addButton(3 + j)`（章条目从槽 3 起）、索引卡 `addButton(3 + i)`（卡从槽 3 起）。那个 `3 +` 不是历史遗留，删不得（框架侧现以常量 `IDX_SLOT_BASE = 3` 表达）。
   - **症状**：游戏内索引页「封面 + `类别` + 两条分割线都在，但一张卡都没有」。产物 JSON 结构完全正常，只差 `grid_position`/`offset` 数值 —— 纯结构断言查不出来，2026-09-10 就是这么翻车的（用户截图才暴露）。
-  - **自检**：`examples/guidebook_demo`（4 分类）重建后 `dev/guidebook_demo_RP/ui/book.json` 应与基线**逐字节一致**（587870 字节，sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）；不一致就去找槽位编码。另一份可参照的已知可用旧产物：`examples/more-golem/dev/more-golem_RP/ui/neo_guidebook.json`（卡片为 `grid_item_003..` + `grid_position [3,0]/[0,1]/…` + 负偏移）。
+  - **自检**：`examples/guidebook_demo`（4 分类）重建后 `dev/guidebook_demo_RP/ui/gateddemo_book.json` 应与基线**逐字节一致**（587885 字节，sha256 `C04672A23AE4FD4F68EF76646316B0DA82DFADA9C8AE80D81A2CEB88A9109988`）；不一致就去找槽位编码。★ 2026-09 两次重锁：① 屏幕根面板元素名从 `<屏幕名>` 改成**固定 `root`**；② UI 文件/namespace 改成 **`ns_nm`**（`gateddemo:book` → `gateddemo_book.json`，引用前缀跟着变，故 +15 字节）。见 §4.1 的 root 约定与 A 表的 `SapdonFormUI` 行。另一份可参照的已知可用旧产物：`examples/more-golem/dev/more-golem_RP/ui/neo_guidebook.json`（卡片为 `grid_item_003..` + `grid_position [3,0]/[0,1]/…` + 负偏移）。
   - 详述与故障速查：`doc/guidebook.md` §5（槽位硬约束 / 分页公式 / 卡片→槽位→格位对照 / 可调常量）、§6（可翻页 `openIndex`）、§8（索引页不显示的 4 类成因）。
 - **改 UI 框架后不能只靠 JSON 断言"没坏"**：结构等价 ≠ 游戏内渲染等价。涉及集合/门控的改动，务必留一份"已知可用"的旧产物做逐字节对比，并请用户进游戏走一遍关键页（本环境无法启动 Minecraft）。
 - **索引分页（每页 16 张，2026-09 新增）**：`p0` body = `INDEX`（历史协议，旧脚本不用改），`p1+` body = `IDX|p<k>` —— **不能**写 `INDEX|p<k>`（门控是包含匹配，会连 `p0` 的封面一起点亮）。容量与槽位的单一事实来源是 `sapdonGuideBook.ts:73-90` 的 `IDX_*` 常量；运行期必须镜像同一规则（FZ 侧见 `src/guide_data.ts` 的 `INDEX_*` / `indexBody()` / `indexRange()` / `indexPageCount()`）。
@@ -154,6 +154,9 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 
 | 能力 | 位置 | 签名要点 |
 |---|---|---|
+| **自定义屏（推荐入口）** | `src/core/ui/systems/sapdon/sapdonFormUI.ts` | `new SapdonFormUI("ns:nm", 内容面板, 按键面板)` —— **一个 UI 文件 = 一条路由（SapdonCustomForm 屏）**，构造即挂两个面板 + 建**唯一根面板 `root`**（`$panel_id` + `#title_text` 前缀门控 + 两个 `content@`/`buttons@` 引用）+ 注册 gated factory。★ **UI 文件与 namespace 都是 `ns_nm`**（`sapdon_ui:apple` → `ui/sapdon_ui_apple.json`，引用前缀 `sapdon_ui_apple.xxx`）；`nm` 另决定 factory id 后缀与 `panelId = sapdon_ui:<nm>`；`getSystem()` 拿到的就是本文件。★ **一个文件只有一个 root**（同名会互相覆盖）⇒ 多页面**不靠多个根**，而是在内容面板里用门控做（**用 `PagePanelManage`**，手册即此例的等价物）；要多个屏就各 new 一个（`ns_nm` 相同 = 同名文件互相覆盖） |
+| 表单路由壳 | `src/core/ui/systems/sapdon/serverFormUI.ts` | `ServerFormUI`（**旧名 `SapdonServerUI`，已改名，不留别名**）：`MARKER = 'sapdon_ui:'`、**`ROOT = 'root'`**、`createPageRoot()`、`registerPage()`、`getSystem()`；生成 `RP/ui/server_form.json` 的 4 个元素 + 每屏一个 gated factory（`long_form` 一律 `@<屏 ns>.root`）。与 HUD 的 `root_panel`、容器的 `container_root_panel` 是**同一套"根面板"约定** |
+| **一屏多页面** | `src/core/ui/systems/sapdon/pagePanelManage.ts` | `PagePanelManage`（**构建期**）：一个文件只有一个 root ⇒ 多页面在**内容面板**里放多块面板 + 每块一条 `#form_text` 门控，运行期 `.body(tag)` 选页。两种写法都支持：`new PagePanelManage(contentPanel)` + 链式 `.addPage(panel, tag?, variable?)`（`add` 是别名），或 `new PagePanelManage({ container, pages: [{panel, tag}], mode })`。`mode` 缺省 `'prefix'`（`$gtag` + `(not( (#form_text - $gtag) = #form_text))`，**手册那套，与真产物逐字一致**）／`'eq'`（`$binding_text` + `($binding_text = #form_text)`）。`build()` 返回容器（幂等）、`list()` 给 `tag↔面板` 对照（运行期脚本据此对齐）。**只管构建期**；旧的自己写 `addVariable + addDataBinding` 的写法不受影响 |
 | 手册标签 i18n | `src/core/ui/systems/sapdon/sapdonGuideBook.ts` | 构造第 4 参 `options.labels`，或链式 `setLabels(Partial<GuideBookLabels>)`；默认值 = 历史中文字面量 |
 | 带实体方块 | `src/core/factory/blockFactory.js` | `BlockAPI.createTileBlock(identifier, category, textures_arr, options)` → 注册方块 + 实体（behavior/resource）；**★ 这是当前唯一可用的方块容器路线**，`options` 可带 `inventory_size` / `container_type` / `can_be_siphoned_from`（默认 27 / `minecart_chest` / true，不传 = 产物逐字节不变；每次构造按实例拷贝）+ `group` / `hide_in_command` / `format_version` / `entity_texture`（★ S3b 补：这四个以前 `.d.ts` 里漏声明，传对象字面量会踩 TS2353）。⚠️ **没有**「延迟 despawn」入口而且**不许加**：往 `item_despawn` 组的 `minecraft:transformation` 上加 `delay` 会让同组的 `instant_despawn` 先删掉实体 ⇒ **整容器一个都不掉、真物品一起消失**（2026-09-12 真机教训，见 `known-pitfalls.md` §4.15） |
 | 方块容器（实体路线，★ 唯一可用） | `src/core/block/tileBlock.js` + `src/core/factory/blockFactory.js` | `createTileBlock(id, cat, textures, { inventory_size, container_type, can_be_siphoned_from })` → 实体行为里的**实体**组件 `minecraft:inventory` |
@@ -178,7 +181,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - `DEFAULT_GUIDE_BOOK_LABELS = { chapter: '章节', category: '类别' }` —— **改它会让所有既有项目产物变化**，不要动。
 - `setLabels` 是**增量合并**（`labels.x ?? this.labels.x`）：早先写成「未传的键回落默认值」时，链式第二次调用会把第一次的设置冲掉（实测踩到）。
 - 框架**不解析 lang 键**：字符串原样交给 `Text.setText`，JSON UI 自己解析；传键的项目必须在 `RP/texts/*.lang` 定义，否则显示裸键名。
-- **回归判据**：`examples/guidebook_demo` 重建后 `dev/guidebook_demo_RP/ui/book.json` 必须**逐字节不变**（587870 字节 / sha256 `97859A7B3B1B254233AE83EBE86452F4A3F21108FDB49F3C63017F3E1225DD97`）。**删掉再重建**也要一致，才算真的走通了这条路径。
+- **回归判据**：`examples/guidebook_demo` 重建后 `dev/guidebook_demo_RP/ui/gateddemo_book.json` 必须**逐字节不变**（587885 字节 / sha256 `C04672A23AE4FD4F68EF76646316B0DA82DFADA9C8AE80D81A2CEB88A9109988`，2026-09 因 root 改名 + `ns_nm` 文件/命名空间重锁）。**删掉再重建**也要一致，才算真的走通了这条路径。
 
 ### C. 自定义组件：两条路线的分工（都要保留）
 - **路线 B（推荐）**：运行期脚本里 `registerBlockComponent` / `registerItemComponent`。handler 是**普通闭包**，能 import 共享模块（S3 的机器基类必需）。框架内部保证 `system.beforeEvents.startup` 时机。
@@ -213,7 +216,6 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - 运行期代码（`src/oc`）的单测要靠**纯逻辑 + 内存 target**，不要依赖 `@minecraft/server`（该包只发 `index.d.ts`、Node 里导入不了）。
 
 ### G. 自定义容器界面（`ContainerUISystem`，2026-09-12 重构）
-
 | 能力 | 位置 | 签名要点 |
 |---|---|---|
 | 纯函数换算 | `src/core/ui/systems/containerLayout.ts`（**零 import**） | `slotToGridPosition` / `cellBase` / `posToOffset` / `anchorProps` / `validateSlotSpec`（返回警告数组，**不抛**）/ `resolveSlot` / `checkUIName`；标定常量 `SLOT_CALIBRATION` |
@@ -232,3 +234,29 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **★ 待真机校准**：格位基座假设「网格原点 + 序号 × 统一格位尺寸、锚点左上角」全部集中在 `containerLayout.ts` 的 `SLOT_CALIBRATION`（含 `defaultGridOrigin`，默认 `[0,24]` 给标题让位），校准只改这一处（`anchor` 会同时翻转换算与产物的 `anchor_from`/`anchor_to`）。
 - **门控键 = `UISystem.name`**，且**同时是 `ui/<name>.json` 的文件名** ⇒ 只允许 `A-Z a-z 0-9 _ -`（`checkUIName()` 会 warn）。
 - 判据：`node tests/container-layout.test.mjs`（纯函数）、`node tests/container-ui-output.test.mjs`（跑 prod core 断言产物）。坑的全文见 `doc/dev/known-pitfalls.md` §4.5–§4.11。
+
+---
+
+## 可视化 UI 编辑器（`tools/designer/`，2026-09 新增）
+
+**一句话**：Qt Designer 范式（控件箱 / 画布 / 对象树 / 属性面板 / `uic` 式产物预览 / 编译期诊断）的 sapdon UI 可视化编辑器；**零依赖**（原生 ESM + 原生 DOM，不引 vite —— 本仓库没有 vite 且受限环境装不了），产物是 **sapdon TS 代码**（不是 JSON UI）。
+
+- 设计文档 `doc/dev/ui-designer.md`（Qt 对照映射、工程格式、版面模型、代码生成边界、诊断规则、路线图）；使用说明 `tools/designer/README.md`
+- 起服务：`node tools/designer/serve.mjs`（默认 **5178**，别占构建用的 `SAPDON_DEV_SERVER_PORT` 49037）
+  - **贴图直接来自资源包**（画布画真图 + 属性面板「浏览…」出缩略图）：启动时自动找工作区里的 `bedrock-samples*`，也可 `--vanilla "<RP 目录>"` / `--project "<工程 RP>"` 指定；找不到也不影响编辑器可用（只是不画图、不判定纹理存在性）
+  - ★ **纹理引用区分大小写**：原版是 `textures/ui/white`，`White` 不存在（Windows `Test-Path` 会返回 True 骗你 —— 见 `ui-designer.md` §12.3）
+  - ★ **没有浏览器也要"亲眼看"**：`node tools/designer/tools/rasterize.mjs` 把画布渲染成 `.tmp/designer-render.png`（与浏览器画布同一份 `paint.js` 规则，PIL 出图）。改版面/贴图规则后**先跑它再改代码**，并与真机截图对照
+- **范围**：只服务 **SapdonUI 自己的界面**（页面壳 / 手册 / 容器 / HUD），不复刻原版任意界面，不解析原版模板内部
+- ★ **三类屏幕（`doc.screenKind`，2026-09 用户口径）**：`form`（SapdonCustomForm，按规范校验 + 生成一句话 `new SapdonFormUI(...)`）/ `容器` / `hud`。**后两类是自由摆放**：编辑器只做元素级校验（id/属性目录/纹理/结构），跳过 root、内容/按钮面板、`panelId`、门控视图这些 form 专属规则，产物只给元素 + 一句挂载提示（`ContainerUISystem.addControl` / `HudUISystem.mountRootElement`），**不预览框架产物**；文件名按各自系统的真实规则（form `ui/<ns_nm>.json`、容器 `ui/<nm>.json`、hud 原版 `ui/hud_screen.json`）。规则 `screen-kind-freeform` / `screen-kind-form-empty`
+- **判据（改完必跑，五条都要绿）**：
+  ```bash
+  node tests/designer-layout.test.mjs     # 版面引擎：锚点(缺省 center)/缺省 size 铺满/流式/格位/form 槽位/拖动反解
+  node tests/designer-paint.test.mjs      # 绘制模型：纹理侧车/九宫格退化取 1px/空纹理/模板占位/$gtag 门控
+  node tests/designer-textures.test.mjs   # 纹理路径 + ★实测：示例与目录建议里的贴图必须真在原版包里
+  node tests/designer-app.test.mjs        # 编辑器外壳：自带 DOM 桩，无浏览器也能跑真实操作路径
+  npx tsc && npx tsc-alias && node tests/designer-codegen.test.mjs   # 代码生成 + ★与真实框架类交叉验证
+  ```
+- ★ **镜像不许漂移**：`tools/designer/src/preview.js` 是框架序列化语义的**镜像实现**，靠 `designer-codegen` 的交叉验证兜底（真实 `dist/core/ui` 类 vs 镜像逐字段相等；并把生成的 TS **换 import、剥 submit 后真的执行一遍**再对产物）。**不要**为了让测试变绿放宽这条断言。
+- 三条硬约定：① **一个工程 = 一个 UI 文件 = 一条路由**（文件与 namespace 都是 `ns_nm`：`new SapdonFormUI("sapdon_ui:apple", …)` → `ui/sapdon_ui_apple.json`；同 `ns_nm` 重复 `new` 会互相覆盖 + `_ui_defs` 重复，见 `ui-designer.md` §6.1/§12.2）② 属性只有"**已声明**"才进产物，所以编辑器属性面板是三态的（赋默认值 ≠ 未声明）③ 代码生成**单向**，手写代码不回读。
+- 属性面只有一处事实来源：`tools/designer/src/catalog.js`（属性面板 / 代码生成 / 产物预览都只读它）；版面语义只有一处：`src/layout.js`。
+- 本轮从产物取证的两条引擎级事实（**设计决策的依据，不是笔记**）：`FormButtonGrid` 的 `pos` = 目标格、`offset` = 补偿量（`ui-lessons.md` §4.2 补注）；同 namespace 重复 `new UISystem` 会覆盖（`ui-designer.md` §12.2）。

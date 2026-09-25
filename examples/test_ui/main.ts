@@ -1,6 +1,6 @@
 import {
-    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonPanel,
-    SapdonServerUI, StackPanel, Text, UIElement, registry
+    Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonFormUI,
+    StackPanel, Text, UIElement, registry
 } from '@sapdon/core'
 
 // ---------- 页 A：sapdon_ui:apple（内容面板 + 按键网格面板） ----------
@@ -31,19 +31,8 @@ const apple_buttons_panel = new Panel("apple_buttons_panel")
             .addControl(new Label("exit_text", undefined).setText(new Text().setText("退出")))
     );
 
-const appleSystem = new SapdonPanel("sapdon_ui_apple")
-    .setContent(apple_content_panel)
-    .setButtons(apple_buttons_panel)
-    .build();
-// 页面根壳：在本页 UI 文件注册 <name>，供 server_form 工厂 long_form 引用
-appleSystem.addElement(
-    SapdonServerUI.createPageRoot({
-        name: "apple",
-        panelId: "sapdon_ui:apple",
-        contentRef: "sapdon_ui_apple.apple_content_panel",
-        buttonsRef: "sapdon_ui_apple.apple_buttons_panel",
-    })
-);
+// 一个 SapdonFormUI = 一个 UI 文件（ui/sapdon_ui_apple.json = ns_nm）= 一条路由（sapdon_ui:apple）
+const apple = new SapdonFormUI("sapdon_ui:apple", apple_content_panel, apple_buttons_panel);
 
 // ---------- 页 B：sapdon_ui:test（纯内容面板 + 空按键面板） ----------
 const test_content_panel = new Panel("test_content_panel")
@@ -55,32 +44,8 @@ test_content_panel.addControl(
 
 const test_buttons_panel = new Panel("test_buttons_panel")
     .setLayout(new Layout().setSize(["40%", "40%"]));
-const testSystem = new SapdonPanel("sapdon_ui_test")
-    .setContent(test_content_panel)
-    .setButtons(test_buttons_panel)
-    .build();
-testSystem.addElement(
-    SapdonServerUI.createPageRoot({
-        name: "test",
-        panelId: "sapdon_ui:test",
-        contentRef: "sapdon_ui_test.test_content_panel",
-        buttonsRef: "sapdon_ui_test.test_buttons_panel",
-    })
-);
-
-// ---------- 注册到 sapdon_screen_content ----------
-SapdonServerUI.registerPage({
-    panelId: "sapdon_ui:apple",
-    name: "apple",
-    contentPanel: "sapdon_ui_apple.apple_content_panel",
-    buttonsPanel: "sapdon_ui_apple.apple_buttons_panel",
-});
-SapdonServerUI.registerPage({
-    panelId: "sapdon_ui:test",
-    name: "test",
-    contentPanel: "sapdon_ui_test.test_content_panel",
-    buttonsPanel: "sapdon_ui_test.test_buttons_panel",
-});
+// 页 B：一个 SapdonFormUI = 一个 UI 文件（ui/sapdon_ui_test.json = ns_nm）= 一条路由（sapdon_ui:test）
+const test = new SapdonFormUI("sapdon_ui:test", test_content_panel, test_buttons_panel);
 
 // 生成 server_form.json / sapdon_ui_apple.json / sapdon_ui_test.json / _ui_defs.json
 registry.submit()
