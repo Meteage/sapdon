@@ -683,7 +683,8 @@ UIElement (基类: name, type, template, control, layout, properties)
 | 系统 | 文件 | 说明 |
 |------|------|------|
 | `UISystem` | `systems/system.js` | 核心 UI 文件系统，管理 elements + animations |
-| `SapdonServerUI` | `systems/sapdon/sapdonServerUI.ts` | 页面壳路由系统，生成 `server_form.json` |
+| `ServerFormUI` | `systems/sapdon/serverFormUI.ts` | 页面壳路由系统，生成 `server_form.json`（旧名 `SapdonServerUI`） |
+| `SapdonFormUI` | `systems/sapdon/sapdonFormUI.ts` | 一个 UI 文件 = 一条路由：`new SapdonFormUI("ns:nm", 内容面板, 按键面板)`；UI 文件名与 namespace 都是 `ns_nm` |
 | `ChestUISystem` | `systems/chest.js` | 容器 UI 系统 |
 | `ContainerUISystem` | `systems/containerUISystem.ts` | 自定义容器 UI（绝对像素版面 + 槽位声明） |
 | `containerLayout`（纯函数） | `systems/containerLayout.ts` | 槽号 ↔ `grid_position`、像素 `pos` ↔ 格位 `offset`、槽位声明校验；零 import，可离线单测 |

@@ -37,6 +37,39 @@ export class FeatureDistribution {
     }
 
     /**
+     * 把某个坐标轴设成 Molang 表达式（把 y 贴到地表就是
+     * `query.heightmap(variable.worldx, variable.worldz)`），与 `setAxisDistribution()` 二选一。
+     * @param {"x" | "y" | "z"} axis - 坐标轴
+     * @param {string} molang - 非空 Molang 表达式
+     * @returns {FeatureDistribution} 返回自身以支持链式调用
+     */
+    setAxisMolang(axis, molang) {
+        if (typeof molang !== "string" || molang.trim().length === 0) {
+            throw new Error(`[sapdon] feature rule 的 ${axis} 轴 Molang 必须是非空字符串，实测 ${JSON.stringify(molang)}`);
+        }
+        this.distribution[axis] = molang;
+        return this;
+    }
+
+    /**
+     * 设置「每区块散植」的整体触发几率：命中才跑 `iterations` 次。
+     * 不调用 = 不写该字段（引擎默认必触发）；期望个数 ≈ `iterations × numerator / denominator`。
+     * @param {number} numerator - 分子（≥0）
+     * @param {number} denominator - 分母（>0）
+     * @returns {FeatureDistribution} 返回自身以支持链式调用
+     */
+    setScatterChance(numerator, denominator = 1) {
+        if (!Number.isFinite(numerator) || numerator < 0) {
+            throw new Error(`[sapdon] feature rule 的 scatter_chance 分子必须是 ≥0 的数，实测 ${JSON.stringify(numerator)}`);
+        }
+        if (!Number.isFinite(denominator) || denominator <= 0) {
+            throw new Error(`[sapdon] feature rule 的 scatter_chance 分母必须是 >0 的数，实测 ${JSON.stringify(denominator)}`);
+        }
+        this.distribution.scatter_chance = { numerator, denominator };
+        return this;
+    }
+
+    /**
      * 转换为 JSON 格式
      * @returns {Object} 返回分布规则对象
      */

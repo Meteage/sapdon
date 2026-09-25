@@ -608,7 +608,6 @@
 ---
 
 ### 4.13 ★ 格位落点跟 `controls` **数组顺序**走，`grid_position` 不参与定位（2026-09-12，fz-sapdon 真机）
-
 - **症状**：容器面板里几个槽**整体错位**，但**产物完全正确** —— `offset` 逐条与声明 `pos` 吻合、
   `grid_dimensions` / `grids.size` / `grid_position` 全对；错的只有渲染位置，而且**只有 y 错、x 一直对**
   （实测 4 个槽的 x 全部落在声明值上）。
@@ -627,6 +626,40 @@
 - **副作用提醒**：既然落点靠序号，就**不能有空洞** —— 只用 slot 0 与 slot 2 会让实际落点整体前移。
   `SLOT_CALIBRATION.columns` 为 1 时序号 = 槽号，所以「槽号连续」就是安全区。
 - **出处**：fz-sapdon 回收机界面真机截图（2026-09-12），4 槽反解行号 4/4 吻合；相关 §4.9（坐标标定）、§4.12。
+
+---
+
+### 4.16 ★ JSON UI 的三条缺省语义：缺省锚点 `center`、缺省 `size` 铺满、九宫格源带退化取 1px（2026-09，原版资源包 + 真机截图反推，**待逐条真机回归**）
+
+做可视化编辑器（`tools/designer/`）时，为了"画得跟真机一样"，对着用户的真机截图与原版资源包逐条核对，
+发现三条引擎缺省语义与直觉相反。它们不只影响编辑器 —— **凡是手写 JSON UI / 反推原版界面的场合都会踩**。
+
+- **① 缺省 `anchor_from` / `anchor_to` = `center`（不是 `top_left`）**
+  - 证据：`src/core/ui/systems/sapdon/sapdonGuideBook.ts` 的 `cover_title` 只写 `setAnchorTo('center')`；
+    真机截图里标题文字**端正落在黄色缎带内部**。若缺省是 `top_left`，盒子会偏移半个自身尺寸、一半跑到缎带外。
+  - 症状（若按 top_left 理解）：所有未声明锚点的元素整体错位半个自身尺寸。
+- **② 缺省 `size` = 铺满父级（等价 `100%`），不是 0**
+  - 证据：原版 `ui/book_screen.json` 与本仓库手册产物的 `book_background` 都只写
+    `{ "type": "image", "layer": 0, "texture": "textures/ui/book_back" }` —— **不写 size**，
+    真机里却撑满整本书。
+  - 症状（若当 0 处理）：背景/木框变成 0×0，整页没有书壳。
+- **③ `nineslice_size` 的"源带退化"按贴边 1px 拉伸；且它可以是 `[左,上,右,下]` 数组**
+  - 证据：`resource_pack/textures/ui/book_back.json` = `{ "nineslice_size": 14, "base_size": [28, 28] }`：
+    28×28 切 14 ⇒ **整张只有四个角，边带与中带宽度都是 0**；真机里木框四边是木条、中间是米色内页，
+    说明引擎取了贴边的 1px 条来拉伸（`book_cover` 14/28、`book_frame` 21/42 同理）。
+    `saleribbon.json` 则是 `{ "nineslice_size": [5,5,6,8] }` 的**数组**切片。
+  - 症状（若照 CSS `border-image-slice` 直译）：木框只剩四个角，中间一个空洞。
+
+顺带一条**机制**（原版 UI 里满屏都是这种用法）：`textures/ui/<名字>.json` 与 png **同名**时是**纹理定义侧车**，
+里面声明的 `nineslice_size` / `tiled` / `base_size` 会**自动当默认值**套到用这张贴图的控件上
+（原版包里带侧车的 UI 贴图有 338 条）。所以"控件上什么都没写却显示得很正常"是常态。
+
+- **落地/验证**：编辑器的 `layout.js`（`ENGINE_DEFAULT_ANCHOR`、`measure`）、`paint.js`（`ninePieces`）按这三条实现；
+  `tests/designer-layout.test.mjs` + `tests/designer-paint.test.mjs` 逐条锁死；
+  最终判据是**离屏渲染图与真机截图肉眼一致**（`node tools/designer/tools/rasterize.mjs`）。
+- **出处**：`bedrock-samples-1.21.130.26-preview/resource_pack/{ui/book_screen.json, textures/ui/book_*.json}`、
+  `examples/guidebook_demo/dev/guidebook_demo_RP/ui/gateddemo_book.json`、用户提供的真机截图（2026-09）。
+  ⚠️ 三条都还是"资源 + 截图对照"级别的证据，**进游戏时顺手确认一遍**（尤其缺省锚点在其它界面里的表现）。
 
 ---
 
@@ -867,3 +900,90 @@ cpSync(path.join(t,'oc'),   path.join(n,'@sapdon/runtime'), {recursive:true, for
 > 从项目自己的 `node_modules/@sapdon/cli` 解析时**exit 0** 且打印「跳过」而不是 `ERR_FS_CP_EINVAL`。
 
 ---
+
+## 9. 世界生成（`feature` / `feature_rules`）
+
+> 接口：`FeatureAPI.createOreFeature` / `createTreeFeature` / `createFeatureRules`
+> （用法见 `doc/user/api/feature.md`）。下面这些是**引擎侧**的行为，框架照实现、不粉饰。
+
+### 9.1 ★★ 地表地物的 `y` 必须写 `query.heightmap(variable.worldx, variable.worldz)`（2026-09-13，fz-sapdon 真机）
+
+- **症状**：`features/` 与 `feature_rules/` 两份文件都在、JSON 也能解析，但**地物完全不生成**。
+  ContentLog 里**最多**只有一条 `unhandled request for unknown variable 'variable.worldx'`
+  （看起来像"这个变量不存在"，**但它不是不生成的原因**）。
+- **根因**：`placement_pass: "surface_pass"` **不会**把地物自动贴到地表。`y` 写常量 `0`
+  等于把地物丢到世界底部（现代基岩 y=0 是深层岩石/基岩，`may_grow_on` 全不命中）。
+- **规避**：照抄原版 feature_rules 的那一行 Molang（`FeatureRule.setAxisMolang('y', …)`）：
+  `query.heightmap(variable.worldx, variable.worldz)`。原版三处同款
+  （`vanilla_1.21.60/feature_rules/cherry_grove_after_surface_cherry_tree_feature_rules.json`、
+  `vanilla_1.21.50/…pale_garden_pale_oak_tree_feature_rules.json`、
+  `vanilla_1.21.70/…birch_forest_before_surface_wildflowers_feature_rules.json`）。
+- **教训**：中途有人把 `y` 改成 `0` 并据此得出「`variable.worldx` 在本引擎不存在 / `surface_pass` 会自己贴地表」
+  —— **两条都是错的**；换回 Molang 后地物立即恢复。**照抄原版，别自作聪明。**
+
+### 9.2 `minecraft:biome_filter` 的数组元素之间是 **AND**
+
+- **症状**：地物在"应该生成"的群系里一棵都不出。
+- **根因**：数组元素按 **AND** 生效（原版 `birch_forest_…wildflowers` 就是 `birch` + `forest` + `!=hills` 三条并列，
+  要求**同时**具备全部 tag）。
+- **规避**：「森林**或**丛林**或**沼泽**」必须写成**一个** `any_of` 组、再把该组作为数组的**单个元素**：
+  ```
+  [ { any_of: [ {test:'has_biome_tag',operator:'==',value:'forest'}, … ] } ]
+  ```
+  写成 4 个并列元素 = 要求同时属于 4 个群系 = **永不生成**。
+
+### 9.3 `tree_feature` 的官方文档**漏字段**，别照文档建模
+
+- Learn 的 [tree_feature 页](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/featuresreference/examples/features/minecraft_tree_feature)
+  里 `trunk` 小节只列了 `can_be_submerged` / `trunk_decoration`、`fancy_canopy` 只列了 `height` / `radius`；
+  而**引擎实际要**的是 `trunk.trunk_height`（`range_min`/`range_max`）+ `trunk.trunk_block`、
+  `fancy_canopy.leaf_block`（原版 `oak_tree_feature.json` / `dark_oak_tree_feature.json` 都这么写，
+  本项目产物也已真机生效）。
+- **规避**：接口按**引擎实际接受**建模 —— 已知组件逐个给类型，`*_trunk` / `*_canopy` / `*_roots`
+  结尾的键**一律放行**（新版本引擎加组件时框架不必跟着发版）。详见
+  `src/core/feature/treeFeature.ts` 的 `TreeFeatureSpec`。
+
+### 9.4 `tree_feature` 的 `format_version` 用 `1.13.0`
+
+Learn 页写着「requires a format version of at least 1.20.30」，但**原版自己**的
+`oak_tree_feature.json` / `cherry_…` 都是 `1.13.0`，本项目也用 `1.13.0` 且真机生效
+⇒ 别照文档抬版本号（抬了反而可能与其它地物不兼容）。矿脉的 `1.17.0` 是原版 `ore_feature` 的取值。
+
+### 9.5 `may_grow_on` / `may_grow_through` 用 `dirt` 标签，别逐方块枚举
+
+- **写法**：`[{ tags: "query.any_tag('dirt')" }]` 一次覆盖草方块 / 泥土 / 粗泥 / 灰化土 / 耕地 / 苔藓…
+  （原版 `oak_tree_feature` 同款）。
+- **原因**：逐方块枚举**必然漏**（漏了 `minecraft:coarse_dirt` 就是"某些地表长不出树"，
+  而且症状与 §9.1 一模一样 —— 都是"不生成"，排查时先确认 `may_grow_on` 覆盖是否够宽）。
+- ⚠️ **注意**：`may_grow_through` 一并给上；树苗/草叶挡在树干位置时，不给它会被顶掉。
+
+---
+
+## 10. 方块模型（`minecraft:geometry`）
+
+### 10.1 `up` / `down` 两面要用**负 `uv_size`**，四个侧面用正
+
+- **症状**：手写模型六个面都写正 `uv_size` 时，顶面/底面的贴图**左右上下翻转**（贴图是纯色时看不出来，
+  有图案时才暴露 ⇒ 属于会漏到真机的静默错误）。
+- **约定**（本条 2026-09-25 由 `BlockModel.autoUv()` 的实现与回归核对固化）：
+  - 侧面（`north`/`east`/`south`/`west`）：`uv` = 区域**左上角**，`uv_size` 为正。
+  - 顶/底（`up`/`down`）：`uv` = 区域**右下角**（即 `u+宽, v+高`），`uv_size` 为**负**。
+  - 原版 `models/blocks/cube.geo.json` 与 Blockbench 的 Bedrock 导出都是这个写法（负尺寸即"翻转采样"）。
+- **盒式展开版式**（一张贴图内平铺，单位像素，`w/h/d` = 宽/高/深）：
+  ```
+         [d][up][w][down]      ← 高 d 的一行（up 从 u+d 起、down 从 u+d+w 起）
+         [e][n ][w][s   ]      ← 高 h 的一行（e 从 u 起、n 从 u+d 起、w 从 u+d+w 起、s 从 u+2d+w 起）
+  ```
+  所需贴图 = `(2d+2w) × (d+h)`；装不下必须在**构建期**抛错（`BlockModel.autoUv()` 就是这么做的），
+  否则真机上是"贴图糊了/看不见"，查起来要翻模型 JSON。
+- **规避**：别手写 JSON —— 用 `BlockModel`（`src/core/block/blockModel.ts`），
+  `cube({origin,size})` + `autoUv()`（或显式 `uv: { north: [u,v,w,h], … }`，API 收的永远是"区域"，
+  负尺寸编码由它负责）。判据：`node tests/block-model.test.mjs`（31 条，含与手写 `fz_marker.geo.json` 的区域级核对）。
+
+### 10.2 缺 UV 的 cube 不会报错，只是**看不见**
+
+`cubes[].uv` 为空对象（或漏面）时引擎不报错，那一面直接不可见。所以 `BlockModel.toJson()` 会
+对"既没显式 UV 又没调 `autoUv()`"的 cube 抛错（构建期拦下，别留到真机）。
+
+---
+
