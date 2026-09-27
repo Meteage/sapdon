@@ -4,6 +4,7 @@ import fs from 'fs'
 import { getGamePath } from '../meta/versionType.js'
 import { getPackageJson } from "../meta/package.js"
 import { getBuildConfig } from "../meta/buildConfig.js"
+import { planLibCopies } from "./libPlan.js"
 
 // ────────────────────────────────────────────────────────────────────────────
 // 部署清单：让「同步到游戏开发包」不再**只增不减**
@@ -208,42 +209,59 @@ export function syncResourceFiles(projectPath, projectName, sourcePath, destinat
     }, null, 2))
 }
 
-export async function writeLib(projectPath) {
-    const projectModules = path.join(projectPath, "node_modules")
-    const rootDir = path.join(dirname(import.meta), '../')
-    const corePath = path.join(rootDir, 'core')
-    const cliPath = path.join(rootDir, 'cli')
-    const ocPath = path.join(rootDir, 'oc')
-    const targetCorePath = path.join(projectModules, '@sapdon/core')
-    const targetCliPath = path.join(projectModules, '@sapdon/cli')
-    const targetOcPath = path.join(projectModules, '@sapdon/runtime')
+// ────────────────────────────────────────────────────────────────────────────
+// `sapdon lib`：把框架构建产物（`core/ cli/ oc`）同步进项目的 `node_modules/@sapdon/`。
+//
+// 源根默认 = **「CLI 自己所在目录的父目录」**（框架 bundle 里 `prod/cli/start.js` 的父目录
+// 就是 `prod/`，那里 `core/ cli/ oc/` 齐备）。
+//
+// ⚠️ 这个默认对「CLI 从项目自己的 `node_modules/@sapdon/cli` 解析到」的布局不成立：
+//    那时源根 == 项目的 `node_modules/@sapdon`，`core`/`runtime` 的源就是目标本身
+//    （`ERR_FS_CP_EINVAL: src and dest cannot be the same`），且源根下没有 `oc/`（`ENOENT`）。
+//    ⇒ 这两种情况**跳过该包 + 打印一行说明**，不再让整条 `sapdon lib` 以 exit 1 收场；
+//    真正的 IO 错误（权限、磁盘满、目标被占用）照旧抛。判定逻辑见 `libPlan.ts`（纯函数、有单测），
+//    完整症状与判据见 `doc/dev/known-pitfalls.md` §8。
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 同步框架产物到项目的 `node_modules/@sapdon/`。
+ * @param {string} projectPath 项目根目录（目标 `node_modules/` 建在它下面）
+ * @param {{ rootDir?: string, modulesDir?: string, log?: (line: string) => void }} [options]
+ *        可显式指定框架源根 / 目标目录 / 日志出口；CLI 不传（= 历史行为），测试据此驱动真实拷贝。
+ * @returns {Promise<import('./libPlan.js').LibPlanItem[]>} 本次的「源→目标」规划（含跳过原因）
+ */
+export async function writeLib(projectPath, options = {}) {
+    const projectModules = options.modulesDir ?? path.join(projectPath, "node_modules")
+    const rootDir = options.rootDir ?? path.join(dirname(import.meta), '../')
+    const log = options.log ?? ((line) => console.log(line))
     const packageJson = getPackageJson()
 
-    fs.cpSync(corePath, targetCorePath, { recursive: true, force: true })
-    fs.cpSync(cliPath, targetCliPath, { recursive: true, force: true })
-    fs.cpSync(ocPath, targetOcPath, { recursive: true, force: true })
+    const plan = planLibCopies({ rootDir, modulesDir: projectModules })
+    const synced = []
 
-    fs.writeFileSync(path.join(targetCorePath, 'package.json'), JSON.stringify({
-        name: '@sapdon/core',
-        type: 'module',
-        main: 'index.js',
-        types: 'index.d.ts',
-        version: packageJson.version,
-    }))
-    fs.writeFileSync(path.join(targetCliPath, 'package.json'), JSON.stringify({
-        name: '@sapdon/cli',
-        type: 'module',
-        main: 'index.js',
-        types: 'index.d.ts',
-        version: packageJson.version,
-    }))
-    fs.writeFileSync(path.join(targetOcPath, 'package.json'), JSON.stringify({
-        name: '@sapdon/runtime',
-        type: 'module',
-        main: 'index.js',
-        types: 'index.d.ts',
-        version: packageJson.version,
-    }))
+    for (const item of plan) {
+        if (item.skip) {
+            log(`[sapdon] ${item.skip}`)
+            continue
+        }
+        fs.cpSync(item.src, item.dest, { recursive: true, force: true })
+        fs.writeFileSync(path.join(item.dest, 'package.json'), JSON.stringify({
+            name: item.name,
+            type: 'module',
+            main: 'index.js',
+            types: 'index.d.ts',
+            version: packageJson.version,
+        }))
+        synced.push(item.name)
+    }
+
+    if (synced.length === 0) {
+        log('[sapdon] lib：本次没有任何包可同步（原因见上面的跳过说明）。')
+    } else {
+        log(`[sapdon] lib：已同步 ${synced.join('、')}`)
+    }
+
+    return plan
 }
 
 // ── 内部工具导出：仅供 `tests/sync-manifest.test.mjs` 直接验证 prune 逻辑 ──
