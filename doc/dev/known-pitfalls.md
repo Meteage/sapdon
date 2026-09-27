@@ -254,6 +254,41 @@
 - **出处**：真机 ContentLog（`%APPDATA%\Minecraft Bedrock\logs\ContentLog*.txt`），两轮加载
   `invalid string` 20 条 / `Error Parsing Item` 10 条 / `Missing icon` 3962 条。
 
+### 2.10 ★★ 潜行时方块自定义组件的 `onPlayerInteract` **不会被调用**（2026-09-25 / 2026-09-27 真机）
+- **症状**：方块的自定义组件写了 `onPlayerInteract`：玩家**普通右键有效、潜行右键毫无反应**
+  （同一段代码、同一件手持物）。组件本身完全正常（`onPlace` / `onTick` 照常触发），
+  产物层检查（方块 JSON 里的组件声明 + `scripts/custom_components/index.js` 的注册）**全绿** ——
+  「潜行才生效」的那部分功能**从来没生效过**，而且不报任何错。
+- **根因**：**引擎在潜行时跳过方块的 use 行为**（就是「蹲下右键 = 放方块而不是用方块」那条规则）
+  ⇒ 组件**根本没有被调用** —— 不是组件写错、也不是注册时机问题。
+  - 证据①（fz-sapdon 2026-09-25 真机日志，`README.md:570-578`）：用户「蹲下 + 右键」时
+    `beforeEvents.playerInteractWithBlock` **每次都到**（快照刷了 40+ 行），而同一个组件的
+    `onPlayerInteract` **一次都没有**（`[fz:wrench][evt] rotate` = 0 次）；
+    对照组：同一组件的 `onPlace` 照常触发（9 条"已 spawn 承载实体"）⇒ 注册与产物都没问题。
+  - 证据②（synthage 2026-09-27 用户实测）：蹲下 + 手持生物乙醇 + 右键机器 → **毫无反应**；
+    普通右键 → 加燃料正常。该项目因此有两条功能（机器消毒、菌种库快捷存取）**在真机上是死的**，
+    而它的 headless 回归测试一直全绿 —— 因为**测试替身直接调组件方法**，绕过了这条引擎规则。
+- **规避**：需要**潜行才生效**的方块行为必须放在**脚本层**：
+  - 用 `world.beforeEvents.playerInteractWithBlock` 判定（⚠️ `beforeEvents` 是**受限上下文**，
+    回调里**不能改世界/方块**）+ `system.run()`（`defer`）**推迟到下一 tick** 再改。
+  - ★ **不要改用 `afterEvents.playerInteractWithBlock` 顶替**：目前**没有**"它在潜行时是否触发"的证据
+    （fz-sapdon 的日志只覆盖了 `beforeEvents`）。要让潜行生效，就用**已被证实可靠**的那一个。
+  - ★ **潜行标志必须在事件当刻捕获**、并带进推迟后的调用：`system.run` 之后玩家可能已经**松开潜行**，
+    那时现读 `player.isSneaking` 会让这次交互**凭空消失**（正是要修的那类"没反应"）。
+  - ★ 逻辑**只留一份**：组件里的那份退化为**兜底**，与脚本层入口加**显式互斥门** ——
+    两条路读**同一个** `player.isSneaking`，要求"这次算不算潜行"与"是哪条入口"一致，不一致就直接不处理
+    ⇒ 同一次右键不可能走两遍（非潜行的老路径 —— 投料 / 加燃料 / 开界面 —— 必须一个字节都不变）。
+  - ★ **幂等**：「方块 + 方块中心的承载实体」这种结构下，同一次点击会不会被投递两遍（实体那条路）
+    **没有证据**；按「玩家 + 方块 + tick」去重，否则"存进去 / 消耗一件"这类动作会重复执行
+    （典型：先存入再被"空手取出"当场取回来）。
+  - 测试侧同步（否则这道防线是假的）：headless 替身要**实现这条规则**（潜行时拒绝调用组件、
+    改把点击投给 beforeEvents），别让用例直接调组件方法 —— 见 `known-pitfalls.md` 的一贯要求：
+    **替身不许比引擎宽容**。
+- **出处**：fz-sapdon `README.md:570-578`（2026-09-25 真机日志；实现已挪到 `src/machine/service.ts`
+  的 `rotateMachineAt`，由 `beforeEvents` + `defer()` 调用，组件退化为兜底）；
+  synthage 用户实测 2026-09-27 + 其 `docs/machine-protocol.md` §5.30（落地约定）、
+  `docs/synbio-abstraction.md` §4 Batch 63（含"替身补规则后 244 passed / 5 failed → 249 passed"的修复前后证据）。
+
 ---
 
 ## 3. 持久化（动态属性）
