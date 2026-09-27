@@ -1,4 +1,7 @@
-import { RideableComponentDesc } from '../../type.js'
+// `RideableComponentDesc` 是 `type.ts` 里的 **type-only** 导出：本文件是 `.js`，写不了 `import type`，
+// 值 import 又会在运行期抛 `does not provide an export named 'RideableComponentDesc'`。
+// 名字改由文件末尾的 JSDoc `@typedef` 绑定（`+` 处），否则 `core/index.d.ts` 里会出现
+// 「引用了自己从未声明的类型名」。见 `doc/dev/known-pitfalls.md` §7。
 
 export class EntityComponent {
     /**
@@ -319,7 +322,7 @@ export class EntityComponent {
     }
 
     /**
-     * @param {RideableComponentDesc} param0 
+     * @param {RideableComponentDesc} param0
      * @returns 
      */
     static setRideable({
@@ -834,5 +837,8 @@ export class EntityComponent {
         if (singular_pickup) data.singular_pickup = true;
         return new Map([['minecraft:shareables', data]]);
     }
-
 }
+
+// `RideableComponentDesc` 的 JSDoc 绑定（文件头的 `+` 处）。刻意**不**写说明性 JSDoc：
+// JSDoc 会被 dts 原样带进 `core/index.d.ts`，而普通 `//` 注释不会。
+/** @typedef {import('../../type.js').RideableComponentDesc} RideableComponentDesc */
