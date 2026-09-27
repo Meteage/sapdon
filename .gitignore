@@ -3,7 +3,9 @@ node_modules/
 src/cli/build.config
 
 *-lock.json
-.tmp
+# 本地产物与证据留档：`.tmp/` 目录 + 仓库根的一批 `.tmp_*.log` / `.tmp_*.mjs` 证据文件
+# （证据的价值在留档，所以只忽略、不删除）
+.tmp*
 
 development_*
 workspace/
