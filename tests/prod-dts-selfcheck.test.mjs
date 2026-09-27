@@ -10,7 +10,11 @@
 //
 // 判据（本次改成自动化的那一条）：**引用集合 ⊆ 声明集合 ∪ 内建名字**。
 // 实现用真正的 TS 编译器（`typescript` 是框架依赖）：给 `prod/core/index.d.ts` 建一个 Program
-// （★ `skipLibCheck: false`，否则 `.d.ts` 根本不被检查），只取**落在该文件内**的诊断。
+// 并只取**落在该文件内**的诊断。⚠️ 两处实现细节都是实测出来的（不是猜的）：
+//   1. `skipLibCheck: false` 时 TS 才会检查 `.d.ts` —— 但那样整套要 ~39 s；
+//   2. 把**同样字节**拷成 `.tmp/*.ts`（非 `.d.ts`）再 `skipLibCheck: true` ⇒ ~10 s，
+//      诊断**逐条一致**（连行号都一样），因为 `skipLibCheck` 只跳过库文件、不跳过根文件。
+//      故走 (2)：检查的仍是 prod 产物本身的内容，只是让编译器愿意检查它。
 //
 // ⚠️ 基线 `KNOWN_PRE_EXISTING`：npm 3.6.0 的**旧产物里就已经有**的几条，本次不修（超出范围），
 //    逐条登记 ⇒ 这条测试是**棘轮**：只允许变少、不允许变多。任何**新增**的悬空引用都会失败。
@@ -53,23 +57,29 @@ const KNOWN_PRE_EXISTING = [
 ]
 
 function diagnose(dtsPath) {
+    // 同样字节拷成 `.ts`：根文件不再是 `.d.ts` ⇒ 可以开 skipLibCheck（快 4 倍），
+    // 但 prod 产物本身仍被逐字检查（诊断与直接查 `.d.ts` 逐条一致，含行号）
+    const copyPath = path.join(repoRoot, '.tmp', 'prod-core-dts-selfcheck.ts')
+    fs.mkdirSync(path.dirname(copyPath), { recursive: true })
+    fs.writeFileSync(copyPath, fs.readFileSync(dtsPath, 'utf-8'), 'utf-8')
+
     const program = ts.createProgram({
-        rootNames: [dtsPath],
+        rootNames: [copyPath],
         options: {
             noEmit: true,
-            skipLibCheck: false, // ← 必须 false，否则 .d.ts 不被检查
+            skipLibCheck: true, // 只跳过库文件（`.d.ts` 依赖）；根文件是 `.ts`，照查
             target: ts.ScriptTarget.ESNext,
             module: ts.ModuleKind.NodeNext,
             moduleResolution: ts.ModuleResolutionKind.NodeNext,
             strict: true,
         },
     })
-    const normalized = dtsPath.replace(/\\/g, '/').toLowerCase()
+    const normalized = copyPath.replace(/\\/g, '/').toLowerCase()
     return ts.getPreEmitDiagnostics(program)
         .filter((d) => d.file && d.file.fileName.replace(/\\/g, '/').toLowerCase() === normalized)
         .map((d) => ({
             code: d.code,
-            line: d.file.getLineAndCharacterOfPosition(d.start).line + 1,
+            line: d.file.getLineAndCharacterOfPosition(d.start).line + 1, // 行号与 prod 产物 1:1
             message: ts.flattenDiagnosticMessageText(d.messageText, ' '),
         }))
 }
