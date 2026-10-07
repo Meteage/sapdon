@@ -1,0 +1,30 @@
+{
+	"format_version": "1.19.0",
+	"animation_controllers": {
+		"controller.animation.mob_chest.interact": {
+			"initial_state": "default",
+			"states": {
+				"default": {
+					"animations": ["default"],
+					"transitions": [
+						{"open": "q.property('mob_chest:chest_state') == 'open'"}
+					]
+				},
+				"open": {
+					"animations": ["open"],
+					"transitions": [
+						{"close": "query.any_animation_finished && q.property('mob_chest:chest_state') == 'close'"}
+					],
+					"blend_transition": 0.1
+				},
+				"close": {
+					"animations": ["close"],
+					"transitions": [
+						{"default": "query.all_animations_finished && q.property('mob_chest:chest_state') == 'close'"}
+					],
+					"blend_transition": 0.1
+				}
+			}
+		}
+	}
+}

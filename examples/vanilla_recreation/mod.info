@@ -1,0 +1,9 @@
+{
+  "name": "vanilla_recreation",
+  "description": "原版复刻：用 ContainerUISystem 复刻原版熔炉 / 箱子",
+  "author": "meteage",
+  "version": "1.0.0",
+  "min_engine_version": "1.26.60",
+  "bp": "860ecf8c-3fca-48a1-9106-4324fcb30a62",
+  "rp": "d9e7b37e-1393-456b-a678-156e484967d7"
+}
