@@ -254,6 +254,41 @@
 - **出处**：真机 ContentLog（`%APPDATA%\Minecraft Bedrock\logs\ContentLog*.txt`），两轮加载
   `invalid string` 20 条 / `Error Parsing Item` 10 条 / `Missing icon` 3962 条。
 
+### 2.10 ★★ 潜行时方块自定义组件的 `onPlayerInteract` **不会被调用**（2026-09-25 / 2026-09-27 真机）
+- **症状**：方块的自定义组件写了 `onPlayerInteract`：玩家**普通右键有效、潜行右键毫无反应**
+  （同一段代码、同一件手持物）。组件本身完全正常（`onPlace` / `onTick` 照常触发），
+  产物层检查（方块 JSON 里的组件声明 + `scripts/custom_components/index.js` 的注册）**全绿** ——
+  「潜行才生效」的那部分功能**从来没生效过**，而且不报任何错。
+- **根因**：**引擎在潜行时跳过方块的 use 行为**（就是「蹲下右键 = 放方块而不是用方块」那条规则）
+  ⇒ 组件**根本没有被调用** —— 不是组件写错、也不是注册时机问题。
+  - 证据①（fz-sapdon 2026-09-25 真机日志，`README.md:570-578`）：用户「蹲下 + 右键」时
+    `beforeEvents.playerInteractWithBlock` **每次都到**（快照刷了 40+ 行），而同一个组件的
+    `onPlayerInteract` **一次都没有**（`[fz:wrench][evt] rotate` = 0 次）；
+    对照组：同一组件的 `onPlace` 照常触发（9 条"已 spawn 承载实体"）⇒ 注册与产物都没问题。
+  - 证据②（synthage 2026-09-27 用户实测）：蹲下 + 手持生物乙醇 + 右键机器 → **毫无反应**；
+    普通右键 → 加燃料正常。该项目因此有两条功能（机器消毒、菌种库快捷存取）**在真机上是死的**，
+    而它的 headless 回归测试一直全绿 —— 因为**测试替身直接调组件方法**，绕过了这条引擎规则。
+- **规避**：需要**潜行才生效**的方块行为必须放在**脚本层**：
+  - 用 `world.beforeEvents.playerInteractWithBlock` 判定（⚠️ `beforeEvents` 是**受限上下文**，
+    回调里**不能改世界/方块**）+ `system.run()`（`defer`）**推迟到下一 tick** 再改。
+  - ★ **不要改用 `afterEvents.playerInteractWithBlock` 顶替**：目前**没有**"它在潜行时是否触发"的证据
+    （fz-sapdon 的日志只覆盖了 `beforeEvents`）。要让潜行生效，就用**已被证实可靠**的那一个。
+  - ★ **潜行标志必须在事件当刻捕获**、并带进推迟后的调用：`system.run` 之后玩家可能已经**松开潜行**，
+    那时现读 `player.isSneaking` 会让这次交互**凭空消失**（正是要修的那类"没反应"）。
+  - ★ 逻辑**只留一份**：组件里的那份退化为**兜底**，与脚本层入口加**显式互斥门** ——
+    两条路读**同一个** `player.isSneaking`，要求"这次算不算潜行"与"是哪条入口"一致，不一致就直接不处理
+    ⇒ 同一次右键不可能走两遍（非潜行的老路径 —— 投料 / 加燃料 / 开界面 —— 必须一个字节都不变）。
+  - ★ **幂等**：「方块 + 方块中心的承载实体」这种结构下，同一次点击会不会被投递两遍（实体那条路）
+    **没有证据**；按「玩家 + 方块 + tick」去重，否则"存进去 / 消耗一件"这类动作会重复执行
+    （典型：先存入再被"空手取出"当场取回来）。
+  - 测试侧同步（否则这道防线是假的）：headless 替身要**实现这条规则**（潜行时拒绝调用组件、
+    改把点击投给 beforeEvents），别让用例直接调组件方法 —— 见 `known-pitfalls.md` 的一贯要求：
+    **替身不许比引擎宽容**。
+- **出处**：fz-sapdon `README.md:570-578`（2026-09-25 真机日志；实现已挪到 `src/machine/service.ts`
+  的 `rotateMachineAt`，由 `beforeEvents` + `defer()` 调用，组件退化为兜底）；
+  synthage 用户实测 2026-09-27 + 其 `docs/machine-protocol.md` §5.30（落地约定）、
+  `docs/synbio-abstraction.md` §4 Batch 63（含"替身补规则后 244 passed / 5 failed → 249 passed"的修复前后证据）。
+
 ---
 
 ## 3. 持久化（动态属性）
@@ -854,13 +889,18 @@ node scripts/buildTask.cjs           # rollup → prod/
 
 - **`examples/hello_ui` 构建必失败**（exit 1、0 行 `处理数据:`）：`main.mjs` import 了本框架**不存在**的 `ServerUISystem`，还调用了 `bindingTitlewithContent` —— 该示例停留在旧 API。**不是框架回归**；修它要改 examples 源码（本轮按"examples 是范本、不改源码"的约束未动）。
   - 它的 `dev/hello_ui_*` 里躺着 07-11/08-21 的陈旧产物：这是**长期构建失败**造成的（没有成功构建 → 没有清单 → 清不掉），**不是**改项目名残留，故未删。修好该示例后建议手工清一次 `dev/`。
-- **`tests/ui-buttonpanel.test.mjs` 失败**：import 了早已不存在的 `dist/core/ui/systems/sapdon/sapdonButtonPanel.js`（该模块在 `63262bf` 之后就不在 `src/` 里）。
-- **`tests/item.test.mjs` 失败**：`src/core/entity/componets/entityComponet.js` 把 `type.ts` 的 **type-only** 导出 `RideableComponentDesc` 当**值** import → 运行期 `does not provide an export named 'RideableComponentDesc'`（rollup 构建日志里也有同名 warning）。
-- 上面两个测试**在 `ae6ae16` 之前就已损坏**，与本轮改动无关；本轮未修（超出范围）。
+- **`tests/ui-buttonpanel.test.mjs` 失败**（**2026-09-27 已修**）：import 了早已不存在的 `dist/core/ui/systems/sapdon/sapdonButtonPanel.js`（该模块在 `0682ccb`「introduce FormButton/FormButtonGrid, drop legacy text buttons」之后就不在 `src/` 里）。修法：该文件改名为 **`tests/form-button-grid.test.mjs`**，指向真正的替代物 **`FormButtonGrid` + `FormButton`**（8 条，独立钉住「`index` = 运行期槽位序号、`pos` 才是落点、`offset = (pos − 基准格) × 100%`」这条硬约束）。⚠️ 旧测试里的「撞已占用格抛错 / 超网格界抛错」两条输入校验**随旧模块一起消失**，新模块没有恢复（要恢复属于新增框架能力，不在本次范围）。
+- **`tests/item.test.mjs` 失败**（**2026-09-27 已修**）：`src/core/entity/componets/entityComponet.js` 把 `type.ts` 的 **type-only** 导出 `RideableComponentDesc` 当**值** import → 运行期 `does not provide an export named 'RideableComponentDesc'`（rollup 构建日志里也有同名 warning）。修法：删掉值 import（该文件是 `.js`，不能写 `import type`），名字改由文件末尾的 JSDoc `@typedef {import('../../type.js').RideableComponentDesc}` **绑定**。★ 同类隐患的判据：`allowJs` 下 tsc **只对 `.ts` 文件**消除「仅作类型使用」的 import，`.js` 文件里的值 import 会原样进 `dist/`。
+- ★★ **删掉一个「只是用来喂类型」的值 import，会连累公开产物 —— 判据看 `prod/core/index.d.ts` 能不能自洽**（2026-09-27 实测，第一次修法就是这么翻车的）：
+  - 症状：`prod/core/index.d.ts` 里 11 处写着 `RideableComponentDesc`，但整个文件**一个声明都没有**（下游 IDE 直接报红）；`EntityComponent.setRideable` 的返回类型整体退化成 `controlling_seat: RideableComponentDesc`（本该是 `number`）。文件从 258,838 B 掉到 258,235 B 就是信号。
+  - 根因：那个 `.js` 文件里的**值 import** 顺带让 dts 打包器把 `type.ts` 的三个声明也带进了 bundle（可达性）。删掉它 ⇒ 声明没了，而 JSDoc / 签名里的**引用**还在。**「保证名字在本文件内被绑定」才是修法**（`@typedef`），「把类型 re-export 出去」只能补公开面、补不了引用绑定。
+  - 双重修法：① `src/core/entity/index.ts` 显式 `export type { RideableComponent, RideableComponentDesc, RideableSeat } from '../type.js'`（让这三个**有意**成为公开面，与 3.6.0 持平；**不要** `export *`）；② `entityComponet.js` 末尾的 `@typedef` 绑定。★ 绑定用的 JSDoc 要写成**不带说明文字**的一行：JSDoc 会被 dts 原样带进公开产物，普通 `//` 注释不会（说明写在 `//` 里）。
+  - 判据（已自动化）：`node tests/prod-dts-selfcheck.test.mjs` —— 用真正的 TS 编译器（`skipLibCheck: false`）给 `prod/core/index.d.ts` 建 Program，落在该文件内的诊断必须只剩已登记的基线（npm 3.6.0 里就有的 `EntityBehaviorRandomStroll` ×2、`RawJSON` ×1、`setShareables` 的 TS2339 ×2）。棘轮：只允许变少。
+- 上面两个测试**在 `ae6ae16` 之前就已损坏**，与本轮改动无关；**2026-09-27 一并修掉**（修复前 `node --test tests/*.test.mjs` = 305 用例 / 303 通过 / 2 失败；修复后 = 359 用例 / 359 通过 / 0 失败）。
 
 ---
 
-## 8. ★ `sapdon lib` 只在**框架仓库内部**可用（已知缺陷，待修）
+## 8. ★ `sapdon lib` 只在**框架仓库内部**可用（**2026-09-27 已修**：源==目标跳过 + 接受 `oc`/`runtime`）
 
 **症状**（2026-09 由 FZ 项目实测复现，exit 1）：
 ```
@@ -914,6 +954,18 @@ cpSync(path.join(t,'oc'),   path.join(n,'@sapdon/runtime'), {recursive:true, for
 > ⚠️ 判据（将来实现时必须给）：框架仓库内部 `node prod/cli/start.js lib` 行为不变
 > （`examples/*/node_modules/@sapdon/{core,cli,runtime}` 时间戳更新）；
 > 从项目自己的 `node_modules/@sapdon/cli` 解析时**exit 0** 且打印「跳过」而不是 `ERR_FS_CP_EINVAL`。
+
+**★ 已落地（2026-09-27）**：三条全按「更简的修法」实现，未引入任何新 CLI 参数：
+
+- 判定逻辑抽成纯函数 `src/cli/dev-server/libPlan.ts`：`LIB_PACKAGES`（`core` / `cli` / `runtime`←候选 `['oc','runtime']`）
+  + `planLibCopies({ rootDir, modulesDir })` → 每个包一条 `{ name, src, dest, skip }`；
+  `skip` 非空即「说明并跳过」。路径比较用 `isSamePath` / `isSameOrInside`（**按路径段**，`/a/bc` 不算落在 `/a/b` 内部；Windows 下大小写归一）。
+- `writeLib(projectPath, options?)` 按这份规划执行：能拷的 `cpSync` + 写 `package.json`，跳过的打一行 `[sapdon] 跳过 …`；
+  一个都没同步时补一行 `[sapdon] lib：本次没有任何包可同步（原因见上面的跳过说明）。`。
+  `options.rootDir` / `modulesDir` / `log` 只给测试与程序化调用用，**CLI 不传**（行为与历史一致）。
+- 判据由 `node tests/lib-plan.test.mjs`（11 条）钉住：源==目标跳过（真实目录 + 真实 `writeLib`，不再抛且**不覆盖**已装好的
+  `package.json`）、目标落在源内部跳过、源目录名 `oc`、源目录名 `runtime`、两者都不存在、**正常拷贝路径**（三个包都落地且带版本号）、
+  以及「真正的 IO 错误仍然抛」（目标位被同名文件占住时照样 reject）。
 
 ---
 
