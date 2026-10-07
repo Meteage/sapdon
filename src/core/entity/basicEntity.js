@@ -33,6 +33,9 @@ export class BasicEntity {
         this.is_spawnable = options.is_spawnable ?? true;
         this.is_summonable = options.is_summonable ?? true;
         this.runtime_identifier = options.runtime_identifier;
+        // ★ 数据版本：默认 1.16.0（历史行为，逐字节不变）；
+        //   需要**实体属性**（`description.properties`）的实体必须 ≥ 1.20.30 ⇒ 显式传 `format_version`。
+        this.format_version = options.format_version ?? "1.16.0";
 
         // 初始化 components、component_groups 和 events，确保 data 中的值为对象
         this.properties = data?.description?.properties ?? {};
@@ -187,7 +190,7 @@ export class BasicEntity {
     @Serializer
     toObject() {
         return serialize(new AddonEntity(
-            "1.16.0",
+            this.format_version,
             new AddonEntityDefinition(
                 new AddonEntityDescription(
                     this.identifier,

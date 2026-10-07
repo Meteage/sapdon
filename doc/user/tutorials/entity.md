@@ -354,3 +354,73 @@ resource.addTexture('default', 'textures/entity/native_zombie')
 
 registry.submit()
 ```
+
+## 10. DisplayItemEntity — 展示实体（无 AI 实体「叼」一件物品）
+
+`EntityAPI.createDisplayItem()` 创建一个**无 AI 实体**，把一件物品**悬浮**展示出来 ——
+原理见 [bedrock wiki · Holding Items](https://wiki.bedrock.dev/entities/holding-items)：
+引擎会把实体的**主手物品**渲染在模型里那个叫 `rightItem` 的骨上。
+管道在途物品、机器里的「样品展示」、坠落物替代品都可以用它。
+
+```js
+import { EntityAPI, registry } from '@sapdon/core'
+
+const { behavior, resource } = EntityAPI.createDisplayItem('my_addon:display_item', {
+  // 实体本身没有 cube ⇒ 贴图通常看不到（只影响「缺失贴图」的告警）
+  texture: 'textures/entity/none',
+  // 姿态默认值（可选；缺项用框架默认）
+  pose: { rx: -20, ry: 45, sc: 50 }
+})
+
+registry.submit()
+```
+
+自动配置的东西：
+
+| 件 | 内容 |
+|---|---|
+| 行为包 | 零碰撞 / 无物理 / 不可推动 / `persistent`；`minecraft:equipment`（空表）+ `minecraft:equippable`（主手） |
+| 资源包 | 默认渲染控制器 + **姿态动画**（把 `rightItem` 骨绑到实体属性） |
+| 资产 | 几何（`geometry.sapdon_display_item`）、姿态动画、空掉落表 —— 框架自动落盘 |
+
+> ⚠️ 生成的实体数据版本是 **1.21.0**（实体属性要求 ≥ 1.20.30；别的实体仍是 1.16.0）。
+
+### 10.1 姿态（旋转 / 位移 / 缩放）
+
+姿态存在**实体属性**里，id = `<实体命名空间>:<键>`（`my_addon:display_item` ⇒ `my_addon:rx`），
+由客户端动画实时读取（`client_sync: true`）。`pose` 选项只设**默认值**，运行期用 `setDisplayPose()` 改。
+
+| 键 | 含义 | 默认 | 值域 |
+|---|---|---|---|
+| `rx` `ry` `rz` | 骨旋转（度） | `rx = 45`，其余 0 | -180..180 |
+| `px` `py` `pz` | 相对挂点位移（**0.1 像素**为单位，`10` = 1px） | 0 | -160..160 |
+| `sc` | 缩放（**百分比**，`100` = 1.0×） | 100 | 1..500 |
+
+> 属性是 **int**（整数度 / 0.1px / 百分比）。浮点属性在本框架下会因「JSON 默认值写成整数」被引擎拒绝，
+> 所以位移用 0.1px、缩放用百分比来换精度。
+
+### 10.2 运行期（`@sapdon/runtime`）
+
+```ts
+import {
+  spawnDisplayItem, setDisplayItem, clearDisplayItem, removeDisplayItem,
+  setDisplayPose, getDisplayPose
+} from '@sapdon/runtime'
+
+// 生成并让它叼一块石头
+const e = spawnDisplayItem('my_addon:display_item', 'minecraft:overworld', loc, 'minecraft:stone')
+
+// 换物 / 清空 / 删除
+setDisplayItem(e, 'minecraft:diamond')
+clearDisplayItem(e)
+removeDisplayItem(e)
+
+// 姿态（只写传入的键，其余保持）
+setDisplayPose(e, { ry: 0, sc: 200 })   // 转正、放大到 2×
+getDisplayPose(e)                        // { rx, ry, rz, px, py, pz, sc }
+```
+
+`spawnDisplayItem` 失败返回 `undefined`；其余函数**绝不抛**（只 `console.warn`）。
+
+> 加姿态调试命令（游戏里边看边调）时，用 `setDisplayPose(entity, { ... })` + 你自己的
+> `registerCommand` 即可，做法见 `@sapdon/runtime` 的自定义命令（`CustomCommandRegistry`）。

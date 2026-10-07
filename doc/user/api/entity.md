@@ -66,6 +66,30 @@ const { behavior, resource } = EntityAPI.createDummyEntity(
 
 ---
 
+### `EntityAPI.createDisplayItem(identifier, options?)`
+
+创建**展示实体**（无 AI 实体「叼」一件物品做悬浮展示）。见[实体教程](../tutorials/entity.md)第 10 节「展示实体」。
+
+自动配置：零碰撞 / 无物理 / 不可推动 / `persistent` + `minecraft:equipment`（空表）+ `minecraft:equippable`（主手）；资源包给默认渲染控制器 + 姿态动画；并落盘几何 / 动画 / 空掉落表。数据版本 `1.21.0`（实体属性需要）。
+
+```js
+const { behavior, resource } = EntityAPI.createDisplayItem('my_addon:display_item', {
+  texture: 'textures/entity/none',      // 实体无 cube ⇒ 通常看不到
+  pose: { rx: -20, ry: 45, sc: 50 }     // 姿态默认值（可选）
+})
+```
+
+| 选项 | 说明 |
+|---|---|
+| `texture` | 客户端贴图（实体本身无 cube，通常看不到） |
+| `pose` | 姿态默认值：`rx/ry/rz`（度，-180..180）、`px/py/pz`（0.1px，-160..160）、`sc`（百分比，1..500） |
+| `is_spawnable` | 是否可自然生成（默认 `false`；脚本用 `spawnEntity` 仍可生成） |
+
+> 姿态属性 id = `<实体命名空间>:<键>`（`my_addon:display_item` ⇒ `my_addon:rx`），全为 **int**。
+> 运行期用 `@sapdon/runtime` 的 `spawnDisplayItem` / `setDisplayPose` 等操作，见 [runtime API](./runtime.md) 的「展示实体」一节。
+
+---
+
 ## Entity 类
 
 实体容器类，包含 `behavior` 和 `resource` 两个属性。
@@ -609,6 +633,28 @@ import { DummyEntity } from '@sapdon/core'
 
 const dummy = new DummyEntity('my_addon:dummy', 'textures/entity/none')
 ```
+
+---
+
+## DisplayItemEntity
+
+展示实体（无 AI 实体「叼」一件物品）。继承自 `Entity`，预设：
+
+- 行为包：零碰撞 / 无物理 / 不可推动 / `persistent`；`minecraft:equipment`（空表）+ `minecraft:equippable`（主手）
+- 资源包：默认渲染控制器 + 姿态动画（`rightItem` 骨绑到实体属性）
+- 姿态属性 `<命名空间>:rx/ry/rz/px/py/pz/sc`（**int**，`client_sync: true`）
+- 数据版本 `1.21.0`
+
+```js
+import { DisplayItemEntity } from '@sapdon/core'
+
+const e = new DisplayItemEntity('my_addon:display_item', { pose: { rx: -20, sc: 50 } })
+e.namespace          // 'my_addon'
+e.pose               // 生效的姿态默认值
+e.poseAnimationId    // 'animation.my_addon_display_item.pose'
+```
+
+导出的相关常量：`DISPLAY_ITEM_POSE_KEYS`、`DISPLAY_ITEM_POSE_DEFAULTS`、`DISPLAY_ITEM_GEOMETRY_ID`、`DISPLAY_ITEM_BONE`、`displayPosePropertyId(identifier, key)`、`displayPosePropertyIds(identifier)`、`displayPoseAnimationId(ns)`。
 
 ---
 

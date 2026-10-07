@@ -324,6 +324,44 @@ export function resetMachines(): void {
 
 ---
 
+## 3. 展示实体
+
+`@sapdon/runtime` 提供**展示实体**（无 AI 实体「叼」一件物品做悬浮展示）的运行期操作。
+构建期先用 `EntityAPI.createDisplayItem()`（`@sapdon/core`）注册该实体，见
+[实体 API](./entity.md) 的 `createDisplayItem` 与[实体教程](../tutorials/entity.md)第 10 节「展示实体」。
+
+```ts
+import {
+  spawnDisplayItem, setDisplayItem, clearDisplayItem, removeDisplayItem,
+  setDisplayPose, getDisplayPose,
+  DISPLAY_ITEM_POSE_KEYS, type DisplayPose
+} from '@sapdon/runtime'
+
+// 生成（失败返回 undefined）；itemId 可省
+const e = spawnDisplayItem('my_addon:display_item', 'minecraft:overworld', { x: 0, y: 64, z: 0 }, 'minecraft:stone')
+
+setDisplayItem(e, 'minecraft:diamond')   // 换物（equippable 优先，退回 replaceitem）
+clearDisplayItem(e)                      // 清空主手（实体留着）
+removeDisplayItem(e)                     // 删除实体
+
+setDisplayPose(e, { ry: 0, sc: 200 })    // 只写传入的键
+getDisplayPose(e)                        // { rx?, ry?, rz?, px?, py?, pz?, sc? }
+```
+
+### 姿态键
+
+属性 id = `<实体命名空间>:<键>`（`my_addon:display_item` ⇒ `my_addon:rx`），从 `entity.typeId` 推导，全为 **int**。
+
+| 键 | 含义 | 值域 |
+|---|---|---|
+| `rx` `ry` `rz` | 骨旋转（度） | -180..180 |
+| `px` `py` `pz` | 相对挂点位移（**0.1 像素**为单位，`10` = 1px） | -160..160 |
+| `sc` | 缩放（**百分比**，`100` = 1.0×） | 1..500 |
+
+> **纪律**：`spawnDisplayItem` 失败返回 `undefined`；其余函数**绝不抛**（只 `console.warn`）。
+
+---
+
 ## 相关文档
 
 - [doc/dev/oc.md](../../dev/oc.md) —— OC 运行时（ECS）整体结构，源码开发者

@@ -1,6 +1,7 @@
 export * from './core.js'
 export * from './optional.js'
 export * from './components/index.js'
+export * from './display/index.js'
 export * from './input/base.js'
 export * from './arch.js'
 export * from './math/index.js'

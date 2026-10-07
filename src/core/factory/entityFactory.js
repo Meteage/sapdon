@@ -1,5 +1,6 @@
 import { BasicEntity } from "../entity/basicEntity.js";
 import { ClientEntity } from "../entity/clientEntity.js";
+import { DisplayItemEntity } from "../entity/displayItemEntity.js";
 import { DummyEntity } from "../entity/dummyEntity.js";
 import { Entity } from "../entity/entity.js";
 import { NativeEntity } from "../entity/nativeEntity.js";
@@ -98,6 +99,25 @@ export const EntityAPI = {
         }
 
         const entity = new DummyEntity(identifier, texture, options);
+        registerEntity(entity.behavior, entity.resource);
+        return {
+            behavior: entity.behavior,
+            resource: entity.resource,
+        };
+    },
+
+    /**
+     * 创建一个**展示实体**（无 AI 实体「叼」一件物品；姿态走实体属性 + 客户端动画）。
+     *
+     * @param {string} identifier - 实体的唯一标识符（形如 `命名空间:名字`；命名空间决定姿态属性前缀）。
+     * @param {Object} [options] - 额外选项。
+     * @param {string} [options.texture] - 客户端贴图（实体本身无 cube ⇒ 通常看不到）。
+     * @param {Object} [options.pose] - 姿态默认值（`rx/ry/rz/px/py/pz/sc`）。
+     * @param {boolean} [options.is_spawnable] - 是否可自然生成（默认 false）。
+     * @returns {{ behavior: BasicEntity, resource: ClientEntity }} 包含行为数据和资源数据的对象。
+     */
+    createDisplayItem: function (identifier, options = {}) {
+        const entity = new DisplayItemEntity(identifier, options);
         registerEntity(entity.behavior, entity.resource);
         return {
             behavior: entity.behavior,

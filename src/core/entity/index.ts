@@ -1,5 +1,6 @@
 export * from './basicEntity.js'
 export * from './clientEntity.js'
+export * from './displayItemEntity.js'
 export * from './dummyEntity.js'
 export * from './entity.js'
 export * from './nativeEntity.js'
