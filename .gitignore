@@ -7,8 +7,14 @@ src/cli/build.config
 
 development_*
 workspace/
+# 私有项目（本地，不入库）：客户定制 / 个人测试
+private/
 dist
 dev/
 !doc/dev/
 prod
 res.hint.ts
+
+# AOCI agent host integration (machine-bound; do not commit)
+opencode.json
+opencode.json.backup.*

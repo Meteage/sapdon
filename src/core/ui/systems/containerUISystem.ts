@@ -94,6 +94,16 @@ const PROGRESS_RATIO_EXPRESSION =
   '((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)'
 
 /**
+ * 填充控件的**可见性**：只在「该格有物品」时画。
+ *
+ * ⚠️ 为什么必须有它：槽位**为空**时 `#item_durability_total_amount = 0`，
+ * 上面那条裁切表达式变成 `(0 - 0) / 0 = NaN`，引擎按**满条**画
+ * （真机症状：机器刚放下、显示格还没被脚本写过时，进度/能量两根竖条都是满的）。
+ * 用 `> 0` 把空格显式隐藏 ⇒ 只有底图（空槽）露出来。
+ */
+const PROGRESS_VISIBLE_EXPRESSION = '(#item_durability_total_amount > 0)'
+
+/**
  * 自定义容器 UI 系统：把「容器槽位」声明成面板内的像素版面。
  *
  * 坐标系为面板左上角原点的像素坐标（`top_left` 锚）；`grid_position` 与格位基座的换算见
@@ -327,6 +337,12 @@ export class ContainerUISystem {
           .setBindingType('view')
           .setSourcePropertyName(PROGRESS_RATIO_EXPRESSION)
           .setTargetPropertyName('#clip_ratio'),
+      )
+      .addDataBinding(
+        new DataBindingObject()
+          .setBindingType('view')
+          .setSourcePropertyName(PROGRESS_VISIBLE_EXPRESSION)
+          .setTargetPropertyName('#visible'),
       )
 
     const controls: (UIElement | Record<string, Any>)[] = []

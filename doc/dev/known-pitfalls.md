@@ -602,6 +602,12 @@
   `cellSize / background / itemRenderer / vars` ⇒ **今天无法给槽位挂 bindings**；
   `UIElement` 自己有 `dataBinding.addDataBinding()`（`dataBinding.ts:15`），但容器 API 没开口子。
   上面那条「借耐久条」的路线之所以可行，正是因为它**不需要自定义绑定**（模板自带）。
+- **★ 空格必须显式隐藏（2026-10，fz-sapdon 真机）**。`addProgressSlot` 的填充控件用
+  `#clip_ratio = (total − current) / total` 算比例；**该格为空**时 `total = 0` ⇒ `0/0 = NaN`，
+  引擎按**满条**画。症状：机器刚放下、脚本还没往显示格写过任何物品时，进度/能量两根竖条**都是满的**
+  （fz-sapdon 水力发电机「一放下就满水」）。修法：给填充控件再加一条 view 绑定
+  `(#item_durability_total_amount > 0) → #visible`，空格直接隐藏填充（框架已内建，
+  `containerUISystem.ts` 的 `PROGRESS_VISIBLE_EXPRESSION`；判据 `tests/container-ui-output.test.mjs`）。
 - **出处**：`examples/mob_chest` 的进度槽设计（2026-09-12），三路只读调研 + 原版包逐行核对；
   相关：§4.6（`enabled`）、§4.9（坐标/版面）。
 
@@ -768,7 +774,17 @@
 - **出处**：FZ 回收机（2026-09-12 用户两轮反馈：先是「不要把进度物品掉出来」，后是「我的真物品也没有了」）；
   字段定义取自原版包 `bedrock-samples-1.21.130.26-preview/metadata/doc_modules/entities.json`
   （`minecraft:transformation` 小节）；判据在 `tests/block-api.test.mjs`
-  （`item_despawn` 组与历史产物**逐字节一致**、`transformation` 上不许出现 `delay`）。
+   （`item_despawn` 组与历史产物**逐字节一致**、`transformation` 上不许出现 `delay`）。
+
+### 4.17 ★ 自定义方块容器的界面屏 = `data_driven_container.screen`（2026-10，block_container_test 真机）
+- **症状**：给「官方方块容器」`minecraft:block_entity.container` 做自定义界面，门控（`requires: ($new_container_title = '<键>')`）**挂在原版箱子屏 `chest.small_chest_screen` 上永不生效**——进游戏还是原版容器界面（标题仍是原始键）。而**实体容器**（承载实体 `minecraft:inventory` + 实体名字当标题）却能生效。
+- **原因**：引擎给**数据驱动方块容器**开的屏**不是**箱子屏，而是 **`data_driven_container.screen`**（原版文件 `ui/data_driven_container_screen.json`；官方 `bedrock-samples` **v1.26.60.29-preview** 起才收录，更早的 `1.21.130.26` 里**没有**这个文件）。它同样用 `$container_title` 做标题（`container_label@chest.chest_label`），并用 `$container_size` / `$container_rows_*`（`ChestScreenController::addStaticScreenVars` 从实时容器喂入）决定网格。
+- **规避**（框架已在 `ChestUISystem.registerContainerUI` 里做掉，见 `src/core/ui/systems/chest.ts`）：
+  1. `registerContainerUI(key, rootPanel)` **同时**向 `ui/chest_screen.json`（实体容器）与 **`ui/data_driven_container_screen.json`**（方块容器）注册同一条门控。
+  2. ★ **项目要改这块屏，文件名必须与原版一致** `ui/data_driven_container_screen.json`（引擎按文件名覆盖/合并同名声明的 UI 文件；起个自定文件名如 `furnace_gate.json` **不生效**）。框架侧靠 `UISystem.name` = 文件名来保证：`new UISystem('data_driven_container:data_driven_container_screen', 'ui/')`。
+  3. 门控键 = `UISystem.name`（`identifier` 冒号后半段）；方块的 `minecraft:block_entity.container.title` 必须等于该键。
+- **负面对照**：把门控插到容器屏基类 `common.inventory_screen_common`、或只给自定文件名（`furnace_gate.json`）都**不生效**；真机探针实测「基类改不动、箱子屏也改不动方块容器」。
+- **出处**：官方 `bedrock-samples` `v1.26.60.29-preview/resource_pack/ui/data_driven_container_screen.json`（注释原文含 `ContainerEnumName::LevelEntityContainer` / `ChestScreenController::addStaticScreenVars`）；`private/block_container_test` 真机 A/B（方块容器 vs 实体容器）。
 
 ---
 
@@ -984,6 +1000,53 @@ Learn 页写着「requires a format version of at least 1.20.30」，但**原版
 
 `cubes[].uv` 为空对象（或漏面）时引擎不报错，那一面直接不可见。所以 `BlockModel.toJson()` 会
 对"既没显式 UV 又没调 `autoUv()`"的 cube 抛错（构建期拦下，别留到真机）。
+
+---
+
+## 11. 实体属性（`minecraft:properties`）与展示实体
+
+### 11.1 `float` 属性的 `default` 必须是 **JSON 小数**，否则**整份属性组件加载失败**
+
+- **症状**：配置了 `minecraft:properties`，但客户端 `query.property('x')` 报
+  `query.property called on an actor without a property component`；属性看起来完全没生效。
+- **原因**：`float` 属性的 `default` 必须是 JSON 里**带小数点**的数（`0.0`）。写成整数（`0` / `45`）时
+  引擎按 int 解析，报 `Error loading property 'x': 'default' value does not match the specified type 'float'`
+  ⇒ **整个属性组件**加载失败（不是只丢那一条），随后所有 `query.property` 全部失败。
+  本框架用 `JSON.stringify` 生成 JSON，JS 的 `45.0` 会被写成 `45` ⇒ **float 默认值在本框架下不可用**。
+- **规避**：数值改用 **`int`**（框架的展示实体：旋转整度、位移按 **0.1px**、缩放按 **百分比**，动画里
+  再 `÷10` / `÷100` 换精度）；非要 float 就把默认值写成 **Molang 字符串**（`"default": "0.0"`）。
+- **出处**：2026-10，fz-sapdon `fz:display_item`（ContentLog：`actor_definitions | fz:display_item |
+  description | Error loading property 'fz:px': 'default' value does not match the specified type 'float'`）。
+
+### 11.2 带实体属性的实体要求数据版本 ≥ 1.20.30
+
+- **症状**：`format_version` 太老（如 `1.16.0`）时 `properties` **静默不加载**（症状同 11.1）。
+- **规避**：把 `format_version` 提到 `1.21.0`。框架 `BasicEntity` 支持 `options.format_version`
+  （默认仍是 `1.16.0`，逐字节不变）；展示实体默认 `1.21.0`。
+
+### 11.3 骨 `scale` 要挂在**父骨**下；孤立根骨的 scale 不生效
+
+- **症状**：动画里给一根**孤立根骨**（无 parent）写 `scale`，模型完全不缩放，且**不报任何错**。
+- **原因**：无 cube 的孤立根骨的 `scale` 会被当实体变换忽略。
+- **规避**：照原版 `allay`、FZ `animation_item` 的做法 —— 加一个 `body` 根骨，把 `rightItem` 挂成它的**子骨**。
+  `scale` 通道**只用标量**（`"scale": "q.property('x') / 100.0"`），**不要**写成 Molang 字符串数组。
+- **出处**：2026-10，fz-sapdon 的展示实体。
+
+### 11.4 展示实体是 `minecraft:persistent` ⇒ 退出重进会**残留**
+
+- **症状**：用「无 AI 实体叼物品」代表在途物品/临时展示时，退出重进世界后这些实体**满地图残留**
+  （掉落物实体会自然消失，它不会）。
+- **规避**：生成时打一个 tag（如 `fztransit`），进世界（`world.afterEvents.worldLoad`）时按 tag 清扫一次。
+- **出处**：2026-10，fz-sapdon 的管道在途物品（`cleanupStaleTransit`）。
+
+### 11.5 自定义命令回调是**受限执行上下文**：改世界必须 `system.run`
+
+- **症状**：`registerCommand` 的回调里直接 `dimension.spawnEntity(...)` 抛
+  `ReferenceError: Native function [Dimension::spawnEntity] cannot be used in restricted execution`。
+- **原因**：命令回调与 `beforeEvents` 同属受限上下文，不能写世界。
+- **规避**：把 `spawnEntity` / `setProperty` / `setPermutation` 等放进 `system.run(() => { … })` 延后执行，
+  结果用 `player.sendMessage(...)` 回报（命令本身同步返回）。
+- **出处**：2026-10，fz-sapdon 的展示实体姿态调试命令 `fz:pose`。
 
 ---
 

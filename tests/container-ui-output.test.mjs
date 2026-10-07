@@ -447,9 +447,9 @@ test('addProgressSlot 的 fill 带裁切方向与「取反」的比例绑定；b
   assert.equal(arrowBase.texture, 'textures/ui/arrow_inactive')
   assert.equal('clip_direction' in arrowBase, false, '静止底图不参与裁切')
 
-  // 三条绑定：两条 collection（本格数据）+ 一条 view（算比例 → #clip_ratio）
-  assert.equal(arrowFill.bindings.length, 3)
-  const [cur, total, ratio] = arrowFill.bindings
+  // 四条绑定：两条 collection（本格数据）+ 两条 view（算比例 → #clip_ratio；空格隐藏 → #visible）
+  assert.equal(arrowFill.bindings.length, 4)
+  const [cur, total, ratio, visible] = arrowFill.bindings
   assert.equal(cur.binding_name, '#item_durability_current_amount')
   assert.equal(cur.binding_type, 'collection')
   assert.equal(cur.binding_collection_name, 'container_items')
@@ -460,6 +460,13 @@ test('addProgressSlot 的 fill 带裁切方向与「取反」的比例绑定；b
   assert.ok(
     ratio.source_property_name.includes('#item_durability_total_amount - #item_durability_current_amount'),
     'current 是已损耗量 ⇒ 比例必须取反（total − current），否则方向反了',
+  )
+  // 空格（total = 0）时 ratio 表达式 = 0/0 = NaN ⇒ 引擎会画满条；必须显式隐藏填充。
+  assert.equal(visible.binding_type, 'view')
+  assert.equal(visible.target_property_name, '#visible')
+  assert.ok(
+    visible.source_property_name.includes('#item_durability_total_amount > 0'),
+    '空格必须隐藏填充（否则显示格为空时进度条画成满条）',
   )
 
   // 没给 base ⇒ 只有 fill；裁切方向可换（火焰从下往上）
