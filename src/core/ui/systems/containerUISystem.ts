@@ -68,11 +68,13 @@ export interface ProgressSlotOptions {
   /**
    * ★ **填充图相对 `size` 的缩放**（默认 `1` = 与底图同尺寸）。
    *
-   * 例：`0.9` ⇒ 填充图只有底图的 **90%**，**居中**放在底图里（露出底图的边框/刻度）。
-   * 只作用于 `fill`；`base` 恒为 `size`（它是"父"尺寸）。
+   * - 一个数 ⇒ **等比**缩放（例 `0.9` = 底图的 90%）；
+   * - `[sx, sy]` ⇒ **分轴**缩放（例 `[0.9, 0.8]` = 宽 90%、高 80%）。
+   *
+   * 填充图**居中**放在底图里（露出底图的边框/刻度）。只作用于 `fill`；`base` 恒为 `size`（它是"父"尺寸）。
    * 典型用途：底图是带刻度的储罐、填充是里头的液体（FZ 的 `liquid_1` 就比罐身小一圈）。
    */
-  fillScale?: number
+  fillScale?: number | Offset2
   /** 裁切方向，默认 `'left'`；从下往上烧的火焰用 `'down'` */
   clipDirection?: ProgressClipDirection
   /**
@@ -328,8 +330,17 @@ export class ContainerUISystem {
     }
 
     // ★ fillScale：填充图相对底图缩放并**居中**（底图恒为 `size`；非法值回落 1）
-    const scale = typeof fillScale === 'number' && Number.isFinite(fillScale) && fillScale > 0 ? fillScale : 1
-    const fillSize: Offset2 = [size[0] * scale, size[1] * scale]
+    //   一个数 = 等比；`[sx, sy]` = 分轴。
+    const posScale = (v: number): number => (Number.isFinite(v) && v > 0 ? v : 1)
+    let sx = 1
+    let sy = 1
+    if (Array.isArray(fillScale)) {
+      sx = posScale(Number(fillScale[0]))
+      sy = posScale(Number(fillScale[1]))
+    } else if (typeof fillScale === 'number') {
+      sx = sy = posScale(fillScale)
+    }
+    const fillSize: Offset2 = [size[0] * sx, size[1] * sy]
     const fillOffset: Offset2 = [(size[0] - fillSize[0]) / 2, (size[1] - fillSize[1]) / 2]
 
     const fillImage = buildImage('fill', fill, true, fillSize, fillOffset)
