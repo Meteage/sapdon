@@ -65,6 +65,14 @@ export interface ProgressSlotOptions {
   base?: string
   /** 视觉尺寸（像素），默认 `[22, 15]`（原版熔炉箭头尺寸） */
   size?: Offset2
+  /**
+   * ★ **填充图相对 `size` 的缩放**（默认 `1` = 与底图同尺寸）。
+   *
+   * 例：`0.9` ⇒ 填充图只有底图的 **90%**，**居中**放在底图里（露出底图的边框/刻度）。
+   * 只作用于 `fill`；`base` 恒为 `size`（它是"父"尺寸）。
+   * 典型用途：底图是带刻度的储罐、填充是里头的液体（FZ 的 `liquid_1` 就比罐身小一圈）。
+   */
+  fillScale?: number
   /** 裁切方向，默认 `'left'`；从下往上烧的火焰用 `'down'` */
   clipDirection?: ProgressClipDirection
   /**
@@ -289,6 +297,7 @@ export class ContainerUISystem {
       size = [22, 15] as Offset2,
       clipDirection = 'left' as ProgressClipDirection,
       keepRatio = false,
+      fillScale = 1,
       collection = PROGRESS_COLLECTION,
       vars = {},
     } = options ?? ({} as ProgressSlotOptions)
@@ -310,15 +319,20 @@ export class ContainerUISystem {
       return this
     }
 
-    const buildImage = (id: string, texture: string, withClip: boolean): Image => {
+    const buildImage = (id: string, texture: string, withClip: boolean, imgSize: Offset2, offset: Offset2): Image => {
       const sprite = new Sprite().setTexture(texture).setKeepRatio(keepRatio)
       if (withClip) sprite.setClipDirection(clipDirection)
       return new Image(id)
         .setSprite(sprite)
-        .setLayout(new Layout().setSize(size).setAnchorFrom('top_left').setAnchorTo('top_left'))
+        .setLayout(new Layout().setSize(imgSize).setAnchorFrom('top_left').setAnchorTo('top_left').setOffset(offset))
     }
 
-    const fillImage = buildImage('fill', fill, true)
+    // ★ fillScale：填充图相对底图缩放并**居中**（底图恒为 `size`；非法值回落 1）
+    const scale = typeof fillScale === 'number' && Number.isFinite(fillScale) && fillScale > 0 ? fillScale : 1
+    const fillSize: Offset2 = [size[0] * scale, size[1] * scale]
+    const fillOffset: Offset2 = [(size[0] - fillSize[0]) / 2, (size[1] - fillSize[1]) / 2]
+
+    const fillImage = buildImage('fill', fill, true, fillSize, fillOffset)
     fillImage.dataBinding
       .addDataBinding(
         new DataBindingObject()
@@ -346,7 +360,7 @@ export class ContainerUISystem {
       )
 
     const controls: (UIElement | Record<string, Any>)[] = []
-    if (typeof base === 'string' && base.length > 0) controls.push(buildImage('base', base, false))
+    if (typeof base === 'string' && base.length > 0) controls.push(buildImage('base', base, false, size, [0, 0]))
     controls.push(fillImage)
 
     const progressControlId = `progress_${slot}`

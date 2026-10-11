@@ -228,7 +228,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 槽位声明 | `containerUISystem.ts` | `addSlot({ slot, pos, kind?, enabled?, cellSize?, background?, itemRenderer?, vars? })`：`slot` = 容器槽位号、`pos` = 面板内像素坐标，框架换算 `grid_position` / `offset` |
 | 版面 | 同上 | `setPanel({ size, background })` / `setGridOrigin([x,y])` / `setSlotDefaults({...})` / `addControl(el, pos?)`（`addElementToMain` 是它的别名，**已真的有挂载**） |
 | 旧接口 | 同上 | `addGridItem` / `addInputGrid` / `addOutputGrid` / `setGridDimension` / `setSize` / `setTitle` 全部保留为薄封装（显式 `grid_position` + 显式 `offset`，不参与换算）；`setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名；**`setItemMatrix` 已删**（三个独立缺陷） |
-| **进度指示槽** | 同上 | `addProgressSlot({ slot, pos, fill, base?, size?, clipDirection?, collection?, vars? })`：`base` 垫底 + `fill` 按 `clipDirection` 裁开，比例取**本格物品的剩余耐久**（框架内部取反，因为 `#item_durability_current_amount` 是已损耗量）。自动关掉引擎自带耐久条、去掉格子灰底、把控件经 `$cell_overlay_ref` 注入格内 —— 脚本往该槽写可损耗物品即可，**不需要进度条贴图**。依据见 `known-pitfalls.md` §4.12 |
+| **进度指示槽** | 同上 | `addProgressSlot({ slot, pos, fill, base?, size?, clipDirection?, keepRatio?, fillScale?, collection?, vars? })`：`base` 垫底 + `fill` 按 `clipDirection` 裁开，比例取**本格物品的剩余耐久**（框架内部取反，因为 `#item_durability_current_amount` 是已损耗量）。自动关掉引擎自带耐久条、去掉格子灰底、把控件经 `$cell_overlay_ref` 注入格内 —— 脚本往该槽写可损耗物品即可，**不需要进度条贴图**。依据见 `known-pitfalls.md` §4.12 |
 
 - **`kind` 语义**：`input` 不写标志位；`output` / `display` **缺省**写 **`"enabled": false`**（`display` = 不进不出、纯显示，供脚本每 tick 换物品做伪进度条）。
   ★ **显式 `enabled` 一律优先于 `kind` 的缺省门控**（`resolveSlot`）⇒ 产物格必须写成
@@ -236,6 +236,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
   （**连产物都取不出来**，"只拦放入"是错的），`output` 的 false 只适合「不需要玩家取走」的格。
   详细证据见 `known-pitfalls.md` §4.14。
 - **`addProgressSlot` 的 `keepRatio`**：默认 `false` = 按 `size` 拉伸铺满（引擎默认会保纵横比，贴图与 `size` 比例不同时会被缩窄 ⇒ 要拉伸必须显式传 `false`）；`true` = 保比例缩放（会留边、实际宽度不再是 `size`）。
+- **`addProgressSlot` 的 `fillScale`**：默认 `1` = `fill` 与 `base` 同尺寸。传 `0.9` ⇒ 填充图只有底图的 **90%**、**居中**（`size` 与 `offset` 都由框架算：`size×scale` + `(size−fillSize)/2`），用于「底图是带刻度的储罐、填充是里头的液体」（FZ 的 `liquid_1` 就比罐身小一圈）。只作用于 `fill`，`base` 恒为 `size`。
 - **网格几何只认一处**：统一格位尺寸取 `setSlotDefaults({ cellSize })`（缺省 = 标定表），网格尺寸与基座换算都用它；**逐槽 `cellSize` 只当视觉尺寸**（可溢出格位）。混着用会把基座算歪，见 `known-pitfalls.md` §4.11。
 - **★ 待真机校准**：格位基座假设「网格原点 + 序号 × 统一格位尺寸、锚点左上角」全部集中在 `containerLayout.ts` 的 `SLOT_CALIBRATION`（含 `defaultGridOrigin`，默认 `[0,24]` 给标题让位），校准只改这一处（`anchor` 会同时翻转换算与产物的 `anchor_from`/`anchor_to`）。
 - **门控键 = `UISystem.name`**，且**同时是 `ui/<name>.json` 的文件名** ⇒ 只允许 `A-Z a-z 0-9 _ -`（`checkUIName()` 会 warn）。
