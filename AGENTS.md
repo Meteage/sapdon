@@ -226,7 +226,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 |---|---|---|
 | 纯函数换算 | `src/core/ui/systems/containerLayout.ts`（**零 import**） | `slotToGridPosition` / `cellBase` / `posToOffset` / `anchorProps` / `validateSlotSpec`（返回警告数组，**不抛**）/ `resolveSlot` / `checkUIName`；标定常量 `SLOT_CALIBRATION` |
 | 槽位声明 | `containerUISystem.ts` | `addSlot({ slot, pos, kind?, enabled?, cellSize?, background?, itemRenderer?, vars? })`：`slot` = 容器槽位号、`pos` = 面板内像素坐标，框架换算 `grid_position` / `offset` |
-| 版面 | 同上 | `setPanel({ size, background })` / `setGridOrigin([x,y])` / `setSlotDefaults({...})` / `addControl(el, pos?)`（`addElementToMain` 是它的别名，**已真的有挂载**） |
+| 版面 | 同上 | `setPanel({ size, background })` / `setGridOrigin([x,y])` / `setSlotDefaults({...})` / `addControl(el, pos?)`（主面板 layer 4，在槽位**之上**；`addElementToMain` 是它的别名）/ **`addBackground(el, pos?)`**（背景面板 **layer 2**，在槽位网格**之下** —— 放机器区底图，进度填充会画在它上面） |
 | 旧接口 | 同上 | `addGridItem` / `addInputGrid` / `addOutputGrid` / `setGridDimension` / `setSize` / `setTitle` 全部保留为薄封装（显式 `grid_position` + 显式 `offset`，不参与换算）；`setInputGrid` 是 `setOutputSlots` 的 `@deprecated` 别名；**`setItemMatrix` 已删**（三个独立缺陷） |
 | **进度指示槽** | 同上 | `addProgressSlot({ slot, pos, fill, base?, size?, clipDirection?, keepRatio?, fillScale?, collection?, vars? })`：`base` 垫底 + `fill` 按 `clipDirection` 裁开，比例取**本格物品的剩余耐久**（框架内部取反，因为 `#item_durability_current_amount` 是已损耗量）。自动关掉引擎自带耐久条、去掉格子灰底、把控件经 `$cell_overlay_ref` 注入格内 —— 脚本往该槽写可损耗物品即可，**不需要进度条贴图**。依据见 `known-pitfalls.md` §4.12 |
 

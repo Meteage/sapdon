@@ -129,6 +129,8 @@ export class ContainerUISystem {
   outputSlots: number[][]
   main_panel: Panel
   grids: Grid
+  /** **背景面板**（layer 2，在所有槽位网格**之下**；`addBackground` 往这里挂底图） */
+  bg_panel: Panel
 
   /** 已声明的槽位（按声明顺序；重复槽号就地覆盖） */
   #slots: SlotSpec[] = []
@@ -151,6 +153,7 @@ export class ContainerUISystem {
 
     this.main_panel = new Panel('main_panel')
     this.grids = new Grid('grids')
+    this.bg_panel = new Panel('bg_panel')
 
     // 初始化
     this.#register()
@@ -270,6 +273,33 @@ export class ContainerUISystem {
    */
   addElementToMain(element: UIElement | Any): this {
     return this.addControl(element)
+  }
+
+  /**
+   * 向**背景面板**（layer 2，在所有槽位网格**之下**）添加一个控件。
+   *
+   * 与 `addControl`（主面板，layer 4，在网格**之上**）相对：这里适合放**机器区底图**
+   * （刻度柱、槽框底等）—— 槽位里的进度填充会画在它**上面**，不会被底图盖住。
+   *
+   * @param {UIElement | Any} element - 控件（UIElement 实例或原生 JSON UI 控件对象）
+   * @param {Offset2} [pos] - 面板内像素坐标 [x, y]；给了就按 `top_left` 锚定位
+   * @returns {ContainerUISystem} 返回当前实例以支持链式调用
+   */
+  addBackground(element: UIElement | Any, pos?: Offset2): this {
+    if (Array.isArray(pos) && Number.isFinite(pos[0]) && Number.isFinite(pos[1])) {
+      if (element instanceof UIElement) {
+        element.layout.setOffset([pos[0], pos[1]]).setAnchorFrom('top_left').setAnchorTo('top_left')
+      } else if (element && typeof element === 'object') {
+        element.offset = [pos[0], pos[1]]
+        element.anchor_from = 'top_left'
+        element.anchor_to = 'top_left'
+      }
+    } else if (pos !== undefined) {
+      this.#warn(`addBackground 的 pos 必须是 [x, y] 两个有限数（收到 ${JSON.stringify(pos)}），已忽略定位`)
+    }
+    this.bg_panel.addControl(element)
+    this.#updateSystem()
+    return this
   }
 
   // ── 进度指示槽 ──────────────────────────────────────────────────────────────
@@ -687,6 +717,16 @@ export class ContainerUISystem {
     // 就地改层级：`setControl` 会换掉 Control 对象，把 `addControl` 已挂上的控件丢掉
     this.main_panel.control.setLayer(4)
 
+    // 背景面板：同尺寸、layer 2（在槽位网格 layer 3 **之下**）
+    this.bg_panel.setLayout(
+      new Layout()
+        .setSize(this.root_panel_size)
+        .setAnchorFrom('top_left')
+        .setAnchorTo('top_left')
+        .setOffset([0, 0]),
+    )
+    this.bg_panel.control.setLayer(2)
+
     const controls: (UIElement | Record<string, Any>)[] = [
       // 通用面板
       { 'common_panel@common.common_panel': {} },
@@ -697,7 +737,7 @@ export class ContainerUISystem {
     const background = this.#buildPanelBackground()
     if (background) controls.push(background)
 
-    controls.push(this.#buildTitle(), this.#buildGrid(), this.main_panel, this.#buildInventoryPanel())
+    controls.push(this.#buildTitle(), this.bg_panel, this.#buildGrid(), this.main_panel, this.#buildInventoryPanel())
 
     container_root_panel.addControls(controls)
     this.system.addElement(container_root_panel)
