@@ -311,7 +311,7 @@ export const buildProject = async (projectPath, projectName) => {
             // development：运行 main.ts 生成 JSON；production：跳过（仅同步已有 dev/ 目录）
             if (buildConfig.buildOptions.buildMode !== "debug") {
                 GRegistryServer.dataList = data
-                await generateAddon(absoluteModPath, buildDirPath, projectName)
+                await generateAddon(projectPath, buildDirPath, projectName)
             }
         })
     }

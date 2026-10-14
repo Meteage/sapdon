@@ -44,7 +44,9 @@
 | `debug` | **仅同步**：跳过 `main.ts` 执行和 JSON 生成，跳过脚本压缩，将已有 `dev/` 目录直接同步到 Minecraft 目录。适合直接编辑 JSON 文件测试时使用。 |
 
 ### buildEntry
-构建入口文件路径（相对项目根目录）。文件中的 `registry.submit()` 会将注册数据提交到构建系统。
+构建入口文件路径（相对项目根目录）；可以是**子目录**里的文件（例如 `src/index.ts`）。文件中的 `registry.submit()` 会将注册数据提交到构建系统。
+
+> 自定义组件脚本仍写在项目根的 `scripts/custom_components/` 下（与 `scriptEntry` 同处 `scripts/`），**与 `buildEntry` 放在哪里无关**。
 
 ### scriptEntry / scriptOutput
 - `scriptEntry` — Script API 源码入口，会打包为单个文件

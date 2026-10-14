@@ -15,14 +15,18 @@ const BLOCK_CONTAINER_SLOT_COUNT_MIN = 1
 const BLOCK_CONTAINER_SLOT_COUNT_MAX = 54
 
 /**
- * 归一化方块容器参数 → `{ slot_count }`（官方文档里的字段名）。
+ * 归一化方块容器参数 → `{ slot_count, title? }`（官方文档里的字段名）。
  *
  * 同时接受 `inventory_size` 作为别名：框架其它容器 API（实体组件、`createTileBlock`）用的都是
  * `inventory_size`，用户几乎必然会写成那个名字；若两者同时给出且不一致，抛错而不是猜。
  *
- * @param {Object|number} container `{ slot_count }` / `{ inventory_size }`，或直接给槽位数
+ * ★ `title`（可选）= 引擎交给 `data_driven_container.screen` 的 `$container_title`，
+ *   也就是**容器 UI 的门控键**（= `ContainerUISystem.name`）。不写 title = 引擎给空白标题栏
+ *   （只想要容器、不要自定义界面的方块）。历史实现里 `title` 会被**丢掉**，故这里显式保留。
+ *
+ * @param {Object|number} container `{ slot_count, title? }` / `{ inventory_size, title? }`，或直接给槽位数
  * @param {string} caller 调用方名字（用于报错信息）
- * @returns {{slot_count: number}}
+ * @returns {{slot_count: number, title?: string}}
  */
 function normalizeBlockContainer(container, caller) {
   if (Number.isInteger(container)) {
@@ -31,7 +35,7 @@ function normalizeBlockContainer(container, caller) {
   if (typeof container !== 'object' || container === null || Array.isArray(container)) {
     throw new Error(`${caller}: container 必须是 { slot_count } 对象（或直接给整数槽位数）`)
   }
-  const { slot_count, inventory_size } = container
+  const { slot_count, inventory_size, title } = container
   if (slot_count !== undefined && inventory_size !== undefined && slot_count !== inventory_size) {
     throw new Error(`${caller}: container.slot_count 与 container.inventory_size 同时给出且不一致（${slot_count} ≠ ${inventory_size}）`)
   }
@@ -43,7 +47,10 @@ function normalizeBlockContainer(container, caller) {
       `槽位数超过 54 的容器走**实体**路线，例如 BlockAPI.createTileBlock(id, category, textures, { inventory_size: N })`
     )
   }
-  return { slot_count: slots }
+  if (title !== undefined && (typeof title !== 'string' || title.length === 0)) {
+    throw new Error(`${caller}: container.title 必须是非空字符串（= 容器 UI 门控键）；不需要自定义界面就整个省略`)
+  }
+  return { slot_count: slots, ...(title !== undefined ? { title } : {}) }
 }
 
 /** 已打印过的 warn（按消息去重）—— 避免 N 个容器刷 N 条同样的提示 */

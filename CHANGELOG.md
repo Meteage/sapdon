@@ -8,6 +8,11 @@
 
 ---
 
+## 3.7.1
+
+- **修复：`BlockComponent.setBlockEntity` 丢弃 `container.title`**。`title`（= 容器 UI 门控键，引擎作为 `$container_title` 交给 `data_driven_container.screen`）之前会被 `normalizeBlockContainer` **静默丢弃**，只能手写 `minecraft:block_entity` Map 绕过；现原样保留（不传 `title` 时产物**逐字节不变**）。
+- **修复：自定义组件目录按「构建入口所在目录」解析**。原实现用 `dirname(buildEntry)` ⇒ 构建入口放进子目录（如 `src/index.ts`）时，自定义组件会被写到 `src/scripts/custom_components` 这种错误位置。现改为按**项目根**解析，`buildEntry` 可放子路径、运行期 `scripts/` 仍留在项目根；入口在根的老项目行为与产物不变。
+
 ## 3.7.0
 
 > ⚠️ **本次有破坏性变更**：UI 表单入口改名（`SapdonServerUI` → `ServerFormUI`、`SapdonPanel` → `SapdonFormUI`），

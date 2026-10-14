@@ -1284,7 +1284,7 @@ static setCraftingTable(craftingTags: string[], tableName?: string): Map
 ```typescript
 static setBlockEntity(dynamic_properties?: boolean | Object, options?: {
   dynamic_properties?: boolean
-  container?: { slot_count: number } | { inventory_size: number } | number
+  container?: { slot_count: number; title?: string } | { inventory_size: number; title?: string } | number
 }): Map
 ```
 
@@ -1296,6 +1296,7 @@ static setBlockEntity(dynamic_properties?: boolean | Object, options?: {
 BlockComponent.setBlockEntity()                       // → { dynamic_properties: false }
 BlockComponent.setBlockEntity(true)                   // → { dynamic_properties: true }
 BlockComponent.setBlockEntity(true, { container: { slot_count: 27 } })
+BlockComponent.setBlockEntity(true, { container: { slot_count: 7, title: 'my_machine' } })  // 带 UI 门控键（title）
 BlockComponent.setBlockEntity({ container: 54 })      // 只给容器时可省掉第一个参数
 ```
 
@@ -1305,6 +1306,7 @@ BlockComponent.setBlockEntity({ container: 54 })      // 只给容器时可省�
 |------|------|------|
 | `container.slot_count` | `number` | 槽位数。官方文档：`Value must be >= 1. Value must be <= 54.` —— **超限抛错** |
 | `container.inventory_size` | `number` | `slot_count` 的别名（框架其它容器 API 用这个名字）；两者同时给出且不一致时抛错 |
+| `container.title` | `string?` | **可选**。容器 UI 的**门控键**（引擎作为 `$container_title` 交给 `data_driven_container.screen`，= `ContainerUISystem.name`）。省略 = 引擎给空白标题栏（只要容器、不要自定义界面） |
 | `container` | `number` | 直接给槽位数（等价于 `{ slot_count: n }`） |
 
 依据：[Microsoft Learn · Block Components - minecraft:block_entity](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/blockreference/examples/blockcomponents/minecraftblock_block_entity)

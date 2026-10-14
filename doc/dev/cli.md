@@ -164,7 +164,7 @@ scriptBundler.any(source, target)
 `generateAddon()` 在 `submit` handler 中调用，负责将 `GRegistryServer.dataList` 中的注册数据写出为 JSON 文件：
 
 ```
-generateAddon(modPath, buildPath, projectName)
+generateAddon(projectPath, buildPath, projectName)   // projectPath = 项目根（与 buildEntry 放哪无关）
 
 previousFiles = readManifest(buildPath, projectName)   # 上次的产物清单
 cleanLegacyBpBlocksJson(buildPath, projectName)        # 清理历史误放在 BP 的 blocks.json
@@ -183,6 +183,7 @@ for each { name, root, path: dataPath, data } in dataList:
        （每个写出的文件都 record() 进 generatedFiles）
 
 customComponentInfos 非空 → writeCustomComponentIndex(<projectPath>/scripts/custom_components/index.js)
+       （projectPath = 项目根，与 buildEntry 位置无关 ⇒ 构建入口可放在子目录，如 src/index.ts）
 
 generateTextureFiles(resDir, ...)
   → generateItemTextureJson()   → <proj>_RP/textures/item_texture.json

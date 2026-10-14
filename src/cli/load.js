@@ -174,11 +174,11 @@ const INDEX_SLOT = '\u0000SAPDON_INDEX_SLOT\u0000'
 /**
  * Server
  * 加载并执行模组文件
- * @param {string} modPath 模组文件路径
+ * @param {string} projectPath 项目根目录（**不是**构建入口所在目录）
  * @param {string} buildPath 构建目录路径
  * @param {string} projectName 项目名
  */
-export const generateAddon = async (modPath, buildPath, projectName) => {
+export const generateAddon = async (projectPath, buildPath, projectName) => {
     try {
         const buildBehDirPath = path.join(buildPath, `${projectName}_BP`)
         const buildResDirPath = path.join(buildPath, `${projectName}_RP`)
@@ -229,7 +229,6 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
 
             // 处理自定义组件脚本文件（写入项目源码目录，由用户编辑）
             if (data._scriptSource) {
-                const projectPath = path.dirname(modPath);
                 const filePath = path.join(projectPath, dataPath, `${name}.js`);
 
                 if (fs.existsSync(filePath)) {
@@ -255,7 +254,6 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
 
         // 生成自定义组件注册索引文件（写入项目源码目录）
         if (customComponentInfos.length > 0) {
-            const projectPath = path.dirname(modPath);
             const scriptsDir = path.join(projectPath, 'scripts', 'custom_components');
             const indexPath = path.join(scriptsDir, 'index.js');
 
@@ -273,9 +271,9 @@ export const generateAddon = async (modPath, buildPath, projectName) => {
         // 写回本次产物清单
         writeManifest(buildPath, projectName, generatedFiles);
 
-        console.log(`已加载并执行 ${modPath} 文件！`);
+        console.log(`已加载并执行 ${projectPath} 项目！`);
     } catch (err) {
-        console.error(`加载或执行 ${modPath} 失败：${err.message}`);
+        console.error(`加载或执行 ${projectPath} 失败：${err.message}`);
         console.error(err.stack);
     }
 };
