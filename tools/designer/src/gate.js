@@ -6,8 +6,12 @@
  * 让画布能"按门控模拟显隐"。认不出来的一律返回 `null`（= 未知 ⇒ 当成可见），**绝不猜**。
  *
  * 支持（前三种来自 SapdonGuideBook / 页壳，第四种来自 HUD）：
- *   (not( (#form_text - $gtag) = #form_text ))       → 页面门控：body **前缀包含** $gtag 才可见
- *   (not( (#title_text - 'sapdon_ui:book') = #title_text )) → 页壳前缀判定（字面量形式）
+ *   (not( (#form_text - $gtag) = #form_text ))       → 页面门控：body **包含** $gtag 才可见
+ *   (not( (#title_text - 'sapdon_ui:book') = #title_text )) → 页壳判定（字面量形式）
+ *
+ * ★ "包含"而不是"以它开头"：引擎做的是字符串减法，tag 出现在任意位置都会让结果变短 ⇒ 可见。
+ *   框架把这种 tag 当**前缀**用（`CAT:x`），但模拟必须按引擎语义来，否则中间命中时会画错。
+ *   空 tag 减完仍是原串 ⇒ 门控不成立（隐藏）。
  *   ($X = #form_text) / ($X = #form_button_text)     → `.body()` / `.button()` emit 的等值门控
  *   ($X = #hud_title_text_string)                    → HUD 状态门控（编辑器不模拟，返回未知）
  *
@@ -83,13 +87,13 @@ export function evaluateVisibility(node, sim = {}) {
         unknown = true
         continue
       }
-      // 注意：门控是 `not((chan - tag) = chan)`，即"减得掉"= 包含该前缀 ⇒ 可见
-      if (!channel.startsWith(String(value))) return false
+      // 门控是 `not((chan - tag) = chan)`：字符串减法只要 tag 出现在任意位置就"减得掉" ⇒ 可见。
+      if (String(value) === '' || !channel.includes(String(value))) return false
       continue
     }
     if (gate.kind === 'title-prefix') {
       if (typeof sim.title !== 'string') unknown = true
-      else if (!sim.title.startsWith(gate.literal)) return false
+      else if (gate.literal === '' || !sim.title.includes(gate.literal)) return false
     }
   }
   return unknown ? null : true

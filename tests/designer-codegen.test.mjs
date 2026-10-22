@@ -25,6 +25,7 @@ import { diagnose, RULES } from '../tools/designer/src/diagnostics.js'
 import { parseGate, evaluateVisibility } from '../tools/designer/src/gate.js'
 import { schemaFor, widgetFor } from '../tools/designer/src/catalog.js'
 import { SAMPLE } from '../tools/designer/samples/gated_book.js'
+import { SAMPLE as GUIDEBOOK } from '../tools/designer/samples/guidebook.js'
 
 const DIST_INDEX = new URL('../dist/core/ui/index.js', import.meta.url)
 const hasDist = existsSync(DIST_INDEX)
@@ -73,6 +74,49 @@ test('诊断：collection_index / 属性形式的 pressed_button_name 都是 err
   assert.ok(rules.includes('manager-no-container'))
   assert.ok(rules.includes('manager-page-no-panel'))
   assert.ok(rules.includes('manager-page-tag-dup'))
+})
+
+test('诊断：多页管理器不能把容器当页面板、不能重复登记、容器必须是容器', () => {
+  // 页面板 = 门控容器本身 + 同一面板登记两次
+  const doc = loadProject(SAMPLE).project
+  const mgr = managerNodes(doc)[0]
+  const container = mgr.props.container
+  mgr.pages[0].panel = container
+  mgr.pages[1].panel = container
+  let rules = diagnose(doc).items.map((i) => i.rule)
+  assert.ok(rules.includes('manager-page-self'), '页面板 = 容器要报 error')
+  assert.ok(rules.includes('manager-page-duplicate'), '同一面板两次要报 error')
+
+  // 页面板不是容器
+  const doc2 = loadProject(SAMPLE).project
+  const mgr2 = managerNodes(doc2)[0]
+  mgr2.pages[0].panel = 'page1_title'
+  assert.ok(diagnose(doc2).items.some((i) => i.rule === 'manager-page-not-container'))
+
+  // 门控容器不是容器
+  const doc3 = loadProject(SAMPLE).project
+  const mgr3 = managerNodes(doc3)[0]
+  mgr3.props.container = 'page1_title'
+  assert.ok(diagnose(doc3).items.some((i) => i.rule === 'manager-container-not-container'))
+})
+
+test('codegen：页面板=容器 / 重复登记的页不会生成 addPage（只留警告注释）', () => {
+  // 页面板 = 容器本身
+  const doc = loadProject(SAMPLE).project
+  const mgr = managerNodes(doc)[0]
+  mgr.pages[0].panel = mgr.props.container
+  const { code } = generate(doc)
+  assert.ok(!code.includes('.addPage(book_content_panel,'), '不能把容器自己 addControl 进去')
+  assert.ok(code.includes('就是门控容器本身'), '生成注释说明跳过原因')
+
+  // 同一页面板登记两次：只生成一次
+  const doc2 = loadProject(SAMPLE).project
+  const mgr2 = managerNodes(doc2)[0]
+  mgr2.pages[0].panel = 'managed_page_a'
+  mgr2.pages[1].panel = 'managed_page_a'
+  const code2 = generate(doc2).code
+  assert.equal((code2.match(/\.addPage\(managed_page_a,/g) || []).length, 1, '重复页只生成一次')
+  assert.ok(code2.includes('重复登记'), '生成注释说明跳过原因')
 })
 
 test('诊断：grid 子项 offset / 游离 FormButton 会 warn', () => {
@@ -124,6 +168,31 @@ test('codegen：只 import 用到的类，且是框架类而非 UIElement', () =
   assert.ok(!/new UIElement\(/.test(code), '所有元素都应有具体类名')
   assert.ok(!meta.imports.includes('Grid'), '本工程没有 Grid 元素，不该 import')
   assert.ok(!meta.imports.includes('ServerFormUI'), '一屏一句话：不需要 import 低层路由壳')
+})
+
+test('多页管理器只能放根层：addWidget 忽略父级、indent 不生效、嵌套会被诊断拦', () => {
+  const store = new Store(loadProject(SAMPLE).project)
+  const roots = store.doc.elements.length
+  const mgr = store.addWidget('page_panel_manage', { parentId: 'book_content_panel' })
+  assert.equal(store.doc.elements.length, roots + 1)
+  assert.equal(store.doc.elements.at(-1).id, mgr.id, '加到根层末尾')
+  assert.ok(!findNode(store.doc.elements, 'book_content_panel').controls.some((c) => c.id === mgr.id))
+
+  store.indent(mgr.id)
+  assert.ok(store.doc.elements.some((n) => n.id === mgr.id), 'indent 不会把管理器缩进容器')
+
+  // 直接塞进容器（例如旧工程/手工改档）→ 诊断 error，但 managerNodes 仍能找到它
+  const content = findNode(store.doc.elements, 'book_content_panel')
+  const [moved] = store.doc.elements.splice(store.doc.elements.findIndex((n) => n.id === mgr.id), 1)
+  content.controls.push(moved)
+  assert.ok(diagnose(store.doc).items.some((i) => i.rule === 'manager-not-root'))
+  assert.ok(managerNodes(store.doc).some((m) => m.id === mgr.id), '递归查找不能静默失联')
+})
+
+test('codegen：StackPanel.orientation 必须走 setOrientation（addProp 会被 serialize 覆盖回 vertical）', () => {
+  const { code } = generate(loadProject(GUIDEBOOK).project)
+  assert.ok(code.includes('.setOrientation("horizontal")'), '横向 StackPanel 要生成 setOrientation')
+  assert.ok(!code.includes('addProp("orientation"'), '不能用 addProp：序列化时会被覆盖')
 })
 
 test('codegen：属性包链、变量、绑定、子项顺序正确', () => {
@@ -231,10 +300,11 @@ function buildReal(c, node, parent) {
       const btn = new c.FormButton(child.id)
       const p = child.props || {}
       const tex = ['default', 'hover', 'pressed'].map((k) => p[`texture_${k}`] || '')
-      if (tex.every(Boolean)) btn.setTexture(tex[0], tex[1], tex[2])
+      if (tex.some(Boolean)) btn.setTexture(tex[0], tex[1], tex[2])
       if (p.binding) btn.setBinding(p.binding)
       if ('anchor' in p) btn.setAnchor(p.anchor)
       if ('size' in p) btn.setSize(p.size[0], p.size[1])
+      for (const gc of child.controls || []) btn.addControl(buildReal(c, gc, child))
       const slot = Number.isFinite(child.slot) ? child.slot : i
       const pos = Array.isArray(child.pos) ? child.pos : [0, 0]
       if (pos[0] || pos[1]) g.addButton(slot, btn, pos)
@@ -260,6 +330,7 @@ function buildReal(c, node, parent) {
   for (const def of schemaFor(node.type).raw) {
     if (!Object.prototype.hasOwnProperty.call(node.props, def.key)) continue
     if (def.key === 'collection_name') el.setCollectionName(node.props[def.key])
+    else if (def.setter && def.setter !== 'addProp') el[def.setter](node.props[def.key])
     else el.addProp(def.key, node.props[def.key])
   }
   for (const [k, v] of Object.entries(node.vars || {})) el.addVariable(k, v)
@@ -365,6 +436,20 @@ test('★交叉验证：一个 UI 文件的 toObject() 与 previewUiFile() 深�
   assert.deepEqual(controls.slice(-2), ['managed_page_a', 'managed_page_b'], '管理器把页面板挂进容器（顺序 = 登记顺序）')
 })
 
+test('★交叉验证：默认手册示例（横向 StackPanel / 带图标的 FormButton）也逐字段相等', async (t) => {
+  if (!hasDist) return t.skip(SKIP_HINT)
+  const c = await import(DIST_INDEX.href)
+  const { project: GB } = loadProject(GUIDEBOOK)
+
+  const content = buildReal(c, findNode(GB.elements, GB.screen.content), null)
+  const buttons = buildReal(c, findNode(GB.elements, GB.screen.buttons), null)
+  const ns = `${GB.uiSystem.identifier}_gb`
+  const form = new c.SapdonFormUI(`${ns}:${GB.screen.name}`, content, buttons)
+  const real = jsonNormalize(form.getSystem().toObject())
+  const mirrored = jsonNormalize(previewUiFile({ ...GB, uiSystem: { ...GB.uiSystem, identifier: ns } }))
+  assert.deepEqual(mirrored, real, '手册示例的 UI 文件产物应与真实框架逐字段一致')
+})
+
 test('★交叉验证：server_form 路由壳与 previewServerForm() 深度相等', async (t) => {
   if (!hasDist) return t.skip(SKIP_HINT)
   const c = await import(DIST_INDEX.href)
@@ -454,6 +539,12 @@ test('evaluateVisibility：页面门控/按钮门控/前缀门控', () => {
   const root = { vars: { panel_id: 'sapdon_ui:book' }, bindings: [{ type: 'view', source: "(not( (#title_text - 'sapdon_ui:book') = #title_text))", target: '#visible' }] }
   assert.equal(evaluateVisibility(root, { title: 'sapdon_ui:book' }), true)
   assert.equal(evaluateVisibility(root, { title: 'sapdon_ui:other' }), false)
+
+  // 字符串减法 = 包含匹配（不是 startsWith）；空 tag 减不掉 ⇒ 隐藏
+  const tag = (v) => ({ vars: { gtag: v }, bindings: [{ type: 'view', source: '(not( (#form_text - $gtag) = #form_text))', target: '#visible' }] })
+  assert.equal(evaluateVisibility(tag('INTRO'), { body: 'CAT:INTRO|p0' }), true, '出现在中间也算命中')
+  assert.equal(evaluateVisibility(tag('INTRO'), { body: 'INDEX' }), false)
+  assert.equal(evaluateVisibility(tag(''), { body: 'INDEX' }), false, '空 tag 的门控不成立')
 })
 
 test('evaluateVisibility：没有门控绑定时返回 null（不装作知道）', () => {

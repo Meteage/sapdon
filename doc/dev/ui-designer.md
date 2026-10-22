@@ -24,6 +24,11 @@
 > **三类屏幕的边界（2026-09 用户口径）**：`form` / `容器` / `hud` 就这三类。后两类**不做 form 那套规范校验**：
 > 容器屏只管槽位与控件（挂载 `ContainerUISystem.addControl`、槽位换算由框架补）；hud 屏只管元素（挂载 `HudUISystem.mountRootElement`）。
 > **游戏里是否生效由你的挂载代码决定**（编辑器不打包票，也不因此扣分报错）。
+>
+> ★ **切屏幕类型 = 换内容**：三类屏的元素结构与规范不同，旧示例不能原样带过去。顶栏切换时
+> `app.switchScreenKind()`（`ui/app.js`）载入该类型的内容：`form` → 手册示例、`容器` → 发电机示例、
+> `hud` → 空白工程；工程里已有元素时先 `confirm`，取消则保持原工程。底层 `Store.setScreenKind()` 只改标记，
+> 供测试/程序化用途，**不要**直接接到顶栏。
 
 不覆盖的：原版任意 screen、`factory`/`custom` 渲染器内部、模板内部结构 —— 一律画占位框，不去猜（见 §5.3）。
 
@@ -44,9 +49,9 @@
 | Qt Designer | Sapdon Designer | 落在哪个机制上 |
 |---|---|---|
 | `.ui` 文件（XML 工程） | `.sui.json` 工程文件 | 自研 JSON 工程格式，见 §4 |
-| Widget Box（控件箱） | 控件箱 = `elements/` 的 8 个类 + 模板继承项 | `Panel / StackPanel / CollectionPanel / Grid / Label / Image / Button / ScrollingPanel`；模板项 = `new X(id, 'common.button')`，等价 Qt 的 **promote to custom widget**（§6.2） |
+| Widget Box（控件箱） | 控件箱 = `elements/` 的 8 个类 + 模板继承项；**按屏幕类型过滤**（`catalog.js` 的 `onlyFor`） | `Panel / StackPanel / CollectionPanel / Grid / Label / Image / Button / ScrollingPanel`；**组合件（FormButtonGrid / FormButton / PagePanelManage）只在 `form` 屏列出**，Slot 只在容器屏列出；模板项 = `new X(id, 'common.button')`，等价 Qt 的 **promote to custom widget**（§6.2） |
 | Form / 画布（含 layout 预览） | 画布（绝对定位渲染 + 网格/流式参考线） | 自研版面引擎 `layout.js`，见 §5 |
-| Object Inspector（对象树） | 对象树（`controls` 嵌套 + `grid_position` 标注） | `UIElement.control.addControl()` 的嵌套结构 |
+| Object Inspector（对象树） | 对象树（`controls` 嵌套 + `grid_position` 标注；容器行可折叠、状态记 localStorage） | `UIElement.control.addControl()` 的嵌套结构 |
 | Property Editor（属性编辑器，含**斜体/加粗表示"已设置"**、Reset） | 分组属性面板 + 「已赋值」标记 + 重置按钮 | 属性包分层：`Layout / Control / Text / Sprite / Input / Sound / GridProp / ScrollView / Factory`，见 §4.2 |
 | Signal/Slot Editor（信号槽编辑器） | **门控/绑定编辑器**（`$变量` + `view` 绑定表达式） | `addVariable` + `DataBindingObject`；sapdon 的「UI 逻辑零 JS」= 逻辑全在绑定表达式里，见 §7 |
 | Resource Browser（.qrc 资源） | 纹理资源面板（工程 `res/textures/**` + 原版 `textures/ui/*` 常用串） | `Sprite.setTexture` 的取值域 |
@@ -112,6 +117,10 @@
     { "tag": "CAT:x", "panel": "cat_panel" }
   ]
 }
+// ★ 约束（诊断强制）：管理器本身只能放根层（诊断 manager-not-root）；container 必须是容器元素；panel 不能是
+//   container 本身、不能是 container 的祖先/子项、不能同一块面板登记两次。属性面板只列满足条件的容器；
+//   新加的页不预选面板（诊断 manager-page-self / manager-page-duplicate / manager-page-not-container /
+//   manager-container-not-container）。管理器固定加在根层（addWidget 忽略父级；indent/reparent 对它是 no-op）。
 ```
 
 元素节点（镜像 `UIElement`）：
@@ -306,7 +315,8 @@ SapdonUI 的界面外层几乎都是**铺满整页的容器**（`index_layout`�
 | `sound_name/sound_volume/sound_pitch/...` | `.setSound(new Sound()...)` |
 | `scroll_speed/scrollbar_track/...` | `.setScrollView(new ScrollView()...)` |
 | `collection_name` | `.setCollectionName('form_buttons')` |
-| 其余（`default_control` / `hover_control` / `orientation` / 自定义键…） | `.addProp('key', value)` |
+| `orientation`（StackPanel） | `.setOrientation('horizontal')` —— **不能**用 `addProp`：`StackPanel.serialize()` 会用实例字段覆盖回构造默认的 `vertical` |
+| 其余（`default_control` / `hover_control` / 自定义键…） | `.addProp('key', value)` |
 
 子项与结构：`.addControl(child)`；grid 子项 `.addGridItem([col, row], child)`；变量 `.addVariable(k, v)`；绑定 `.dataBinding.addDataBinding(new DataBindingObject().setBindingType('view').setSourcePropertyName('...').setTargetPropertyName('#visible'))`；调试 `.enableDebug()`。
 

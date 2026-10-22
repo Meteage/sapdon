@@ -9,7 +9,7 @@
  * 每条规则的依据写在 `RULES[].why`，改动规则请连依据一起改。
  */
 
-import { schemaFor } from './catalog.js'
+import { isContainer, schemaFor, widgetFor } from './catalog.js'
 import { gridDimensions } from './layout.js'
 import { managerNodes, screenKind, screenOf, uiFileName } from './model.js'
 import { normalizeTexturePath, resolveTexture } from './textures.js'
@@ -24,6 +24,16 @@ function findOwnerDoc(doc, id, parentId = null, nodes = null) {
   for (const n of nodes || doc.elements || []) {
     if (n.id === id) return { parentId, node: n }
     const hit = findOwnerDoc(doc, id, n.id, n.controls)
+    if (hit) return hit
+  }
+  return null
+}
+
+/** 按 id 找节点（含子项） */
+function findNodeDoc(nodes, id) {
+  for (const n of nodes || []) {
+    if (n.id === id) return n
+    const hit = findNodeDoc(n.controls, id)
     if (hit) return hit
   }
   return null
@@ -68,6 +78,12 @@ export const RULES = Object.freeze({
   'manager-page-no-panel': { title: '多页管理器有一页没选面板', severity: 'error', why: '每一页都要给页面板（`addPage(panel, tag)`），否则这一页没有东西可门控' },
   'manager-page-tag-dup': { title: '多页管理器里 tag 重复', severity: 'error', why: 'tag 是运行期 `.body()` 的匹配串，重复 ⇒ 两页同时可见（前缀匹配时短 tag 还会顺带点亮长的）' },
   'manager-page-in-container': { title: '页面板同时挂在门控容器里', severity: 'warn', why: '管理器会自己把页面板挂进容器（`container.addControl(panel)`）；同时又是容器的子项 ⇒ 产物里挂两次' },
+  'manager-not-root': { title: '多页管理器被放进了容器', severity: 'error', why: '管理器是工程级对象：生成器要在所有面板声明之后才 new 它；放进容器会晚于容器变量（TDZ）且容易把容器自己当页面板。请把它反缩进到根层' },
+  'manager-container-not-container': { title: '门控容器不是容器元素', severity: 'error', why: '`PagePanelManage(container)` 要往容器里 `addControl(panel)`；Label/Image 这类叶子会把页面嵌套成单个控件，产物语义错误' },
+  'manager-page-self': { title: '页面板就是门控容器本身', severity: 'error', why: '把容器自己 `addControl` 进去会生成"容器嵌套自身"的产物，且门控变量/绑定加在容器上 ⇒ 整页按页 tag 显隐（通常永不显示）；页面板必须是容器里的另一块面板' },
+  'manager-page-not-container': { title: '页面板不是容器', severity: 'warn', why: '页面板通常是 Panel/StackPanel 等容器；叶子元素当页面板只会挂进一个孤立控件' },
+  'manager-page-duplicate': { title: '同一块页面板登记了多次', severity: 'error', why: '同一面板被 addPage 两次 ⇒ 挂两遍、叠加两条互斥的 #visible 门控，且 $gtag 被后一次覆盖 ⇒ 该页基本永不显示' },
+  'form-only-in-freeform': { title: 'form 专属控件出现在非 form 屏', severity: 'warn', why: 'FormButtonGrid/FormButton 依赖 server_form 的集合与门控，PagePanelManage 依赖 #form_text；容器/hud 屏没有这些运行期来源（catalog 里标了 onlyFor: form）' },
 })
 
 const ANCHOR_ID_CHARS = /^[A-Za-z0-9_-]+$/
@@ -119,6 +135,12 @@ export function diagnose(doc, opts = {}) {
       else seenIds.set(node.id, node)
 
       const props = node.props || {}
+
+      // 屏幕类型专属控件（例如 FormButtonGrid 只属于 form 屏）
+      const only = widgetFor(node.type)
+      if (!isForm && only && only.onlyFor && only.onlyFor !== kind) {
+        items.push(diag('form-only-in-freeform', node.id, `${only.label} 只在 ${only.onlyFor} 屏生效（当前 ${kind} 屏）：切回对应屏幕类型或删掉它`))
+      }
 
       // 未知属性键（会被 codegen/preview 静默丢弃 —— 必须报出来）
       const knownKeys = new Set(schemaFor(node.type).packs.flatMap((pk) => pk.props.map((d) => d.key)).concat(schemaFor(node.type).raw.map((d) => d.key), schemaFor(node.type).ctorProps.map((d) => d.key)))
@@ -259,16 +281,39 @@ export function diagnose(doc, opts = {}) {
     }
   }
 
-  // 多页管理器（三类屏都可能用：hud/容器 也能靠它做多页）
+  // 多页管理器（form 屏专用：靠 #form_text 选页；hud/容器没有这个运行期来源）
   for (const m of managerNodes(doc)) {
+    const owner = findOwnerDoc(doc, m.id)
+    if (owner && owner.parentId) {
+      items.push(diag('manager-not-root', m.id, `多页管理器 ${m.id} 在容器 ${owner.parentId} 里：请反缩进到根层`))
+    }
     const container = (m.props && m.props.container) || ''
+    const containerNode = container ? findNodeDoc(doc.elements, container) : null
     if (!container) items.push(diag('manager-no-container', m.id, `多页管理器 ${m.id} 没选门控容器`))
+    else if (!containerNode) items.push(diag('manager-no-container', m.id, `多页管理器 ${m.id} 的门控容器 ${container} 不存在`))
+    else if (!isContainer(containerNode.type)) {
+      items.push(diag('manager-container-not-container', m.id, `门控容器 ${container} 是 ${containerNode.type}，不是容器元素`))
+    }
     const tags = []
+    const panels = new Map()
     for (const p of m.pages || []) {
       if (!p.panel) items.push(diag('manager-page-no-panel', m.id, `管理器 ${m.id} 里 tag="${p.tag}" 的那一页没选面板`))
       if (tags.includes(p.tag)) items.push(diag('manager-page-tag-dup', m.id, `管理器 ${m.id} 里 tag "${p.tag}" 重复`))
       else tags.push(p.tag)
-      if (container && p.panel) {
+      if (!p.panel) continue
+      if (panels.has(p.panel)) {
+        items.push(diag('manager-page-duplicate', m.id, `页面板 ${p.panel} 同时登记在 "${panels.get(p.panel)}" 与 "${p.tag}"：会挂两遍且门控互斥`))
+      } else {
+        panels.set(p.panel, p.tag)
+      }
+      if (container && p.panel === container) {
+        items.push(diag('manager-page-self', m.id, `页面板 ${p.panel} 就是门控容器 ${container} 本身：会生成容器嵌套自身`))
+      }
+      const node = findNodeDoc(doc.elements, p.panel)
+      if (node && !isContainer(node.type)) {
+        items.push(diag('manager-page-not-container', m.id, `页面板 ${p.panel} 是 ${node.type}，通常应是容器（Panel/StackPanel/…）`))
+      }
+      if (container && p.panel !== container) {
         const owner = findOwnerDoc(doc, p.panel)
         if (owner && owner.parentId === container) {
           items.push(

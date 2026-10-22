@@ -12,6 +12,7 @@
 
 import { h, render } from './dom.js'
 import { layoutTree, paintOrder, offsetFromDrag, sizeFromPixels, formatRect } from '../layout.js'
+import { gateTags } from '../model.js'
 import { visibilityOf } from '../gate.js'
 import { gridDimensions } from '../layout.js'
 import { paintNode } from '../paint.js'
@@ -154,17 +155,51 @@ function toolbar(app, hiddenCount = 0, host = null) {
     h('span', { class: 'spacer' }),
     h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: app.gateEnabled, onchange: (e) => app.setGate(e.target.checked) }), '门控模拟'),
     app.gateEnabled && hiddenCount ? h('span', { class: 'muted', title: '被门控挡掉的元素不画（在对象树里仍可选中）', text: `已隐藏 ${hiddenCount}` }) : null,
-    // 三个门控输入折进一个小三角里：平时不占地方，要看别的页再展开
+    // 三个门控输入折进一个小三角里：平时不占地方，要看别的页再展开。
+    // ★ open 状态与输入焦点由 `app.gateOpen` / `setSimField` 保回来 —— 重绘会重建这些节点，
+    //   否则用户刚展开面板、敲一个字，<details> 就自己关上、光标也丢了。
     h(
       'details',
-      { class: 'gate-box' },
+      {
+        class: 'gate-box',
+        open: !!app.gateOpen,
+        ontoggle: (e) => {
+          app.gateOpen = !!e.target.open
+        },
+      },
       h('summary', { title: '填写运行期会 emit 的值，按绑定表达式模拟显隐' }, '值'),
       h(
         'div',
         { class: 'gate-fields' },
-        h('input', { class: 'gate-in', value: app.sim.title, placeholder: '#title_text', oninput: (e) => app.setSim({ title: e.target.value }) }),
-        h('input', { class: 'gate-in', value: app.sim.body, placeholder: '#form_text', oninput: (e) => app.setSim({ body: e.target.value }) }),
-        h('input', { class: 'gate-in', value: Array.isArray(app.sim.buttons) ? app.sim.buttons.join(',') : app.sim.buttons, placeholder: '#form_button_text', oninput: (e) => app.setSim({ buttons: e.target.value }) }),
+        h('input', {
+          class: 'gate-in',
+          dataset: { gate: 'title' },
+          value: app.sim.title,
+          placeholder: '#title_text',
+          oninput: (e) => setSimField(app, 'title', e.target),
+        }),
+        h('input', {
+          class: 'gate-in',
+          dataset: { gate: 'body' },
+          value: app.sim.body,
+          placeholder: '#form_text',
+          list: 'gate-tags',
+          title: '可下拉选工程里出现过的门控 tag；也可以手填任意运行期 .body() 值',
+          oninput: (e) => setSimField(app, 'body', e.target),
+        }),
+        h('input', {
+          class: 'gate-in',
+          dataset: { gate: 'buttons' },
+          value: Array.isArray(app.sim.buttons) ? app.sim.buttons.join(',') : app.sim.buttons,
+          placeholder: '#form_button_text',
+          title: '逗号分隔：模拟这一屏里存在哪些按钮文本（集合实例按这个列表显示）',
+          oninput: (e) => setSimField(app, 'buttons', e.target),
+        }),
+        h(
+          'datalist',
+          { id: 'gate-tags' },
+          gateTags(store.doc).map((tag) => h('option', { value: String(tag) })),
+        ),
       ),
     ),
     h('span', { class: 'spacer' }),
@@ -173,6 +208,24 @@ function toolbar(app, hiddenCount = 0, host = null) {
     zoomBtn(2),
     zoomBtn(3),
   )
+}
+
+/**
+ * 改一个门控模拟值。
+ * `setSim` 会整屏重绘（画布盒子要按新值重算显隐），因此这里在重绘后把焦点与光标放回原输入框；
+ * 值面板的展开状态由 `app.gateOpen` 在重绘时还原。
+ */
+function setSimField(app, field, input) {
+  const caret = typeof input.selectionStart === 'number' ? input.selectionStart : null
+  app.setSim({ [field]: input.value })
+  // 重绘会把整个 tab-body 换掉 ⇒ 不能用闭包里捕获的旧 host 查，必须查当前 document
+  const root = typeof document !== 'undefined' ? document.body || document : null
+  const next = root && root.querySelectorAll
+    ? [...root.querySelectorAll('.gate-in')].find((el) => el.dataset && el.dataset.gate === field)
+    : null
+  if (!next || !next.focus) return
+  next.focus()
+  if (caret !== null && next.setSelectionRange) next.setSelectionRange(caret, caret)
 }
 
 function legend(app, selBox) {

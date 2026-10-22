@@ -159,6 +159,7 @@ export const PACK_PROPS = Object.freeze({
 /**
  * kind: 'element' = 一个 UIElement 子类；'composite' = 组合件（构造器/构建器形态特殊）
  * mode: 画布排布模式（'anchored' | 'flow' | 'grid' | 'form-grid'）
+ * onlyFor: 只在指定屏幕类型出现（form / container / hud）；不给 = 三类屏都可放
  */
 export const WIDGETS = Object.freeze([
   { type: 'panel', ctor: 'Panel', label: 'Panel 面板', group: '容器', kind: 'element', container: true, mode: 'anchored', hint: '空容器，子项重叠可叠层 —— 一切版面的底座' },
@@ -169,9 +170,9 @@ export const WIDGETS = Object.freeze([
   { type: 'label', ctor: 'Label', label: 'Label 文本', group: '显示', kind: 'element', container: false, mode: 'anchored', hint: '文案/颜色/字号/对齐' },
   { type: 'image', ctor: 'Image', label: 'Image 图片', group: '显示', kind: 'element', container: false, mode: 'anchored', hint: '纹理/UV/九宫格/裁切' },
   { type: 'button', ctor: 'Button', label: 'Button 按钮', group: '交互', kind: 'element', container: true, mode: 'anchored', hint: '普通按钮；配 common.button 模板 + $pressed_button_name 变量' },
-  { type: 'form_button_grid', ctor: 'FormButtonGrid', label: 'FormButtonGrid 表单格盘', group: '组合件', kind: 'composite', container: true, mode: 'form-grid', ctorProps: ['dimensions', 'size'], hint: 'dimensions [列,行] + size；子项只能是 FormButton' },
-  { type: 'form_button', ctor: 'FormButton', label: 'FormButton 按钮/卡片', group: '组合件', kind: 'composite', container: true, mode: 'anchored', onlyInside: 'form_button_grid', hint: '格盘里的按钮：addButton 注入集合/门控绑定；可挂图标/文字子控件（手册索引卡就是这么做的）' },
-  { type: 'page_panel_manage', ctor: 'PagePanelManage', label: 'PagePanelManage 多页管理器', group: '组合件', kind: 'manager', container: false, mode: 'none', hint: '一屏之内多页面：把多块页面板登记给它（tag + 面板），它负责给每块挂 #form_text 门控并挂进容器；运行期脚本 .body(tag) 选页。非视觉对象' },
+  { type: 'form_button_grid', ctor: 'FormButtonGrid', label: 'FormButtonGrid 表单格盘', group: '组合件', kind: 'composite', container: true, mode: 'form-grid', onlyFor: 'form', ctorProps: ['dimensions', 'size'], hint: 'dimensions [列,行] + size；子项只能是 FormButton；form 屏专用（依赖服务端表单集合）' },
+  { type: 'form_button', ctor: 'FormButton', label: 'FormButton 按钮/卡片', group: '组合件', kind: 'composite', container: true, mode: 'anchored', onlyFor: 'form', onlyInside: 'form_button_grid', hint: '格盘里的按钮：addButton 注入集合/门控绑定；可挂图标/文字子控件（手册索引卡就是这么做的）；form 屏专用' },
+  { type: 'page_panel_manage', ctor: 'PagePanelManage', label: 'PagePanelManage 多页管理器', group: '组合件', kind: 'manager', container: false, mode: 'none', onlyFor: 'form', hint: '一屏之内多页面：把多块页面板登记给它（tag + 面板），它负责给每块挂 #form_text 门控并挂进容器；运行期脚本 .body(tag) 选页。非视觉对象；form 屏专用' },
   // 容器屏专用：一个节点 = 一次 `ContainerUISystem.addSlot({ slot, pos, kind })`。
   // 它不是 UIElement（没有对应的控件类），所以 codegen 会单独处理，不走 `new ...` 那条链。
   { type: 'slot', ctor: 'ContainerSlot', label: 'Slot 容器槽位', group: '容器', kind: 'special', special: 'container-slot', container: false, mode: 'anchored', onlyFor: 'container', hint: '容器屏专用：槽号 + 画布像素位置；生成 addSlot({ slot, pos, kind })，grid_position 由框架换算' },
@@ -198,7 +199,9 @@ export function widgetsAllowedIn(parentType) {
 // ---------------------------------------------------------------------------
 
 const RAW = {
-  orientation: p('orientation', 'addProp', 'enum', 'vertical', { options: ['vertical', 'horizontal'], hint: 'StackPanel 序列化时总带此键（默认 vertical）' }),
+  // ★ 必须用 StackPanel.setOrientation：addProp('orientation') 会被 serialize() 里的
+  //   `properties.set('orientation', this.orientation)` 覆盖回构造默认的 vertical。
+  orientation: p('orientation', 'setOrientation', 'enum', 'vertical', { options: ['vertical', 'horizontal'], hint: 'StackPanel 序列化时总带此键（默认 vertical）' }),
   collection_name: p('collection_name', 'addProp', 'string', '', { hint: '集合名，如 form_buttons / container_items' }),
   default_control: p('default_control', 'addProp', 'string', 'default', { optional: true }),
   hover_control: p('hover_control', 'addProp', 'string', 'hover', { optional: true }),

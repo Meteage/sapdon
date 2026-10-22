@@ -54,9 +54,21 @@ export function screenOf(doc) {
   }
 }
 
-/** 工程里的多页管理器节点（`PagePanelManage`） */
+/**
+ * 工程里的多页管理器节点（`PagePanelManage`）。
+ * 递归查找：管理器**应当**在根层（诊断 `manager-not-root` 会拦），但用户可能把它缩进到容器里，
+ * 此时诊断/门控 tag/预览都必须还能看到它，不能静默失联。
+ */
 export function managerNodes(doc) {
-  return (doc && doc.elements ? doc.elements : []).filter((n) => n.type === 'page_panel_manage')
+  const out = []
+  const walk = (nodes) => {
+    for (const n of nodes || []) {
+      if (n.type === 'page_panel_manage') out.push(n)
+      walk(n.controls)
+    }
+  }
+  walk(doc && doc.elements)
+  return out
 }
 
 /**
@@ -497,6 +509,11 @@ export class Store {
 
   // --- 结构编辑 ---
   addWidget(type, { parentId = null, index = null } = {}) {
+    // 多页管理器是工程级对象（生成器在所有面板之后才 new 它）⇒ 只能放根层，忽略 parentId
+    if (type === 'page_panel_manage') {
+      parentId = null
+      index = null
+    }
     let created = null
     this.edit('add', (doc) => {
       const node = createNode(doc, type)
@@ -564,6 +581,7 @@ export class Store {
     this.edit('indent', (doc) => {
       const loc = locate(doc, id)
       if (!loc || loc.index === 0) return
+      if (loc.node.type === 'page_panel_manage') return // 管理器只能放根层
       const prev = loc.siblings[loc.index - 1]
       const [n] = loc.siblings.splice(loc.index, 1)
       prev.controls.push(n)
@@ -591,6 +609,7 @@ export class Store {
       const loc = locate(doc, id)
       const parent = parentId ? findNode(doc.elements, parentId) : null
       if (!loc || (parentId && !parent)) return
+      if (loc.node.type === 'page_panel_manage' && parentId) return // 管理器只能放根层
       // 防环：目标不能是自己的后代
       let bad = false
       walk(loc.node.controls, (n) => {
@@ -771,6 +790,7 @@ export class Store {
   }
 
   /** 屏幕类型：form（按规范）| container | hud（后两类自由摆放，不做规范校验） */
+  /** 只改类型标记（底层 API）。顶栏切换走 `app.switchScreenKind`：会载入该类型示例/空白工程，避免旧元素串屏。 */
   setScreenKind(kind) {
     this.edit('screenkind', (doc) => {
       doc.screenKind = SCREEN_KINDS.includes(kind) ? kind : 'form'
@@ -829,7 +849,8 @@ export class Store {
         const node = parseNode(doc, raw, used)
         if (!node) continue
         bumpOffset(node)
-        siblings.splice(at++, 0, node)
+        if (node.type === 'page_panel_manage') doc.elements.push(node) // 管理器只能放根层
+        else siblings.splice(at++, 0, node)
         created.push(node)
         collectIds(node, createdIds)
       }

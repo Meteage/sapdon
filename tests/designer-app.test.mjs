@@ -20,6 +20,8 @@ import { buildTextureIndex } from '../tools/designer/src/textures.js'
 import { ninePieces } from '../tools/designer/src/paint.js'
 import { layoutTree } from '../tools/designer/src/layout.js'
 import { SAMPLE } from '../tools/designer/samples/gated_book.js'
+import { SAMPLE as GUIDEBOOK } from '../tools/designer/samples/guidebook.js'
+import { SAMPLE as GENERATOR } from '../tools/designer/samples/generator.js'
 
 // ---------------------------------------------------------------------------
 // 最小 DOM 桩（只实现 src/ui/** 真的用到的那部分）
@@ -114,6 +116,19 @@ function makeDom() {
       return this.fire('click')
     }
 
+    focus() {
+      this.focused = true
+    }
+
+    blur() {
+      this.focused = false
+    }
+
+    setSelectionRange(start, end) {
+      this.selectionStart = start
+      this.selectionEnd = end
+    }
+
     /** 极简选择器：'.cls'、'tag'、'tag.cls'、'#id' */
     matches(selector) {
       const s = String(selector).trim()
@@ -176,7 +191,7 @@ const clickText = (root, text) => {
 // 挂载
 // ---------------------------------------------------------------------------
 
-function boot() {
+function boot(overrides = {}) {
   const { doc } = makeDom()
   globalThis.document = doc
   const host = doc.createElement('div')
@@ -194,6 +209,7 @@ function boot() {
     onKey: (fn) => {
       globalThis.__keyHandler = fn
     },
+    ...overrides,
   })
   return { host, store, app, notices, doc }
 }
@@ -225,6 +241,16 @@ test('控件箱：选中容器时加的是子项（不是兄弟）', () => {
   clickText(host, 'Label 文本')
   assert.equal(store.node('book_content_panel').controls.length, before + 1)
   assert.equal(store.selected.type, 'label')
+})
+
+test('控件箱：多页管理器固定加在根层，不会被塞进选中的容器', () => {
+  const { host, store, notices } = boot()
+  store.select('book_content_panel')
+  const roots = store.doc.elements.length
+  clickText(host, 'PagePanelManage')
+  assert.equal(store.doc.elements.length, roots + 1, '加到根层')
+  assert.ok(!store.node('book_content_panel').controls.some((c) => c.type === 'page_panel_manage'))
+  assert.ok(notices.some((n) => n.includes('根层')))
 })
 
 test('控件箱：不允许的组合会被拦下（FormButton 只能进 FormButtonGrid）', () => {
@@ -444,6 +470,57 @@ test('对象树：点行会选中；↑↓⇥⇤ 按钮都在', () => {
   assert.ok(byText(host, '⇥').length > 0)
 })
 
+test('★ 对象树：容器行可折叠/展开；选中被藏元素会自动展开祖先', () => {
+  const { host, store, app } = boot()
+  store.select(null)
+  app.render()
+  const rows = () => byClass(host, 'tree-row').map((r) => r.dataset.id)
+  const total = rows().length
+  assert.ok(total > 5, `示例工程有 ${total} 行`)
+
+  // 容器行的箭头：▼ = 展开。点它收起子树（自己保留）
+  const rowEls = byClass(host, 'tree-row')
+  const idx = rowEls.findIndex((r) => r.dataset.id === 'book_content_panel')
+  assert.ok(idx >= 0, '找到容器行 book_content_panel')
+  const arrow = byClass(host, 'tree-arrow')[idx]
+  assert.ok(arrow, '行首有折叠开关')
+  assert.equal(arrow.textContent, '▼', '默认展开')
+  arrow.fire('click')
+  assert.ok(rows().length < total, `折叠后行数变少：${rows().length} < ${total}`)
+  assert.ok(rows().includes('book_content_panel'), '折叠的行自己还在')
+  assert.ok(!rows().includes('page1_body'), '整棵子树被藏起')
+
+  // 选中被藏的元素（如点画布）→ 祖先链自动展开，元素回到树上
+  store.select('page1_body')
+  app.render()
+  assert.ok(rows().includes('page1_body'), '选中后祖先自动展开')
+  assert.equal(arrow.textContent !== '▼' || rows().includes('page1_body'), true)
+
+  // 全收 → 只剩根层；全展 → 恢复
+  clickText(host, '全收')
+  assert.equal(byClass(host, 'tree-row').length, store.doc.elements.length, '全收后只剩根层')
+  clickText(host, '全展')
+  assert.equal(byClass(host, 'tree-row').length, total, '全展恢复全部')
+})
+
+test('对象树：手动收起包含选中项的分支，不会被下一次渲染重新撑开', () => {
+  const { host, store, app } = boot()
+  store.select('page1_body')
+  app.render()
+  const rows = () => byClass(host, 'tree-row').map((r) => r.dataset.id)
+  const rowEls = byClass(host, 'tree-row')
+  const idx = rowEls.findIndex((r) => r.dataset.id === 'book_content_panel')
+  byClass(host, 'tree-arrow')[idx].fire('click')
+  assert.ok(!rows().includes('page1_body'), '收起后子树不可见')
+  app.render()
+  assert.ok(!rows().includes('page1_body'), '选中没变，重绘不应自动展开')
+  store.select('page1_title')
+  app.render()
+  store.select('page1_body')
+  app.render()
+  assert.ok(rows().includes('page1_body'), '选中变化时展开祖先链')
+})
+
 function countDescendants(node) {
   return (node.controls || []).reduce((n, c) => n + 1 + countDescendants(c), 0)
 }
@@ -550,6 +627,30 @@ test('顶栏：屏名/内容/按键三个字段就是本屏；多页面靠 PageP
   assert.equal(byClass(host, 'page-card').length, 3, '页列表按页渲染（tag 是 input，不在 textContent 里）')
 })
 
+test('多页管理器：下拉只列合适的容器，新页不预选（防自嵌套/重复登记）', () => {
+  const { host, store, app } = boot()
+  const mgr = managerNodes(store.doc)[0]
+  store.select(mgr.id)
+  app.render()
+
+  const values = (sel) => sel.children.filter((c) => c.tagName === 'OPTION').map((o) => o.value)
+  const pageSelects = byClass(host, 'page-panel-select')
+  assert.equal(pageSelects.length, 2, '每页一个面板下拉')
+  assert.ok(values(pageSelects[0]).includes('managed_page_a'))
+  assert.ok(!values(pageSelects[0]).includes('managed_page_b'), '已用于其它页的面板不重复列出')
+  assert.ok(!values(pageSelects[0]).includes('book_content_panel'), '门控容器不能当页面板')
+  assert.ok(!values(pageSelects[0]).includes('page1_title'), '叶子元素不列')
+
+  const containerSel = byClass(host, 'gate-container-select')[0]
+  assert.ok(values(containerSel).includes('book_content_panel'))
+  assert.ok(!values(containerSel).includes('managed_page_a'), '页面板不能反过来当门控容器')
+
+  const n = mgr.pages.length
+  clickText(host, '＋ 加一页')
+  assert.equal(managerNodes(store.doc)[0].pages.length, n + 1)
+  assert.equal(managerNodes(store.doc)[0].pages[n].panel, null, '新页默认不预选面板（否则容易重复登记）')
+})
+
 test('顶栏屏幕类型：form / 容器 / hud 可切，切换后诊断与产物预览跟着变', () => {
   const { host, store, app } = boot()
   const sel = byClass(host, 'kind-select')[0]
@@ -563,6 +664,15 @@ test('顶栏屏幕类型：form / 容器 / hud 可切，切换后诊断与产物
   const items = diagnose(app.store.doc).items
   assert.ok(items.some((i) => i.rule === 'screen-kind-freeform'))
   assert.ok(!items.some((i) => i.rule === 'main-route-panel-id'))
+
+  // 组合件是 form 专属：非 form 屏控件箱不列、也放不进去，已有节点报 form-only-in-freeform
+  const toolboxText = byClass(host, 'widget').map((w) => w.textContent).join(' | ')
+  assert.ok(!toolboxText.includes('FormButtonGrid'), `hud 屏不列 FormButtonGrid：${toolboxText}`)
+  assert.ok(!toolboxText.includes('PagePanelManage'), `hud 屏不列 PagePanelManage：${toolboxText}`)
+  const beforeAdd = store.doc.elements.length
+  app.addWidget('form_button_grid')
+  assert.equal(store.doc.elements.length, beforeAdd, '非 form 屏加不进组合件')
+  assert.ok(items.some((i) => i.rule === 'form-only-in-freeform'), '已有组合件要报 form-only-in-freeform')
   app.setTab('json')
   assert.ok(host.textContent.includes('自由摆放'), 'JSON 页签给出自由摆放说明')
   assert.ok(host.textContent.includes('hud_screen.json'), '目标文件是原版 hud_screen')
@@ -579,6 +689,35 @@ test('顶栏屏幕类型：form / 容器 / hud 可切，切换后诊断与产物
   app.setTab('json')
   assert.ok(host.textContent.includes('"namespace": "sapdon_ui_page1"'), 'form 的 UI 文件预览回来了')
   assert.ok(host.textContent.includes('server_form.json'))
+  const formToolbox = byClass(host, 'widget').map((w) => w.textContent).join(' | ')
+  assert.ok(formToolbox.includes('FormButtonGrid') && formToolbox.includes('PagePanelManage'), 'form 屏恢复组合件')
+})
+
+test('★ 切换屏幕类型：载入该类型的内容，旧示例元素不会原样带过来', () => {
+  const { store, app, notices } = boot()
+  assert.ok(store.doc.elements.length > 0, 'form 示例有内容')
+
+  app.switchScreenKind('container')
+  assert.equal(screenKind(store.doc), 'container')
+  assert.equal(store.doc.elements.length, 0, '旧 form 元素不带进容器屏（无示例时是空白工程）')
+  assert.ok(notices.some((n) => n.includes('容器')), '状态栏有反馈')
+
+  app.switchScreenKind('hud')
+  assert.equal(screenKind(store.doc), 'hud')
+  assert.equal(store.doc.elements.length, 0)
+})
+
+test('★ 切换屏幕类型：form/容器请求各自的示例；取消则保持原工程', () => {
+  const asked = []
+  const { store, app } = boot({ loadSample: (key) => asked.push(key) })
+  app.switchScreenKind('container')
+  assert.deepEqual(asked, ['generator'], '容器屏请求发电机示例')
+
+  const cancelled = boot({ confirm: () => false })
+  const before = { kind: screenKind(cancelled.store.doc), n: cancelled.store.doc.elements.length }
+  cancelled.app.switchScreenKind('container')
+  assert.equal(screenKind(cancelled.store.doc), before.kind, '取消后屏幕类型不变')
+  assert.equal(cancelled.store.doc.elements.length, before.n, '取消后内容不变')
 })
 
 test('★ 属性面板：分组默认只展开第一组，折叠状态跨选中记忆', () => {
@@ -679,6 +818,43 @@ test('★ 有门控时，门控模拟默认打开并按第一个门控 tag 预�
   assert.equal(app.gateEnabled, true, '工程里有 #visible 门控 ⇒ 默认开（否则多页会叠在一起）')
   assert.equal(app.sim.body, gateTags(store.doc)[0], '预填第一个门控 tag（管理器登记 / 元素绑定）')
   assert.equal(app.sim.title, `sapdon_ui:${store.doc.screen.name}`, 'title 是本屏的 panelId')
+})
+
+test('★ 换工程后门控模拟值跟着重置（不沿用上一个工程的 tag）', () => {
+  const { store, app } = boot()
+  assert.equal(app.sim.body, 'page1')
+
+  store.reset(loadProject(GENERATOR).project)
+  assert.equal(app.gateEnabled, false, '新工程没有门控 ⇒ 关掉模拟')
+  assert.equal(app.sim.body, '', '没有 tag 就不预填')
+
+  store.reset(loadProject(GUIDEBOOK).project)
+  assert.equal(app.gateEnabled, true)
+  assert.equal(app.sim.body, gateTags(store.doc)[0], '预填新工程的第一个 tag')
+})
+
+test('★ 门控模拟：改值时「值」面板保持展开、焦点与光标不丢；tag 有下拉候选', () => {
+  const { host, app, store } = boot()
+  const box = byClass(host, 'gate-box')[0]
+  assert.ok(box, '有「值」面板')
+  box.open = true
+  box.fire('toggle')
+  assert.equal(app.gateOpen, true, '展开状态记进 app')
+
+  const body = byClass(host, 'gate-in').find((el) => el.dataset.gate === 'body')
+  body.value = 'INTRO'
+  body.selectionStart = 5
+  body.fire('input')
+
+  assert.equal(app.sim.body, 'INTRO', '值写进模拟状态')
+  const reopened = byClass(host, 'gate-box')[0]
+  assert.equal(reopened.open, true, '重绘后仍展开')
+  const nextBody = byClass(host, 'gate-in').find((el) => el.dataset.gate === 'body')
+  assert.equal(nextBody.focused, true, '重绘后焦点回到同一输入框')
+  assert.equal(nextBody.selectionStart, 5, '光标位置保留')
+
+  const tags = host.querySelector('#gate-tags')
+  assert.ok(tags && tags.children.length >= gateTags(store.doc).length, '下拉候选来自工程里的门控 tag')
 })
 
 // ---------------------------------------------------------------------------

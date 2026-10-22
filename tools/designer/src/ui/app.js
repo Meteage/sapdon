@@ -17,7 +17,11 @@ import { generate } from '../codegen.js'
 import { previewAll, jsonNormalize, FORM_MARKER } from '../preview.js'
 import { diagnose, RULES } from '../diagnostics.js'
 import { codeViewHtml } from './highlight.js'
-import { flatten, gateTags, screenKind, screenOf, serializeProject } from '../model.js'
+import { SCREEN_KINDS, emptyProject, flatten, gateTags, screenKind, screenOf, serializeProject } from '../model.js'
+
+/** 每种屏幕类型对应的默认示例（没有示例的类型 → 载入空白工程） */
+const KIND_SAMPLE = { form: 'guidebook', container: 'generator', hud: null }
+const KIND_LABEL = { form: 'form 自定义表单', container: '容器', hud: 'HUD 常驻' }
 
 export function mountApp(root, store, opts = {}) {
   const app = {
@@ -27,6 +31,8 @@ export function mountApp(root, store, opts = {}) {
     display: 'preview',
     /** 门控模拟：工程里有 #visible 门控就默认打开（否则所有页会叠在一起，看着很乱） */
     gateEnabled: hasPageGates(store.doc),
+    /** 「值」面板是否展开：重绘要保回来（否则输入一个字面板就自己关上） */
+    gateOpen: false,
     sim: { title: '', body: '', buttons: '' },
     statusMessage: '就绪',
     open: opts.open || null,
@@ -58,6 +64,33 @@ export function mountApp(root, store, opts = {}) {
     setGate(on) {
       app.gateEnabled = !!on
       renderAll(app)
+    },
+    /**
+     * 切换屏幕类型：三类屏的元素结构/规范不同，**不能把旧示例原样带过去**。
+     * form → 默认手册示例；容器 → 液体燃料发电机示例；hud 没有示例 → 空白工程。
+     * 有内容时先确认（`opts.confirm`），取消则只重绘顶栏把选择器拨回原类型。
+     */
+    switchScreenKind(kind) {
+      const next = SCREEN_KINDS.includes(kind) ? kind : 'form'
+      if (next === screenKind(store.doc)) return
+      const hasContent = (store.doc.elements || []).length > 0
+      const sampleKey = KIND_SAMPLE[next]
+      if (
+        hasContent &&
+        opts.confirm &&
+        !opts.confirm(
+          `切换到「${KIND_LABEL[next]}」会载入该类型的${sampleKey ? '示例' : '空白工程'}，当前工程内容将被替换。\n（需要保留的话先「保存 .sui.json」）继续？`,
+        )
+      ) {
+        renderAll(app)
+        return
+      }
+      if (sampleKey && opts.loadSample) {
+        opts.loadSample(sampleKey)
+        return
+      }
+      store.reset(emptyProject(store.doc.uiSystem.identifier, next))
+      app.notice(`已切换到「${KIND_LABEL[next]}」：空白工程`)
     },
     /** 换工程后重置与文档相关的编辑器状态（门控模拟值、默认开关） */
     syncDocDefaults() {
@@ -134,7 +167,11 @@ export function mountApp(root, store, opts = {}) {
   // 门控模拟默认值取自工程第 1 页（用户不用手打 tag 就能看到"这一页长什么样"）
   app.sim = defaultSim(store.doc)
 
-  store.on(() => renderAll(app))
+  store.on((_store, reason) => {
+    // 换工程/载入示例：门控模拟值不能沿用上一个工程的 tag（否则整页都被"门控"藏掉）
+    if (reason === 'reset') app.syncDocDefaults()
+    renderAll(app)
+  })
   if (opts.onKey) opts.onKey((e) => handleKey(app, e))
   else document.addEventListener('keydown', (e) => handleKey(app, e))
 
@@ -321,7 +358,7 @@ function renderTopbar(app) {
     {
       class: 'kind-select',
       title: 'form：按规范（root + 内容/按钮 + 门控视图，走 SapdonFormUI）｜容器 / hud：自由摆放，编辑器不校验规范、也不预览框架产物',
-      onchange: (e) => store.setScreenKind(e.target.value),
+      onchange: (e) => app.switchScreenKind(e.target.value),
     },
     h('option', { value: 'form', selected: screenKind(doc) === 'form', text: 'form 自定义表单' }),
     h('option', { value: 'container', selected: screenKind(doc) === 'container', text: '容器' }),
@@ -601,6 +638,13 @@ function addWidget(app, type) {
   const def = widgetFor(type)
   if (def && def.onlyFor && def.onlyFor !== screenKind(store.doc)) {
     app.notice(`${def.label} 只在「${def.onlyFor}」屏可用：先把顶栏屏幕类型切过去`)
+    return
+  }
+  // 多页管理器是工程级对象：不论当前选中什么容器，都加到根层
+  if (type === 'page_panel_manage') {
+    const created = store.addWidget(type, {})
+    app.notice('多页管理器是根层对象：已加到根层（不能放进容器）')
+    if (created) app.reveal(created.id)
     return
   }
   const sel = store.selected

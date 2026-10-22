@@ -284,9 +284,13 @@ function applyManagers(doc, out, ns) {
     const mode = manager.props && manager.props.mode === 'eq' ? 'eq' : 'prefix'
     const variable = mode === 'prefix' ? 'gtag' : 'binding_text'
     if (!Array.isArray(target.controls)) target.controls = []
+    const seen = new Set()
     for (const page of manager.pages || []) {
       const node = page.panel ? findNode(doc.elements, page.panel) : null
       if (!node) continue
+      // 与 codegen 同款守卫：容器自己 / 同一面板重复登记都不生成（诊断里是 error）
+      if (page.panel === manager.props.container || seen.has(page.panel)) continue
+      seen.add(page.panel)
       const json = (previewElement(node, containerNode) || {})[jsonKey(node)] || {}
       json[`$${variable}`] = page.tag
       json.bindings = [...(json.bindings || []), gateBindingJSON(mode, variable)]

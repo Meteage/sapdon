@@ -985,6 +985,25 @@ body.resizing * {
   white-space: nowrap;
 }
 
+/* 折叠开关：容器行 ▼/▶，叶子行占位保持缩进对齐 */
+.tree-arrow {
+  flex: none;
+  width: 12px;
+  font-size: 8px;
+  line-height: 1;
+  text-align: center;
+  color: var(--muted);
+  user-select: none;
+}
+
+.tree-arrow:not(.leaf) {
+  cursor: pointer;
+}
+
+.tree-arrow:not(.leaf):hover {
+  color: var(--ink);
+}
+
 .tree-row:hover {
   background: var(--bg-3);
 }

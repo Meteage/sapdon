@@ -9,11 +9,11 @@
  */
 
 import { h, render, parseSizeValue, parseNumberPair } from './dom.js'
-import { schemaFor, templatesFor, widgetFor, GATE_TEMPLATES, COLLECTION_SUGGESTIONS, TEXTURE_SUGGESTIONS, ACTIVATION_TRIPLE } from '../catalog.js'
+import { isContainer, schemaFor, templatesFor, widgetFor, GATE_TEMPLATES, COLLECTION_SUGGESTIONS, TEXTURE_SUGGESTIONS, ACTIVATION_TRIPLE } from '../catalog.js'
 import { ANCHOR_NAMES } from '../layout.js'
 import { layoutTree } from '../layout.js'
 import { alignOps, distributeOps, sameSizeOps, canAlign, canDistribute, ALIGN_MODES } from '../align.js'
-import { flatten } from '../model.js'
+import { flatten, screenOf } from '../model.js'
 import { resolveTexture, textureUrl } from '../textures.js'
 
 /** 属性分组折叠状态（跨选中保持：同一控件类型的同一组记住你上次是开还是关） */
@@ -113,16 +113,58 @@ export function renderInspector(host, app) {
 
   // 多页管理器：页列表在这个**对象**上编辑（不是全局面板）
   if (node.type === 'page_panel_manage') {
-    const candidates = flatten(store.doc).map((r) => r.node).filter((n) => n.type !== 'page_panel_manage')
-    const panelSelect = (value, onchange) =>
-      h(
-        'select',
-        { onchange: (e) => onchange(e.target.value || null) },
-        h('option', { value: '', selected: !value, text: '（未选面板）' }),
-        candidates.map((c) => h('option', { value: c.id, selected: c.id === value, text: `${c.id} (${c.type})` })),
+    const rows = flatten(store.doc)
+    const byId = new Map(rows.map((r) => [r.node.id, r]))
+    const scr = screenOf(store.doc)
+    const containerId = node.props.container || ''
+    const parentOf = (id) => (byId.get(id) ? byId.get(id).parentId : null)
+    const chainOf = (id) => {
+      const set = new Set()
+      for (let p = id; p; p = parentOf(p)) set.add(p)
+      return set
+    }
+    const containerChain = chainOf(containerId)
+    const insideContainer = (id) => {
+      for (let p = parentOf(id); p; p = parentOf(p)) if (p === containerId) return true
+      return false
+    }
+    // 门控容器：只能是容器，且不能是本管理器的页面板（否则页面把自己的容器当页）
+    const containerOptions = rows
+      .map((r) => r.node)
+      .filter(
+        (n) =>
+          n.type !== 'page_panel_manage' &&
+          isContainer(n.type) &&
+          n.id !== scr.buttons &&
+          !(node.pages || []).some((p) => p.panel === n.id),
       )
-    const rows = (node.pages || []).map((page, i) =>
-      h(
+    // 页面板：只列容器，并排除容器自身/祖先/子项、屏幕根面板、已用于其它页的面板
+    const pageOptions = rows
+      .map((r) => r.node)
+      .filter(
+        (n) =>
+          n.type !== 'page_panel_manage' &&
+          isContainer(n.type) &&
+          n.id !== scr.content &&
+          n.id !== scr.buttons &&
+          !containerChain.has(n.id) &&
+          !insideContainer(n.id),
+      )
+    // 选项带类名便于测试；当前值若已失效也列出来（显示"无效/不适用"），避免下拉偷偷指到别的元素
+    const select = (value, options, onchange, cls) => {
+      const has = options.some((o) => o.id === value)
+      return h(
+        'select',
+        { class: cls, onchange: (e) => onchange(e.target.value || null) },
+        h('option', { value: '', selected: !value, text: '（未选面板）' }),
+        options.map((o) => h('option', { value: o.id, selected: o.id === value, text: `${o.id} (${o.type})` })),
+        value && !has ? h('option', { value, selected: true, text: `${value}（无效/不适用）` }) : null,
+      )
+    }
+    const pageRows = (node.pages || []).map((page, i) => {
+      const usedByOthers = new Set((node.pages || []).filter((_, j) => j !== i).map((p) => p.panel).filter(Boolean))
+      const options = pageOptions.filter((n) => !usedByOthers.has(n.id))
+      return h(
         'div',
         { class: 'page-card' },
         h(
@@ -137,11 +179,21 @@ export function renderInspector(host, app) {
           }),
           h('button', { class: 'mini ghost', text: '✕', title: '删掉这一页', onclick: () => store.removeManagerPage(node.id, i) }),
         ),
-        h('div', { class: 'row' }, h('span', { class: 'k muted', text: 'panel' }), panelSelect(page.panel, (v) => store.updateManagerPage(node.id, i, { panel: v }))),
-      ),
-    )
+        h(
+          'div',
+          { class: 'row' },
+          h('span', { class: 'k muted', text: 'panel' }),
+          select(page.panel, options, (v) => store.updateManagerPage(node.id, i, { panel: v }), 'page-panel-select'),
+        ),
+      )
+    })
     const body = [
-      h('div', { class: 'row' }, h('span', { class: 'k muted', text: '门控容器' }), panelSelect(node.props.container, (v) => store.setProp(node.id, 'container', v || ''))),
+      h(
+        'div',
+        { class: 'row' },
+        h('span', { class: 'k muted', text: '门控容器' }),
+        select(node.props.container, containerOptions, (v) => store.setProp(node.id, 'container', v || ''), 'gate-container-select'),
+      ),
       h(
         'div',
         { class: 'row' },
@@ -153,9 +205,13 @@ export function renderInspector(host, app) {
           h('option', { value: 'eq', selected: node.props.mode === 'eq', text: 'eq（body 与 tag 全等）' }),
         ),
       ),
-      ...rows,
-      h('button', { class: 'mini', text: '＋ 加一页', onclick: () => store.addManagerPage(node.id, { panel: candidates[0] ? candidates[0].id : null }) }),
-      h('div', { class: 'muted', text: '页面板由它挂进容器并逐块挂门控 —— 别再手工把同一块面板放进容器（诊断 manager-page-in-container 会拦）。' }),
+      ...pageRows,
+      // 新页不预选任何面板：旧行为默认拿"第一个候选"，经常和已有页重复 → 同一面板挂两遍 + 互斥门控
+      h('button', { class: 'mini', text: '＋ 加一页', onclick: () => store.addManagerPage(node.id) }),
+      h('div', {
+        class: 'muted',
+        text: '页面板只列容器：不要选门控容器本身或已用于其它页的面板（诊断会报 self / duplicate）；新加的页需要手动选面板。',
+      }),
     ]
     groups.push(group('多页管理器 — PagePanelManage', body, `${(node.pages || []).length} 页`, `${node.type}::pages`, true, filter))
   }

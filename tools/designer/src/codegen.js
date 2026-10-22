@@ -73,6 +73,7 @@ function rawSegments(node) {
     if (!Object.prototype.hasOwnProperty.call(node.props, def.key)) continue
     const value = literal(node.props[def.key])
     if (def.key === 'collection_name') segs.push(`.setCollectionName(${value})`)
+    else if (def.setter && def.setter !== 'addProp') segs.push(`.${def.setter}(${value})`)
     else segs.push(`.addProp(${JSON.stringify(def.key)}, ${value})`)
   }
   return segs
@@ -173,14 +174,22 @@ function elementLines(node, ctx) {
       )
       return { lines, varRef: v }
     }
-    const segs = []
+    // 先筛掉：没选面板 / 页面板 = 容器本身 / 同一面板重复登记
+    // （后两种会生成"容器嵌套自身"或"同一面板挂两遍 + 互斥门控"，诊断里是 error）
+    const seen = new Set()
+    const pages = []
     for (const page of node.pages || []) {
       const pv = page.panel ? ctx.vars.get(page.panel) : null
-      if (!pv) {
-        segs.push(`    // ⚠️ 这一页没选面板：${literal(page.tag)} 跳过`)
+      let skip = ''
+      if (!pv) skip = '这一页没选面板'
+      else if (page.panel === props.container) skip = `页面板 ${page.panel} 就是门控容器本身（会嵌套自身）`
+      else if (seen.has(page.panel)) skip = `页面板 ${page.panel} 重复登记`
+      if (skip) {
+        pages.push({ skip: `${skip}：${literal(page.tag)} 跳过` })
         continue
       }
-      segs.push(`    .addPage(${pv}, ${literal(page.tag)})`)
+      seen.add(page.panel)
+      pages.push({ pv, tag: page.tag })
     }
     if (mode === 'eq') {
       // eq 模式要用对象形态（`addPage` 链式默认 prefix）
@@ -189,17 +198,15 @@ function elementLines(node, ctx) {
           `    container: ${containerVar},\n` +
           `    mode: 'eq',\n` +
           `    pages: [\n` +
-          (node.pages || [])
-            .map((p) => {
-              const pv = p.panel ? ctx.vars.get(p.panel) : null
-              return pv ? `        { panel: ${pv}, tag: ${literal(p.tag)} },` : `        // ⚠️ 这一页没选面板：${literal(p.tag)} 跳过`
-            })
+          pages
+            .map((p) => (p.skip ? `        // ⚠️ ${p.skip}` : `        { panel: ${p.pv}, tag: ${literal(p.tag)} },`))
             .join('\n') +
           `\n    ],\n` +
           `}).build();`,
       )
       return { lines, varRef: v }
     }
+    const segs = pages.map((p) => (p.skip ? `    // ⚠️ ${p.skip}` : `    .addPage(${p.pv}, ${literal(p.tag)})`))
     lines.push(`const ${v} = new PagePanelManage(${containerVar})\n${segs.join('\n')}\n    .build();`)
     return { lines, varRef: v }
   }
