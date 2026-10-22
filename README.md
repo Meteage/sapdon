@@ -23,7 +23,7 @@
   <a href="./doc/user/quick-start.md">快速开始</a> ·
   <a href="./doc/user/index.md">文档</a> ·
   <a href="./doc/media/sapdon-intro.mp4">36 秒介绍片</a> ·
-  <a href="./doc/en/README.md">English</a> ·
+  <a href="./README.en.md">English</a> ·
   <a href="./CHANGELOG.md">更新日志</a>
 </p>
 
