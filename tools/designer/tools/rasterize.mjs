@@ -60,7 +60,8 @@ if (flags.input) {
     console.error(`找不到工程文件：${abs}`)
     process.exit(1)
   }
-  raw = JSON.parse(await (await import('node:fs/promises')).readFile(abs, 'utf8'))
+  // 交给 loadProject 解析：它会剥掉 UTF-8 BOM，并把解析错误变成可读的提示
+  raw = await (await import('node:fs/promises')).readFile(abs, 'utf8')
   label = abs
 }
 const { project: doc, errors } = loadProject(raw)

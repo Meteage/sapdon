@@ -18,11 +18,11 @@
 |---|---|---|
 | `SapdonFormUI` / `ServerFormUI` 屏 | `form` | `sapdon_ui:` 前缀路由 + 「内容面板 + 按键面板」+ `FormButtonGrid` / `FormButton`；**编辑器按规范校验并生成一句话** |
 | `SapdonGuideBook` 手册 | `form` | 木框书页、封面缎带、类别索引卡、翻页按钮（`sapdonGuideBook.ts` 的那套布局常量）；多页面 = 内容面板里的 `$gtag` 门控 |
-| `ContainerUISystem` / `ChestUISystem` | `容器` | 容器槽位面板（槽位/进度槽的换算在框架侧，编辑器**只负责版面与贴图**，不建模槽位） |
+| `ContainerUISystem` / `ChestUISystem` | `容器` | 容器槽位面板：**Slot 控件**摆槽位（槽号 + 像素位置 + kind），生成 `setPanel({ size }).addSlot({ slot, pos, kind })`；`grid_position` 与格位基座的换算在框架侧 `containerLayout.ts`，编辑器不重复推算 |
 | `HudUISystem` | `hud` | HUD 常驻元素（状态字符串门控）；编辑器**自由摆放**，不校验规范、不预览框架产物 |
 
-> **三类屏幕的边界（2026-09 用户口径）**：`form` / `容器` / `hud` 就这三类。后两类是**自由摆放**：
-> 编辑器只管画布与元素，挂载（`ContainerUISystem.addControl` / `HudUISystem.mountRootElement`）与槽位换算由框架/项目侧补，
+> **三类屏幕的边界（2026-09 用户口径）**：`form` / `容器` / `hud` 就这三类。后两类**不做 form 那套规范校验**：
+> 容器屏只管槽位与控件（挂载 `ContainerUISystem.addControl`、槽位换算由框架补）；hud 屏只管元素（挂载 `HudUISystem.mountRootElement`）。
 > **游戏里是否生效由你的挂载代码决定**（编辑器不打包票，也不因此扣分报错）。
 
 不覆盖的：原版任意 screen、`factory`/`custom` 渲染器内部、模板内部结构 —— 一律画占位框，不去猜（见 §5.3）。
@@ -450,10 +450,20 @@ Qt Designer 的 alignment toolbar 在 sapdon 里对应**改 `offset`/`size` 的�
 | 24 | `texture-case` | info | 只差大小写（包内是 `textures/ui/white`，写了 `White`）；区分大小写的平台/打包会找不到 |
 | 25 | `screen-kind-freeform` | info | 屏幕类型是 `容器` / `hud` ⇒ **自由摆放**：编辑器不校验 root/内容/按钮/门控（也不预览框架产物） |
 | 26 | `screen-kind-form-empty` | error | `form` 屏一行都没有 ⇒ 生成不出 `SapdonFormUI`（没有内容/按键面板可传） |
+| 27 | `slot-outside-container` | warn | `Slot` 只属于容器屏；`form` / `hud` 屏生成时会跳过它 |
+| 28 | `slot-number-invalid` | error | `addSlot` 的 `slot` 必须是非负整数（`containerUISystem.ts` 里的入口校验），否则该槽被忽略 |
+| 29 | `slot-duplicate` | error | `addSlot` 按槽号就地覆盖（`#slotKeys` 同键替换），两个元素抢同一槽号只剩后一个 |
+| 30 | `slot-pos-missing` | info | `addSlot` 的 `pos` 取元素 `offset`（面板内顶左像素）；不给就落在 `[0,0]`，多个槽会叠在一起 |
+| 31 | `manager-no-container` | error | `PagePanelManage(container)` 第一参就是门控容器，不选生成不出代码 |
+| 32 | `manager-page-no-panel` | error | 每页都要 `addPage(panel, tag)`，缺面板这一页没东西可门控 |
+| 33 | `manager-page-tag-dup` | error | tag 是 `.body()` 的匹配串，重复则两页同时可见 |
+| 34 | `manager-page-in-container` | warn | 管理器会自己把页面板挂进容器，同时又是容器子项 ⇒ 产物里挂两次 |
+
+> 上表列主要规则；完整清单以 `src/diagnostics.js` 的 `RULES` 为准。
 
 > **屏幕类型（`doc.screenKind`，2026-09 三方口径）**：`form` 自定义表单屏（走上面全套规范校验）/ `容器` / `hud` 常驻。
 > 后两类**只做元素级校验**（id、属性目录、纹理、grid/stack/form_button 结构），跳过 `root`、内容/按钮面板、`panelId`、门控视图这些 form 专属规则 ——
-> 因为它们的文件由 `ContainerUISystem` / `HudUISystem` 落（hud 还写的是**原版** `ui/hud_screen.json`），挂载与槽位换算都在框架/项目侧，编辑器管不到、也不假装管得到。
+> 因为它们的文件由 `ContainerUISystem` / `HudUISystem` 落（hud 还写的是**原版** `ui/hud_screen.json`），挂载在项目侧；容器槽位的位置现在可编辑（牌号 + 像素坐标 + kind），但 `grid_position` 与格位基座的换算仍以框架为准，编辑器不重复推算。
 
 > 诊断只做**静态可判定**的事。凡是需要引擎/真机才能判的（模板内部结构、引擎侧集合实例、字体度量、绑定表达式求值、格位落点的引擎怪癖）一律**不报结论**，最多像 #11 那样把已知证据摆出来提醒 —— 避免"狼来了"把诊断面板变成噪音。
 
@@ -478,7 +488,8 @@ Qt Designer 的 alignment toolbar 在 sapdon 里对应**改 `offset`/`size` 的�
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| **MVP** | 控件箱（8 元素 + 2 组合件）、画布（拖/缩放/格子吸附/锚点手柄/门控模拟/**原版贴图渲染**）、对象树、属性面板（三态 + **贴图选择器**）、门控编辑器（3 模板 + 按钮三件套）、TS 代码生成、JSON 产物预览、24 条诊断、`.sui.json` 存读 + localStorage 草稿、4 个测试文件（91 条，含**与真实框架类的交叉验证**、**执行生成代码**、**原版贴图实测**） | ✅ 已落地 |
+| **MVP** | 控件箱（8 元素 + 2 组合件）、画布（拖/缩放/格子吸附/锚点手柄/门控模拟/**原版贴图渲染**）、对象树、属性面板（三态 + **贴图选择器**）、门控编辑器（3 模板 + 按钮三件套）、TS 代码生成、JSON 产物预览、诊断规则（含容器槽位 4 条）、`.sui.json` 存读 + localStorage 草稿、4 个测试文件（91 条，含**与真实框架类的交叉验证**、**执行生成代码**、**原版贴图实测**） | ✅ 已落地 |
+| **S1.5** | 容器屏编辑：Slot 控件（槽号 / pos / kind / cellSize / 底图）+ `addSlot` 生成 + 4 条槽位诊断 + 测试 `designer-container.test.mjs` | ✅ 已落地 |
 | **S1** | 画布内联改文本、复制/粘贴/多选对齐、属性面板搜索、`uv`/`uv_size` 模拟、`addStack` 糖的生成、`.sui.json` 与 `dev/<proj>_RP/ui/*.json` 差异对照视图、贴图拖进画布即建 image | 待办 |
 | **S2** | 真机联调：编辑器 → 写 `main.ts` → 触发 `sapdon compile` → 起 dev-server（`SAPDON_DEV_SERVER_PORT`）→ 把产物 JSON 拉回编辑器做「预期 vs 实际」diff；容器版面（`ContainerUISystem` 槽位/进度槽）专用视图 | 待办 |
 | **S3** | TS 反向解析（限定子集 + `typescript` AST + 明确拒绝清单）、从既有 `main.ts` 导入工程 | 待办 |

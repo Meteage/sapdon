@@ -533,7 +533,7 @@ test('载入非法 JSON 不抛，返回错误列表', () => {
   assert.ok(bad.errors[0].includes('JSON'))
 })
 
-test('屏幕类型：form 按规范（SapdonFormUI）；容器 / hud 自由摆放（不校验规范、不预览框架产物）', () => {
+test('屏幕类型：form 按规范（SapdonFormUI）；容器走 ContainerUISystem（面板尺寸 + 槽位）；hud 挂根面板', () => {
   // form：现状 —— 一句话 + 完整规范
   const form = generate(loadProject({ ...SAMPLE, screenKind: 'form' }).project)
   assert.ok(form.code.includes('new SapdonFormUI("sapdon_ui:page1"'), 'form 走 SapdonFormUI')
@@ -547,12 +547,13 @@ test('屏幕类型：form 按规范（SapdonFormUI）；容器 / hud 自由摆�
   assert.ok(hud.code.includes('RP/ui/hud_screen.json'), 'hud 的目标文件是原版 hud_screen')
   assert.equal(uiFileName(hudDoc), 'ui/hud_screen.json')
 
-  // 容器：ContainerUISystem + addControl；文件名按该系统的既有规则（= nm）
+  // 容器：ContainerUISystem + setPanel + addSlot/addControl；文件名按该系统的既有规则（= nm）
   const cDoc = loadProject({ ...SAMPLE, screenKind: 'container' }).project
   const box = generate(cDoc)
   assert.ok(box.code.includes('new ContainerUISystem("sapdon_ui:page1", "ui/")'), '容器走 ContainerUISystem')
+  assert.ok(box.code.includes('.setPanel({ size:'), '面板尺寸取自画布尺寸')
   assert.ok(box.code.includes('.addControl('), '元素挂进容器面板')
-  assert.ok(box.code.includes('槽位（addSlot'), '槽位换算留给项目侧（编辑器不建模）')
+  assert.ok(!box.code.includes('SapdonFormUI'), '容器不出 form 屏代码')
   assert.equal(uiFileName(cDoc), 'ui/page1.json')
 
   // 两类自由摆放屏：诊断只给一条 info，不报 root/内容/按钮/门控 规范问题

@@ -172,6 +172,9 @@ export const WIDGETS = Object.freeze([
   { type: 'form_button_grid', ctor: 'FormButtonGrid', label: 'FormButtonGrid 表单格盘', group: '组合件', kind: 'composite', container: true, mode: 'form-grid', ctorProps: ['dimensions', 'size'], hint: 'dimensions [列,行] + size；子项只能是 FormButton' },
   { type: 'form_button', ctor: 'FormButton', label: 'FormButton 按钮/卡片', group: '组合件', kind: 'composite', container: true, mode: 'anchored', onlyInside: 'form_button_grid', hint: '格盘里的按钮：addButton 注入集合/门控绑定；可挂图标/文字子控件（手册索引卡就是这么做的）' },
   { type: 'page_panel_manage', ctor: 'PagePanelManage', label: 'PagePanelManage 多页管理器', group: '组合件', kind: 'manager', container: false, mode: 'none', hint: '一屏之内多页面：把多块页面板登记给它（tag + 面板），它负责给每块挂 #form_text 门控并挂进容器；运行期脚本 .body(tag) 选页。非视觉对象' },
+  // 容器屏专用：一个节点 = 一次 `ContainerUISystem.addSlot({ slot, pos, kind })`。
+  // 它不是 UIElement（没有对应的控件类），所以 codegen 会单独处理，不走 `new ...` 那条链。
+  { type: 'slot', ctor: 'ContainerSlot', label: 'Slot 容器槽位', group: '容器', kind: 'special', special: 'container-slot', container: false, mode: 'anchored', onlyFor: 'container', hint: '容器屏专用：槽号 + 画布像素位置；生成 addSlot({ slot, pos, kind })，grid_position 由框架换算' },
 ])
 
 const WIDGET_INDEX = new Map(WIDGETS.map((w) => [w.type, w]))
@@ -243,6 +246,18 @@ export const ELEMENT_SCHEMA = Object.freeze({
     ctorProps: [
       p('container', 'ctor', 'elementRef', '', { hint: '门控容器（内容面板）；页面板会被挂进它' }),
       p('mode', 'ctor', 'enum', 'prefix', { options: ['prefix', 'eq'], hint: 'prefix：body 以 tag 开头即命中（手册那套）；eq：全等' }),
+    ],
+  },
+
+  // 容器槽位：props 不是 UIElement 属性包，而是 `addSlot` 的入参（codegen 单独拼）。
+  // `offset` 刻意用 layout 包里的键名，因为它就是 pos 的来源（顶左像素坐标）。
+  slot: {
+    packs: ['layout'],
+    raw: [
+      p('slot', 'addProp', 'number', 0, { hint: '槽号，非负整数；同屏重复会被后声明的覆盖' }),
+      p('kind', 'addProp', 'enum', 'input', { options: ['input', 'output', 'display'], hint: 'input 可放可取；output / display 会让该格 enabled:false（拿不出东西）' }),
+      p('cellSize', 'addProp', 'array', [18, 18], { optional: true, hint: '格子视觉尺寸（像素）；不给则用框架标定表默认值' }),
+      p('texture', 'addProp', 'texture', '', { optional: true, hint: '格子底图（可选），对应 addSlot({ background })' }),
     ],
   },
 })

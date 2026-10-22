@@ -381,8 +381,21 @@ export function previewAll(doc) {
       note:
         kind === 'hud'
           ? 'HUD 屏由 HudUISystem 写原版 ui/hud_screen.json（挂载走 mountRootElement）；编辑器只负责画布与元素，不预览框架产物。'
-          : '容器屏由 ContainerUISystem 落 ui/<nm>.json，槽位（addSlot）与基座换算在框架/项目侧；编辑器只负责画布与元素，不预览框架产物。',
-      elements: (doc.elements || []).filter((el) => el.type !== 'page_panel_manage').map((el) => ({ id: el.id, type: el.type, json: jsonNormalize(previewElement(el, null)) })),
+          : '容器屏由 ContainerUISystem 落 ui/<nm>.json。槽位会生成 addSlot({ slot, pos, kind })，grid_position 与格位基座的换算在框架侧（containerLayout.ts），这里只列调用入参，不伪造换算结果。',
+      elements: (doc.elements || [])
+        .filter((el) => el.type !== 'page_panel_manage')
+        .map((el) => {
+          if (el.type === 'slot') {
+            const p = el.props || {}
+            const pos = Array.isArray(p.offset) ? p.offset : [0, 0]
+            const parts = [`slot: ${Number.isFinite(Number(p.slot)) ? Math.trunc(Number(p.slot)) : 0}`, `pos: ${JSON.stringify(pos)}`]
+            if (p.kind && p.kind !== 'input') parts.push(`kind: "${p.kind}"`)
+            if (Array.isArray(p.cellSize)) parts.push(`cellSize: ${JSON.stringify(p.cellSize)}`)
+            if (p.texture) parts.push(`background: "${p.texture}"`)
+            return { id: el.id, type: 'slot', json: { $call: `addSlot({ ${parts.join(', ')} })` } }
+          }
+          return { id: el.id, type: el.type, json: jsonNormalize(previewElement(el, null)) }
+        }),
     }
   }
   return {

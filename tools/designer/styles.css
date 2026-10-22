@@ -561,6 +561,28 @@ body.resizing * {
   color: var(--warn);
 }
 
+/* 容器槽位：画布上的虚线格（不是产物元素，只用来定位 addSlot 的 pos） */
+.slot-face {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgba(255, 196, 92, 0.85);
+  background: rgba(255, 196, 92, 0.1);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.slot-no {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10px;
+  line-height: 1.4;
+  padding: 0 3px;
+  color: #1b1b1b;
+  background: rgba(255, 196, 92, 0.9);
+  border-bottom-left-radius: 2px;
+}
+
 .cell-line {
   position: absolute;
   background: rgba(185, 140, 240, 0.35);

@@ -239,6 +239,13 @@ function boxEl(box, layout, app, zoom, frame) {
   const ops = paintNode(node, { x: 0, y: 0, w: r.w, h: r.h }, { textures: app.textures })
   for (const op of ops) el.appendChild(opToDom(op, zoom))
 
+  // 容器槽位不是 UIElement（没有对应的控件类），画一个虚线格 + 槽号，方便定位 addSlot 的 pos
+  if (node.type === 'slot') {
+    el.appendChild(
+      h('div', { class: 'slot-face' }, h('span', { class: 'slot-no', text: `#${Number((node.props || {}).slot) || 0}` })),
+    )
+  }
+
   const badges = []
   const texBadge = textureBadge(node, app)
   if (texBadge) badges.push(texBadge)

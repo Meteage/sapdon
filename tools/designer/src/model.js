@@ -146,6 +146,18 @@ export function createNode(doc, type) {
     node.props = { container: '', mode: 'prefix' }
     node.pages = []
   }
+  // 容器槽位：offset 就是 `addSlot` 的 pos（面板顶左像素坐标）⇒ 锚点必须是 top_left，
+  // 否则引擎按 center 解释 offset，位置会整体偏半个面板
+  if (type === 'slot') {
+    node.props = {
+      slot: 0,
+      kind: 'input',
+      offset: [8, 24],
+      size: [18, 18],
+      anchor_from: 'top_left',
+      anchor_to: 'top_left',
+    }
+  }
   return node
 }
 
@@ -275,8 +287,11 @@ export function loadProject(raw) {
   const errors = []
   let data = raw
   if (typeof raw === 'string') {
+    // Windows 记事本 / PowerShell 导出的 JSON 常带 UTF-8 BOM，JSON.parse 会直接报
+    // `Unexpected token` —— 先剥掉，否则用户看到的是"文件坏了"而不是编码问题
+    const text = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw
     try {
-      data = JSON.parse(raw)
+      data = JSON.parse(text)
     } catch (e) {
       return { project: null, errors: [`JSON 解析失败: ${e.message}`] }
     }

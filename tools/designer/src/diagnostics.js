@@ -58,6 +58,11 @@ export const RULES = Object.freeze({
   'texture-case': { title: '纹理路径大小写与包内不一致', severity: 'info', why: '包内文件名区分大小写（原版是 textures/ui/white，不是 White）；区分大小写的平台/打包方式下会找不到。属性面板"浏览…"选出来的是包内规范写法' },
   'ungated-page': { title: '页面内容没有任何显隐门控', severity: 'info', why: '多页共用一个 UI 文件时，没门控会导致多页同时可见' },
   'screen-kind-freeform': { title: '自由摆放屏（不做规范校验）', severity: 'info', why: 'hud / 容器 两类屏由框架的 HudUISystem / ContainerUISystem 落文件，编辑器只保证"摆出来"，不校验 root/内容/按钮/门控 —— 游戏里是否生效由你的挂载代码决定（2026-09 用户口径）' },
+  'slot-outside-container': { title: 'Slot 不在容器屏里', severity: 'warn', why: 'addSlot 只属于 ContainerUISystem；form / hud 屏生成时会跳过它（screenKind 不是 container）' },
+  'slot-number-invalid': { title: '槽号不是非负整数', severity: 'error', why: 'ContainerUISystem.addSlot 的 slot 必须是非负整数（见 containerUISystem.ts 的校验），否则该槽被忽略' },
+  'slot-duplicate': { title: '槽号重复', severity: 'error', why: 'addSlot 按槽号就地覆盖（#slotKeys 里同键替换），两个元素抢同一槽号 ⇒ 只剩后一个' },
+  'slot-pos-missing': { title: '槽位没有位置', severity: 'info', why: 'addSlot 的 pos 取元素的 offset（面板内顶左像素坐标）；不给就落在 [0,0]，多个槽会叠在一起' },
+  'slot-anchor-not-top-left': { title: '槽位锚点不是 top_left', severity: 'warn', why: 'pos 是面板顶左像素坐标；锚点为 center（引擎缺省）时 offset 从中心量起，addSlot 的位置会整体偏移半个面板' },
   'screen-kind-form-empty': { title: 'form 屏缺屏名/内容面板/按键面板', severity: 'error', why: 'form 屏要生成 `new SapdonFormUI("ns:屏名", 内容面板, 按键面板)`，三者缺一都生成不出来（屏名在顶栏、两块面板在顶栏选）' },
   'manager-no-container': { title: '多页管理器没选门控容器', severity: 'error', why: '`PagePanelManage(container)` 的第一个参数就是它 —— 页面板会被挂进这个容器并逐块挂门控；不选就生成不出代码' },
   'manager-page-no-panel': { title: '多页管理器有一页没选面板', severity: 'error', why: '每一页都要给页面板（`addPage(panel, tag)`），否则这一页没有东西可门控' },
@@ -103,6 +108,8 @@ export function diagnose(doc, opts = {}) {
   const contentIds = new Set()
   const earlyScreen = screenOf(doc)
   if (earlyScreen.content) contentIds.add(earlyScreen.content)
+  /** 槽号 → 首个声明它的元素 id（重复即报） */
+  const seenSlots = new Map()
 
   const walk = (nodes, parent) => {
     for (const node of nodes || []) {
@@ -132,6 +139,27 @@ export function diagnose(doc, opts = {}) {
       // 7 light_text_button 空 binding
       if (node.template === 'common_buttons.light_text_button' && (node.vars || {}).button_text === '') {
         items.push(diag('light-text-button-empty-binding', node.id, '$button_text 是空串 ⇒ binding_name 为空 ⇒ 整条控制链不渲染；图标按钮请用 common.button'))
+      }
+
+      // 容器槽位（容器屏专用；pos 取 offset）
+      if (node.type === 'slot') {
+        if (kind !== 'container') {
+          items.push(diag('slot-outside-container', node.id, `Slot 只在容器屏生成 addSlot；当前屏幕类型是 ${kind}`))
+        }
+        const no = Number(props.slot)
+        if (!Number.isInteger(no) || no < 0) {
+          items.push(diag('slot-number-invalid', node.id, `槽号必须是非负整数（当前 ${JSON.stringify(props.slot)}）`))
+        } else if (seenSlots.has(no)) {
+          items.push(diag('slot-duplicate', node.id, `槽号 ${no} 与 ${seenSlots.get(no)} 重复：addSlot 按槽号覆盖，只剩后一个`))
+        } else {
+          seenSlots.set(no, node.id)
+        }
+        if (!Array.isArray(props.offset)) {
+          items.push(diag('slot-pos-missing', node.id, '给个 offset（面板内顶左像素坐标）：它就是 addSlot 的 pos'))
+        }
+        if (props.anchor_from !== 'top_left' || props.anchor_to !== 'top_left') {
+          items.push(diag('slot-anchor-not-top-left', node.id, '槽位锚点要设成 top_left：pos 是面板顶左像素，center 会让位置整体偏半个面板'))
+        }
       }
 
       // grid 子项

@@ -125,7 +125,7 @@ node tools/designer/serve.mjs --project "D:\myproj\dev\myproj_RP" # 追加工程
 | Resource Browser | 「浏览…」贴图选择器 | 资源包真实索引（原版 + 工程包）：**首屏给「常用」+ 按目录分段**（每组 36 个 + 显示更多），搜索才出扁平结果（每次 60 条）；每格缩略图 56px、路径分两行、悬停放大 |
 | Signal/Slot Editor | 「数据绑定（门控）」组 | `$变量` + `view` 表达式；内置三种门控模板 + 按钮"激活三件套" |
 | `uic` 产物 | 「JSON 产物」页签 | 框架会写出的 `ui/<ns>.json` 与 `server_form.json`，**带语法高亮 + 行号** |
-| 编译告警 | 「诊断」页签 | 24 条静态规则，每条带出处（`ui-lessons.md` / `AGENTS.md` / `known-pitfalls.md`） |
+| 编译告警 | 「诊断」页签 | 静态规则，每条带出处（`ui-lessons.md` / `AGENTS.md` / `known-pitfalls.md`） |
 
 ---
 
@@ -164,7 +164,7 @@ node tools/designer/serve.mjs --project "D:\myproj\dev\myproj_RP" # 追加工程
 
 ## 生成的是什么
 
-- **屏幕类型**决定编辑器管不管「规范」：`form` 屏按规范校验并生成 `new SapdonFormUI("ns:屏名", 内容面板, 按键面板)`（root + 两块面板全由框架建）；**容器 / hud 两类是自由摆放** —— 编辑器只保证你把元素摆出来、生成元素代码 + 一句挂载提示（`ContainerUISystem.addControl` / `HudUISystem.mountRootElement`），**不做 root/内容/按钮/门控 校验，也不预览框架产物**（游戏里是否生效由你的挂载代码决定）。
+- **屏幕类型**决定编辑器管不管「规范」：`form` 屏按规范校验并生成 `new SapdonFormUI("ns:屏名", 内容面板, 按键面板)`（root + 两块面板全由框架建）；**容器屏**生成 `new ContainerUISystem(...).setPanel({ size }).addSlot({ slot, pos, kind })`，槽位用专门的 **Slot 控件**摆位置（画布上是一格虚线 + 槽号），`grid_position` 与格位基座的换算仍由框架侧 `containerLayout.ts` 负责，编辑器不重复推算；**hud 屏**仍是自由摆放 + `mountRootElement`。后两类都**不做 root/内容/按钮/门控 校验，也不预览框架产物**（游戏里是否生效由你的挂载代码决定）。
 - **多页面在 `PagePanelManage` 对象上**：放一个管理器、选门控容器、逐页填「tag + 页面板」，生成 `new PagePanelManage(容器).addPage(面板, "TAG")…build()`；产物预览里那些页面板会**真的**被挂进容器并逐块带上 `$gtag` 前缀门控（与框架逐字段交叉验证过）。
 - **产物文件名按类型取框架各自的真实规则**：`form` → `ui/<ns_首屏名>.json`；容器 → `ui/<首屏名>.json`（`ContainerUISystem` 既有规则）；`hud` → 原版 `ui/hud_screen.json`。
 - **form 屏** 一个工程 = **一个屏** = 一句话 `new SapdonFormUI("ns:屏名", 内容面板, 按键面板)` —— 挂两块面板 + 建**唯一根面板 `root`**（门控写在 root 上）+ 注册指向 `@<ns_屏名>.root` 的 gated factory，全在里面，调用方一个参数都不用重复写。

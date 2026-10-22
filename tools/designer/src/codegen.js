@@ -22,7 +22,7 @@
 
 import { schemaFor } from './catalog.js'
 import { gridDimensions } from './layout.js'
-import { managerNodes, screenKind, screenNamespace, screenOf, uiFileName } from './model.js'
+import { flatten, managerNodes, screenKind, screenNamespace, screenOf, uiFileName } from './model.js'
 
 const CORE = '@sapdon/core'
 
@@ -106,6 +106,9 @@ export function ctorName(type) {
  * @returns {{ lines: string[], varRef: string }}
  */
 function elementLines(node, ctx) {
+  // 容器槽位不是 UIElement（没有对应的控件类）：由容器分支统一拼成 addSlot，这里只跳过
+  if (node.type === 'slot') return { lines: [], varRef: null }
+
   const used = ctx.used
   const lines = []
   for (const child of node.controls || []) lines.push(...elementLines(child, ctx).lines)
@@ -303,13 +306,31 @@ export function generate(doc) {
       )
     } else {
       ctx.imports.add('ContainerUISystem')
-      shell.push('// 容器屏：自由摆放；槽位（addSlot({ slot, pos, kind? })）由你在框架侧补 —— 编辑器不建模槽位换算')
-      shell.push(`const ${panelVar} = new ContainerUISystem(${literal(`${ns}:${screen ? screen.name : ns}`)}, "ui/");`)
-      shell.push(
-        topVar
-          ? `${panelVar}.addControl(${topVar});   // 面板进容器 UI 文件`
-          : '// ⚠️ 工程里还没有根元素：先在画布/对象树里加一个最外层元素',
-      )
+      // 容器屏：槽位 → `addSlot` 链（pos 取元素的 offset，即顶左像素坐标）；其它元素 → `addControl`
+      const all = flatten(doc).map((x) => x.node)
+      const slots = all.filter((n) => n.type === 'slot')
+      const panelSize = doc.canvas && Array.isArray(doc.canvas.size) ? doc.canvas.size : [320, 207]
+      const chain = [`setPanel({ size: ${literal(panelSize)} })`]
+      for (const s of slots) {
+        const p = s.props || {}
+        const pos = Array.isArray(p.offset) ? p.offset : [0, 0]
+        const slotNo = Number.isFinite(Number(p.slot)) ? Math.trunc(Number(p.slot)) : 0
+        const parts = [`slot: ${slotNo}`, `pos: ${literal(pos)}`]
+        if (p.kind && p.kind !== 'input') parts.push(`kind: ${literal(p.kind)}`)
+        if (Array.isArray(p.cellSize)) parts.push(`cellSize: ${literal(p.cellSize)}`)
+        if (p.texture) parts.push(`background: ${literal(p.texture)}`)
+        chain.push(`addSlot({ ${parts.join(', ')} })`)
+      }
+      const head = `const ${panelVar} = new ContainerUISystem(${literal(`${ns}:${screen ? screen.name : ns}`)}, "ui/")`
+      shell.push(`${head}\n${chain.map((c) => `    .${c}`).join('\n')};`)
+      if (!slots.length) shell.push('// ⚠️ 还没有槽位：从控件箱拖入 Slot 元素，才会生成 addSlot')
+
+      const tops = (doc.elements || []).filter((n) => n.type !== 'page_panel_manage' && n.type !== 'slot')
+      for (const t of tops) {
+        const tv = ctx.vars.get(t.id)
+        if (tv) shell.push(`${panelVar}.addControl(${tv});   // 面板内的自定义控件`)
+      }
+      if (!tops.length && slots.length) shell.push('// 本屏只有槽位，没有额外控件')
     }
   }
 

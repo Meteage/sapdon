@@ -390,7 +390,10 @@ function renderToolbox(app) {
   const filter = String(app.toolboxFilter || '').trim().toLowerCase()
   const hit = (w) => !filter || `${w.label} ${w.type} ${w.ctor} ${w.hint || ''}`.toLowerCase().includes(filter)
   const groups = new Map()
+  const kind = screenKind(store.doc)
   for (const w of WIDGETS) {
+    // 只在特定屏幕类型出现的控件（例如 Slot 只属于容器屏）直接不列出来
+    if (w.onlyFor && w.onlyFor !== kind) continue
     if (!hit(w)) continue
     if (!groups.has(w.group)) groups.set(w.group, [])
     groups.get(w.group).push(w)
@@ -595,6 +598,11 @@ function renderStatus(app) {
 
 function addWidget(app, type) {
   const { store } = app
+  const def = widgetFor(type)
+  if (def && def.onlyFor && def.onlyFor !== screenKind(store.doc)) {
+    app.notice(`${def.label} 只在「${def.onlyFor}」屏可用：先把顶栏屏幕类型切过去`)
+    return
+  }
   const sel = store.selected
   if (sel && isContainer(sel.type)) {
     const allowed = widgetsAllowedIn(sel.type)
