@@ -118,8 +118,4 @@ shows your content immediately.
 > case-sensitive filesystems: the build writes one, packaging reads the other, and you ship
 > an empty addon.
 
-## Next
-
-- [Configuration](./configuration.md) — `build.config` and `mod.info`
-- [Items](./tutorials/item.md)
-- [Textures](./tutorials/texture.md) — make the icon show up
+Next, [Items](./tutorials/item.md) takes this skeleton and fills it with actual content. If your icon is a purple-black square, [Add textures](./guides/textures.md) covers where the PNG goes and how the short name is registered. Every `build.config` and `mod.info` field is listed in [Configuration](./configuration.md).

@@ -190,9 +190,4 @@ getDisplayPose(e)                        // { rx, ry, rz, px, py, pz, sc }
 `spawnDisplayItem` returns `undefined` on failure; the other functions never throw (they
 `console.warn`).
 
----
-
-## Next
-
-- [Runtime scripts](./runtime-script.md) — entity events, timers, persistence
-- [Recipes](./recipe.md) — drops that feed crafting
+Entity events, timers, and persistence are covered in [Make a script run](../guides/scripts.md). For drops that feed crafting, see [Recipes](./recipe.md).

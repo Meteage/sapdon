@@ -36,7 +36,7 @@ registry.submit()
 | `max_stack_size` | number | 1–99, default 64 |
 | `format_version` | string | Default `1.21.40` |
 
-Custom texture short names must be registered first — see [Textures](./texture.md).
+Custom texture short names must be registered first; see [Add textures](../guides/textures.md).
 
 ## 2. Food
 
@@ -178,10 +178,4 @@ const item = ItemAPI.createItem('my_mod:versioned_item', ItemCategory.Items, 'di
 Raising it without raising `min_engine_version` produces packs that older clients refuse to
 load. Keep the two in sync.
 
----
-
-## Next
-
-- [Textures](./texture.md) — custom icons
-- [Blocks](./block.md)
-- [Runtime scripts](./runtime-script.md) — make the item do something on use
+Custom icons and texture registration are covered in [Add textures](../guides/textures.md). To make the item do something on use, see [Make a script run](../guides/scripts.md).

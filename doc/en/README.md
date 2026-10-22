@@ -1,67 +1,39 @@
-# Sapdon Tutorials (English)
+# Sapdon documentation (English)
 
-A condensed English edition of the Sapdon user tutorials: the same APIs, the same working
-examples, and the same pitfalls, minus the long-form prose. Each page links to the full
-Chinese original when you need more detail.
+A condensed English edition of the Sapdon user docs: same APIs, same working examples, same pitfalls, less prose. The Chinese pages are the source of truth; each page here links to its original.
 
-> **Scope.** These pages cover everyday addon authoring. The complete API reference
-> (`doc/user/api/`) and the framework-internals docs (`doc/dev/`) are Chinese-only for now.
+> **Scope.** These pages cover everyday addon authoring. The API reference (`doc/user/api/`), the config reference (`doc/user/config/`), and the framework-internals docs (`doc/dev/`) are Chinese-only for now.
 
----
+## First addon
 
-## Where to start
+[Quick start](./quick-start.md): install the CLI, `create` a project, build it, and find the behavior pack and resource pack under `dev/`.
 
-| Doc | What it covers |
-|-----|----------------|
-| [Quick start](./quick-start.md) | Install, `create`, `build`, inspect `dev/` |
-| [Configuration](./configuration.md) | `build.config` and `mod.info` |
-| [Items](./tutorials/item.md) | Basic items, food, armor, attachables, components |
-| [Blocks](./tutorials/block.md) | Basic, variants, rotatable, crops, ores, `TileBlock` |
-| [Entities](./tutorials/entity.md) | Behavior + resource packs, AI, projectiles, display entities |
-| [Recipes](./tutorials/recipe.md) | Shaped / shapeless / furnace, two styles each |
-| [Textures](./tutorials/texture.md) | `res/` layout, texture registration, missing-texture debugging |
-| [Runtime scripts](./tutorials/runtime-script.md) | Event handlers, custom components, persistence |
-| [UI](./tutorials/sapdon-ui.md) | Server Form page shells |
-| [Build & publish](./tutorials/publish.md) | Build modes, `.mcaddon`, UUID checks |
-| [FAQ](./faq.md) | The problems people actually hit |
+Every build-time script follows one pattern: create an object, add components, then call `registry.submit()`. Leave out `submit()` and nothing is generated, with no error.
 
----
+## What do you want to build
 
-## Recommended paths
+| Goal | Doc |
+|---|---|
+| An item you can pull from the creative menu | [Items](./tutorials/item.md) |
+| A block you can place and rotate | [Blocks](./tutorials/block.md) |
+| A mob that walks and attacks | [Entities](./tutorials/entity.md) |
+| Recipes that produce or consume your content | [Recipes](./tutorials/recipe.md) |
+| A server form screen | [UI](./tutorials/sapdon-ui.md) |
+| An icon that is not a purple-black square | [Add textures](./guides/textures.md) |
+| A block that reacts to players or ticks | [Make a script run](./guides/scripts.md) |
+| A `.mcaddon` you can hand to someone | [Package an addon](./guides/packaging.md) |
 
-### First addon
+## How to look things up
 
-1. [Quick start](./quick-start.md) — get `dev/<name>_BP` and `_RP` generated
-2. [Items](./tutorials/item.md) §1 and §5 — learn the core pattern:
-   **build an object → add components → `registry.submit()`**
-3. [Textures](./tutorials/texture.md) — so your icon isn't a purple-black square
-4. [Blocks](./tutorials/block.md) §1–§2 — six-face textures and rotation
-5. [Recipes](./tutorials/recipe.md) §1 — make the new content obtainable
-6. [Entities](./tutorials/entity.md) §1–§3 — behavior pack and resource pack come in pairs
+Signatures, defaults, and failure conditions live in `doc/user/api/` and `doc/user/config/` (Chinese). Symptoms are collected in the [FAQ](./faq.md); engine and framework bugs, with original error text and sources, are in `doc/dev/known-pitfalls.md` (Chinese). That last one is written for framework contributors, but it is often where "the version is right and it still does not work" gets answered.
 
-Then launch the game. A successful build does **not** mean the content works in-game.
+## How these docs are split
 
-### Addons with logic (machines, containers, custom components)
+| Folder | What it is | After reading you should |
+|---|---|---|
+| `tutorials/` | Step-by-step, build one thing from zero | Have a working artifact |
+| `guides/` | One concrete task per page | Have your problem solved |
+| `../user/api/`, `../user/config/` | Reference, facts only (Chinese) | Know the parameters and the failure mode |
+| `../dev/` | Framework internals and pitfalls (Chinese) | Understand why it works this way |
 
-1. [Runtime scripts](./tutorials/runtime-script.md) §1–§2 — build-time vs runtime, first subscription
-2. [Runtime scripts](./tutorials/runtime-script.md) §4 — declare the component id at build time,
-   implement it at runtime
-3. [Blocks](./tutorials/block.md) §6–§7 — block components and `TileBlock`
-4. [FAQ](./faq.md) — stale output, missing JSON
-
-### UI
-
-1. [UI](./tutorials/sapdon-ui.md)
-2. `doc/user/api/sapdon-ui.md` (Chinese) — `SapdonFormUI`, `FormButtonGrid` slot rules
-3. `doc/guidebook.md` (Chinese) — the in-game book framework
-
-### Shipping
-
-[Build & publish](./tutorials/publish.md).
-
----
-
-## The one rule that breaks everything
-
-Every build-time script ends with `registry.submit()`. Miss it and nothing is generated —
-no error, no warning, just an empty pack.
+One page, one job. A tutorial filling up with parameter tables, or a reference page starting to recommend things, means it is time to split. The writing rules are in `doc/dev/writing-guide.md` (Chinese).

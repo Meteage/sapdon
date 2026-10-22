@@ -145,10 +145,4 @@ RecipeAPI.registerSimpleFurnace('my_mod:cooked_beef', 'minecraft:cooked_beef', '
 > A recipe that never appears in-game is almost always a missing or wrong tag, not a wrong
 > pattern.
 
----
-
-## Next
-
-- [Items](./item.md) — recipe outputs
-- [Blocks](./block.md) — recipe inputs
-- [Build & publish](./publish.md) — confirm recipes landed in `dev/`
+Outputs are covered in [Items](./item.md), inputs in [Blocks](./block.md). To confirm the recipe JSON actually landed in `dev/`, see [Package an addon](../guides/packaging.md).

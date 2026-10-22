@@ -180,9 +180,4 @@ every field looks valid. Run the page in-game.
 `examples/test_ui` contains two screens: one with content + buttons, one content-only. The API
 reference is `doc/user/api/sapdon-ui.md` (Chinese).
 
----
-
-## Next
-
-- [Runtime scripts](./runtime-script.md) — how the form gets triggered
-- [Build & publish](./publish.md)
+How the form gets triggered from an event is covered in [Make a script run](../guides/scripts.md). The slot rules behind the buttons are in `doc/user/api/sapdon-ui.md` (Chinese).

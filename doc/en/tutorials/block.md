@@ -6,8 +6,8 @@
 import { BlockAPI, BlockComponent, RotationTypes, registry } from '@sapdon/core'
 ```
 
-**Face order is always `[down, up, north, south, west, east]`.** Passing them in another order
-does not error — it silently textures the wrong faces.
+**Face order is always `[up, down, east, west, south, north]`.** Passing them in another order
+does not error; it silently textures the wrong faces.
 
 ---
 
@@ -174,7 +174,7 @@ map-style setter. Scripted behaviour is declared separately:
 block.addComponent(BlockComponent.setCustomComponents(['my_mod:machine_tick']))
 ```
 
-The id must be implemented at runtime — see [Runtime scripts](./runtime-script.md) §4.
+The id must be implemented at runtime; see [Make a script run](../guides/scripts.md) §4.
 
 ## 8. TileBlock
 
@@ -202,9 +202,4 @@ Two texture systems are involved:
 Passing only short names makes the client entity report `Missing referenced asset`. Use
 `options.entity_texture` to supply the path.
 
----
-
-## Next
-
-- [Textures](./texture.md) — `terrain_texture.json` and face order
-- [Runtime scripts](./runtime-script.md) — tick and interaction logic
+Textures, including the face order and `terrain_texture.json`, are covered in [Add textures](../guides/textures.md). For tick and interaction logic, see [Make a script run](../guides/scripts.md).
