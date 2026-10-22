@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sapdon 介绍动画</title>
+<style>
+  :root {
+    --bg: #080b10;
+    --panel: rgba(18, 24, 34, .72);
+    --line: rgba(122, 162, 255, .16);
+    --text: #e8eef8;
+    --muted: #8b9bb4;
+    --blue: #4ea1ff;
+    --green: #7ee787;
+    --sand: #e3c27a;
+    --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --sans: "Inter", "Segoe UI", system-ui, "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #05070a;
+    overflow: hidden;
+    font-family: var(--sans);
+    color: var(--text);
+  }
+
+  #viewport {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  #stage {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    background:
+      radial-gradient(900px 520px at 78% 18%, rgba(78, 161, 255, .16), transparent 62%),
+      radial-gradient(760px 480px at 12% 88%, rgba(126, 231, 135, .10), transparent 60%),
+      var(--bg);
+    overflow: hidden;
+    transform-origin: center;
+  }
+
+  /* 背景网格与扫描光 */
+  .grid {
+    position: absolute;
+    inset: -40%;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 44px 44px;
+    transform: perspective(700px) rotateX(58deg) translateY(12%);
+    mask-image: radial-gradient(ellipse at 50% 40%, #000 30%, transparent 72%);
+    opacity: .55;
+    animation: gridDrift 18s linear infinite;
+  }
+
+  @keyframes gridDrift {
+    from { background-position: 0 0, 0 0; }
+    to   { background-position: 0 88px, 0 88px; }
+  }
+
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, .62) 100%);
+    pointer-events: none;
+  }
+
+  /* 场景 */
+  .scene {
+    position: absolute;
+    inset: 0;
+    padding: 74px 88px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(18px);
+    transition: opacity .55s cubic-bezier(.22, .61, .36, 1), transform .55s cubic-bezier(.22, .61, .36, 1), visibility .55s;
+  }
+
+  .scene.on {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .32em;
+    color: var(--blue);
+    text-transform: uppercase;
+    opacity: .9;
+  }
+
+  .rule {
+    width: 52px;
+    height: 3px;
+    margin: 18px 0 26px;
+    background: linear-gradient(90deg, var(--blue), transparent);
+  }
+
+  /* 第一幕 */
+  .s1 { display: grid; place-content: center; text-align: center; }
+
+  .logo {
+    margin: 10px 0 0;
+    font-size: 118px;
+    line-height: .96;
+    letter-spacing: -.03em;
+    font-weight: 800;
+    background: linear-gradient(180deg, #ffffff 20%, #9dc4ff 68%, #4e82d6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 60px rgba(78, 161, 255, .18);
+  }
+
+  .tagline {
+    margin: 26px auto 0;
+    max-width: 640px;
+    font-size: 21px;
+    line-height: 1.7;
+    color: #b9c7dd;
+  }
+
+  .tagline b { color: var(--text); font-weight: 600; }
+
+  .chips {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 34px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #cfe0ff;
+    padding: 7px 13px;
+    border: 1px solid rgba(122, 162, 255, .28);
+    border-radius: 999px;
+    background: rgba(78, 161, 255, .07);
+  }
+
+  /* 漂浮方块 */
+  .cubes { position: absolute; inset: 0; pointer-events: none; }
+
+  .cube {
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    border-radius: 10px;
+    background: linear-gradient(150deg, #8fd15a, #5d9a34 55%, #477a26);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), 0 18px 40px rgba(0, 0, 0, .45);
+    opacity: .85;
+    animation: float 9s ease-in-out infinite;
+  }
+
+  .cube::after {
+    content: "";
+    position: absolute;
+    inset: 34% 30%;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, .16);
+  }
+
+  .cube.gold { background: linear-gradient(150deg, #f2d98a, #d3a848 55%, #a37f2c); }
+  .cube.blue { background: linear-gradient(150deg, #9fc6ff, #5a8fe0 55%, #3f6fbb); }
+
+  @keyframes float {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-4deg); }
+    50%      { transform: translate3d(0, -18px, 0) rotate(4deg); }
+  }
+
+  /* 通用面板 */
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(140, 170, 220, .14);
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .46);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+
+  .panel-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(140, 170, 220, .1);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #2f3a4d; }
+  .dot.r { background: #ff5f57; }
+  .dot.y { background: #febc2e; }
+  .dot.g { background: #28c840; }
+
+  /* 第二幕 */
+  .s2 { display: grid; grid-template-columns: 1.18fr .82fr; gap: 34px; align-items: center; }
+
+  .s2-left .headline, .s3-left .headline, .s4 .headline, .s5 .headline {
+    font-size: 40px;
+    line-height: 1.28;
+    margin: 0 0 12px;
+    letter-spacing: -.01em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.75;
+    margin: 0 0 24px;
+  }
+
+  pre.code {
+    margin: 0;
+    padding: 22px 24px 26px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.95;
+    color: #c8d6ea;
+  }
+
+  .cl { display: block; opacity: 0; transform: translateX(-8px); white-space: pre; }
+  .scene.on .cl { animation: lineIn .42s cubic-bezier(.22, .61, .36, 1) forwards; }
+
+  @keyframes lineIn {
+    to { opacity: 1; transform: none; }
+  }
+
+  .k { color: #ff8bd1; }
+  .s { color: #9ee6a8; }
+  .n { color: #ffd479; }
+  .f { color: #7cb7ff; }
+  .c { color: #5b6b83; font-style: italic; }
+
+  .arrow {
+    display: grid;
+    place-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .18em;
+  }
+
+  .arrow-line {
+    width: 1px;
+    height: 72px;
+    background: linear-gradient(180deg, transparent, var(--blue), transparent);
+  }
+
+  .out-card {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+  }
+
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 13px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid rgba(140, 170, 220, .1);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: #c3d1e6;
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  .scene.on .file-row { animation: lineIn .5s cubic-bezier(.22, .61, .36, 1) forwards; }
+
+  .tag {
+    margin-left: auto;
+    font-size: 10.5px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: rgba(126, 231, 135, .12);
+    color: var(--green);
+    letter-spacing: .06em;
+  }
+
+  .tag.b { background: rgba(78, 161, 255, .14); color: #8cc4ff; }
+
+  /* 第三幕：终端 + 文件树 */
+  .s3 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-content: center; }
+
+  .s3-head { grid-column: 1 / -1; }
+
+  .term {
+    margin: 0;
+    padding: 20px 22px;
+    min-height: 236px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2.05;
+    color: #c7d5e9;
+  }
+
+  .prompt-sign { color: var(--green); }
+  .term .dim { color: #66788f; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    margin-left: 2px;
+    background: var(--green);
+    vertical-align: -2px;
+    animation: blink 1s steps(2) infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .tree {
+    margin: 0;
+    padding: 18px 22px 22px;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 12.8px;
+    line-height: 2.1;
+    color: #b8c8de;
+  }
+
+  .tree li { opacity: 0; transform: translateX(-6px); }
+  .scene.on .tree li { animation: lineIn .34s cubic-bezier(.22, .61, .36, 1) forwards; }
+
+  .tree .dir { color: #8cc4ff; }
+  .tree .ext { color: #5b6b83; }
+
+  /* 第四幕：能力网格 */
+  .s4 { display: grid; align-content: center; }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 26px;
+  }
+
+  .card {
+    padding: 18px 16px 20px;
+    border-radius: 13px;
+    border: 1px solid rgba(140, 170, 220, .13);
+    background: linear-gradient(180deg, rgba(29, 38, 53, .88), rgba(16, 21, 30, .78));
+    opacity: 0;
+    transform: translateY(14px) scale(.97);
+  }
+
+  .scene.on .card { animation: cardIn .55s cubic-bezier(.22, .61, .36, 1) forwards; }
+
+  @keyframes cardIn { to { opacity: 1; transform: none; } }
+
+  .glyph {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: linear-gradient(140deg, #6aa9ff, #2f6fd0);
+    box-shadow: 0 8px 20px rgba(47, 111, 208, .32);
+  }
+
+  .glyph.g { background: linear-gradient(140deg, #8fdc63, #4c8a2c); box-shadow: 0 8px 20px rgba(76, 138, 44, .3); }
+  .glyph.y { background: linear-gradient(140deg, #f2d98a, #b58d33); box-shadow: 0 8px 20px rgba(181, 141, 51, .3); }
+  .glyph.p { background: linear-gradient(140deg, #c79bff, #7c4fd1); box-shadow: 0 8px 20px rgba(124, 79, 209, .3); }
+
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+
+  .card p {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* 第五幕 */
+  .s5 { display: grid; place-content: center; text-align: center; }
+
+  .steps {
+    display: grid;
+    gap: 10px;
+    width: 560px;
+    margin: 0 auto 30px;
+    text-align: left;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .035);
+    border: 1px solid rgba(140, 170, 220, .12);
+    font-family: var(--mono);
+    font-size: 14px;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .scene.on .step { animation: lineIn .5s cubic-bezier(.22, .61, .36, 1) forwards; }
+
+  .step .idx {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(78, 161, 255, .16);
+    color: #9cc8ff;
+    font-size: 11px;
+  }
+
+  .step code { color: #d7e5f8; }
+  .step .hint { margin-left: auto; color: #5f7189; font-size: 11.5px; }
+
+  .foot {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #6e8098;
+    letter-spacing: .06em;
+  }
+
+  .foot b { color: #9dc4ff; font-weight: 500; }
+
+  /* HUD */
+  .hud {
+    position: absolute;
+    left: 34px;
+    right: 34px;
+    bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #6a7c93;
+    transition: opacity .3s;
+  }
+
+  .hud .bar {
+    flex: 1;
+    height: 2px;
+    background: rgba(255, 255, 255, .08);
+  }
+
+  .hud .bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+  }
+
+  body.clean .hud { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid, .cube { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="grid"></div>
+
+    <!-- 1. 标题 -->
+    <section class="scene s1" data-scene="1">
+      <div class="cubes" aria-hidden="true">
+        <div class="cube" style="left:11%;top:22%;animation-delay:-1s"></div>
+        <div class="cube gold" style="left:83%;top:16%;transform:scale(.8);animation-delay:-3s"></div>
+        <div class="cube blue" style="left:76%;top:70%;transform:scale(.62);animation-delay:-5s"></div>
+        <div class="cube" style="left:16%;top:72%;transform:scale(.72);animation-delay:-2.4s"></div>
+        <div class="cube blue" style="left:22%;top:44%;transform:scale(.46);animation-delay:-6s"></div>
+      </div>
+      <div class="eyebrow">Minecraft Bedrock · Addon Framework</div>
+      <h1 class="logo">SAPDON</h1>
+      <p class="tagline">用 TypeScript 声明物品、方块、实体和界面，<br><b>构建期生成 JSON 包</b>，直接进游戏。</p>
+      <div class="chips">
+        <span class="chip">build-time: @sapdon/core</span>
+        <span class="chip">runtime: @sapdon/runtime</span>
+        <span class="chip">no hand-written JSON</span>
+      </div>
+    </section>
+
+    <!-- 2. 写代码 -->
+    <section class="scene s2" data-scene="2">
+      <div class="s2-left">
+        <div class="eyebrow">01 / Declare</div>
+        <div class="rule"></div>
+        <h2 class="headline">像写普通代码一样<br>声明一个物品</h2>
+        <p class="sub">类型提示补全字段，参数写错在编译期就报。最后一行 <code>registry.submit()</code> 提交整批注册。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-bar"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span style="margin-left:8px">main.ts</span></div>
+        <pre class="code"><span class="cl" style="animation-delay:.05s"><span class="k">import</span> { ItemAPI, ItemCategory,</span>
+<span class="cl" style="animation-delay:.13s">         ItemComponent, registry } <span class="k">from</span> <span class="s">'@sapdon/core'</span></span>
+<span class="cl" style="animation-delay:.21s"> </span>
+<span class="cl" style="animation-delay:.29s"><span class="k">const</span> wand = ItemAPI.<span class="f">createItem</span>(</span>
+<span class="cl" style="animation-delay:.37s">  <span class="s">'demo:magic_wand'</span>,</span>
+<span class="cl" style="animation-delay:.45s">  ItemCategory.Items,</span>
+<span class="cl" style="animation-delay:.53s">  <span class="s">'magic_wand'</span></span>
+<span class="cl" style="animation-delay:.61s">)</span>
+<span class="cl" style="animation-delay:.69s"> </span>
+<span class="cl" style="animation-delay:.77s">wand.<span class="f">addComponent</span>(</span>
+<span class="cl" style="animation-delay:.85s">  ItemComponent.<span class="f">setDisplayName</span>(<span class="s">'魔杖'</span>),</span>
+<span class="cl" style="animation-delay:.93s">  ItemComponent.<span class="f">setInteractButton</span>(<span class="s">'施法'</span>)</span>
+<span class="cl" style="animation-delay:1.01s">)</span>
+<span class="cl" style="animation-delay:1.09s"> </span>
+<span class="cl" style="animation-delay:1.17s">registry.<span class="f">submit</span>()  <span class="c">// 提交</span></span></pre>
+      </div>
+      <div class="arrow" style="grid-column:1/-1;grid-template-columns:1fr auto 1fr">
+        <div class="arrow-line"></div>
+        <span>BUILD</span>
+        <div class="arrow-line"></div>
+      </div>
+    </section>
+
+    <!-- 3. 构建产物 -->
+    <section class="scene s3" data-scene="3">
+      <div class="s3-head">
+        <div class="eyebrow">02 / Build</div>
+        <div class="rule"></div>
+        <h2 class="headline">一条命令，产出两个包</h2>
+        <p class="sub">行为包放逻辑与数据，资源包放贴图与文本。改完代码重新构建，产物同步进游戏开发包目录。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-bar"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span style="margin-left:8px">terminal</span></div>
+        <pre class="term"><span class="prompt-sign">$</span> sapdon build .
+<span class="dim">Building the project...</span>
+<span class="dim">处理数据:</span> demo <span class="dim">BP/items/</span>magic_wand.json
+<span class="dim">处理数据:</span> demo <span class="dim">BP/recipes/</span>magic_wand.json
+<span class="dim">处理数据:</span> demo <span class="dim">RP/textures/</span>item_texture.json
+<span style="color:#7ee787">✓ 已同步到 Minecraft 开发包目录</span><span class="cursor"></span></pre>
+      </div>
+      <div class="panel">
+        <div class="panel-bar"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span style="margin-left:8px">dev/</span></div>
+        <ul class="tree">
+          <li style="animation-delay:.10s"><span class="dir">demo_BP/</span></li>
+          <li style="animation-delay:.18s">├─ items/magic_wand.json <span class="tag">generated</span></li>
+          <li style="animation-delay:.26s">├─ recipes/magic_wand.json <span class="tag">generated</span></li>
+          <li style="animation-delay:.34s">├─ manifest.json</li>
+          <li style="animation-delay:.42s">└─ scripts/index.js <span class="tag b">bundled</span></li>
+          <li style="animation-delay:.50s">&nbsp;</li>
+          <li style="animation-delay:.58s"><span class="dir">demo_RP/</span></li>
+          <li style="animation-delay:.66s">├─ textures/item_texture.json</li>
+          <li style="animation-delay:.74s">└─ texts/zh_CN.lang</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4. 能力 -->
+    <section class="scene s4" data-scene="4">
+      <div class="eyebrow">03 / Scope</div>
+      <div class="rule"></div>
+      <h2 class="headline">一个框架，覆盖整条制作链</h2>
+      <div class="cards">
+        <div class="card" style="animation-delay:.05s"><div class="glyph"></div><h3>物品与食物</h3><p>基础物品 / 盔甲 / 翻书</p></div>
+        <div class="card" style="animation-delay:.12s"><div class="glyph g"></div><h3>方块</h3><p>六面 / 多变体 / 作物 / 容器</p></div>
+        <div class="card" style="animation-delay:.19s"><div class="glyph y"></div><h3>实体与 AI</h3><p>组件 / 行为 / 抛射物</p></div>
+        <div class="card" style="animation-delay:.26s"><div class="glyph p"></div><h3>配方</h3><p>有序 / 无序 / 熔炉</p></div>
+        <div class="card" style="animation-delay:.33s"><div class="glyph"></div><h3>表单界面</h3><p>页面壳 / 按钮网格 / 分页</p></div>
+        <div class="card" style="animation-delay:.40s"><div class="glyph g"></div><h3>游戏内手册</h3><p>分类 / 词条 / 翻页</p></div>
+        <div class="card" style="animation-delay:.47s"><div class="glyph y"></div><h3>运行期脚本</h3><p>事件 / 自定义组件 / 持久化</p></div>
+        <div class="card" style="animation-delay:.54s"><div class="glyph p"></div><h3>世界生成</h3><p>生物群系 / 地物 / 矿脉</p></div>
+      </div>
+    </section>
+
+    <!-- 5. 上手 -->
+    <section class="scene s5" data-scene="5">
+      <div class="eyebrow" style="text-align:center">04 / Start</div>
+      <div class="rule" style="margin:18px auto 26px"></div>
+      <h2 class="headline">三步，跑通第一个包</h2>
+      <div class="steps">
+        <div class="step" style="animation-delay:.05s"><span class="idx">1</span><code>npm i -D sapdon</code><span class="hint">作为项目依赖</span></div>
+        <div class="step" style="animation-delay:.16s"><span class="idx">2</span><code>npx sapdon create my_addon</code><span class="hint">选择 js / ts</span></div>
+        <div class="step" style="animation-delay:.27s"><span class="idx">3</span><code>sapdon build .</code><span class="hint">产物进 dev/</span></div>
+      </div>
+      <p class="foot">文档入口 <b>doc/user/index.md</b> · 示例 <b>examples/</b></p>
+    </section>
+
+    <div class="vignette"></div>
+
+    <div class="hud">
+      <span id="hud-scene">01</span>
+      <div class="bar"><span id="hud-progress"></span></div>
+      <span>Space 重播 · H 隐藏</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const stage = document.getElementById('stage')
+    const scenes = [...document.querySelectorAll('.scene')]
+    const progress = document.getElementById('hud-progress')
+    const hudScene = document.getElementById('hud-scene')
+
+    // 每幕入场时刻（毫秒）与时长
+    const timeline = [
+      { at: 0,     hold: 3600 },
+      { at: 3600,  hold: 5000 },
+      { at: 8600,  hold: 4600 },
+      { at: 13200, hold: 4800 },
+      { at: 18000, hold: 2800 }
+    ]
+    const total = 20800
+    const clean = new URLSearchParams(location.search).has('clean')
+
+    if (clean) document.body.classList.add('clean')
+
+    let timers = []
+    let raf = 0
+    let startedAt = 0
+
+    function clearTimers() {
+      timers.forEach(clearTimeout)
+      timers = []
+      cancelAnimationFrame(raf)
+    }
+
+    function show(index) {
+      scenes.forEach((el, i) => el.classList.toggle('on', i === index))
+      hudScene.textContent = String(index + 1).padStart(2, '0')
+
+      // 重置本幕内的动画（重新触发 CSS animation）
+      const active = scenes[index]
+      active.querySelectorAll('.cl, .file-row, .card, .step, .tree li').forEach((el) => {
+        el.style.animation = 'none'
+        void el.offsetWidth
+        el.style.animation = ''
+      })
+    }
+
+    function tick(now) {
+      const elapsed = (now - startedAt) % total
+      progress.style.width = (elapsed / total * 100).toFixed(2) + '%'
+      raf = requestAnimationFrame(tick)
+    }
+
+    function play() {
+      clearTimers()
+      scenes.forEach((el) => el.classList.remove('on'))
+      startedAt = performance.now()
+      raf = requestAnimationFrame(tick)
+
+      timeline.forEach((step, i) => {
+        timers.push(setTimeout(() => show(i), step.at))
+      })
+      // 一轮结束后重播
+      timers.push(setTimeout(play, total))
+    }
+
+    function fit() {
+      const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720)
+      stage.style.transform = 'scale(' + scale + ')'
+    }
+
+    window.addEventListener('resize', fit)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') { e.preventDefault(); play() }
+      if (e.key === 'r' || e.key === 'R') play()
+      if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('clean')
+    })
+
+    fit()
+    play()
+
+    // 允许 ?scene=3 定格在某一幕，便于截图
+    const fixed = new URLSearchParams(location.search).get('scene')
+    if (fixed) {
+      const i = Math.max(0, Math.min(scenes.length - 1, parseInt(fixed, 10) - 1))
+      clearTimers()
+      show(i)
+      progress.style.width = '100%'
+    }
+  })()
+</script>
+</body>
+</html>
