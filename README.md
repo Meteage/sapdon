@@ -16,7 +16,6 @@
   <a href="https://www.npmjs.com/package/sapdon"><img src="https://img.shields.io/npm/v/sapdon" alt="npm version"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="node"></a>
-  <a href="https://www.npmjs.com/package/sapdon"><img src="https://img.shields.io/npm/dm/sapdon" alt="downloads"></a>
   <a href="https://qm.qq.com/q/2HrXHcKq9j"><img src="https://img.shields.io/badge/QQ%E7%BE%A4-810904181-blue" alt="QQ group"></a>
 </p>
 
