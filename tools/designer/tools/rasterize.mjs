@@ -95,6 +95,7 @@ if (pageNo) {
   const scr = screenOf(doc)
   sim = tag ? { body: tag, title: `${FORM_MARKER}${scr.name}`, buttons: '' } : null
   if (sim) console.log(`门控模拟：tag #${pageNo}（#form_text=${sim.body}；--page 0 可关掉，--page N 换页）`)
+  else console.warn(`--page ${pageNo} 超出页数（共 ${tags.length} 页），本次不模拟门控`)
 }
 
 // 被门控挡掉的元素不画（与画布"门控模拟"同一套规则）
@@ -115,7 +116,7 @@ if (stateFiltered.length !== ops.length) console.log(`静态渲染：跳过 ${op
 ops = stateFiltered
 if (hidden.size) console.log(`门控隐藏：${hidden.size} 个元素`)
 
-const zoom = flags.zoom || doc.canvas.zoom || 2
+const zoom = flags.zoom ?? doc.canvas.zoom ?? 2
 const payload = {
   width: doc.canvas.size[0],
   height: doc.canvas.size[1],
@@ -134,11 +135,18 @@ const outPng = flags.out ? resolve(flags.out) : join(REPO, '.tmp', 'designer-ren
 await mkdir(dirname(outPng), { recursive: true })
 
 // --- 交给 PIL ---
-const py = spawnSync('python', [join(HERE, 'rasterize.py'), listFile, outPng], { stdio: 'inherit' })
+// Windows 控制台按 GBK 解码，Python 的中文输出会变成乱码。
+// 这里显式按 UTF-8 收，再由 Node 转发（Node 输出中文一直是正常的）。
+const py = spawnSync('python', [join(HERE, 'rasterize.py'), listFile, outPng], {
+  encoding: 'utf8',
+  env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+})
 if (py.error) {
   console.error('调用 python 失败：', py.error.message)
   process.exit(1)
 }
+if (py.stdout) process.stdout.write(py.stdout)
+if (py.stderr) process.stderr.write(py.stderr)
 if (py.status !== 0) process.exit(py.status ?? 1)
 console.log(`\n画布渲染 → ${outPng}`)
 console.log(`工程：${label} · 元素 ${layout.list.length} · 绘制指令 ${ops.length} · zoom ${zoom}`)

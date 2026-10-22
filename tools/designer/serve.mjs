@@ -41,6 +41,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i]
   if (a === '--vanilla') flags.vanilla.push(argv[++i])
   else if (a === '--project') flags.project.push(argv[++i])
+  else if (a === '--port' || a === '-p') flags.port = Number(argv[++i])
   else if (/^\d+$/.test(a)) flags.port = Number(a)
 }
 if (process.env.SAPDON_DESIGNER_VANILLA) flags.vanilla.push(process.env.SAPDON_DESIGNER_VANILLA)
@@ -92,10 +93,19 @@ async function serveTexture(res, pathname) {
   res.end(body)
 }
 
+// Windows 路径大小写不敏感，用原样比较会把 ROOT 大写写法误判成越界
+const CASE_INSENSITIVE = process.platform === 'win32'
+
+function withinRoot(target) {
+  const base = CASE_INSENSITIVE ? ROOT.toLowerCase() : ROOT
+  const t = CASE_INSENSITIVE ? target.toLowerCase() : target
+  return t === base || t.startsWith(base + sep)
+}
+
 async function serveStatic(res, pathname) {
   const p = pathname === '/' || pathname.endsWith('/') ? `${pathname}index.html` : pathname
   const target = normalize(join(ROOT, p))
-  if (!target.startsWith(ROOT + sep) && target !== ROOT) {
+  if (!withinRoot(target)) {
     res.writeHead(403).end('403 越界')
     return
   }
@@ -148,7 +158,9 @@ const server = createServer(async (req, res) => {
 
     return await serveStatic(res, pathname)
   } catch (err) {
-    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' }).end(`500 ${err.message}`)
+    // 非法的百分号编码属于请求本身有问题（decodeURIComponent 抛 URIError），按 400 回
+    const code = err instanceof URIError ? 400 : 500
+    res.writeHead(code, { 'content-type': 'text/plain; charset=utf-8' }).end(`${code} ${err.message}`)
   }
 })
 
