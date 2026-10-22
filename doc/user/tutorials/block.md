@@ -1,18 +1,14 @@
-# 方块创建教程
+# 方块
 
-本文档介绍如何使用 sapdon 框架创建各类 Minecraft 方块。
+跟着做完，你会得到一个六面贴图的方块，再扩展到多变体、可旋转、作物、矿物和容器方块（`TileBlock`）。没装好环境的话，先看[快速入门](../quick-start.md)。
 
-> 开始前请确保已完成[快速入门](../quick-start.md)中的环境搭建。
-
-## 导入
-
-所有方块相关 API 均从 `@sapdon/core` 导入：
+方块 API 都在 `@sapdon/core`：
 
 ```typescript
 import { BlockAPI, registry, BlockComponent, RotationTypes, Permutation } from '@sapdon/core'
 ```
 
-完成后调用 `registry.submit()` 提交所有注册数据。
+建完对象记得调用 `registry.submit()`，漏了不会生成任何 JSON。
 
 ---
 
@@ -27,12 +23,12 @@ const myBlock = BlockAPI.createBasicBlock(
   'sapdon:my_basic_block',
   'nature',
   [
-    'stone',   // down
     'stone',   // up
-    'stone',   // north
-    'stone',   // south
+    'stone',   // down
+    'stone',   // east
     'stone',   // west
-    'stone'    // east
+    'stone',   // south
+    'stone'    // north
   ],
   {
     group: 'construction',
@@ -50,12 +46,12 @@ registry.submit()
 ```typescript
 // 等效的手动写法
 BlockComponent.setMaterialInstances({
-  down:  { texture: 'stone_down' },
   up:    { texture: 'stone_up' },
-  north: { texture: 'stone_north' },
-  south: { texture: 'stone_south' },
+  down:  { texture: 'stone_down' },
+  east:  { texture: 'stone_east' },
   west:  { texture: 'stone_west' },
-  east:  { texture: 'stone_east' }
+  south: { texture: 'stone_south' },
+  north: { texture: 'stone_north' }
 })
 ```
 
@@ -473,11 +469,4 @@ registry.submit()
 3. 方块状态为 0 时显示普通方块，状态为 1 时通过 tick 切换为实体容器
 4. 实体使用 `block_sensor` 监听方块破坏事件以触发消失
 
----
-
-## 下一步
-
-- [纹理教程](./texture.md) — 六面贴图与 `terrain_texture.json`
-- [运行期脚本教程](./runtime-script.md) — 给方块挂 tick / 交互逻辑
-- [方块 API 参考](../api/block.md) — 全部工厂方法与组件
-- [指南书](../../guidebook.md) — 用方块做手册载体
+六面贴图与 `terrain_texture.json` 的细节见[给物品和方块加贴图](../guides/textures.md)。给方块挂 tick 或交互逻辑见[让脚本在游戏里跑起来](../guides/scripts.md)。全部工厂方法与组件在[方块 API](../api/block.md)。

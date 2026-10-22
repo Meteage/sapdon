@@ -492,10 +492,4 @@ sapdon build ./
      或索引页的按钮顺序不是「3 个导航槽 + 卡片」。见 §5「索引分页的计算公式」与 §6 的完整版 `openIndex`。
 
 
----
-
-## 下一步
-
-- [手册 API 参考](./user/api/sapdon-ui.md) — 页面壳与按钮网格的底层 API
-- [UI 页面壳教程](./user/tutorials/sapdon-ui.md) — 从零做一个表单页
-- [运行期脚本教程](./user/tutorials/runtime-script.md) — 路由与事件绑定
+页面壳与按钮网格的底层 API 在[手册 API 参考](./user/api/sapdon-ui.md)。从零做一个表单页见[自定义表单页](./user/tutorials/sapdon-ui.md)。页面切好了之后，怎么让按钮被事件驱动，见[让脚本在游戏里跑起来](./user/guides/scripts.md)。

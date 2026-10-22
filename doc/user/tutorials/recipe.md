@@ -1,18 +1,14 @@
-# 配方创建教程
+# 配方
 
-本文档介绍如何使用 sapdon 框架创建各类 Minecraft 配方。
+跟着做完，你会做出有序配方、无序配方和熔炉配方，每类都有简写和链式两种写法。没装好环境的话，先看[快速入门](../quick-start.md)。
 
-> 开始前请确保已完成[快速入门](../quick-start.md)中的环境搭建。
-
-## 导入
-
-所有配方 API 均从 `@sapdon/core` 导入：
+配方 API 都在 `@sapdon/core`：
 
 ```typescript
 import { RecipeAPI, registry } from '@sapdon/core'
 ```
 
-完成后调用 `registry.submit()` 提交所有注册数据。
+建完配方记得调用 `registry.submit()`，漏了不会生成任何 JSON。
 
 ---
 
@@ -277,11 +273,4 @@ RecipeAPI.registerSimpleFurnace(
 
 > 注：`RecipeTags.smoker` 首字母小写，其余常量均为大写首字母。
 
----
-
-## 下一步
-
-- [配方 API 参考](../api/recipe.md) — 全部方法与标签常量
-- [物品教程](./item.md) — 配方产物
-- [方块教程](./block.md) — 配方原料
-- [构建与发布](./publish.md) — 出包前确认配方产物已生成
+全部方法与标签常量在[配方 API](../api/recipe.md)。产物怎么建见[物品教程](./item.md)，原料怎么建见[方块教程](./block.md)。出包前确认配方 JSON 真的生成了，见[打包与分发](../guides/packaging.md)。

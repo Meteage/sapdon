@@ -1,6 +1,8 @@
-# 物品创建教程
+# 物品
 
-本教程将带领你逐步学习使用 sapdon 框架创建各种类型的物品。
+跟着做完，你会依次做出基础物品、食物、四类盔甲、可附着物和翻书物品，每一样都能在游戏里拿到。没装好环境的话，先看[快速入门](../quick-start.md)。
+
+构建期 API 是同一个节奏：建对象、加组件、最后 `registry.submit()`。
 
 ## 目录
 
@@ -440,11 +442,4 @@ ItemAPI.createItem('my_mod:super_sword', ItemCategory.Equipment, 'diamond_sword'
 registry.submit()
 ```
 
----
-
-## 下一步
-
-- [纹理教程](./texture.md) — 自定义图标怎么放、怎么注册
-- [方块教程](./block.md) — 让物品能放置成方块
-- [运行期脚本教程](./runtime-script.md) — 让物品右键生效
-- [物品 API 参考](../api/item.md) — 完整的 Item API 文档
+图标怎么放进 `res/`、短名怎么注册，见[给物品和方块加贴图](../guides/textures.md)。让物品右键有反应，见[让脚本在游戏里跑起来](../guides/scripts.md)。完整的签名与默认值在[物品 API](../api/item.md)。

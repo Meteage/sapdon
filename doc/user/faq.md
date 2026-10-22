@@ -8,7 +8,7 @@ sapdon 作为本地 devDependency 安装，请在项目目录中更新：
 npm update sapdon
 ```
 
-⚠️ `npm update` 只更新框架本身，**不会改写你项目里已有的文件**。旧模板建的项目里有两处值得对照一次：
+`npm update` 只更新框架本身，不会改写你项目里已有的文件。旧模板建的项目里有两处值得对照一次：
 
 - `scripts/custom_components/registry.js`：旧版用 `world.beforeEvents.worldInitialize` 注册自定义组件，
   现行版本会报 `this component was found in the input, but is not present in the Schema`。
@@ -42,7 +42,7 @@ npm update sapdon
 
 构建时框架会自动将依赖注入到行为包的 `manifest.json` 中。
 
-⚠️ 但 `manifest.json` **只在文件不存在时才生成**（为了保留 uuid）—— 改完 `dependencies` 后必须删掉 `dev/<项目名>_BP/manifest.json` 才会重新生成，详见第 4 条。
+但 `manifest.json` 只在文件不存在时才生成（为了保留 uuid）。改完 `dependencies` 后要删掉 `dev/<项目名>_BP/manifest.json` 才会重新生成，详见第 4 条。
 
 ---
 
@@ -77,7 +77,7 @@ dev/
 > 会真正从游戏的开发包里消失，不再残留报 `not present in the Schema`）。它们**从不扫目录删未知文件**，
 > 所以你自己放进 `dev/` 或游戏开发包里的文件不会被碰。
 
-⚠️ **`_BP` / `_RP` 一定是大写**。历史版本曾用小写 `_bp`/`_rp`，在 Windows 上因为大小写不敏感看不出问题，但在 Linux/macOS 下会**分叉成两个目录**（构建写一个、打包读另一个 → 打出空包）。
+`_BP` / `_RP` 一定是大写。历史版本曾用小写 `_bp`/`_rp`，在 Windows 上因为大小写不敏感看不出问题，在 Linux/macOS 下会分叉成两个目录：构建写一个，打包读另一个，结果是一个空包。
 
 ### 改过名 / 删过方块后 `dev/` 里可能留有旧文件
 
@@ -102,8 +102,8 @@ dev/
 
 | 判据 | 说明 |
 |------|------|
-| ✅ **退出码为 0** | 构建脚本子进程非 0 退出、脚本打包失败，都会让 CLI 以 `exit 1` 结束 |
-| ✅ **日志里出现 `处理数据: <name> <root> <path>`** | 这是「产物真的生成了」的**唯一判据** —— 每个写出的注册项都会打一行 |
+| 退出码为 0 | 构建脚本子进程非 0 退出、脚本打包失败，都会让 CLI 以 `exit 1` 结束 |
+| 日志里出现 `处理数据: <name> <root> <path>` | 这是产物真的生成了的唯一判据，每个写出的注册项都会打一行 |
 
 历史行为是：构建脚本失败被**静默吞掉**，CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是**上一次的旧产物**。这是本框架真实踩过的坑，所以现在失败一律非 0 退出。
 
@@ -145,7 +145,7 @@ dev/
 
 切换后**只影响构建产物的同步目标路径**（release 与 beta 的 `com.mojang` 位置不同）。
 
-⚠️ 它**不会**改变 `manifest.json` 里的 `header.name`、`min_engine_version` 或依赖版本 —— 那些来自 `mod.info` 与 `build.config` 的 `dependencies`。
+它不会改变 `manifest.json` 里的 `header.name`、`min_engine_version` 或依赖版本，那些来自 `mod.info` 与 `build.config` 的 `dependencies`。
 
 ---
 

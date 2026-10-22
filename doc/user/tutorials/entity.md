@@ -425,11 +425,4 @@ getDisplayPose(e)                        // { rx, ry, rz, px, py, pz, sc }
 > 加姿态调试命令（游戏里边看边调）时，用 `setDisplayPose(entity, { ... })` + 你自己的
 > `registerCommand` 即可，做法见 `@sapdon/runtime` 的自定义命令（`CustomCommandRegistry`）。
 
----
-
-## 下一步
-
-- [运行期脚本教程](./runtime-script.md) — 实体事件、定时器、持久化
-- [实体 API 参考](../api/entity.md) — `EntityComponent` 全表与 AI 行为类
-- [扩展模块 API](../api/extra.md) — `ClientEntityApperance`、`BaseVehicle`
-- [配方教程](./recipe.md) — 让实体掉落物能进配方
+实体事件、定时器和持久化见[让脚本在游戏里跑起来](../guides/scripts.md)。`EntityComponent` 全表与 AI 行为类在[实体 API](../api/entity.md)，载具一类的扩展在[扩展模块 API](../api/extra.md)。

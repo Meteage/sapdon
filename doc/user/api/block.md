@@ -31,7 +31,7 @@ BlockAPI.createBasicBlock(
 |------|------|------|
 | `identifier` | `string` | 方块唯一标识符，格式 `命名空间:名称` |
 | `category` | `string` | 创造栏分类：`construction` / `nature` / `equipment` / `items` / `none` |
-| `textures_arr` | `string[]` | 6 纹理数组，顺序 `[down, up, north, south, west, east]` |
+| `textures_arr` | `string[]` | 6 纹理数组，顺序 `[up, down, east, west, south, north]`（= `[上, 下, 东, 西, 南, 北]`） |
 | `options.group` | `string` | 分组，默认 `"construction"` |
 | `options.hide_in_command` | `boolean` | 是否在命令中隐藏，默认 `false` |
 
@@ -39,7 +39,7 @@ BlockAPI.createBasicBlock(
 
 ```typescript
 const block = BlockAPI.createBasicBlock('demo:stone', 'nature', [
-  'stone_down', 'stone_up', 'stone_north', 'stone_south', 'stone_west', 'stone_east'
+  'stone_up', 'stone_down', 'stone_east', 'stone_west', 'stone_south', 'stone_north'
 ])
 ```
 

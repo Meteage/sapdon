@@ -1,6 +1,8 @@
-# Sapdon UI 页面壳系统教程
+# 自定义表单页
 
-本教程将带你创建一个使用 `sapdon_ui:` 前缀路由的自定义 Server Form UI：一个页面含「内容面板 + 按键面板」（按键盖在内容上层），左下/右下摆表单按钮，右上放退出键。完整可运行示例见 `examples/test_ui`。
+做完这一篇，你会得到一个走 `sapdon_ui:` 路由的 Server Form 页面：内容面板铺底，按键面板盖在上面，左下右下各一个表单按钮，右上角是退出键。完整可运行示例在 `examples/test_ui`。
+
+页面壳的构造顺序是固定的：建两个面板、用 `SapdonFormUI` 合成一个屏、注册 factory。下面按这个顺序走一遍。
 
 ---
 
@@ -199,11 +201,4 @@ _ui_defs.json           # 自动登记
 
 完整可运行代码见仓库 `examples/test_ui`（含页面 A 内容+按键、页面 B 纯内容两个页面）。API 细节见《Sapdon UI 页面壳系统 API 参考》（`doc/user/api/sapdon-ui.md`）。
 
----
-
-## 下一步
-
-- [UI API 参考](../api/sapdon-ui.md) — `SapdonFormUI` / `FormButtonGrid` 的槽位规则
-- [运行期脚本教程](./runtime-script.md) — 表单怎么被事件触发
-- [指南书 SapdonGuideBook](../../guidebook.md) — 带分类与分页的内置手册
-- [构建与发布](./publish.md) — UI 资源随包分发
+`SapdonFormUI`、`FormButtonGrid` 的槽位规则在 [UI API](../api/sapdon-ui.md)。表单怎么被事件触发见[让脚本在游戏里跑起来](../guides/scripts.md)。要做带分类和分页的游戏内手册，见[手册专题](../../guidebook.md)。

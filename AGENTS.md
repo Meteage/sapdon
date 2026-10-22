@@ -9,6 +9,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 - **CLI 入口**: **本机没有全局 `sapdon` junction**（`C:\nodejs\node_modules\sapdon` 不存在，`Get-Command sapdon` 也找不到；`C:\nodejs\node_modules\@sapdon\` 下只有 2026-07-20 的 `cli`/`utils` 残留，没有 `core`/`runtime`，不可用）。实际两条路：① 项目本地安装的 npm 包 bin（`node_modules/.bin/sapdon` → `sapdon/prod/cli/start.js`）；② 直接用本仓库的构建产物：`node D:\Projects\sapdon\prod\cli\start.js <cmd>`
 - **开发工作流文档**: `doc/dev/workflow.md` — 框架贡献者必读
 - **已知坑清单**: `doc/dev/known-pitfalls.md` — 改框架前先扫一遍
+- **文档写作规范**: `doc/dev/writing-guide.md` — 写/改 `doc/user/**` 前照着做（教程 / 指南 / 参考 / 原理四体裁分工，附去 AI 味对照）
 - **架构文档**: `doc/dev/architecture.md`
 - **用户文档**: `doc/user/`
 

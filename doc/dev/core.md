@@ -424,7 +424,7 @@ TileBlock (方块+实体 — 组合 BasicBlock + Entity)
 
 | 方法 | 说明 |
 |------|------|
-| `constructor(identifier, category, textures_arr[6], options)` | 6 纹理方块 (down, up, north, south, west, east) |
+| `constructor(identifier, category, textures_arr[6], options)` | 6 纹理方块 (up, down, east, west, south, north) |
 | `addComponent(map)` / `removeComponent(key)` | 组件操作 |
 | `addPermutation(condition, componentMap)` | 添加 permutation |
 | `registerTrait(key, value)` / `registerState(key, value)` | 注册 trait / state |
