@@ -15,6 +15,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { createNode, emptyProject, loadProject, serializeProject } from '../tools/designer/src/model.js'
+import { SAMPLE as GENERATOR_SAMPLE } from '../tools/designer/samples/generator.js'
 import { generate } from '../tools/designer/src/codegen.js'
 import { diagnose } from '../tools/designer/src/diagnostics.js'
 import { previewAll } from '../tools/designer/src/preview.js'
@@ -135,6 +136,20 @@ test('载入带 UTF-8 BOM 的工程文件不报错', () => {
   const res = loadProject(text)
   assert.deepEqual(res.errors, [], 'BOM 不该让 JSON 解析失败')
   assert.equal(res.project.screenKind, 'container')
+})
+
+test('内置示例「液体燃料发电机」：装载无错、诊断无 error、生成 addSlot', () => {
+  const { project, errors } = loadProject(GENERATOR_SAMPLE)
+  assert.deepEqual(errors, [], JSON.stringify(errors, null, 1))
+
+  const { counts, items } = diagnose(project)
+  assert.equal(counts.error, 0, JSON.stringify(items.filter((i) => i.severity === 'error'), null, 1))
+
+  const { code } = generate(project)
+  assert.match(code, /new ContainerUISystem\("generator_ui:fuel_generator", "ui\/"\)/)
+  assert.match(code, /\.setPanel\(\{ size: \[176,\s*166\] \}\)/)
+  assert.match(code, /\.addSlot\(\{ slot: 36, pos: \[76,\s*40\] \}\)/)
+  assert.match(code, /\.addSlot\(\{ slot: 37, pos: \[110,\s*42\], kind: "output" \}\)/)
 })
 
 test('产物预览：容器屏的槽位以 $call 形式给出 addSlot 入参', () => {

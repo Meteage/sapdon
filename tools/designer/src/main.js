@@ -10,11 +10,13 @@ import { mountApp } from './ui/app.js'
 import { buildTextureIndex } from './textures.js'
 import { SAMPLE as GUIDEBOOK } from '../samples/guidebook.js'
 import { SAMPLE as GATED_BOOK } from '../samples/gated_book.js'
+import { SAMPLE as GENERATOR } from '../samples/generator.js'
 
-/** 内置示例：手册（照着真产物抄的，默认）与对称门控小书（最小可跑） */
+/** 内置示例：手册（照着真产物抄的，默认）、对称门控小书（最小可跑）、液体燃料发电机（容器屏） */
 export const SAMPLES = {
   guidebook: { label: 'Sapdon 手册（照真产物）', doc: GUIDEBOOK },
   gated_book: { label: '对称门控小书（最小）', doc: GATED_BOOK },
+  generator: { label: '液体燃料发电机（容器屏）', doc: GENERATOR },
 }
 
 const DRAFT_KEY = 'sapdon-designer:draft'
