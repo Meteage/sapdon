@@ -20,3 +20,6 @@ res.hint.ts
 # AOCI agent host integration (machine-bound; do not commit)
 opencode.json
 opencode.json.backup.*
+
+# IDE 本地记忆/会话数据（机器绑定，不入库）
+.workbuddy/

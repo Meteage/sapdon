@@ -442,8 +442,9 @@ registry.submit()
 
 ---
 
-### 下一步
+## 下一步
 
-- [API 参考](../api/item.md) — 完整的 Item API 文档
-- [方块教程](./block.md) — 学习创建自定义方块
-- [实体教程](./entity.md) — 学习创建自定义实体
+- [纹理教程](./texture.md) — 自定义图标怎么放、怎么注册
+- [方块教程](./block.md) — 让物品能放置成方块
+- [运行期脚本教程](./runtime-script.md) — 让物品右键生效
+- [物品 API 参考](../api/item.md) — 完整的 Item API 文档

@@ -198,3 +198,12 @@ _ui_defs.json           # 自动登记
 ## 8. 完整示例
 
 完整可运行代码见仓库 `examples/test_ui`（含页面 A 内容+按键、页面 B 纯内容两个页面）。API 细节见《Sapdon UI 页面壳系统 API 参考》（`doc/user/api/sapdon-ui.md`）。
+
+---
+
+## 下一步
+
+- [UI API 参考](../api/sapdon-ui.md) — `SapdonFormUI` / `FormButtonGrid` 的槽位规则
+- [运行期脚本教程](./runtime-script.md) — 表单怎么被事件触发
+- [指南书 SapdonGuideBook](../../guidebook.md) — 带分类与分页的内置手册
+- [构建与发布](./publish.md) — UI 资源随包分发

@@ -8,6 +8,17 @@ sapdon 作为本地 devDependency 安装，请在项目目录中更新：
 npm update sapdon
 ```
 
+⚠️ `npm update` 只更新框架本身，**不会改写你项目里已有的文件**。旧模板建的项目里有两处值得对照一次：
+
+- `scripts/custom_components/registry.js`：旧版用 `world.beforeEvents.worldInitialize` 注册自定义组件，
+  现行版本会报 `this component was found in the input, but is not present in the Schema`。
+  需要改成 `system.beforeEvents.startup` + `init.blockComponentRegistry.registerCustomComponent(...)`。
+- `build.config` 的 `dependencies`：旧模板写的是 `@minecraft/server` 1.17 / 1.18，
+  与 2.x 的脚本 API 对不上，改成 `2.0.0` 或更高；**脚本里 import 了 `@minecraft/server-ui`
+  却没在 `dependencies` 里声明**的，也要补一条，否则 manifest 缺依赖模块、脚本整份不加载。
+
+最新模板可以直接看 `node_modules/sapdon/prod/templates/{js,ts}_sapdon/`，复制对应文件覆盖即可。
+
 ---
 
 ## 2. 如何添加依赖？

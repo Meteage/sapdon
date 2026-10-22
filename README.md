@@ -208,11 +208,16 @@ RecipeAPI.registerSimpleFurnace('my:smelted', 'my:ore')
 
 | 文档 | 说明 |
 |------|------|
+| [English tutorials](./doc/en/README.md) | Condensed English edition of the user tutorials |
+| [教程导读](./doc/user/index.md) | 全景地图、四条学习路径、教程缺口 |
 | [快速入门](./doc/user/quick-start.md) | 安装、创建、构建 |
 | [物品教程](./doc/user/tutorials/item.md) | 基础物品 → 食物 → 盔甲 |
 | [实体教程](./doc/user/tutorials/entity.md) | 创建实体 → 组件 → AI 行为 |
 | [方块教程](./doc/user/tutorials/block.md) | 基础方块 → 旋转 → 作物 |
 | [配方教程](./doc/user/tutorials/recipe.md) | 有序/无序/熔炉配方 |
+| [纹理教程](./doc/user/tutorials/texture.md) | `res/` 目录、物品/方块/翻书纹理、贴图不显示排查 |
+| [运行期脚本教程](./doc/user/tutorials/runtime-script.md) | `scripts/` 入口、事件、自定义组件、持久化、调试 |
+| [构建与发布](./doc/user/tutorials/publish.md) | 构建模式、`.mcaddon` 打包、UUID 与版本检查 |
 | [UI 教程](./doc/user/tutorials/sapdon-ui.md) | 自定义 Server Form 页面壳（含完整示例） |
 | [物品 API](./doc/user/api/item.md) | ItemAPI、Item、ItemComponent |
 | [实体 API](./doc/user/api/entity.md) | EntityAPI、EntityComponent、AI |

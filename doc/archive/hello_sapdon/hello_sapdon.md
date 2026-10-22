@@ -1,3 +1,12 @@
+> ⚠️ **本文档已归档（2026-10-22），仅作历史参考，请勿照做。**
+>
+> 它描述的是 v1 时代的流程，与现行版本有 5 处硬冲突：`npm run create` → `npx sapdon create`、
+> `main.mjs` → `main.ts`、`import "../src/core"` → `import '@sapdon/core'`、
+> `build.config` 的 `defaultConfig` → `formatVersion: 2` + `buildOptions`、
+> `npm run build <name>` → `sapdon build .`。
+>
+> 现行入门请看 [快速入门](../../user/quick-start.md)，全部文档见 [教程导读](../../user/index.md)。
+
 # Sapdon 使用指南
 
 ## 1. Sapdon 介绍

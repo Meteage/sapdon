@@ -2,7 +2,7 @@
 
 ## 环境要求
 
-- Node.js 16+
+- Node.js 18+
 - npm（随 Node.js 安装）
 - Visual Studio Code（推荐）
 
@@ -118,6 +118,7 @@ dev/
 
 ## 下一步
 
+- [教程导读](./index.md) — 先看路线图，再决定读哪篇
 - [物品教程](./tutorials/item.md) — 学习创建各类物品
 - [实体教程](./tutorials/entity.md) — 学习创建实体
 - [方块教程](./tutorials/block.md) — 学习创建方块

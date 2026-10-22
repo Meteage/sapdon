@@ -276,3 +276,12 @@ RecipeAPI.registerSimpleFurnace(
 ```
 
 > 注：`RecipeTags.smoker` 首字母小写，其余常量均为大写首字母。
+
+---
+
+## 下一步
+
+- [配方 API 参考](../api/recipe.md) — 全部方法与标签常量
+- [物品教程](./item.md) — 配方产物
+- [方块教程](./block.md) — 配方原料
+- [构建与发布](./publish.md) — 出包前确认配方产物已生成

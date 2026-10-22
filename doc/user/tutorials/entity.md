@@ -4,7 +4,7 @@
 
 使用 `EntityAPI.createEntity()` 创建自定义实体。返回对象包含 `.behavior`（行为包）和 `.resource`（资源包）。
 
-```js
+```typescript
 import { EntityAPI, registry } from '@sapdon/core'
 
 const { behavior, resource } = EntityAPI.createEntity(
@@ -17,7 +17,7 @@ registry.submit()
 
 通过 `behavior` 访问行为包，`resource` 访问资源包：
 
-```js
+```typescript
 behavior.addComponent(...)   // 添加行为包组件
 resource.addTexture(...)     // 添加资源包纹理
 ```
@@ -26,7 +26,7 @@ resource.addTexture(...)     // 添加资源包纹理
 
 使用 `EntityComponent` 的静态方法创建组件，通过 `behavior.addComponent()` 添加到实体。
 
-```js
+```typescript
 import { EntityAPI, registry, EntityComponent } from '@sapdon/core'
 import { BasicMovementBundle } from '@sapdon/core'
 
@@ -123,7 +123,7 @@ registry.submit()
 
 使用 `behavior.addProperty()` 定义实体属性（用于实体定义中的 `properties` 字段）。
 
-```js
+```typescript
 behavior.addProperty('my_addon:level', {
   type: 'int',
   range: [1, 100],
@@ -141,7 +141,7 @@ behavior.addProperty('my_addon:variant', {
 
 `addEvent()` 定义事件，`addComponentGroup()` 定义组件组。事件通过 `Map` 结构关联触发条件。
 
-```js
+```typescript
 // 创建组件组
 behavior.addComponentGroup('my_addon:angry', new Map([
   ...EntityComponent.combineComponents(
@@ -172,7 +172,7 @@ behavior.addEvent('my_addon:become_calm', new Map([
 
 通过 `resource` (ClientEntity) 配置模型、纹理、材质、动画、生成蛋等。
 
-```js
+```typescript
 // 纹理
 resource.addTexture('default', 'textures/entity/zombie_custom')
 resource.addTexture('overlay', 'textures/entity/zombie_custom_overlay')
@@ -214,7 +214,7 @@ registry.submit()
 
 AI 行为类均接受 `priority` 作为第一参数，拥有链式 setter 方法。
 
-```js
+```typescript
 import {
   NearestAttackableTargetBehavor,
   TemptBehavior,
@@ -279,7 +279,7 @@ registry.submit()
 
 `DummyEntity` 预先配置了禁用的物理、碰撞箱、推动和伤害，适合用作标记点或 GUI 实体。
 
-```js
+```typescript
 import { EntityAPI, registry } from '@sapdon/core'
 
 const { behavior, resource } = EntityAPI.createDummyEntity(
@@ -301,7 +301,7 @@ registry.submit()
 
 `Projectile` 继承自 `NativeEntity`，基于 `minecraft:snowball`。自动继承雪球的全部行为属性，只需指定纹理。
 
-```js
+```typescript
 import { EntityAPI, registry } from '@sapdon/core'
 
 const { behavior, resource } = EntityAPI.createProjectile(
@@ -332,7 +332,7 @@ registry.submit()
 
 `NativeEntity` 基于一个已有原版实体（如 `minecraft:zombie`）创建变种，自动继承其行为包和资源包数据。
 
-```js
+```typescript
 import { EntityAPI, registry } from '@sapdon/core'
 
 const { behavior, resource } = EntityAPI.createNativeEntity(
@@ -362,7 +362,7 @@ registry.submit()
 引擎会把实体的**主手物品**渲染在模型里那个叫 `rightItem` 的骨上。
 管道在途物品、机器里的「样品展示」、坠落物替代品都可以用它。
 
-```js
+```typescript
 import { EntityAPI, registry } from '@sapdon/core'
 
 const { behavior, resource } = EntityAPI.createDisplayItem('my_addon:display_item', {
@@ -424,3 +424,12 @@ getDisplayPose(e)                        // { rx, ry, rz, px, py, pz, sc }
 
 > 加姿态调试命令（游戏里边看边调）时，用 `setDisplayPose(entity, { ... })` + 你自己的
 > `registerCommand` 即可，做法见 `@sapdon/runtime` 的自定义命令（`CustomCommandRegistry`）。
+
+---
+
+## 下一步
+
+- [运行期脚本教程](./runtime-script.md) — 实体事件、定时器、持久化
+- [实体 API 参考](../api/entity.md) — `EntityComponent` 全表与 AI 行为类
+- [扩展模块 API](../api/extra.md) — `ClientEntityApperance`、`BaseVehicle`
+- [配方教程](./recipe.md) — 让实体掉落物能进配方

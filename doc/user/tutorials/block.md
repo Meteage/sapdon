@@ -472,3 +472,12 @@ registry.submit()
 2. 创建 `Entity`（带有容器、无敌、不可推动等组件）
 3. 方块状态为 0 时显示普通方块，状态为 1 时通过 tick 切换为实体容器
 4. 实体使用 `block_sensor` 监听方块破坏事件以触发消失
+
+---
+
+## 下一步
+
+- [纹理教程](./texture.md) — 六面贴图与 `terrain_texture.json`
+- [运行期脚本教程](./runtime-script.md) — 给方块挂 tick / 交互逻辑
+- [方块 API 参考](../api/block.md) — 全部工厂方法与组件
+- [指南书](../../guidebook.md) — 用方块做手册载体
