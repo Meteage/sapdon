@@ -146,8 +146,8 @@
 - **判据**：
   1. `prod/oc/index.d.ts` 导出 `registerFallbackBlockComponent` / `skippedFallbackComponents`，
      `prod/oc/index.js` 含 `sapdon:block_with_entity`（改完必须断言 `prod/`，别只看 rollup 9/9）；
-  2. 单测 `node tests/component-registry.test.mjs`（7 条：兜底生效 / 项目优先（两种登记顺序）/ 项目重复注册仍抛错 /
-     兜底幂等 / startup 之后抛错 / 两张账互不干扰）；
+  2. 单测 `node tests/component-registry.test.mjs`（①–⑦：兜底生效 / 项目优先（两种登记顺序）/ 项目重复注册仍抛错 /
+     兜底幂等 / startup 之后抛错 / 两张账互不干扰；⑧–⑫ 是多包场景，见 §2.11）；
   3. **最小项目实验**：只 `createTileBlock`、**完全不手工注册** → 产物里有 `"sapdon:block_with_entity": {}`，
      且脚本包里有内置实现（见 `.tmp/p0-1/`）。
 
@@ -290,6 +290,26 @@
   `docs/synbio-abstraction.md` §4 Batch 63（含"替身补规则后 244 passed / 5 failed → 249 passed"的修复前后证据）。
 
 ---
+
+### 2.11 ★ 同一世界里启用多个 sapdon 包：内置组件 id 撞车（2026-11，**未真机复现**）
+- **症状（推断）**：两个用 sapdon 构建的行为包同时加入一个世界，后初始化的那个包启动时报
+  `BlockCustomComponentAlreadyRegisteredError`（或物品侧同名错误），该包排在后面的组件全部没注册上，
+  表现为它的方块报 `not present in the Schema` 或交互没反应。
+- **原因**：自定义组件的注册表是**世界级**的 ——
+  [Microsoft Learn: Custom Components](https://learn.microsoft.com/en-us/minecraft/creator/documents/scripting/custom-components?view=minecraft-bedrock-stable)
+  原文 *a custom component can be registered in one behavior pack, and then used from another*；
+  `registerCustomComponent` 的签名把 `*CustomComponentAlreadyRegisteredError` 列为可抛错误。
+  而每个 sapdon 包都把 `@sapdon/runtime` 打进自己的脚本，`registerBuiltinComponents()` 会在每个包里注册同样的六个 `sapdon:*` id。
+  修复前：五个内置组件在独立的 startup 回调里直接注册（没有任何保护）；注册表的回调里第一项失败即抛出，后面的组件不再注册。
+- **修法（已落地）**：`src/oc/components/registry.ts` 逐项 try/catch —— 内置组件已被其他包注册 ⇒ 沿用 + warn
+  （`sharedFallbackComponents()`）；项目组件被其他包抢先 ⇒ `console.error` + 计为失败；全部提交完再统一抛出。
+  六个内置组件全部改走兜底通道（`src/oc/builtin/index.ts`）。内置 id **不改名**：六个实现都是通用逻辑，
+  共用一份没有问题，改名会让所有既有项目的方块 JSON 变化。
+- **残留风险**：共用时生效的是**先注册的那个包**里的内置实现（不同 sapdon 版本的实现可能不同）；
+  项目若认领 `sapdon:*` id 来换成自己的行为，在多包世界里可能被别的包抢先 ⇒ 要共存就用项目自己的命名空间。
+- **判据**：`node tests/component-registry.test.mjs`（12 条，⑧–⑫ 为跨包场景）、
+  `node tests/builtin-components.test.mjs`（4 条：六个内置组件 / 幂等 / 项目优先 / 另一个包已注册全部内置 id）。
+  两份测试都在桩里按引擎行为模拟「已被注册」，**真机行为见 §6 待确认**。
 
 ## 3. 持久化（动态属性）
 
@@ -880,6 +900,12 @@ node scripts/buildTask.cjs           # rollup → prod/
 - [ ] `options.entity_texture` 的真机效果：给 terrain 短名的项目传完整路径后，实体贴图 `Missing referenced asset` 是否消失。
 - [ ] 内置 `geometry.cube`（模板）在新项目里是否真的被 RP 收录（`sapdon create` + 一次构建后看 `dev/<proj>_RP/models/blocks/cube.geo.json`）。
 - [ ] i18n：`labels` 传 lang 键时，JSON UI 是否按预期解析（需要 `RP/texts/*.lang` 里定义该键）。
+- [ ] **★ 多个 sapdon 包共存（§2.11）**：两个都调用 `registerBuiltinComponents()` 的包同时加入一个世界，确认
+      ① 引擎对跨包同 id 注册**确实**抛 `*CustomComponentAlreadyRegisteredError`（而不是各包各有一张表、互不冲突）；
+      ② 抛出的错误能被 `isAlreadyRegisteredError` 识别（看 ContentLog 里是 warn「沿用那一份实现」还是 error「注册失败」）；
+      ③ 后加载的包自己的组件全部注册成功。
+- [ ] **manifest 的包依赖（`build.config` 写 `{ uuid, version }`）**：被依赖包缺失时引擎的提示；被依赖包的版本**高于**依赖里写的版本时是否仍算满足
+      （官方文档只说版本「应当匹配」，未定义容差）；以及依赖是否影响两个包的脚本初始化顺序（预期不影响）。
 
 ---
 

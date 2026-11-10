@@ -171,9 +171,14 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 方块容器（**已废弃**） | `src/core/block/blockComponent.js` | `BlockComponent.setInventory({inventory_size, …})` → 方块里的 `minecraft:inventory`（**实体**组件放错上下文，引擎必然拒）。产物保持不变 + 构建期一条 warn 指向上面两条路 |
 | 分块持久化 | `src/oc/persist/chunked.ts`（`@sapdon/runtime`） | `saveChunked(target, key, value: string)`（**`value` 必填**）/ `loadChunked(target, key): string \| undefined` / `clearChunked(target, key)` + `CHUNK_SIZE = 24000`（另导出 `CHUNK_SUFFIX`/`MAX_CHUNK_SCAN` 与几个纯函数） |
 | 组件注册（路线 B） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerBlockComponent(id, handlers)` / `registerItemComponent(id, handlers)`；诊断：`pendingComponentCount()` / `registeredComponents()` |
-| 组件注册（**框架内置兜底**） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerFallbackBlockComponent(id, handlers)` / `registerFallbackItemComponent(id, handlers)`：**项目没注册该 id 才注册**；项目注册了 → 项目生效 + 一条 warn；重复登记同一内置 id 幂等。诊断：`skippedFallbackComponents()` |
+| 组件注册（**框架内置兜底**） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerFallbackBlockComponent(id, handlers)` / `registerFallbackItemComponent(id, handlers)`：**项目没注册该 id 才注册**；项目注册了 → 项目生效 + 一条 warn；重复登记同一内置 id 幂等；**同一世界里其他包已注册** → 沿用 + warn。诊断：`skippedFallbackComponents()` / `sharedFallbackComponents()` |
+| manifest 包依赖 | `src/cli/meta/manifestDependencies.ts`（纯函数）+ `src/cli/build.js` | `build.config` 的 `dependencies` 可写 `{ uuid, version }`（`version` 字符串或数组 → 写入时规范成数组）；`module_name` 项原样透传。不合法即构建失败；manifest 已存在时只提示缺的项、不改写 |
+| 提交前钩子 | `src/core/registry.ts`（`@sapdon/core`） | `registry.beforeSubmit(hook)` / `GRegistry.beforeSubmit(hook)`（同一张表）：`submit()` 序列化前按登记顺序调用，`hook(entries)` 拿快照（项是活对象）、可 `GRegistry.register()` 追加；抛错 = 构建失败；钩子执行期间不许再登记钩子 |
 
 ### A2. 框架内置自定义组件清单（`registerBuiltinComponents()`）
+
+> 2026-11 起六个**全部**走兜底通道（以前只有 `block_with_entity`，其余五个在独立的 startup 回调里直接注册）。
+> id 一律不改名：多个 sapdon 包共存时共用世界级注册表里先注册的那一份，见 `doc/dev/known-pitfalls.md` §2.11。
 
 | id | 实现 | 备注 |
 |---|---|---|
@@ -199,7 +204,12 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
   - 项目**没注册** → 内置实现生效；
   - 项目**注册了同 id** → **项目实现生效**、内置被跳过 + 一条 warn（**不是错误**），顺序无关（判定在 `system.beforeEvents.startup` 回调里，等所有模块都加载完）；
   - 兜底登记本身**幂等**（`registerBuiltinComponents()` 调两次不会重复注册）。
-  - 单测：`node tests/component-registry.test.mjs`（7 条；用「编译产物 + `@minecraft/server` 桩」跑真代码，见该文件头注释）。
+  - 单测：`node tests/component-registry.test.mjs`（12 条；用「编译产物 + `@minecraft/server` 桩」跑真代码，见该文件头注释）、
+    `node tests/builtin-components.test.mjs`（4 条；整棵 `dist/oc/builtin` + 注册表一起跑）。
+- ★ **多包共存**：组件注册表是**世界级**的，每个 sapdon 包都会注册同样的 `sapdon:*` 内置 id。startup 回调里**逐项** try/catch：
+  内置 id 已被其他包注册 → 沿用 + warn（`sharedFallbackComponents()`）；项目 id 被其他包抢先 → `console.error` + 计为失败；
+  一项失败不中断其余，全部提交完再统一抛（一项抛原错误对象，多项抛汇总）。「已被注册」按错误类识别（`instanceof` 走命名空间导入，
+  再比类名）—— **不要**具名导入错误类：旧版本模块里没有该导出时整份脚本链接失败。
 
 ### D. 持久化：绝不吞异常 + 空值靠 `=== undefined`
 - 超限（约 32KB）时 `setDynamicProperty` **抛错**；吞掉就是**静默丢存档**。框架 helper 不吞异常，分块损坏也抛。
@@ -214,6 +224,8 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
    另外两段同步同样按清单 prune（2026-09 新增，见 `doc/dev/cli.md`）：`dev/.sapdon_synced_<proj>.json` 管**游戏开发包目录**里「上次部署过、这次 `dev/` 没有」的文件；`dev/.sapdon_res_<proj>.json` 管 `dev/<proj>_RP` 里「上次从 `res/` 拷过、这次 `res/` 没有」的文件。**没有清单时一个文件都不删**；空包目录视为构建中断、跳过 prune。单测 `node tests/sync-manifest.test.mjs`。
 5. **注册索引合并**：`scripts/custom_components/index.js` 用标记块维护（`// >>> sapdon:custom-component-registry >>> … <<<`），标记块外内容一律保留；生成块用 `system as __sapdon_system` 避免重名 import。
 6. **Dev Server 端口**读 `SAPDON_DEV_SERVER_PORT`（默认 49037），服务端与客户端必须用同一个变量；端口被占直接 `exit 1`。多 agent 并行构建各设各的端口。
+7. **manifest 依赖**：每次构建都用 `normalizeManifestDependencies` 校验 `build.config` 的 `dependencies`（不合法 → 构建失败）。manifest 仍然**只在首次构建时生成**；已存在时用 `missingManifestDependencies` 比对，只**提示**缺的项（不改写 —— 不覆盖手工改过的 manifest，手写多出来的依赖也不算差异）。单测 `node tests/manifest-dependencies.test.mjs`。
+8. **提交前钩子**在 `registry.submit()` / `GRegistry.submit()` 的**最开头**跑（先于去重、`validate()`、`toObject()`）。单测 `node tests/registry-hook.test.mjs`（替换全局 `fetch` 断言真正发出的载荷）。
 
 ### F. 验证套路（本环境受限，务必照做）
 - 构建必须拆 4 步直跑：`tsc` → `tsc-alias` → `node scripts/buildTask.cjs` → 拷 templates + 删 dist。**漏掉 `tsc-alias` 会让 `prod/cli/start.js` 残留无法解析的 `@sapdon/utils` 裸包名。**
