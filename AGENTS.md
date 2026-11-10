@@ -226,6 +226,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 6. **Dev Server 端口**读 `SAPDON_DEV_SERVER_PORT`（默认 49037），服务端与客户端必须用同一个变量；端口被占直接 `exit 1`。多 agent 并行构建各设各的端口。
 7. **manifest 依赖**：每次构建都用 `normalizeManifestDependencies` 校验 `build.config` 的 `dependencies`（不合法 → 构建失败）。manifest 仍然**只在首次构建时生成**；已存在时用 `missingManifestDependencies` 比对，只**提示**缺的项（不改写 —— 不覆盖手工改过的 manifest，手写多出来的依赖也不算差异）。单测 `node tests/manifest-dependencies.test.mjs`。
 8. **提交前钩子**在 `registry.submit()` / `GRegistry.submit()` 的**最开头**跑（先于去重、`validate()`、`toObject()`）。单测 `node tests/registry-hook.test.mjs`（替换全局 `fetch` 断言真正发出的载荷）。
+9. **1.20+ 合成配方的 `unlock`**：`AddonRecipe.toObject()` 对 format_version ≥ 1.20 的有序 / 无序配方补 `{ context: 'AlwaysUnlocked' }`（实例不变）。形状只有两种：`{ context }` 对象、`[{ item } | { tag }]` 数组 —— `[{ context }]` 会被引擎当原料解析而报错。单测 `node tests/recipe-unlock.test.mjs`；坑见 `known-pitfalls.md` §1.8。
 
 ### F. 验证套路（本环境受限，务必照做）
 - 构建必须拆 4 步直跑：`tsc` → `tsc-alias` → `node scripts/buildTask.cjs` → 拷 templates + 删 dist。**漏掉 `tsc-alias` 会让 `prod/cli/start.js` 残留无法解析的 `@sapdon/utils` 裸包名。**

@@ -10,6 +10,13 @@
 
 ## 未发布
 
+### 修复：1.20 有序配方在真机上不加载（`@sapdon/core`）
+
+- `RecipeAPI.registerShaped` / `registerSimpleShaped` 产出 format_version `1.20`，以前**从不写 `unlock`**，引擎拒绝加载（`1.20+ Recipes require unlock data`）。
+  现在 format_version ≥ 1.20 的有序 / 无序配方没有 `unlock` 时，产物里写入 `{ "context": "AlwaysUnlocked" }`；显式设置的原样保留。
+- 新增 `recipe.unlock(…)`：`{ context }` 单个对象或 `[{ item } | { tag }]` 数组，形状不对时抛错。
+- 产物变化：用 `RecipeAPI` 生成有序配方的项目，每个配方 JSON 多出 `unlock` 一项（之前这些配方本来就加载不了）。
+
 ### 同一世界里可以同时启用多个 sapdon 包（`@sapdon/runtime`）
 
 - **`registerBuiltinComponents()` 的六个 `sapdon:*` 组件全部改走兜底通道**（以前只有 `sapdon:block_with_entity`，另外五个直接注册）。两处行为变化：

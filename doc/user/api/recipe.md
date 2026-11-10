@@ -142,6 +142,23 @@ RecipeAPI.registerShapeless('sapdon:mixture')
 
 ---
 
+## 解锁条件 `unlock`
+
+format_version ≥ 1.20 的有序 / 无序配方必须有 `unlock`，否则整条配方不加载（ContentLog：`1.20+ Recipes require unlock data`）。
+`RecipeAPI.registerShaped` / `registerSimpleShaped` 产出的是 1.20 配方：不设置时产物里写入 `{ "context": "AlwaysUnlocked" }`。
+
+```typescript
+RecipeAPI.registerSimpleShaped('my_mod:gear', 'my_mod:gear', [' x ', 'x x', ' x '], { x: { item: 'minecraft:iron_ingot' } })
+    .unlock([{ item: 'minecraft:iron_ingot' }])     // 拿到铁锭时在配方书里解锁
+```
+
+| 写法 | 含义 |
+|---|---|
+| `{ context: 'AlwaysUnlocked' \| 'PlayerInWater' \| 'PlayerHasManyItems' \| 'None' }` | 按情境，**单个对象** |
+| `[{ item: '…' }, { tag: '…' }]` | 拿到其中任一物品时解锁，**数组**，只能放 `item` / `tag` |
+
+形状不对时 `unlock()` 抛错，例如把 `{ context }` 放进数组：`unlock 数组里只能放 { item } 或 { tag }`。
+
 ## AddonRecipe 基类
 
 所有配方类型继承自 `AddonRecipe`。
@@ -157,6 +174,7 @@ import { AddonRecipe } from '@sapdon/core'
 | `identifier(id: string)` | `this` | 设置配方标识符 |
 | `tags(tags: string[])` | `this` | 设置配方标签数组（覆盖） |
 | `getId(): string` | `string` | 获取配方标识符 |
+| `unlock(unlock: RecipeUnlock)` | `this` | 设置配方书解锁条件，见上方「解锁条件」；形状不对时抛错 |
 
 ---
 
