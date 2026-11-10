@@ -19,6 +19,17 @@
 //   4. 项目重复注册同一个 id → **仍然抛错**（守卫不变）
 //   5. 兜底登记重复（`registerBuiltinComponents()` 被调两次）→ **幂等**，只注册一次
 //   6. `startup` 之后再做任何登记 → 抛错（守卫不变）
+//
+// ## 覆盖（同一世界里有多个 sapdon 包）
+//
+// 桩用 `preRegister(kind, id)` 模拟「另一个行为包已注册该 id」：此后再注册同 id，
+// 桩会像引擎一样抛 `*CustomComponentAlreadyRegisteredError`。
+//
+//   8. 内置兜底已被其他包注册 → 沿用、不抛错、记入 `sharedFallbackComponents()`
+//   9. 项目组件已被其他包注册 → 后续组件照常注册，最后抛出原错误
+//  10. 一项未知错误 → 不中断其余注册，最后抛出原错误对象
+//  11. 多项失败 → 一条汇总错误，逐项列出
+//  12. instanceof 不成立时按错误类名识别「已被注册」
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -35,6 +46,10 @@ const SOURCE = fs.readFileSync(ARTIFACT, 'utf8')
 const STUB = `
 const subscribers = []
 const calls = []
+const taken = new Set()
+const failing = new Map()
+export class BlockCustomComponentAlreadyRegisteredError extends Error {}
+export class ItemCustomComponentAlreadyRegisteredError extends Error {}
 export const system = {
     beforeEvents: {
         startup: {
@@ -42,10 +57,25 @@ export const system = {
         },
     },
 }
+/** 模拟「同一世界里的另一个行为包已注册该 id」 */
+export function preRegister(kind, id) { taken.add(kind + ':' + id) }
+/** 让某个 id 的注册抛出指定错误 */
+export function failWith(kind, id, error) { failing.set(kind + ':' + id, error) }
+function registryOf(kind, AlreadyRegistered) {
+    return {
+        registerCustomComponent(id, handlers) {
+            const key = kind + ':' + id
+            if (failing.has(key)) throw failing.get(key)
+            if (taken.has(key)) throw new AlreadyRegistered('Custom component ' + id + ' already registered')
+            taken.add(key)
+            calls.push({ kind, id, handlers })
+        },
+    }
+}
 export function fireStartup() {
     const init = {
-        blockComponentRegistry: { registerCustomComponent: (id, handlers) => calls.push({ kind: 'block', id, handlers }) },
-        itemComponentRegistry: { registerCustomComponent: (id, handlers) => calls.push({ kind: 'item', id, handlers }) },
+        blockComponentRegistry: registryOf('block', BlockCustomComponentAlreadyRegisteredError),
+        itemComponentRegistry: registryOf('item', ItemCustomComponentAlreadyRegisteredError),
     }
     for (const cb of subscribers) cb(init)
 }
@@ -78,6 +108,22 @@ function captureWarn(fn) {
     const original = console.warn
     console.warn = (...args) => { out.push(args.map(String).join(' ')) }
     try { return { result: fn(), warnings: out } } finally { console.warn = original }
+}
+
+/** 同时捕获 `console.warn` / `console.error`，并记录 `fn` 抛出的错误（不抛出去） */
+function captureConsole(fn) {
+    const warnings = []
+    const errors = []
+    const originalWarn = console.warn
+    const originalError = console.error
+    console.warn = (...args) => { warnings.push(args.map(String).join(' ')) }
+    console.error = (...args) => { errors.push(args.map(String).join(' ')) }
+    let thrown
+    try { fn() } catch (error) { thrown = error } finally {
+        console.warn = originalWarn
+        console.error = originalError
+    }
+    return { warnings, errors, thrown }
 }
 
 const ID = 'sapdon:block_with_entity'
@@ -167,4 +213,88 @@ test('⑦ 项目与内置是**两张账**：项目注册的 id 不影响兜底�
     stub.fireStartup()
     assert.equal(registry.pendingComponentCount(), 0)
     assert.deepEqual(registry.registeredComponents().sort(), [`block:${ID}`, 'block:fz:machine'].sort())
+})
+
+test('⑧ 内置兜底已被**其他包**注册 → 沿用那一份、不抛错、记入 sharedFallbackComponents', async () => {
+    const { stub, registry } = await harness()
+    stub.preRegister('block', ID)
+    registry.registerBlockComponent('fz:machine', { onTick() { } })
+    registry.registerFallbackBlockComponent(ID, builtinHandlers)
+
+    const { warnings, errors, thrown } = captureConsole(() => stub.fireStartup())
+
+    assert.equal(thrown, undefined, '其他包已提供内置组件不是错误')
+    assert.deepEqual(errors, [])
+    assert.deepEqual(registry.registeredComponents(), ['block:fz:machine'])
+    assert.deepEqual(registry.sharedFallbackComponents(), [`block:${ID}`])
+    assert.deepEqual(registry.skippedFallbackComponents(), [], '不是「被项目取代」，两种诊断不能混')
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /其他行为包/)
+})
+
+test('⑨ 项目组件已被**其他包**注册 → 后续组件照常注册，最后抛出原错误', async () => {
+    const { stub, registry } = await harness()
+    stub.preRegister('block', ID)                                   // 另一个包的内置实现抢先
+    registry.registerBlockComponent(ID, projectHandlers)             // 本包认领了同一个 sapdon:* id
+    registry.registerBlockComponent('fz:machine', { onTick() { } })  // 排在后面的项目组件
+    registry.registerFallbackBlockComponent('sapdon:crop_growth', builtinHandlers)
+
+    const { errors, thrown } = captureConsole(() => stub.fireStartup())
+
+    assert.ok(thrown, '本包实现不会生效，必须报出来')
+    assert.equal(thrown.constructor.name, 'BlockCustomComponentAlreadyRegisteredError', '只有一项失败时抛原错误对象')
+    assert.deepEqual(
+        registry.registeredComponents().sort(),
+        ['block:fz:machine', 'block:sapdon:crop_growth'].sort(),
+        '★ 一项失败不能中断后面的注册'
+    )
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /不会生效/)
+    assert.match(errors[0], /sapdon:block_with_entity/)
+})
+
+test('⑩ 一项未知错误 → 不中断其余注册，最后抛出原错误对象', async () => {
+    const { stub, registry } = await harness()
+    const boom = new TypeError('handlers 不合法')
+    stub.failWith('block', 'fz:broken', boom)
+    registry.registerBlockComponent('fz:broken', { onTick() { } })
+    registry.registerBlockComponent('fz:machine', { onTick() { } })
+    registry.registerItemComponent('fz:guide', { onUse() { } })
+
+    const { errors, thrown } = captureConsole(() => stub.fireStartup())
+
+    assert.equal(thrown, boom, '原错误对象原样抛出（类型与堆栈都保留）')
+    assert.deepEqual(registry.registeredComponents().sort(), ['block:fz:machine', 'item:fz:guide'].sort())
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /fz:broken/)
+})
+
+test('⑪ 多项失败 → 一条汇总错误，逐项列出', async () => {
+    const { stub, registry } = await harness()
+    stub.failWith('block', 'fz:a', new Error('坏了 A'))
+    stub.failWith('item', 'fz:b', new Error('坏了 B'))
+    registry.registerBlockComponent('fz:a', { onTick() { } })
+    registry.registerItemComponent('fz:b', { onUse() { } })
+    registry.registerBlockComponent('fz:ok', { onTick() { } })
+
+    const { thrown } = captureConsole(() => stub.fireStartup())
+
+    assert.ok(thrown instanceof Error)
+    assert.match(thrown.message, /2 个自定义组件注册失败/)
+    assert.match(thrown.message, /block:fz:a: 坏了 A/)
+    assert.match(thrown.message, /item:fz:b: 坏了 B/)
+    assert.deepEqual(registry.registeredComponents(), ['block:fz:ok'])
+})
+
+test('⑫ instanceof 不成立时按错误类名识别「已被注册」', async () => {
+    const { stub, registry } = await harness()
+    // 与桩导出的类**不是**同一个类，只是同名 —— 模拟跨上下文的原生错误
+    const Foreign = class BlockCustomComponentAlreadyRegisteredError extends Error { }
+    stub.failWith('block', ID, new Foreign('already registered'))
+    registry.registerFallbackBlockComponent(ID, builtinHandlers)
+
+    const { thrown } = captureConsole(() => stub.fireStartup())
+
+    assert.equal(thrown, undefined)
+    assert.deepEqual(registry.sharedFallbackComponents(), [`block:${ID}`])
 })
