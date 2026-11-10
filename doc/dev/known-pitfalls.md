@@ -109,6 +109,31 @@
 
 ---
 
+### 1.8 ★ 1.20+ 合成配方必须有 `unlock`，且形状只有两种（2026-11 真机）
+- **症状**：ContentLog 每条配方一行 `recipes/<file>.json | <id> | 1.20+ Recipes require unlock data`，配方整条不加载（工作台里合不出来）。
+  `unlock` 写成 `[{ "context": "AlwaysUnlocked" }]` 时换成两行：`Recipe ingredient is invalid: Must contain either a valid item name or item tag`
+  + `Recipe: <id> has an invalid unlock ingredient`。
+- **原因**：format_version ≥ 1.20 的有序 / 无序配方要求 `unlock`。形状照原版 bedrock-samples（`behavior_pack/recipes/`）只有两种：
+  情境是**单个对象**（`crafting_table.json`：`"unlock": { "context": "AlwaysUnlocked" }`），按物品解锁是**数组**（`stick.json`：`"unlock": [{ "tag": "minecraft:planks" }]`）。
+  数组的每一项都按原料解析，`{ context }` 放进去就是「既没有 item 也没有 tag 的原料」。
+  框架的 `RecipeAPI.registerShaped / registerSimpleShaped` 产出 format_version `1.20`，**以前从不写 `unlock`** ⇒ 用它生成的有序配方在真机上全部不加载
+  （Ex Nihilo Origin 在 `src-build/api.ts` 里手工补了 `{ context: 'AlwaysUnlocked' }` 绕过；FZ Reborn 没有绕过）。
+- **修法（已落地）**：`AddonRecipe.toObject()` 对 format_version ≥ 1.20 的有序 / 无序配方，没有 `unlock` 时在产物里写 `{ context: 'AlwaysUnlocked' }`（不改实例）；
+  新增 `recipe.unlock(…)`，形状不对直接抛错。显式写过 `unlock` 的（含直接改 `definitions.unlock` 的旧写法）原样保留。
+- **判据**：`node tests/recipe-unlock.test.mjs`；真机上 ContentLog 不再出现上面两类报错。出处：Nexus 测试包 2026-11 真机日志。
+
+### 1.9 只引用了 `@sapdon/runtime` 也要声明 `@minecraft/server-ui`（2026-11 真机）
+- **症状**：`ReferenceError: Module [@minecraft/server-ui] is unrecognized. If this is a Native module, did you remember to add it to your manifest.json?`，整份脚本不执行。
+- **原因**：`@sapdon/runtime` 的入口重新导出了内置组件，其中 `sapdon:guibook` 引用 `@minecraft/server-ui`。项目即使没用到任何 UI，
+  rollup 也会把外部模块当作有副作用，留下一行**副作用导入** `import '@minecraft/server-ui';`。
+- **规避**：引用 `@sapdon/runtime` 的项目在 `build.config` 的 `dependencies` 里同时声明 `@minecraft/server-ui`。
+  框架侧可选的根治：`scriptBundler` 给 rollup 加 `treeshake.moduleSideEffects`，对 `@minecraft/*` 外部模块返回 `false`（未实施，需评估 server-ui 是否有必须的副作用）。
+
+### 1.10 `res/` 下没有 `textures/` 时，`item_texture.json` / `terrain_texture.json` 写入失败（2026-11）
+- **症状**：构建日志 `Error writing JSON file: Error: ENOENT … <proj>_RP/textures/item_texture.json`（构建本身不失败）。
+- **原因**：贴图清单写入前不创建 `textures/` 目录，而这个目录只有在 `res/textures/` 存在、被同步过去时才有。
+- **规避**：项目里保留 `res/textures/`（放一个占位文件）。框架侧根治是写入前 `mkdirSync(…, { recursive: true })`（未实施）。
+
 ## 2. 自定义组件
 
 ### 2.1 注册时机只有两个合法位置
@@ -291,7 +316,7 @@
 
 ---
 
-### 2.11 ★ 同一世界里启用多个 sapdon 包：内置组件 id 撞车（2026-11，**未真机复现**）
+### 2.11 ★ 同一世界里启用多个 sapdon 包：内置组件 id 撞车（2026-11，**真机已确认**）
 - **症状（推断）**：两个用 sapdon 构建的行为包同时加入一个世界，后初始化的那个包启动时报
   `BlockCustomComponentAlreadyRegisteredError`（或物品侧同名错误），该包排在后面的组件全部没注册上，
   表现为它的方块报 `not present in the Schema` 或交互没反应。
@@ -309,7 +334,11 @@
   项目若认领 `sapdon:*` id 来换成自己的行为，在多包世界里可能被别的包抢先 ⇒ 要共存就用项目自己的命名空间。
 - **判据**：`node tests/component-registry.test.mjs`（12 条，⑧–⑫ 为跨包场景）、
   `node tests/builtin-components.test.mjs`（4 条：六个内置组件 / 幂等 / 项目优先 / 另一个包已注册全部内置 id）。
-  两份测试都在桩里按引擎行为模拟「已被注册」，**真机行为见 §6 待确认**。
+  两份测试都在桩里按引擎行为模拟「已被注册」。
+- **真机确认（2026-11，Nexus 测试包，@minecraft/server 被引擎提升到 2.10.0）**：跨包注册同一个 id，引擎确实抛
+  `*CustomComponentAlreadyRegisteredError`，`isAlreadyRegisteredError` 能识别（ContentLog 是「沿用那一份实现」的 warn，不是「注册失败」）。
+  **初始化顺序每次进世界都可能不同**：一个包在项目里认领了 `sapdon:crop_growth`，它先初始化时，**它的实现对整个世界生效**，
+  其余包的内置 `crop_growth` 变成「沿用」——项目认领 `sapdon:*` id 会改变其他包的方块行为。
 
 ## 3. 持久化（动态属性）
 
@@ -900,12 +929,14 @@ node scripts/buildTask.cjs           # rollup → prod/
 - [ ] `options.entity_texture` 的真机效果：给 terrain 短名的项目传完整路径后，实体贴图 `Missing referenced asset` 是否消失。
 - [ ] 内置 `geometry.cube`（模板）在新项目里是否真的被 RP 收录（`sapdon create` + 一次构建后看 `dev/<proj>_RP/models/blocks/cube.geo.json`）。
 - [ ] i18n：`labels` 传 lang 键时，JSON UI 是否按预期解析（需要 `RP/texts/*.lang` 里定义该键）。
-- [ ] **★ 多个 sapdon 包共存（§2.11）**：两个都调用 `registerBuiltinComponents()` 的包同时加入一个世界，确认
+- [x] **★ 多个 sapdon 包共存（§2.11）** → **2026-11 真机定案**：三项都成立，见 §2.11「真机确认」。原始待确认项：两个都调用 `registerBuiltinComponents()` 的包同时加入一个世界，确认
       ① 引擎对跨包同 id 注册**确实**抛 `*CustomComponentAlreadyRegisteredError`（而不是各包各有一张表、互不冲突）；
       ② 抛出的错误能被 `isAlreadyRegisteredError` 识别（看 ContentLog 里是 warn「沿用那一份实现」还是 error「注册失败」）；
       ③ 后加载的包自己的组件全部注册成功。
-- [ ] **manifest 的包依赖（`build.config` 写 `{ uuid, version }`）**：被依赖包缺失时引擎的提示；被依赖包的版本**高于**依赖里写的版本时是否仍算满足
-      （官方文档只说版本「应当匹配」，未定义容差）；以及依赖是否影响两个包的脚本初始化顺序（预期不影响）。
+- [x] **manifest 的包依赖（`build.config` 写 `{ uuid, version }`）** → **2026-11 真机定案：版本必须完全一致**。
+      被依赖包装的是 0.1.2、依赖写 0.1.1 ⇒ 包信息「错误列表」：`缺少 ID '<uuid>' 和版本 '0.1.1' 的依赖项。`（较高版本**不算**满足）；
+      同 UUID 的包导入更高版本会替换旧版本，两者不能共存 ⇒ 被依赖包每发一版，所有硬依赖它的包都要跟着重发。
+      新建世界只勾选依赖方时，游戏会按 UUID 自动带上被依赖包。脚本初始化顺序是否受依赖影响仍未单独验证。
 
 ---
 
