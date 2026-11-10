@@ -13,4 +13,5 @@ export * from '../utils/index.js'
 // 用它落一份原始 JSON。`register(name, root, path, data)`：`root` = `"behavior" | "resource"`，
 // 产物落在 `dev/<proj>_BP|_RP/<path>/<name>.json`。
 // ⚠️ 每注册一项，构建日志就多一行 `处理数据:`（`name` 会做文件名安全化处理）。
-export { registry, GRegistry } from './registry.js'
+// `registry.beforeSubmit` / `GRegistry.beforeSubmit`：提交前钩子（插件补标签、追加文件），类型 `BeforeSubmitHook` / `RegistryEntry`。
+export * from './registry.js'
