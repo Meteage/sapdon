@@ -24,7 +24,7 @@
 
 ## 怎么查
 
-签名、参数、默认值、抛错条件在参考区：[物品](./api/item.md)、[方块](./api/block.md)、[实体](./api/entity.md)、[配方](./api/recipe.md)、[运行期](./api/runtime.md)、[UI](./api/sapdon-ui.md)、[纹理](./api/texture.md)、[生物群系](./api/biome.md)、[地物](./api/feature.md)、[扩展](./api/extra.md)，以及 [build.config](./config/build-config.md)、[mod.info](./config/mod-info.md)。
+签名、参数、默认值、抛错条件在参考区：[物品](./api/item.md)、[方块](./api/block.md)、[实体](./api/entity.md)、[配方](./api/recipe.md)、[运行期](./api/runtime.md)、[多方块结构](./api/multiblock.md)、[UI](./api/sapdon-ui.md)、[纹理](./api/texture.md)、[生物群系](./api/biome.md)、[地物](./api/feature.md)、[扩展](./api/extra.md)，以及 [build.config](./config/build-config.md)、[mod.info](./config/mod-info.md)。
 
 按症状查问题，看 [FAQ](./faq.md)。框架和引擎的坑，包括报错原文和出处，在 [已知坑清单](../dev/known-pitfalls.md)。那份文档是给框架贡献者写的，但做包的人遇到「版本对了还是不生效」这类问题，答案往往在里面。
 

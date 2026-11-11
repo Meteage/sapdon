@@ -10,6 +10,14 @@
 
 ## 未发布
 
+### 新增：多方块结构（`@sapdon/runtime`）
+
+- `Multiblocks.define` / `Is`：图案（`aisles` + `where` + `anchor`），自动试 4 个朝向（可选镜像），可从任意一格反推锚点。
+- `Multiblocks.on` + 8 种触发器：`interact`、`useItem`、`place`、`redstone`、`itemInside`、`explosion`（可不绑定结构）、`projectile`、`lightning`；其余时机用 `check` / `find` / `findAll` 手动触发。
+- 成形结构：`formed` 生命周期（`onTick` / `onBreak` / `onLoad` / `intact`），存进世界动态属性，被破坏自动解体，只在区块加载时 tick。
+- `preview`（粒子投影缺的方块）、`build`（按图案摆出结构）、`describe` / `bill`。
+- 示例：`examples/multiblock_showcase`（每种触发方式一个结构，`/scriptevent mbshow:list`）。文档：`doc/user/api/multiblock.md`。
+
 ### 修复：1.20 有序配方在真机上不加载（`@sapdon/core`）
 
 - `RecipeAPI.registerShaped` / `registerSimpleShaped` 产出 format_version `1.20`，以前**从不写 `unlock`**，引擎拒绝加载（`1.20+ Recipes require unlock data`）。

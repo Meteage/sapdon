@@ -340,6 +340,12 @@
   **初始化顺序每次进世界都可能不同**：一个包在项目里认领了 `sapdon:crop_growth`，它先初始化时，**它的实现对整个世界生效**，
   其余包的内置 `crop_growth` 变成「沿用」——项目认领 `sapdon:*` id 会改变其他包的方块行为。
 
+### 2.12 成形的多方块结构改动自身方块后被判定「结构被破坏」（2026-11，冒烟测试发现）
+- **症状**：成形结构的 `onTick` 把自己的某些方块换掉（例如金块 → 哭泣的黑曜石）后，几秒内 `onBreak(inst, 'broken')` 被调用，结构自行解体。
+- **原因**：定期校验（`revalidateInterval`）与破坏事件触发的校验，默认都按**原图案**比对。
+- **修法**：`formed.intact` 自定义完整性检查，常用 `inst.validate({ 字符: 新判断 })` 按字符覆盖。
+- **判据**：`node tests/multiblock-runtime.test.mjs` ⑨b；`examples/multiblock_showcase/test/smoke.mjs` 的下界反应核用例。
+
 ## 3. 持久化（动态属性）
 
 ### 3.1 单个动态属性值约 32KB 上限，超限**抛错**
