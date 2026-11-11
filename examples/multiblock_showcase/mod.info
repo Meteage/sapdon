@@ -1,0 +1,11 @@
+{
+  "name": "multiblock_showcase",
+  "authors": [
+    "sapdon"
+  ],
+  "version": "1.0.0",
+  "min_engine_version": "1.21.90",
+  "description": "多方块结构展示：每种触发方式一个结构。/scriptevent mbshow:list 查看全部",
+  "bp": "4a1225e4-1789-43f2-a159-3e7a21507529",
+  "rp": "dac1d427-7898-4d96-820e-bf05e891af36"
+}
