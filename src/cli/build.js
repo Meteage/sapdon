@@ -25,6 +25,7 @@ import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
 import { GRegistryServer } from './registryServer.js'
 import { getBuildConfig } from './meta/buildConfig.js'
+import { normalizeManifestDependencies, missingManifestDependencies } from './meta/manifestDependencies.js'
 import { getBuildDirBp, getProjectPath } from './init.js'
 
 
@@ -59,6 +60,34 @@ function loadOrCreateUuids(modInfoPath, modInfo) {
     saveFile(modInfoPath, JSON.stringify({ ...modInfo, ...uuids }, null, 2))
     console.log('已在 mod.info 生成持久化 UUID 用于 BP/RP 交叉绑定')
     return uuids
+}
+
+/**
+ * manifest 已存在时，提示 `build.config` 里新增、但还没写进 manifest 的依赖。
+ * manifest 只在首次构建时生成；这里只提示、不改写（不覆盖手工改过的 manifest）。
+ * 配置本身不合法时照样抛错（与首次生成走同一套校验）。
+ */
+function warnMissingManifestDependencies(manifestPath, buildConfig, modInfo, projectPath) {
+    const ownUuids = [modInfo.bp, modInfo.rp].filter((uuid) => typeof uuid === 'string')
+    const expected = normalizeManifestDependencies(buildConfig.buildOptions.dependencies, ownUuids)
+    if (expected.length === 0) return
+
+    let manifest
+    try {
+        manifest = JSON.parse(readFile(manifestPath))
+    } catch (error) {
+        console.warn(`[sapdon] 读不了 ${manifestPath}，跳过依赖比对：${error?.message ?? error}`)
+        return
+    }
+    const missing = missingManifestDependencies(expected, manifest?.dependencies)
+    if (missing.length === 0) return
+
+    const relative = path.relative(projectPath, manifestPath)
+    console.warn(
+        `[sapdon] build.config 的 dependencies 里有 ${missing.length} 项不在现有的 ${relative} 中：\n` +
+        missing.map((dependency) => `  - ${JSON.stringify(dependency)}`).join('\n') + '\n' +
+        `[sapdon] manifest 只在首次构建时生成。删除 ${relative} 后重新构建即可写入（BP/RP 的 UUID 取自 mod.info，不会变）。`
+    )
 }
 
 //脚本打包器
@@ -257,6 +286,8 @@ export const buildProject = async (projectPath, projectName) => {
         if (pathNotExist(manifestPath)) {
             const uuids = loadOrCreateUuids(modInfoPath, modInfo)
             const versionArray = versionStringToArray(modInfo.version)
+            // 脚本模块依赖原样透传；包依赖（uuid）校验后把 version 规范成数组
+            const dependencies = normalizeManifestDependencies(buildConfig.buildOptions.dependencies, [uuids.bp, uuids.rp])
 
             const behManifest = generateBehManifest(
                 modInfo.name,
@@ -265,7 +296,7 @@ export const buildProject = async (projectPath, projectName) => {
                 {
                     min_engine_version: min_engine_version,
                 },
-                buildConfig.buildOptions.dependencies,
+                dependencies,
                 buildConfig.buildOptions.scriptOutput,
                 uuids.bp,
                 uuids.rp,
@@ -289,6 +320,8 @@ export const buildProject = async (projectPath, projectName) => {
             saveFile(path.join(buildBehDirPath, "manifest.json"), behManifest)
             //RP
             saveFile(path.join(buildResDirPath, "manifest.json"), resManifest)
+        } else {
+            warnMissingManifestDependencies(manifestPath, buildConfig, modInfo, projectPath)
         }
 
         //复制pack_icon.png

@@ -3,11 +3,7 @@ import { getProjectPath } from "../init.js"
 import fs from "fs"
 import { cacheSync } from "@sapdon/utils/cache.js"
 import { parseJsonWithComments } from "../utils.js"
-
-interface BuildDependency {
-    module_name: string
-    version: string
-}
+import type { BuildDependency } from "./manifestDependencies.js"
 
 export interface BuildConfig {
     formatVersion: number

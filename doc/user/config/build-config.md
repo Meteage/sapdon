@@ -62,7 +62,14 @@
 ```
 
 ### dependencies
-manifest.json 中的依赖声明。常见模块：
+写进**行为包** `manifest.json` 的 `dependencies`。每一项二选一：
+
+| 写法 | 含义 | 写进 manifest 的形式 |
+|---|---|---|
+| `{ "module_name": "@minecraft/server", "version": "2.0.0" }` | 脚本模块 | 原样 |
+| `{ "uuid": "<另一个包的 header uuid>", "version": "1.2.0" }` | 依赖另一个行为包 | `{ "uuid": …, "version": [1, 2, 0] }`（`version` 也可直接写数组） |
+
+常见脚本模块：
 
 | 模块名 | 说明 |
 |--------|------|
@@ -70,6 +77,45 @@ manifest.json 中的依赖声明。常见模块：
 | `@minecraft/server-ui` | 表单 UI API |
 | `@minecraft/server-net` | 网络 API |
 | `@minecraft/server-admin` | 管理 API |
+
+依赖另一个行为包（例如前置包）：
+
+```jsonc
+"dependencies": [
+  { "module_name": "@minecraft/server", "version": "2.0.0" },
+  { "uuid": "3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90", "version": "1.2.0" }
+]
+```
+
+`uuid` 填被依赖包 `manifest.json` 里的 `header.uuid`，`version` 填它的 `header.version`。
+
+⚠️ 引擎按**精确版本**比对（2026-11 真机）：被依赖包升到 0.1.2 后，依赖 0.1.1 的包在包列表里显示「缺少依赖项」**警告**，
+详情为 `缺少 ID '<uuid>' 和版本 '0.1.1' 的依赖项。`；该世界里依赖方的脚本仍会加载（BDS / Realms 上未验证）。
+同 UUID 的包只保留较高版本，所以被依赖包每发一版，依赖它的包都会挂着这条警告，直到同步重发。
+适合同一作者、同步发版的一组包；跨作者的前置依赖用运行期探测（软依赖）。
+
+构建时会校验每一项，不合法就**构建失败**（退出码 1），报错带下标，例如：
+
+```text
+[sapdon] 构建失败：build.config 的 buildOptions.dependencies[1] 的 uuid 不是合法的 UUID："not-a-uuid"
+```
+
+| 情况 | 报错 |
+|---|---|
+| 同一项既写 `module_name` 又写 `uuid`，或两个都没写 | `必须且只能写 module_name（脚本模块）或 uuid（另一个包）之一` |
+| 包依赖的 `version` 不是三段非负整数 | `的 version 必须是 "主.次.修" 三段非负整数（字符串或数组）` |
+| `uuid` 是本项目自己的 BP / RP | `依赖的是本项目自己` |
+| 同一个 `uuid` 写了两次 | `与前面的依赖重复` |
+
+⚠️ `manifest.json` **只在首次构建时生成**。之后再改 `dependencies`，构建会打印哪几项还没写进去：
+
+```text
+[sapdon] build.config 的 dependencies 里有 1 项不在现有的 dev/<projectName>_BP/manifest.json 中：
+  - {"uuid":"3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90","version":[1,3,0]}
+[sapdon] manifest 只在首次构建时生成。删除 dev/<projectName>_BP/manifest.json 后重新构建即可写入（BP/RP 的 UUID 取自 mod.info，不会变）。
+```
+
+删除 `dev/<projectName>_BP/manifest.json` 再构建即可；包的 UUID 从 `mod.info` 读取，不会变。
 
 ### resource
 - `path` — 资源文件夹路径，内容会复制到 RP 根目录

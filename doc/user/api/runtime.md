@@ -133,11 +133,13 @@ registerItemComponent('fz:guide_book', {
 > 用 `BlockCustomComponent` / `ItemCustomComponent` 这两个类型给共享 handler 标注，
 > 既能让 `tsc` 检查事件名与参数，也避免了 handler 写在别的模块时因为丢失上下文推断而报 `any`。
 
-### 1.3 诊断：`pendingComponentCount()` / `registeredComponents()`
+### 1.3 诊断：`pendingComponentCount()` / `registeredComponents()` / `sharedFallbackComponents()`
 
 ```typescript
-function pendingComponentCount(): number      // 已排队但**尚未注册**的组件数
-function registeredComponents(): string[]     // 已成功注册的组件列表，形如 "block:fz:machine"
+function pendingComponentCount(): number         // 已排队但**尚未注册**的组件数
+function registeredComponents(): string[]        // 已成功注册的组件列表，形如 "block:fz:machine"
+function skippedFallbackComponents(): string[]   // 被**本项目**同名注册取代的内置组件
+function sharedFallbackComponents(): string[]    // 已由**同一世界里的其他行为包**注册、本包沿用的内置组件
 ```
 
 用途是自检「排了几个 / 注册了几个」：
@@ -170,6 +172,24 @@ system.afterEvents.scriptEventReceive.subscribe((e) => {
 
 > ⚠️ **同一个组件 id 不要同时用两条路线注册**（路线 A：`BlockCustomComponentBuilder`；
 > 路线 B：本模块）。重复注册会抛错，这是刻意设计。
+
+### 1.5 同一世界里有多个 sapdon 包
+
+自定义组件的注册表是**世界级**的：一个行为包注册的组件，另一个行为包的方块 / 物品 JSON 也能用。
+每个 sapdon 包都打包了自己的一份 `@sapdon/runtime`，于是多个包会注册同样的 `sapdon:*` 内置 id。
+`system.beforeEvents.startup` 回调里，每个组件单独提交，结果如下：
+
+| 情况 | 行为 |
+|---|---|
+| 内置组件（`registerBuiltinComponents()` 登记的六个）已被其他包注册 | ⚠️ 沿用那一份实现，不抛错；记入 `sharedFallbackComponents()`，一条 `console.warn`：`内置组件 "block:sapdon:crop_growth" 已由同一世界里的其他行为包注册 —— 沿用那一份实现。` |
+| 本项目注册的 id 已被其他包注册 | ❌ 本包的实现**不会生效**；`console.error`：`自定义组件 "block:x" 已被同一世界里的其他行为包注册 —— 本包的实现**不会生效**。`，并计入下一行的失败 |
+| 任何一项注册失败 | 其余组件**照常注册**；全部提交完之后抛出：只有一项时抛引擎原错误对象，多项时抛一条汇总错误 `N 个自定义组件注册失败（其余组件已正常注册）`，逐项列出 `block:x: <原因>` |
+
+「已被注册」按引擎错误类 `BlockCustomComponentAlreadyRegisteredError` / `ItemCustomComponentAlreadyRegisteredError` 识别（先 `instanceof`，再比对类名）；识别不出的错误一律按失败处理。
+
+多个包共用内置组件时，生效的是**先注册的那个包**里的实现；包的脚本初始化顺序没有保证。
+项目若要让某个 `sapdon:*` 组件换成自己的行为，在只有本包的世界里注册同名 id 即可（见上表第二行的限制）；
+要和其他 sapdon 包共存，就用本项目命名空间下的组件 id。
 
 > ⚠️ **游戏内行为未验证**：本轮只在桩环境里验证了注册时机与注册表（本环境无法启动 Minecraft）。
 > 真实触发效果请进游戏确认，并把结论回写到 [doc/dev/known-pitfalls.md](../../dev/known-pitfalls.md) 的待确认清单。
