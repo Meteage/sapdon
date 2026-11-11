@@ -62,10 +62,11 @@ An entry can also depend on another behavior pack by its header UUID:
 ]
 ```
 
-Use the other pack's `header.uuid` and `header.version`. The engine requires an **exact** version match
-(verified in game, 2026-11): once the other pack is upgraded, a pack that depends on the old version shows
-"missing dependency", and only the newest version of a UUID stays installed, so every release of the
-dependency forces a re-release of its dependents. Each entry must have exactly one of
+Use the other pack's `header.uuid` and `header.version`. The engine compares versions **exactly**
+(verified in game, 2026-11): once the other pack is upgraded, a pack that depends on the old version shows a
+"missing dependency" **warning** in the pack list, although its scripts still load in that world
+(BDS / Realms untested). Only the newest version of a UUID stays installed, so the warning stays until the
+dependent pack is re-released against the new version. Each entry must have exactly one of
 `module_name` or `uuid`; a pack entry's `version` must be three non-negative integers (string or
 array) and is written to the manifest as an array, e.g. `[1, 2, 0]`. Invalid entries, a
 dependency on the project's own UUID, or the same UUID twice fail the build with exit code 1.
