@@ -2,7 +2,28 @@ import { serialize } from "@sapdon/utils/index.js"
 import { transportPost } from "./transport/client.js"
 import { BlockCustomComponentBuilder } from "./block/blockCustomComponent.js"
 
-const clientRegistryData: any[] = []
+/** 一条注册项：落到 `dev/<proj>_BP|_RP/<path>/<name>.json` 的一个文件 */
+export interface RegistryEntry {
+    /** 文件名（已做文件名安全化） */
+    name: string
+    /** `"behavior"` | `"resource"` */
+    root: string
+    /** 包内子路径，如 `"items/"` */
+    path: string
+    /** 数据：提交前多为框架实例（如 `Item`），提交时经 `toObject()` 序列化 */
+    data: any
+}
+
+/**
+ * 提交前钩子。在 `registry.submit()` / `GRegistry.submit()` 序列化之前按登记顺序调用；
+ * `entries` 是当时全部注册项的快照（项本身是活对象，可直接修改 `data`），
+ * 钩子里也可以调用 `GRegistry.register()` 追加文件。钩子抛错 = 构建失败。
+ */
+export type BeforeSubmitHook = (entries: readonly RegistryEntry[]) => void
+
+const clientRegistryData: RegistryEntry[] = []
+const beforeSubmitHooks: BeforeSubmitHook[] = []
+let runningHooks = false
 
 /**
  * 按 root + path + name 去重，保留最后一次注册的数据
@@ -27,6 +48,32 @@ const runValidators = (items: any[]) => {
     }
 }
 
+/** 登记提交前钩子（两个 submit 入口共用同一张表） */
+const addBeforeSubmitHook = (hook: BeforeSubmitHook) => {
+    if (typeof hook !== 'function') {
+        throw new Error('beforeSubmit: hook 必须是函数')
+    }
+    if (runningHooks) {
+        throw new Error('beforeSubmit: 不能在提交前钩子执行期间登记新的钩子')
+    }
+    beforeSubmitHooks.push(hook)
+}
+
+/**
+ * 依次执行提交前钩子。每个钩子拿到**当时**的注册项快照，
+ * 因此后面的钩子能看到前面的钩子追加的文件。
+ */
+const runBeforeSubmitHooks = () => {
+    runningHooks = true
+    try {
+        for (const hook of beforeSubmitHooks) {
+            hook(clientRegistryData.slice())
+        }
+    } finally {
+        runningHooks = false
+    }
+}
+
 /**
  * Client
  */
@@ -46,7 +93,17 @@ export class GRegistry {
         clientRegistryData.push({ name: safeName, root, path, data })
     }
 
+    /**
+     * 登记提交前钩子（见 {@link BeforeSubmitHook}）。与 `registry.beforeSubmit` 是同一张表。
+     * @param hook 提交前调用的函数
+     * @throws hook 不是函数，或在钩子执行期间登记时
+     */
+    static beforeSubmit(hook: BeforeSubmitHook) {
+        addBeforeSubmitHook(hook)
+    }
+
     static submit() {
+        runBeforeSubmitHooks()
         const items = dedupe(clientRegistryData)
         runValidators(items)
         transportPost('submitGregistry', items.map(item => {
@@ -62,7 +119,17 @@ export class GRegistry {
 }
 
 export namespace registry {
+    /**
+     * 登记提交前钩子（见 {@link BeforeSubmitHook}）。与 `GRegistry.beforeSubmit` 是同一张表。
+     * @param hook 提交前调用的函数
+     * @throws hook 不是函数，或在钩子执行期间登记时
+     */
+    export function beforeSubmit(hook: BeforeSubmitHook) {
+        addBeforeSubmitHook(hook)
+    }
+
     export function submit() {
+        runBeforeSubmitHooks()
         const items = dedupe(clientRegistryData)
         runValidators(items)
         const buildData = items.map(item => {

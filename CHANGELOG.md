@@ -8,6 +8,43 @@
 
 ---
 
+## 未发布
+
+### 新增：多方块结构（`@sapdon/runtime`）
+
+- `Multiblocks.define` / `Is`：图案（`aisles` + `where` + `anchor`），自动试 4 个朝向（可选镜像），可从任意一格反推锚点。
+- `Multiblocks.on` + 8 种触发器：`interact`、`useItem`、`place`、`redstone`、`itemInside`、`explosion`（可不绑定结构）、`projectile`、`lightning`；其余时机用 `check` / `find` / `findAll` 手动触发。
+- 成形结构：`formed` 生命周期（`onTick` / `onBreak` / `onLoad` / `intact`），存进世界动态属性，被破坏自动解体，只在区块加载时 tick。
+- `preview`（粒子投影缺的方块）、`build`（按图案摆出结构）、`describe` / `bill`。
+- 示例：`examples/multiblock_showcase`（每种触发方式一个结构，`/scriptevent mbshow:list`）。文档：`doc/user/api/multiblock.md`。
+
+### 修复：1.20 有序配方在真机上不加载（`@sapdon/core`）
+
+- `RecipeAPI.registerShaped` / `registerSimpleShaped` 产出 format_version `1.20`，以前**从不写 `unlock`**，引擎拒绝加载（`1.20+ Recipes require unlock data`）。
+  现在 format_version ≥ 1.20 的有序 / 无序配方没有 `unlock` 时，产物里写入 `{ "context": "AlwaysUnlocked" }`；显式设置的原样保留。
+- 新增 `recipe.unlock(…)`：`{ context }` 单个对象或 `[{ item } | { tag }]` 数组，形状不对时抛错。
+- 产物变化：用 `RecipeAPI` 生成有序配方的项目，每个配方 JSON 多出 `unlock` 一项（之前这些配方本来就加载不了）。
+
+### 同一世界里可以同时启用多个 sapdon 包（`@sapdon/runtime`）
+
+- **`registerBuiltinComponents()` 的六个 `sapdon:*` 组件全部改走兜底通道**（以前只有 `sapdon:block_with_entity`，另外五个直接注册）。两处行为变化：
+  - 项目自己注册了其中任何一个 id → 项目实现生效、内置跳过 + 一条 warn（以前启动时因重复注册抛错）；
+  - `registerBuiltinComponents()` 调两次 → 幂等（以前同样抛错）。
+- **跨包撞 id 不再报错**：自定义组件注册表是世界级的，每个 sapdon 包都会注册同样的内置 id。内置组件已被同一世界里的其他包注册时，沿用那一份实现、打一条 warn，新增诊断 `sharedFallbackComponents()`。项目自己的组件被其他包抢先注册时 → `console.error` 并计为失败（本包实现不会生效）。
+- **一项注册失败不再中断其余组件**：每个组件单独提交，全部提交完之后统一抛出（一项 → 引擎原错误对象；多项 → 一条汇总错误）。以前第一项失败后，同一回调里排在后面的组件都不会注册。
+- 升级不需要改代码。
+
+### `build.config` 可以声明对另一个行为包的依赖（CLI）
+
+- `buildOptions.dependencies` 的一项现在可以写成 `{ "uuid": "<header uuid>", "version": "1.2.0" }`，写进行为包 manifest 时 `version` 规范成数组。脚本模块依赖（`module_name`）原样写入，产物不变。
+- ⚠️ **新增校验**：`dependencies` 里有不合法项（两种写法都有 / 都没有、uuid 非法、版本不是三段整数、依赖自身、重复 uuid）时**构建失败**，报错带下标。以前这些项会原样写进 manifest。
+- manifest 只在首次构建时生成；之后配置里新增的依赖不会自动写入，构建时会列出缺的项并提示删除 `dev/<proj>_BP/manifest.json` 重建。
+
+### 构建期提交前钩子（`@sapdon/core`）
+
+- 新增 `registry.beforeSubmit(hook)` / `GRegistry.beforeSubmit(hook)`（同一张表）：`submit()` 序列化之前按登记顺序调用，钩子可以直接改已注册的实例（例如给物品补 `minecraft:tags`），也可以 `GRegistry.register()` 追加文件。钩子抛错 = 构建失败。
+- 新导出类型 `BeforeSubmitHook`、`RegistryEntry`（`src/core/index.js` 对 `registry.js` 改为 `export *`）。
+
 ## 3.7.1
 
 - **修复：`BlockComponent.setBlockEntity` 丢弃 `container.title`**。`title`（= 容器 UI 门控键，引擎作为 `$container_title` 交给 `data_driven_container.screen`）之前会被 `normalizeBlockContainer` **静默丢弃**，只能手写 `minecraft:block_entity` Map 绕过；现原样保留（不传 `title` 时产物**逐字节不变**）。

@@ -53,8 +53,28 @@ module imported by your runtime scripts must be listed here.** Miss one (commonl
 `@minecraft/server-ui`) and the game cannot resolve the module: the entire script bundle
 silently fails to load.
 
+An entry can also depend on another behavior pack by its header UUID:
+
+```jsonc
+"dependencies": [
+  { "module_name": "@minecraft/server", "version": "2.0.0" },
+  { "uuid": "3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90", "version": "1.2.0" }
+]
+```
+
+Use the other pack's `header.uuid` and `header.version`. The engine compares versions **exactly**
+(verified in game, 2026-11): once the other pack is upgraded, a pack that depends on the old version shows a
+"missing dependency" **warning** in the pack list, although its scripts still load in that world
+(BDS / Realms untested). Only the newest version of a UUID stays installed, so the warning stays until the
+dependent pack is re-released against the new version. Each entry must have exactly one of
+`module_name` or `uuid`; a pack entry's `version` must be three non-negative integers (string or
+array) and is written to the manifest as an array, e.g. `[1, 2, 0]`. Invalid entries, a
+dependency on the project's own UUID, or the same UUID twice fail the build with exit code 1.
+
 `manifest.json` is only generated when the file does not exist, so after changing
-`dependencies` delete `dev/<name>_BP/manifest.json` and rebuild.
+`dependencies` delete `dev/<name>_BP/manifest.json` and rebuild. Until you do, every build prints
+which configured entries are missing from the existing manifest. The pack UUIDs are read from
+`mod.info` and stay the same.
 
 **`scriptEntry` / `scriptOutput`** — `scriptEntry` is bundled into a single file written to
 `scriptOutput`, relative to `dev/<name>_BP/`.

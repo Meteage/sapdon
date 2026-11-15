@@ -1,4 +1,7 @@
 import { system } from '@minecraft/server'
+// 命名空间导入只用来**读**错误类做 instanceof：旧版本模块里没有该类时取到 undefined，
+// 而具名导入一个不存在的导出会让整份脚本链接失败。
+import * as minecraftServer from '@minecraft/server'
 import type { BlockCustomComponent, ItemCustomComponent, StartupEvent } from '@minecraft/server'
 
 /**
@@ -46,6 +49,21 @@ import type { BlockCustomComponent, ItemCustomComponent, StartupEvent } from '@m
  * 判定**发生在 `system.beforeEvents.startup` 回调里**（不是登记的瞬间）：
  * 项目的注册代码与 `registerBuiltinComponents()` 的调用先后顺序无法约定，
  * 只有等**所有模块加载完**才能知道「这个 id 到底有没有被项目认领」。
+ *
+ * ## 同一世界里有多个 sapdon 包
+ *
+ * 自定义组件的注册表是**世界级**的（官方：组件可以在一个行为包里注册、在另一个行为包里使用），
+ * 每个 sapdon 包又各自打包了一份本模块 ⇒ 第二个包注册同一个 `sapdon:*` 内置 id 时，
+ * 按 API 签名会抛 `*CustomComponentAlreadyRegisteredError`（真机待确认，见 `doc/dev/known-pitfalls.md` §2.11）。处理规则：
+ *
+ * | 场景 | 结果 |
+ * |---|---|
+ * | 内置兜底 id 已被**其他包**注册 | 跳过，沿用那一份实现（内置实现通用）；记入 `sharedFallbackComponents()` + 一条 warn |
+ * | 项目 id 已被**其他包**注册（例如项目认领了 `sapdon:*`，却被别的包的内置实现抢先） | 本包实现不会生效 ⇒ 记为失败 |
+ * | 其他注册错误 | 记为失败 |
+ *
+ * 每一项都单独 try/catch：一项失败**不再中断**同一回调里后续组件的注册。
+ * 失败**不吞**：全部提交完之后统一抛出（只有一项时抛原错误对象）。
  *
  * @example
  * ```ts
@@ -125,6 +143,32 @@ let startupPassed = false
 const registered: string[] = []
 /** 因「项目已注册同 id」而被跳过的内置组件（诊断用，形如 `block:sapdon:block_with_entity`） */
 const skippedFallbacks: string[] = []
+/** 因「同一世界里的其他包已注册同 id」而沿用那一份实现的内置组件（诊断用） */
+const sharedFallbacks: string[] = []
+
+/**
+ * 是不是「这个 id 已经被注册过」的引擎错误。
+ *
+ * 先按错误类做 instanceof（类不存在时跳过），再按类名兜底（原生类的实例在不同上下文里
+ * instanceof 可能不成立）。识别不出来的错误一律按普通失败处理 —— 宁可多报，不可吞掉。
+ */
+function isAlreadyRegisteredError(kind: 'block' | 'item', error: unknown): boolean {
+    const className = kind === 'block'
+        ? 'BlockCustomComponentAlreadyRegisteredError'
+        : 'ItemCustomComponentAlreadyRegisteredError'
+    const ctor = (minecraftServer as unknown as Record<string, unknown>)[className]
+    if (typeof ctor === 'function' && error instanceof (ctor as new (...args: never[]) => unknown)) {
+        return true
+    }
+    const err = error as { name?: unknown, constructor?: { name?: unknown } } | null | undefined
+    return err?.constructor?.name === className || err?.name === className
+}
+
+/** 把错误整理成一行文字（引擎错误的 message 里不一定带组件 id） */
+function describeError(error: unknown): string {
+    if (error instanceof Error) return error.message || error.name
+    return String(error)
+}
 
 function installStartupSubscriber(): void {
     if (subscriberInstalled) return
@@ -145,16 +189,32 @@ function installStartupSubscriber(): void {
         startupPassed = true
         // ★ 绝不吞异常：注册失败（id 拼错 / 方块 JSON 里没声明该组件）必须炸出来，
         //   否则症状是「游戏里右键毫无反应」，极难定位。
+        //   但一项失败不能拖垮其余各项 ⇒ 逐项捕获、全部提交完再统一抛出。
+        const failures: { tag: string, error: unknown }[] = []
+
         for (const entry of queue) {
-            registerNow(init, entry)
+            const tag = `${entry.kind}:${entry.id}`
+            try {
+                registerNow(init, entry)
+            } catch (error) {
+                if (isAlreadyRegisteredError(entry.kind, error)) {
+                    console.error(
+                        `[sapdon] 自定义组件 "${tag}" 已被同一世界里的其他行为包注册 —— 本包的实现**不会生效**。` +
+                        `请改用本项目命名空间下的组件 id（不要认领其他包也会注册的 id，例如框架内置的 sapdon:*）。`
+                    )
+                } else {
+                    console.error(`[sapdon] 自定义组件 "${tag}" 注册失败：${describeError(error)}`)
+                }
+                failures.push({ tag, error })
+            }
         }
         queue.length = 0
 
         // ★ 兜底：只在项目**没有**认领同一 id 时才注册（判定必须在此刻做，见文件头注释）。
         for (const entry of fallbackQueue) {
+            const tag = `${entry.kind}:${entry.id}`
             const claimed = entry.kind === 'block' ? BLOCK_REGISTRY_NAMES : ITEM_REGISTRY_NAMES
             if (claimed.has(entry.id)) {
-                const tag = `${entry.kind}:${entry.id}`
                 skippedFallbacks.push(tag)
                 console.warn(
                     `[sapdon] 内置组件 "${tag}" 已由项目注册 —— 跳过框架内置实现，**项目的实现生效**。` +
@@ -162,9 +222,24 @@ function installStartupSubscriber(): void {
                 )
                 continue
             }
-            registerNow(init, entry)
+            try {
+                registerNow(init, entry)
+            } catch (error) {
+                if (isAlreadyRegisteredError(entry.kind, error)) {
+                    sharedFallbacks.push(tag)
+                    console.warn(
+                        `[sapdon] 内置组件 "${tag}" 已由同一世界里的其他行为包注册 —— 沿用那一份实现。` +
+                        `（多个 sapdon 包共存时的正常现象，不是错误。）`
+                    )
+                    continue
+                }
+                console.error(`[sapdon] 内置组件 "${tag}" 注册失败：${describeError(error)}`)
+                failures.push({ tag, error })
+            }
         }
         fallbackQueue.length = 0
+
+        throwFailures(failures)
     })
 }
 
@@ -173,6 +248,14 @@ function registerNow(init: StartupEvent, entry: QueueEntry): void {
     const registry = entry.kind === 'block' ? init.blockComponentRegistry : init.itemComponentRegistry
     registry.registerCustomComponent(entry.id, entry.handlers as never)
     registered.push(`${entry.kind}:${entry.id}`)
+}
+
+/** 统一抛出注册失败：一项 → 原错误对象（保留类型与堆栈）；多项 → 一条汇总错误 */
+function throwFailures(failures: { tag: string, error: unknown }[]): void {
+    if (failures.length === 0) return
+    if (failures.length === 1) throw failures[0].error
+    const lines = failures.map(({ tag, error }) => `  - ${tag}: ${describeError(error)}`)
+    throw new Error(`[sapdon] ${failures.length} 个自定义组件注册失败（其余组件已正常注册）：\n${lines.join('\n')}`)
 }
 
 function enqueue(kind: 'block' | 'item', id: string, handlers: object, fallback = false): void {
@@ -263,4 +346,12 @@ export function registeredComponents(): string[] {
  */
 export function skippedFallbackComponents(): string[] {
     return [...skippedFallbacks]
+}
+
+/**
+ * 已由**同一世界里的其他行为包**注册、因此本包沿用那一份实现的**内置兜底**组件
+ * （形如 `block:sapdon:crop_growth`）。多个 sapdon 包共存时非空属正常。
+ */
+export function sharedFallbackComponents(): string[] {
+    return [...sharedFallbacks]
 }

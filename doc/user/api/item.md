@@ -1005,6 +1005,46 @@ import { registry } from '@sapdon/core'
 registry.submit()
 ```
 
+### 提交前钩子 `registry.beforeSubmit`
+
+```typescript
+import type { BeforeSubmitHook, RegistryEntry } from '@sapdon/core'
+
+registry.beforeSubmit(hook: BeforeSubmitHook): void
+GRegistry.beforeSubmit(hook: BeforeSubmitHook): void   // 同一张钩子表
+
+type BeforeSubmitHook = (entries: readonly RegistryEntry[]) => void
+interface RegistryEntry { name: string; root: string; path: string; data: any }
+```
+
+| 项 | 说明 |
+|---|---|
+| 调用时机 | `registry.submit()` / `GRegistry.submit()` 开头，去重、`validate()`、`toObject()` 序列化**之前** |
+| 执行顺序 | 按登记顺序；两个入口登记的钩子在两种 `submit` 里都会执行 |
+| `entries` | 当时全部注册项的**数组快照**：改数组本身不影响注册表，但数组里的项是活对象，`data` 多为框架实例（如 `Item`），可以直接改 |
+| 追加文件 | 钩子里调用 `GRegistry.register()`，本次提交会带上；后面的钩子能在 `entries` 里看到它 |
+| 同名文件 | 与平时一样按 `root` + `path` + `name` 去重，后注册的胜出 |
+| 失败 | 钩子抛错 ⇒ `submit` 抛错，什么都不提交（构建失败）；`hook` 不是函数时抛 `beforeSubmit: hook 必须是函数`；在钩子执行期间再登记钩子时抛 `beforeSubmit: 不能在提交前钩子执行期间登记新的钩子` |
+
+给所有已注册的某类物品补标签、再追加一份配方：
+
+```typescript
+import { registry, GRegistry, ItemComponent } from '@sapdon/core'
+
+registry.beforeSubmit((entries) => {
+    for (const entry of entries) {
+        if (entry.path === 'items/' && entry.data?.identifier === 'my_mod:tin_ingot') {
+            entry.data.addComponent(ItemComponent.setTags(['c:ingots.tin']))
+        }
+    }
+    GRegistry.register('tin_block', 'behavior', 'recipes/', tinBlockRecipe)
+})
+
+registry.submit()
+```
+
+`ItemComponent.setTags` 写的是整个 `minecraft:tags` 组件；物品原本已有标签时，先从 `entry.data.components.get('minecraft:tags')` 取出旧值再合并。
+
 ### 完整工作流
 
 ```typescript
