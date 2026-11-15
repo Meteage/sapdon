@@ -4,6 +4,9 @@ import { saveFile } from "./utils.js"
 import { mergeGeneratedBlock } from '@sapdon/utils/componentIndex.js'
 import { BUILD_PROTOCOL, formatPacketIssues, validateBuildPacket } from '@sapdon/utils/protocol.js'
 
+/** `SAPDON_VERBOSE=1` 时恢复逐文件 / 跳过 / 无变化日志 */
+const VERBOSE = process.env.SAPDON_VERBOSE === '1'
+
 // ── 生成物清单：用于精确清理「陈旧产物」（缺口 9）──
 // 只有**框架自己生成过**的文件才会被清理；用户 res/ 拷进来的文件与手写文件一律不碰。
 const MANIFEST_VERSION = 1
@@ -83,7 +86,7 @@ function writeIndexBlock(indexPath, block) {
     const next = mergeGeneratedBlock(current, block)
 
     if (next === current) {
-        console.log(`索引文件已是最新，未改动: ${indexPath}`)
+        if (VERBOSE) console.log(`索引文件已是最新，未改动: ${indexPath}`)
         return
     }
 
@@ -127,8 +130,11 @@ export async function writeBuildPacket(packet, options) {
     const generatedFiles = []
     const record = (absPath) => { generatedFiles.push(path.relative(buildPath, absPath)) }
 
+    const counts = { behavior: 0, resource: 0 }
     for (const file of packet.files) {
-        console.log('处理数据:', file.name, file.root, file.path)
+        if (VERBOSE) console.log('处理数据:', file.name, file.root, file.path)
+        counts[file.root] = (counts[file.root] ?? 0) + 1
+
         const packDir = file.root === 'behavior' ? `${projectName}_BP` : `${projectName}_RP`
         const format = file.format ?? 'json'
         const ext = file.ext ?? 'json'
@@ -142,12 +148,16 @@ export async function writeBuildPacket(packet, options) {
         saveFile(filePath, content)
         record(filePath)
     }
+    console.log(
+        `处理数据: ${packet.files.length} 个文件` +
+        `（behavior ${counts.behavior ?? 0} / resource ${counts.resource ?? 0}）`
+    )
 
     for (const source of packet.sources ?? []) {
         const filePath = path.join(projectPath, source.path)
         const exists = fs.existsSync(filePath)
         if (exists && !source.overwrite) {
-            console.log(`源码文件已存在，跳过: ${filePath}`)
+            if (VERBOSE) console.log(`源码文件已存在，跳过: ${filePath}`)
             continue
         }
         saveFile(filePath, source.content)
@@ -161,6 +171,4 @@ export async function writeBuildPacket(packet, options) {
 
     cleanStaleGenerated(buildPath, previousFiles.files, generatedFiles)
     writeManifest(buildPath, projectName, generatedFiles)
-
-    console.log(`已加载并执行 ${projectPath} 项目！`)
 }

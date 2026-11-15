@@ -85,7 +85,7 @@ the framework itself wrote on the previous run; they never scan and delete unkno
 | Signal | Meaning |
 |--------|---------|
 | Exit code `0` | No subprocess failed and script bundling completed |
-| A `处理数据: <name> <root> <path>` line | A registration was actually written — this is the only proof output was generated (the CLI logs this label in Chinese) |
+| A `处理数据: <N> 个文件（behavior X / resource Y）` line | Output was actually written; set `SAPDON_VERBOSE=1` for the per-file list (the CLI logs this label in Chinese) |
 
 Historically, build-script failures were swallowed while the CLI printed "build complete" and
 exited `0`, leaving the previous run's output in `dev/`. Failures now exit non-zero.

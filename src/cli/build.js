@@ -115,6 +115,11 @@ export const scriptBundler = {
                         terser(),
                     ] : []),
                 ],
+                // 空脚本是合法场景（只做 JSON 注册的项目），不必每帧刷一条 warning
+                onwarn(warning, warn) {
+                    if (warning.code === 'EMPTY_BUNDLE') return
+                    warn(warning)
+                },
                 external(name) {
                     for (const candidate of rollupIgnores) {
                         if (name.includes(candidate)) {
@@ -170,6 +175,11 @@ export const scriptBundler = {
                         terser(),
                     ] : []),
                 ],
+                // 空脚本是合法场景（只做 JSON 注册的项目），不必每帧刷一条 warning
+                onwarn(warning, warn) {
+                    if (warning.code === 'EMPTY_BUNDLE') return
+                    warn(warning)
+                },
                 external(name) {
                     for (const candidate of rollupIgnores) {
                         if (name.includes(candidate)) {
@@ -395,8 +405,7 @@ function versionStringToArray(versionString) {
 }
 
 const generateBehManifest = (name, description, version, options = {}, dependencies = [], entry, headerUuid, rpUuid, versionArray) => {
-    console.log("开始生成behavior_packs/manifest.json")
-    console.log("Entry:", entry)
+    console.log("开始生成 behavior_packs/manifest.json")
     const header = new AddonManifestHeader(
         (name + "_BP"),
         description,

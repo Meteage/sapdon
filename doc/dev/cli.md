@@ -133,7 +133,7 @@ import { devServer, client } from '@sapdon/cli'
 | `scriptBundler` 打包失败 | 抛错（不再只 `console.error`） | `src/cli/build.js:101-104`、`152-155` |
 | CLI 顶层 catch | `process.exit(1)` | `src/cli/start.js:118-126`（build）、`133-139`（compile） |
 
-⇒ **「构建成功」这句话不可信**。成功的判据是**退出码 0** + 日志里出现 `处理数据: <name> <root> <path>` 行（`src/cli/load.js:210`）。
+⇒ **「构建成功」这句话不可信**。成功的判据是**退出码 0** + 日志里出现 `处理数据: <N> 个文件（behavior X / resource Y）` 汇总行；逐文件明细设 `SAPDON_VERBOSE=1`。
 
 ⚠️ 注意 `projectCanBuild()` 失败（项目不存在 / 没有 `build.config`）时只是**打印原因并 return**，命令本身**不报错**、退出码仍为 0 —— 这是另一条需要看日志才能发现的路径。
 
@@ -176,7 +176,7 @@ cleanLegacyBpBlocksJson(buildPath, projectName)        # 清理历史误放在 B
 generatedFiles = []                                    # 本次写出的产物（相对 buildPath）
 
 for each { name, root, path: dataPath, data } in dataList:
-  ├── 日志：console.log('处理数据:', name, root, dataPath)   ← 这是「产物真的生成了」的唯一判据
+  ├── 日志：逐文件明细仅在 SAPDON_VERBOSE=1 时打印           ← 默认输出汇总行
   ├── case "item_texture"      → 暂存，稍后生成 item_texture.json
   ├── case "terrain_texture"   → 暂存，稍后生成 terrain_texture.json
   ├── case "flipbook_textures" → 暂存，稍后生成 flipbook_textures.json

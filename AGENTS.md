@@ -131,7 +131,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 
 ### 生成资源包验证
 - `npm run build` 后校验产物：`dev/<proj>_BP/blocks/*.json`（menu_category.group）、`item_catalog/crafting_item_catalog.json`、`dev/<proj>_RP/textures/terrain_texture.json`、`texts/*.lang`。
-- 构建日志出现"处理数据: xxx behavior blocks/"即成功；用 `Test-Path` 确认新块 json 已生成（先最后输过一次 build 才能静置产物）。
+- 构建日志出现 `处理数据: <N> 个文件（behavior X / resource Y）` 即成功；需要逐文件确认时设 `SAPDON_VERBOSE=1`。用 `Test-Path` 确认新块 json 已生成（先最后输过一次 build 才能静置产物）。
 
 ### NeoGuidebook 手册（游戏内书）接入要点
 - 构建时 `main.mjs` 用 `NeoGuidebook(identifier, "ui/", [320,207], {buttons,textures})` + `NeoGuidebookPage(...).addBookText/addCategoryTitle/addDoublePageStack`；自动生成 `dev/<proj>_RP/ui/<name>.json` 并写入 `server_form.json` 的 title 绑定；页面清单须写成 `scripts/guide_pages.js`（`export const PAGE_IDS = [...]`），因 dev server 是**模块拼接打包**，`import("./x.json")` 不会被处理，只能拼接 JS。
@@ -236,7 +236,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 ### F. 验证套路（本环境受限，务必照做）
 - 构建必须拆 4 步直跑：`tsc` → `tsc-alias` → `node scripts/buildTask.cjs` → 拷 templates + 删 dist。**漏掉 `tsc-alias` 会让 `prod/cli/start.js` 残留无法解析的 `@sapdon/utils` 裸包名。**
 - **「rollup 9/9 成功」≠ prod 是新的**：改完要断言 `prod/` 内容（新导出在不在），别只看 `Failed: 0`。
-- **`处理数据:` 行数**是「产物真的生成了」的唯一判据。
+- **`处理数据: <N> 个文件` 汇总行**是「产物真的生成了」的唯一判据；逐文件明细用 `SAPDON_VERBOSE=1` 打开。
 - 单测：`node --test` 会 fork（受限环境 EPERM）→ 直接 `node tests/persist.test.mjs`（先 `tsc` 生成 `dist/`）。
 - 运行期代码（`src/oc`）的单测要靠**纯逻辑 + 内存 target**，不要依赖 `@minecraft/server`（该包只发 `index.d.ts`、Node 里导入不了）。
 

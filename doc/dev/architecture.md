@@ -366,7 +366,7 @@ export function submit() {
                                为假（默认）：process.exit(0) 自动退出
 ```
 
-**失败必须非 0 退出**：历史行为是构建脚本失败被吞掉、CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是旧产物。现在 `runOnChild()` 检查退出码、`scriptBundler` 打包失败即抛、CLI 顶层 catch `process.exit(1)`。⇒ **「构建成功」不可信**，成功的判据是**退出码 0** + 日志里出现 `处理数据: <name> <root> <path>`（`src/cli/load.js:210`）。
+**失败必须非 0 退出**：历史行为是构建脚本失败被吞掉、CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是旧产物。现在 `runOnChild()` 检查退出码、`scriptBundler` 打包失败即抛、CLI 顶层 catch `process.exit(1)`。⇒ **「构建成功」不可信**，成功的判据是**退出码 0** + 日志里出现 `处理数据: <N> 个文件` 汇总行（逐文件明细设 `SAPDON_VERBOSE=1`）。
 
 ⚠️ **不要用 `cp.fork`**：`fork` 一定会建立 IPC **命名管道**（受限环境下 `spawn EPERM`），而框架传输层走 **HTTP**（`src/utils/transport/client.ts` → localhost），**从不使用 IPC**；`spawn(process.execPath, [file], { stdio: 'inherit' })` 是等价且更少依赖的写法（`src/cli/build.js:191-200`）。
 
