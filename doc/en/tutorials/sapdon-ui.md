@@ -14,7 +14,8 @@ One `SapdonFormUI` instance = one route = one UI file.
 ```bash
 npm init -y
 npm install @minecraft/server@2.8.0 @minecraft/server-ui@2.1.0
-# @sapdon/core and @sapdon/ui are synced automatically by the postinstall hook (`sapdon lib`)
+npm install -D sapdon@^4.0.0
+# sapdon brings @sapdon/core / @sapdon/ui / @sapdon/runtime; `sapdon lib` is no longer needed
 ```
 
 ```
@@ -156,7 +157,7 @@ slot 0 and slot 1 in the example above.
 ## 7. Build output
 
 ```bash
-npm i          # postinstall runs `sapdon lib`
+npm i          # installs devDependencies (sapdon → @sapdon/core / @sapdon/ui)
 npm run build
 ```
 

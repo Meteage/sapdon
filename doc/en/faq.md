@@ -180,13 +180,14 @@ Also check:
 
 ## 11. Running `sapdon lib` manually
 
+> As of 4.0, new projects get the sub-packages via `npm i -D sapdon@^4.0.0`; `sapdon lib` is only
+> needed for framework development and 3.x projects.
+
 ```bash
 sapdon lib
 ```
 
-Re-syncs the `@sapdon/core` / `@sapdon/runtime` type libraries into the project. Normally runs
-automatically via `postinstall`; run it by hand after reinstalling dependencies or if editor
-types are missing.
+Copies `prod/{utils,core,ui,cli,runtime}` into the project's `node_modules/@sapdon/`.
 
 ---
 

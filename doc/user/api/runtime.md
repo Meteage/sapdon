@@ -36,13 +36,18 @@ Bedrock Wiki 的模块表列出的全部是 `@minecraft/*`（`@minecraft/server`
 
 ### 包是怎么落到项目里的
 
-框架仓库的 `prod/` 就是这三个包的源，`sapdon lib`（或 `npm i` 触发的 `postinstall`）把它们拷进项目的 `node_modules/@sapdon/`：
+**4.0 起它们是独立的 npm 包**：项目里 `npm i -D sapdon@^4.0.0` 会作为传递依赖装好
+`@sapdon/core` / `@sapdon/ui` / `@sapdon/runtime` / `@sapdon/utils`，**不再需要** `sapdon lib`。
+
+框架仓库开发与 3.x 旧项目仍可用 `sapdon lib` 从 `prod/` 拷贝（`writeLib()`）：
 
 | 框架仓库目录 | 项目里的包名 |
 |---|---|
 | `prod/core/` | `@sapdon/core` |
-| `prod/cli/` | `@sapdon/cli` |
+| `prod/ui/` | `@sapdon/ui` |
 | `prod/oc/` | **`@sapdon/runtime`** |
+| `prod/utils/` | `@sapdon/utils` |
+| `prod/cli/` | `@sapdon/cli` |
 
 依据：`src/cli/dev-server/syncFiles.js` 的 `writeLib()`（`fs.cpSync(rootDir/oc → node_modules/@sapdon/runtime)`，
 并写入 `{ "name": "@sapdon/runtime", "main": "index.js", "types": "index.d.ts" }`）。

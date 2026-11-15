@@ -26,7 +26,8 @@
 ```bash
 npm init -y
 npm install @minecraft/server@2.8.0 @minecraft/server-ui@2.1.0
-# @sapdon/core / @sapdon/ui 由 postinstall 的 `sapdon lib` 自动同步
+npm install -D sapdon@^4.0.0
+# sapdon 会带上 @sapdon/core / @sapdon/ui / @sapdon/runtime，不再需要 sapdon lib
 ```
 
 项目结构：
@@ -179,7 +180,7 @@ world.afterEvents.itemUse.subscribe((event) => {
 ## 7. 构建与部署
 
 ```bash
-npm i          # postinstall 自动执行 sapdon lib，同步 @sapdon/core / @sapdon/ui
+npm i          # 安装 devDependencies（含 sapdon → @sapdon/core / @sapdon/ui）
 npm run build  # 构建并复制到开发包目录
 ```
 

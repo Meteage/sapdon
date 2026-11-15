@@ -38,10 +38,11 @@ import { SapdonFormUI, Panel, Label } from '@sapdon/ui'
 
 ## 2. 确认 `@sapdon/ui` 已安装
 
-- **框架仓库 / 示例项目**：`sapdon lib` 现在同步 5 个包（`utils`、`core`、`ui`、`cli`、`runtime`），
-  在项目目录跑一次 `npx sapdon lib` 即可。
-- **4.0 起 `@sapdon/ui` 是独立 npm 包**，也可以直接 `npm i -D @sapdon/ui`。
-- `package.json` 的 `postinstall: sapdon lib` 可以保留，不影响。
+- **新项目**：`npm i -D sapdon@^4.0.0` 会带上 `@sapdon/core` / `@sapdon/ui` / `@sapdon/runtime` / `@sapdon/utils`，
+  不需要 `sapdon lib`，也不需要 `postinstall`。
+- **3.x 创建的旧项目**：保留原来的 `postinstall: sapdon lib` 可以继续工作；也可以删掉它，改用
+  `npm i -D sapdon@^4.0.0`。
+- **框架仓库 / 示例**：仍然可以用 `npx sapdon lib` 把 `prod/` 拷进项目的 `node_modules/@sapdon/`。
 
 ---
 
@@ -62,6 +63,6 @@ CLI 只写盘）。**调用方式不变**，但：
 
 1. 全局搜 `from '@sapdon/core'`；
 2. 把上表里的 UI 符号拆到 `import ... from '@sapdon/ui'`；
-3. `npx sapdon lib`（或 `npm i @sapdon/ui`）；
+3. `npm i -D sapdon@^4.0.0`（新项目）或 `npx sapdon lib`（框架仓库 / 旧项目）；
 4. `npx sapdon compile`，确认退出码为 0；
 5. 进游戏检查 UI 页面（表单 / 手册 / 容器 / HUD）。

@@ -105,7 +105,7 @@ dev/
 | `sapdon build .` | Build and start watching files |
 | `sapdon compile` | Build once and exit, for packaging |
 | `sapdon pack` | Zip both packs into a `.mcaddon` |
-| `sapdon lib` | Re-sync framework libraries into `node_modules` |
+| `sapdon lib` | Copy `prod/` libraries into `node_modules` (framework dev / 3.x; not needed for 4.0 projects) |
 
 ## Build time and runtime
 

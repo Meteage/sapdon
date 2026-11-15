@@ -3,8 +3,7 @@
     "version": "1.0.0",
     "main": "main.ts",
     "scripts": {
-        "build": "npx sapdon build ./",
-        "postinstall": "npx sapdon lib"
+        "build": "npx sapdon build ./"
     },
     "keywords": [
         "bedrock",
@@ -16,6 +15,7 @@
     "devDependencies": {
         "@minecraft/server": "^2.8.0",
         "@minecraft/server-ui": "^2.1.0",
-        "@types/node": "^22.0.0"
+        "@types/node": "^22.0.0",
+        "sapdon": "^4.0.0"
     }
 }

@@ -107,7 +107,7 @@ dev/
 | `sapdon build .` | 构建并启动热更新，日常开发用 |
 | `sapdon compile` | 构建一次后退出，出包前用 |
 | `sapdon pack` | 把 `dev/` 下两个包压成 `.mcaddon` |
-| `sapdon lib` | 重新同步框架库到 `node_modules` |
+| `sapdon lib` | 把 `prod/` 的框架库同步到 `node_modules`（框架开发 / 3.x 旧项目；4.0 新项目不需要） |
 
 ## 核心概念
 

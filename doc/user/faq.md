@@ -228,13 +228,16 @@ npm install     # 在报错的那个仓库/项目目录下执行
 
 ## 11. 如何手动运行 sapdon lib？
 
+> 4.0 起新项目通过 `npm i -D sapdon@^4.0.0` 安装子包，**不需要** `sapdon lib`。
+> 该命令保留给框架仓库开发与 3.x 旧项目。
+
 在项目目录下直接执行：
 
 ```bash
 sapdon lib
 ```
 
-该命令会手动运行 Sapdon 的核心库逻辑，通常用于调试或在某些自动化流程中单独触发库的处理流程。
+它会把 `prod/` 下的 `utils` / `core` / `ui` / `cli` / `runtime` 拷进项目的 `node_modules/@sapdon/`。
 
 ---
 

@@ -1,9 +1,12 @@
 {
-  "name": "multiblock-showcase",
-  "private": true,
-  "type": "module",
-  "version": "1.0.0",
-  "scripts": {
-    "postinstall": "sapdon lib"
-  }
+    "name": "multiblock-showcase",
+    "private": true,
+    "type": "module",
+    "version": "1.0.0",
+    "scripts": {
+        "build": "sapdon build ./"
+    },
+    "devDependencies": {
+        "sapdon": "^4.0.0"
+    }
 }

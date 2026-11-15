@@ -159,9 +159,11 @@ npm run build        # 构建 + 启动开发服务器（HMR）
 
 如果服务器一直占端口，检查 `build.config` 中是否设置了 `buildOptions.keepServer: true`。多进程/多 agent 并发构建时还应各自设置 `SAPDON_DEV_SERVER_PORT`，端口被占时 CLI 会直接 `exit 1`。
 
-### 6.4 新建项目后忘记同步库
+### 6.4 新建项目后依赖没装齐
 
-使用 `sapdon create` 创建新项目后，`postinstall` 会自动执行 `sapdon lib`。如果手动创建项目或删除了 `node_modules`，需要重新 `npm i` 或手动运行 `sapdon lib`。
+4.0 起模板把 `sapdon` 作为 `devDependencies`，`npm i` 会带上 `@sapdon/{utils,core,ui,runtime}`，不再有 `postinstall: sapdon lib`。
+
+框架仓库开发仍然可以把 `prod/` 同步到示例：在项目目录运行 `sapdon lib`（或手动 `npm i` 后执行）。如果手动创建项目或删除了 `node_modules`，重新 `npm i` 即可。
 
 ### 6.5 manifest.json 不会随 dependencies 变化重新生成
 
