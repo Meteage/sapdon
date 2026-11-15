@@ -1,6 +1,6 @@
 export * from './biome.js'
 export * from './featureRule.js'
-export * from './manifest.js'
+export * from '../../utils/manifest.js'
 export * from './menuCategory.js'
 export * from './block/block.js'
 export * from './controllers/animationController.js'

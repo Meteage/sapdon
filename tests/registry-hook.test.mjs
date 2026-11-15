@@ -1,28 +1,32 @@
-// 构建期提交前钩子（`src/core/registry.ts` 的 `registry.beforeSubmit` / `GRegistry.beforeSubmit`）：
-//   `node tests/registry-hook.test.mjs`（**需先 `tsc && tsc-alias` 生成 `dist/`**）
+// 构建期提交前钩子（`src/utils/registry.ts` 的 `registry.beforeSubmit` / `GRegistry.beforeSubmit`）：
+//   `node tests/registry-hook.test.mjs`。**需要 `tsc && tsc-alias` 生成 `dist/`**。
 //
-// `submit()` 最后经 `transportPost` 用全局 `fetch` 把数据 POST 给 dev server。
+// `submit()` 最后经 `transportPost` 用全局 `fetch` 把 **BuildPacket** POST 到 dev server；
 // 这里把 `fetch` 换成记录器，直接断言「真正发出去的载荷」；
-// 每个用例用带查询串的 URL 重新 import `registry.js` ⇒ 注册表与钩子表都是全新的模块实例。
+// 每个用例用带查询串的 URL 重新 import 注册表，确保注册表与钩子表都是全新的模块实例。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 const posts = []
 globalThis.fetch = async (url, init) => {
     posts.push({ url: String(url), body: JSON.parse(init.body) })
-    return { ok: true }
+    return { ok: true, status: 200 }
 }
 
 let seq = 0
 async function freshRegistry() {
     posts.length = 0
-    return import(`../dist/core/registry.js?case=${seq++}`)
+    return import(`../dist/utils/registry.js?case=${seq++}`)
 }
 
-/** 最近一次 POST 的注册项（`transportPost(path, data)` 的载荷是 `[data]`） */
-function lastSubmitted() {
+/** 最近一次 POST 的 BuildPacket（`transportPost(path, packet)` 的载荷是 `[packet]`） */
+function lastPacket() {
     assert.ok(posts.length > 0, 'submit 应该发出一次 POST')
     return posts.at(-1).body[0]
+}
+
+function lastFiles() {
+    return lastPacket().files
 }
 
 /** 一个带 `toObject()` 的最小可序列化对象 */
@@ -39,11 +43,11 @@ test('① 钩子在序列化之前执行，可以直接修改注册项的 data',
     })
     registry.submit()
 
-    const [item] = lastSubmitted()
+    const [item] = lastFiles()
     assert.deepEqual(item.data, { value: ['c:ingots.tin', 'c:ingots'] })
 })
 
-test('② 钩子可以追加文件；后面的钩子能看到前面追加的项', async () => {
+test('② 钩子可以追加文件；后面的钩子能看到前面追加的', async () => {
     const { GRegistry, registry } = await freshRegistry()
     GRegistry.register('a', 'behavior', 'items/', serializable(1))
     const seenBySecond = []
@@ -56,10 +60,10 @@ test('② 钩子可以追加文件；后面的钩子能看到前面追加的项'
     registry.submit()
 
     assert.deepEqual(seenBySecond, ['a', 'recipe_tin_hammer'])
-    assert.deepEqual(lastSubmitted().map((entry) => entry.name), ['a', 'recipe_tin_hammer'])
+    assert.deepEqual(lastFiles().map((file) => file.name), ['a', 'recipe_tin_hammer'])
 })
 
-test('③ 两个入口共用同一张钩子表，按登记顺序执行，两种 submit 都会触发', async () => {
+test('③ 两个入口共用同一张钩子表，按登记顺序执行，两次 submit 都会触发', async () => {
     const { GRegistry, registry } = await freshRegistry()
     const order = []
     registry.beforeSubmit(() => order.push('registry'))
@@ -70,7 +74,7 @@ test('③ 两个入口共用同一张钩子表，按登记顺序执行，两种 
 
     GRegistry.submit()
     assert.deepEqual(order, ['registry', 'GRegistry', 'registry', 'GRegistry'])
-    assert.match(posts.at(-1).url, /submitGregistry$/)
+    assert.match(posts.at(-1).url, /submit$/)
 })
 
 test('④ 钩子拿到的是快照：改数组本身不影响注册表', async () => {
@@ -80,7 +84,7 @@ test('④ 钩子拿到的是快照：改数组本身不影响注册表', async (
         entries.length = 0
     })
     registry.submit()
-    assert.deepEqual(lastSubmitted().map((entry) => entry.name), ['a'])
+    assert.deepEqual(lastFiles().map((file) => file.name), ['a'])
 })
 
 test('⑤ 钩子追加的同名文件按「后注册者胜」去重', async () => {
@@ -90,10 +94,10 @@ test('⑤ 钩子追加的同名文件按「后注册者胜」去重', async () =
         GRegistry.register('a', 'behavior', 'items/', serializable('replaced'))
     })
     registry.submit()
-    assert.deepEqual(lastSubmitted(), [{ name: 'a', root: 'behavior', path: 'items/', data: { value: 'replaced' } }])
+    assert.deepEqual(lastFiles(), [{ root: 'behavior', path: 'items/', name: 'a', data: { value: 'replaced' } }])
 })
 
-test('⑥ 钩子抛错 ⇒ submit 抛错，且什么都不发', async () => {
+test('⑥ 钩子抛错 → submit 抛错，且什么都不发', async () => {
     const { registry } = await freshRegistry()
     registry.beforeSubmit(() => { throw new Error('插件失败') })
     assert.throws(() => registry.submit(), /插件失败/)

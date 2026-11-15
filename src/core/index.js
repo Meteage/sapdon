@@ -1,3 +1,10 @@
+import { setBuildPacketBuilder } from '../utils/registry.js'
+import { resolveBuild } from './build/resolve.js'
+
+// 注册项 → 最终文件包的解析器（贴图图集 / 自定义组件脚本与索引都在这里完成）。
+// 必须在任何 `registry.submit()` 之前登记；core 是用户 `main.ts` 的入口，所以放这里。
+setBuildPacketBuilder(resolveBuild)
+
 export * from './addon/index.js'
 export * from './biome/index.js'
 export * from './block/index.js'

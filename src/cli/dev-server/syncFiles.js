@@ -51,7 +51,7 @@ function writeDeployManifest(manifestPath, files) {
 }
 
 /** 递归列出目录下的**文件**（相对 root，统一用 `/` 分隔），不含目录名本身 */
-function listFilesRecursive(root, prefix = '') {
+export function listFilesRecursive(root, prefix = '') {
     const out = []
     let entries
     try {

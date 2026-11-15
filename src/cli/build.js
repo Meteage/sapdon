@@ -1,13 +1,13 @@
 import path from 'path'
 import { pathNotExist, readFile, generateUUID, saveFile, copyFileSync } from "./utils.js"
-import { generateAddon } from './load.js'
+import { writeBuildPacket } from './load.js'
 
 import {
     AddonManifestHeader,
     AddonManifestModule,
     AddonManifest,
     AddonManifestMetadata
-} from '../core/addon/manifest.js'
+} from '@sapdon/utils/manifest.js'
 
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -20,7 +20,8 @@ import json from '@rollup/plugin-json'
 import { visualizer } from 'rollup-plugin-visualizer'
 import terser from '@rollup/plugin-terser'
 
-import { syncDevFilesServer, syncResourceFiles } from './dev-server/syncFiles.js'
+import { syncDevFilesServer, syncResourceFiles, listFilesRecursive } from './dev-server/syncFiles.js'
+import { BUILD_PROTOCOL } from '@sapdon/utils/protocol.js'
 import cp from 'child_process'
 import { server, startDevServer } from './dev-server/index.js'
 import { GRegistryServer } from './registryServer.js'
@@ -36,13 +37,17 @@ const __dirname = path.dirname(__filename)
 //读取配置文件
 // const pathConfig = JSON.parse(readFile(path.join(__dirname, "./build.config")))
 
+// 外部化规则：框架包与 Minecraft 模块一律按前缀判断，新增子包不用改这里
 const rollupIgnores = [
     'rollup',
     'typescript',
-    '@sapdon/core',
-    '@sapdon/cli',
-    '@minecraft',
+    '@sapdon/',
+    '@minecraft/',
 ]
+
+// 放在模块级：`submit` handler 只注册一次（HMR 复用），每次构建刷新它读到的上下文
+let activeBuildContext = null
+let activeWriteOptions = null
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -217,9 +222,13 @@ async function bundleScripts(useJs=false) {
  * ⚠️ 必须检查退出码：子进程失败（如构建脚本抛异常）时若不抛，CLI 会继续走到
  *   「构建完成」并 exit 0，产出 dev/ 里的旧产物 —— 见 AGENTS.md「构建成功不可信」。
  */
-async function runOnChild(targetFilePath) {
+async function runOnChild(targetFilePath, context) {
     const code = await new Promise((resolve, reject) => {
-        const child = cp.spawn(process.execPath, [targetFilePath], { stdio: 'inherit' })
+        const child = cp.spawn(process.execPath, [targetFilePath], {
+            stdio: 'inherit',
+            // 构建上下文交给子进程：core 用它解析图集等 addon 产物
+            env: { ...process.env, SAPDON_BUILD_CONTEXT: JSON.stringify(context) },
+        })
         child.on('error', reject)
         child.on('exit', (exitCode, signal) => resolve(signal ? `signal ${signal}` : exitCode))
     })
@@ -228,13 +237,13 @@ async function runOnChild(targetFilePath) {
     }
 }
 
-async function runScript(src) {
+async function runScript(src, context) {
     const randomName = '.' + crypto.randomUUID() + '.js'
     const targetFilePath = path.join(path.dirname(src), '.tmp', randomName)
 
     await scriptBundler.any(src, targetFilePath)
     try {
-        await runOnChild(targetFilePath)
+        await runOnChild(targetFilePath, context)
     } finally {
         fs.rmSync(targetFilePath, { force: true })
     }
@@ -340,17 +349,29 @@ export const buildProject = async (projectPath, projectName) => {
         // 在客户端启动前启动服务器
         startDevServer()
         GRegistryServer.startServer()
-        server.handle('submit', async (data) => {
-            // development：运行 main.ts 生成 JSON；production：跳过（仅同步已有 dev/ 目录）
+        server.handle('submit', async (packet) => {
+            // debug：跳过生成，只同步已有 dev/ 目录
             if (buildConfig.buildOptions.buildMode !== "debug") {
-                GRegistryServer.dataList = data
-                await generateAddon(projectPath, buildDirPath, projectName)
+                await writeBuildPacket(packet, activeWriteOptions)
             }
         })
     }
 
+    // 构建上下文：交给子进程里的 core，用来解析图集等 addon 产物
+    const resourceTextures = listFilesRecursive(path.join(buildResDirPath, 'textures'))
+        .map((rel) => `textures/${rel}`)
+    activeBuildContext = {
+        protocol: BUILD_PROTOCOL,
+        projectName,
+        projectPath,
+        buildDir: buildConfig.buildOptions.buildDir,
+        buildMode: buildConfig.buildOptions.buildMode,
+        resourceFiles: resourceTextures,
+    }
+    activeWriteOptions = { projectPath, buildPath: buildDirPath, projectName }
+
     // buildEntry (有可能生成ts或js文件, 所以需要先编译)
-    await runScript(absoluteModPath)
+    await runScript(absoluteModPath, activeBuildContext)
     // scriptEntry
     await bundleScripts(buildConfig.buildOptions.useJs)
     await syncDevFilesServer(projectPath, projectName)
