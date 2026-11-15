@@ -2,8 +2,13 @@ import { transportPost } from "./transport/client.js"
 import {
     BUILD_PROTOCOL,
     readBuildContext,
+    type BuildContext,
+    type BuildEntry,
+    type BuildIndexBlock,
     type BuildPacket,
-    type PacketBuilder,
+    type BuildPacketFile,
+    type BuildSourceFile,
+    type PacketResolver,
 } from "./protocol.js"
 
 /** 一条注册项：落到 `dev/<proj>_BP|_RP/<path>/<name>.json` 的一个文件 */
@@ -30,30 +35,98 @@ const beforeSubmitHooks: BeforeSubmitHook[] = []
 let runningHooks = false
 
 /**
- * 默认包构建器：原样把注册项当文件提交。
- * `@sapdon/core` 会用一个更聪明的实现覆盖它（生成贴图图集、自定义组件脚本等）。
+ * 「注册项 → 最终文件包」的解析器。
+ * 兼容旧 API：设置唯一解析器（会清空之前登记的链）。
  */
-const defaultPacketBuilder: PacketBuilder = (entries) => ({
-    protocol: BUILD_PROTOCOL,
-    files: entries.map((entry) => ({
-        root: entry.root,
-        path: entry.path,
-        name: entry.name,
-        data: entry.data,
-    })),
-})
+export type PacketBuilder = (entries: RegistryEntry[], ctx: BuildContext) => BuildPacket
 
-let packetBuilder: PacketBuilder = defaultPacketBuilder
+interface RegisteredResolver {
+    priority: number
+    fn: PacketResolver
+}
+
+const packetResolvers: RegisteredResolver[] = []
 
 /**
- * 替换「注册项 → 最终文件包」的解析器。由 `@sapdon/core` 在模块初始化时登记。
+ * 登记一个解析器。按 `priority` 从高到低执行；`@sapdon/core` 用 -100 兜底。
+ *
+ * 解析器返回增量：
+ * - `files` / `sources` / `indexBlocks` 会按顺序拼接；
+ * - `consumed` 里的注册项不会再交给后面的解析器，也不会被默认映射成 `<name>.json`；
+ * - 返回的文件与注册项 `root|path|name` 相同时，会自动视为认领该项（少写 `consumed` 的常见场景）。
+ *
+ * @throws resolver 不是函数
+ */
+export function addPacketResolver(resolver: PacketResolver, options: { priority?: number } = {}) {
+    if (typeof resolver !== 'function') {
+        throw new Error('addPacketResolver: resolver 必须是函数')
+    }
+    packetResolvers.push({ fn: resolver, priority: options.priority ?? 0 })
+    packetResolvers.sort((a, b) => b.priority - a.priority)
+}
+
+/**
+ * 兼容入口：替换成**唯一**解析器（等价于清空链 + `addPacketResolver`）。
+ * 新代码请用 {@link addPacketResolver} 组合，而不是覆盖别人的解析器。
  * @throws builder 不是函数
  */
 export function setBuildPacketBuilder(builder: PacketBuilder) {
     if (typeof builder !== 'function') {
         throw new Error('setBuildPacketBuilder: builder 必须是函数')
     }
-    packetBuilder = builder
+    packetResolvers.length = 0
+    addPacketResolver(({ entries, ctx }) => {
+        const packet = builder(entries as RegistryEntry[], ctx)
+        return {
+            files: packet.files,
+            sources: packet.sources,
+            indexBlocks: packet.indexBlocks ?? (packet.indexBlock ? [packet.indexBlock] : []),
+        }
+    }, { priority: -1000 })
+}
+
+const entryKey = (entry: BuildEntry) => `${entry.root}|${entry.path}|${entry.name}`
+
+/** 执行解析器链；没有任何解析器认领的注册项按默认规则落成 `<name>.json` */
+function buildBuildPacket(entries: RegistryEntry[], ctx: BuildContext): BuildPacket {
+    const files: BuildPacketFile[] = []
+    const sources: BuildSourceFile[] = []
+    const indexBlocks: BuildIndexBlock[] = []
+    const consumed = new Set<RegistryEntry>()
+
+    for (const { fn } of packetResolvers) {
+        const active = entries.filter((entry) => !consumed.has(entry))
+        const result = fn({ entries: active, ctx }) ?? {}
+
+        files.push(...(result.files ?? []))
+        sources.push(...(result.sources ?? []))
+        indexBlocks.push(...(result.indexBlocks ?? []))
+
+        for (const entry of result.consumed ?? []) consumed.add(entry as RegistryEntry)
+        for (const file of result.files ?? []) {
+            const key = `${file.root}|${file.path}|${file.name}`
+            for (const entry of active) {
+                if (!consumed.has(entry) && entryKey(entry) === key) consumed.add(entry)
+            }
+        }
+    }
+
+    for (const entry of entries) {
+        if (consumed.has(entry)) continue
+        files.push({
+            root: entry.root,
+            path: entry.path,
+            name: entry.name,
+            data: entry.data,
+        })
+    }
+
+    return {
+        protocol: BUILD_PROTOCOL,
+        files,
+        ...(sources.length > 0 ? { sources } : {}),
+        ...(indexBlocks.length > 0 ? { indexBlocks } : {}),
+    }
 }
 
 /**
@@ -116,7 +189,7 @@ function submitBuild() {
         }
         return item
     })
-    const packet: BuildPacket = packetBuilder(serialized, readBuildContext())
+    const packet: BuildPacket = buildBuildPacket(serialized, readBuildContext())
     transportPost('submit', packet)
 }
 

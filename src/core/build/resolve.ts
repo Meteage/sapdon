@@ -1,11 +1,11 @@
 ﻿import { BlockCustomComponentBuilder } from '../block/blockCustomComponent.js'
 import type { RegistryEntry } from '../../utils/registry.js'
 import {
-    BUILD_PROTOCOL,
     type BuildContext,
-    type BuildPacket,
+    type BuildIndexBlock,
     type BuildPacketFile,
     type BuildSourceFile,
+    type ResolverResult,
 } from '../../utils/protocol.js'
 import { INDEX_BEGIN, INDEX_END, SYSTEM_ALIAS } from '../../utils/componentIndex.js'
 
@@ -15,7 +15,7 @@ import { INDEX_BEGIN, INDEX_END, SYSTEM_ALIAS } from '../../utils/componentIndex
  * 这里是「addon 语义」的唯一归属地：贴图图集、自定义组件脚本与注册索引都在这里解析，
  * CLI 收到的已经是可以直接写盘的 JSON / 源码。
  */
-export function resolveBuild(entries: RegistryEntry[], ctx: BuildContext): BuildPacket {
+export function resolveBuild(entries: RegistryEntry[], ctx: BuildContext): ResolverResult {
     const files: BuildPacketFile[] = []
     const sources: BuildSourceFile[] = []
 
@@ -97,13 +97,14 @@ export function resolveBuild(entries: RegistryEntry[], ctx: BuildContext): Build
         data: flipbook ?? [],
     })
 
+    const indexBlocks: BuildIndexBlock[] = components.length > 0
+        ? [{ path: 'scripts/custom_components/index.js', content: buildIndexBlock(components) }]
+        : []
+
     return {
-        protocol: BUILD_PROTOCOL,
         files,
         ...(sources.length > 0 ? { sources } : {}),
-        ...(components.length > 0
-            ? { indexBlock: { path: 'scripts/custom_components/index.js', content: buildIndexBlock(components) } }
-            : {}),
+        ...(indexBlocks.length > 0 ? { indexBlocks } : {}),
     }
 }
 

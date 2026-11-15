@@ -174,7 +174,10 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 | 组件注册（**框架内置兜底**） | `src/oc/components/registry.ts`（`@sapdon/runtime`） | `registerFallbackBlockComponent(id, handlers)` / `registerFallbackItemComponent(id, handlers)`：**项目没注册该 id 才注册**；项目注册了 → 项目生效 + 一条 warn；重复登记同一内置 id 幂等；**同一世界里其他包已注册** → 沿用 + warn。诊断：`skippedFallbackComponents()` / `sharedFallbackComponents()` |
 | 多方块结构 | `src/oc/multiblock/`（`pattern.ts` 纯逻辑；`index.ts` 运行期） | `Multiblocks.define` / `Is` / `Trigger` / `Multiblocks.on`。8 种触发器各自收好事件的坑（before 事件推迟回调、`isFirstEvent`、上升沿、掉落物限时跟踪、爆炸同步保护）。成形结构改动自身方块必须给 `intact`。单测 `node tests/multiblock-pattern.test.mjs`、`node tests/multiblock-runtime.test.mjs`（假引擎 `tests/fixtures/fake-minecraft-world.mjs`）；示例冒烟 `examples/multiblock_showcase/test/smoke.mjs` |
 | manifest 包依赖 | `src/cli/meta/manifestDependencies.ts`（纯函数）+ `src/cli/build.js` | `build.config` 的 `dependencies` 可写 `{ uuid, version }`（`version` 字符串或数组 → 写入时规范成数组）；`module_name` 项原样透传。不合法即构建失败；manifest 已存在时只提示缺的项、不改写 |
-| 提交前钩子 | `src/core/registry.ts`（`@sapdon/core`） | `registry.beforeSubmit(hook)` / `GRegistry.beforeSubmit(hook)`（同一张表）：`submit()` 序列化前按登记顺序调用，`hook(entries)` 拿快照（项是活对象）、可 `GRegistry.register()` 追加；抛错 = 构建失败；钩子执行期间不许再登记钩子 |
+| 提交前钩子 | `src/utils/registry.ts`（`@sapdon/core` re-export） | `registry.beforeSubmit(hook)` / `GRegistry.beforeSubmit(hook)`（同一张表）：`submit()` 序列化前按登记顺序调用，`hook(entries)` 拿快照（项是活对象）、可 `GRegistry.register()` 追加；抛错 = 构建失败；钩子执行期间不许再登记钩子 |
+| **构建解析器管线** | `src/utils/registry.ts` | `addPacketResolver(fn, { priority })`：按优先级执行，返回 `{ files, sources, indexBlocks, consumed }`；`@sapdon/core` 用 **-100 兜底**；返回同 `root\|path\|name` 的文件会**自动认领**注册项；`setBuildPacketBuilder` 只作兼容入口（会清空链）。规范见 `doc/dev/build-protocol.md` |
+| **构建协议** | `src/utils/protocol.ts` + `src/cli/load.js` | `sapdon-build/1`：`files` 支持 `json` / `text` / `base64` + `ext`；`sources.overwrite`；`indexBlocks[]`（旧 `indexBlock` 仍兼容）。协议不匹配直接抛错 |
+| **包清单** | 仓库根 `packages.json` | 构建 bundle / d.ts、`prod/*/package.json`、`sapdon lib`、发布脚本的**单一事实来源**；`tests/packages-manifest.test.mjs` 防漂移 |
 
 ### A2. 框架内置自定义组件清单（`registerBuiltinComponents()`）
 

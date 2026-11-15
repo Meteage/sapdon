@@ -1,5 +1,5 @@
 /**
- * 发布拆分后的子包（顺序：utils → ui → core → runtime）。
+ * 发布拆分后的子包（顺序由 packages.json 决定：依赖在前）。
  *
  * 用法：
  *   node scripts/publish-packages.cjs --dry-run   # 先看每个包的 tarball
@@ -10,12 +10,10 @@
 const cp = require('child_process')
 const path = require('path')
 
-const packages = [
-    ['prod/utils', '@sapdon/utils'],
-    ['prod/ui', '@sapdon/ui'],
-    ['prod/core', '@sapdon/core'],
-    ['prod/oc', '@sapdon/runtime'],
-]
+const manifest = require('../packages.json')
+const packages = manifest.packages
+    .filter((pkg) => pkg.publish)
+    .map((pkg) => [`prod/${pkg.dir}`, pkg.name])
 
 const dryRun = process.argv.includes('--dry-run')
 // Node 24 起不能直接 execFile 一个 .cmd（不经过 shell），用 node + npm-cli.js 最稳

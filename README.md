@@ -158,7 +158,7 @@ registerBlockComponent('demo:machine_tick', {
 
 **参考**：[API 索引](./doc/user/api/item.md) · [build.config](./doc/user/config/build-config.md) · [mod.info](./doc/user/config/mod-info.md) · [手册专题](./doc/guidebook.md) · [FAQ](./doc/user/faq.md)
 
-**框架开发**：[架构](./doc/dev/architecture.md) · [Core](./doc/dev/core.md) · [CLI](./doc/dev/cli.md) · [OC 运行时](./doc/dev/oc.md) · [工作流](./doc/dev/workflow.md) · [已知坑清单](./doc/dev/known-pitfalls.md) · [文档写作规范](./doc/dev/writing-guide.md)
+**框架开发**：[架构](./doc/dev/architecture.md) · [构建协议](./doc/dev/build-protocol.md) · [Core](./doc/dev/core.md) · [CLI](./doc/dev/cli.md) · [OC 运行时](./doc/dev/oc.md) · [工作流](./doc/dev/workflow.md) · [已知坑清单](./doc/dev/known-pitfalls.md) · [文档写作规范](./doc/dev/writing-guide.md)
 
 ## 示例
 

@@ -5,19 +5,13 @@ const sleep = promisify(setTimeout)
 // 导入配置
 const buildConfigs = require('./buildConfig.cjs')
 
-// 任务列表 - 更清晰的命名
+// 任务列表由 packages.json 生成：CLI 两个入口单独维护，其余库包走 bundleTasks / declareTasks
 const tasks = [
     { name: 'Start', config: buildConfigs.startConfig },
     { name: 'CLI', config: buildConfigs.cliConfig },
-    { name: 'Core', config: buildConfigs.coreConfig },
-    { name: 'UI', config: buildConfigs.uiConfig },
-    { name: 'OC', config: buildConfigs.ocConfig },
-    { name: 'Utils', config: buildConfigs.utilsConfig },
+    ...buildConfigs.bundleTasks,
     { name: 'CLI Declarations', config: buildConfigs.cliDeclareConfig },
-    { name: 'Core Declarations', config: buildConfigs.coreDeclareConfig },
-    { name: 'UI Declarations', config: buildConfigs.uiDeclareConfig },
-    { name: 'OC Declarations', config: buildConfigs.ocDeclareConfig },
-    { name: 'Utils Declarations', config: buildConfigs.utilsDeclareConfig },
+    ...buildConfigs.declareTasks,
 ]
 
 // 带进度和错误处理的构建函数

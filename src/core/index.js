@@ -1,9 +1,9 @@
-import { setBuildPacketBuilder } from '../utils/registry.js'
+import { addPacketResolver } from '../utils/registry.js'
 import { resolveBuild } from './build/resolve.js'
 
 // 注册项 → 最终文件包的解析器（贴图图集 / 自定义组件脚本与索引都在这里完成）。
-// 必须在任何 `registry.submit()` 之前登记；core 是用户 `main.ts` 的入口，所以放这里。
-setBuildPacketBuilder(resolveBuild)
+// 优先级 -100 = 最后兜底；`@sapdon/core` 之外的包可以用更高的 priority 先认领自己的条目。
+addPacketResolver(({ entries, ctx }) => resolveBuild(entries, ctx), { priority: -100 })
 
 export * from './addon/index.js'
 export * from './biome/index.js'

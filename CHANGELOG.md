@@ -31,6 +31,14 @@
   两个入口合并为同一管线。
 - 协议版本不匹配会直接报错：项目里的 `@sapdon/core` 与 `sapdon` CLI 必须同一版本。
 
+### 可扩展性
+
+- 新增 `addPacketResolver(fn, { priority })` 解析器管线：第三方包可以在 core 之前认领自己的注册项、追加文件；`@sapdon/core` 以 -100 兜底。`setBuildPacketBuilder` 保留为兼容入口。
+- `BuildPacket` 扩展：`files` 支持 `json` / `text` / `base64` 与自定义 `ext`；`sources.overwrite`；`indexBlocks[]`（可合并多个标记块文件）。
+- 仓库根 `packages.json` 成为包清单的单一事实来源：构建 bundle/d.ts、`prod/*/package.json`、`sapdon lib`、发布脚本都读它；`tests/packages-manifest.test.mjs` 防止漂移。
+- `@sapdon/cli` 增加编程式导出：`writeBuildPacket` / `writeLib` / `planLibCopies` / `packProject`。
+- 协议规范独立成文：[`doc/dev/build-protocol.md`](./doc/dev/build-protocol.md)。
+
 ### 其他
 
 - `AddonManifest*` 类移到 `@sapdon/utils`（`@sapdon/core` 仍 re-export，兼容）。

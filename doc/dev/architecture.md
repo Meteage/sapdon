@@ -211,7 +211,7 @@ class Item {
 
 ## 4. 数据流：从用户代码到 JSON 文件
 
-> 2026-11 起 CLI 已协议化（`sapdon-build/1`）：注册项在子进程里由 core 的 `resolveBuild()` 解析成最终文件包（图集、组件脚本、注册索引都在 core 完成），CLI 只负责写盘、清单与同步。下图里的 `generateAddon` 已由 `writeBuildPacket` 取代。
+> 2026-11 起 CLI 已协议化（`sapdon-build/1`）：注册项在子进程里由**解析器管线**（`addPacketResolver`，core 以 -100 兜底）解析成最终文件包——图集、组件脚本、注册索引都在 core 完成；CLI 只负责写盘、清单与同步。下图里的 `generateAddon` 已由 `writeBuildPacket` 取代。协议字段、文件格式与扩展方式见 [`build-protocol.md`](./build-protocol.md)。
 
 ```
 用户代码 (main.ts)

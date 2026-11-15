@@ -67,15 +67,15 @@ function cleanStaleGenerated(buildPath, previousFiles, nextFiles) {
 }
 
 /**
- * 写入/更新自定义组件注册索引。
+ * 写入/更新一个「按标记块合并」的文本文件（自定义组件索引、自动注册表等）。
  *
  * 合并规则见 `@sapdon/utils/componentIndex`（纯函数、幂等、保留手写部分）。
- * `indexBlock.content` 已由 core 生成好，这里只做「按标记替换」。
+ * `block` 已由解析器生成好，这里只做「按标记替换」。
  */
-function writeCustomComponentIndex(indexPath, block) {
+function writeIndexBlock(indexPath, block) {
     if (!fs.existsSync(indexPath)) {
         saveFile(indexPath, `${block}\n`)
-        console.log(`已生成自定义组件注册索引: ${indexPath}`)
+        console.log(`已生成索引文件: ${indexPath}`)
         return
     }
 
@@ -83,12 +83,12 @@ function writeCustomComponentIndex(indexPath, block) {
     const next = mergeGeneratedBlock(current, block)
 
     if (next === current) {
-        console.log(`自定义组件注册索引已是最新，未改动: ${indexPath}`)
+        console.log(`索引文件已是最新，未改动: ${indexPath}`)
         return
     }
 
     saveFile(indexPath, next)
-    console.log(`已更新自定义组件注册索引（保留手写部分）: ${indexPath}`)
+    console.log(`已更新索引文件（保留手写部分）: ${indexPath}`)
 }
 
 /**
@@ -119,23 +119,33 @@ export async function writeBuildPacket(packet, options) {
     for (const file of packet.files) {
         console.log('处理数据:', file.name, file.root, file.path)
         const packDir = file.root === 'behavior' ? `${projectName}_BP` : `${projectName}_RP`
-        const filePath = path.join(buildPath, packDir, file.path, `${file.name}.json`)
-        saveFile(filePath, JSON.stringify(file.data, null, 2))
+        const format = file.format ?? 'json'
+        const ext = file.ext ?? 'json'
+        const filePath = path.join(buildPath, packDir, file.path, `${file.name}.${ext}`)
+
+        let content
+        if (format === 'base64') content = Buffer.from(String(file.data ?? ''), 'base64')
+        else if (format === 'text') content = String(file.data ?? '')
+        else content = JSON.stringify(file.data, null, 2)
+
+        saveFile(filePath, content)
         record(filePath)
     }
 
     for (const source of packet.sources ?? []) {
         const filePath = path.join(projectPath, source.path)
-        if (fs.existsSync(filePath)) {
-            console.log(`自定义组件脚本已存在，跳过: ${filePath}`)
+        const exists = fs.existsSync(filePath)
+        if (exists && !source.overwrite) {
+            console.log(`源码文件已存在，跳过: ${filePath}`)
             continue
         }
         saveFile(filePath, source.content)
-        console.log(`已生成自定义组件脚本: ${filePath}`)
+        console.log(`${exists ? '已更新' : '已生成'}源码文件: ${filePath}`)
     }
 
-    if (packet.indexBlock) {
-        writeCustomComponentIndex(path.join(projectPath, packet.indexBlock.path), packet.indexBlock.content)
+    const indexBlocks = packet.indexBlocks ?? (packet.indexBlock ? [packet.indexBlock] : [])
+    for (const block of indexBlocks) {
+        writeIndexBlock(path.join(projectPath, block.path), block.content)
     }
 
     cleanStaleGenerated(buildPath, previousFiles.files, generatedFiles)

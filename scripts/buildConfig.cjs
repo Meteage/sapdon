@@ -9,244 +9,134 @@ const fs = require('fs')
 const packageInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json')))
 const deps = Object.keys(Object.assign({}, packageInfo.dependencies, packageInfo.devDependencies))
 
-// ── 跨包外部化 ───────────────────────────────────────────────────────────────
-// `tsc-alias` 会把 @sapdon/utils 之类的别名改写成相对路径（dist/core/../utils/...）。
-// 打包单个包时，这些相对引用必须**换成裸包名**并保持 external，否则：
-//   ① core 与 ui 各打一份 utils → GRegistry / Serializer 变成两份状态，UI 文件会丢；
-//   ② core 与 ui 各打一份彼此 → 同一界面出现两个注册表。
-// `output.paths` 负责把 dist/utils、dist/ui 的绝对路径映射回 `@sapdon/...` 裸包名。
+// 包清单的单一事实来源：scripts/（构建/发布）与 src/cli（lib 同步）都读它。
+const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../packages.json')))
+const packageByName = new Map(manifest.packages.map((pkg) => [pkg.name, pkg]))
+
 const asPosix = (id) => id.replace(/\\/g, '/')
 
-function isFromDist(dir, id) {
-    return asPosix(id).includes(`/dist/${dir}/`)
-}
-
-function resolvePackagePath(id) {
-    const posix = asPosix(id)
-    // 用「同级包」相对路径：安装后 node_modules/@sapdon/core/index.js → ../utils/index.js
-    // 正好解析到 node_modules/@sapdon/utils/index.js；仓库内的 prod/core → prod/utils 同样成立。
-    // utils 是单入口包（prod/utils 只有 index.js / index.d.ts），所有子模块都收敛到入口。
-    if (posix.includes('/dist/utils/')) return '../utils/index.js'
-    if (posix.includes('/dist/ui/')) return '../ui/index.js'
-    return id
-}
-
 /**
- * @type {import('rollup').RollupOptions}
+ * 一个包的跨包依赖目录，如 core → ['utils']。
+ * 打包时这些依赖保持 external，并用 `../<dir>/index.js` 的同级引用，
+ * 安装后正好落到 node_modules/@sapdon/<依赖>/index.js。
  */
+function dependencyDirs(pkg) {
+    return pkg.dependencies
+        .map((name) => packageByName.get(name)?.dir)
+        .filter(Boolean)
+}
+
+/** 生成一个库包的 bundle 配置（输入 dist/<dir>，输出 prod/<dir>） */
+function makeBundleConfig(pkg) {
+    const dirs = dependencyDirs(pkg)
+    const isExternal = (id) => dirs.some((dir) => asPosix(id).includes(`/dist/${dir}/`))
+    const resolvePath = (id) => {
+        const posix = asPosix(id)
+        for (const dir of dirs) {
+            if (posix.includes(`/dist/${dir}/`)) return `../${dir}/index.js`
+        }
+        return id
+    }
+
+    return {
+        input: `./dist/${pkg.dir}/index.js`,
+        output: {
+            file: `./prod/${pkg.dir}/index.js`,
+            format: 'esm',
+            ...(dirs.length > 0
+                ? { paths: resolvePath, makeAbsoluteExternalsRelative: false }
+                : {}),
+        },
+        plugins: [
+            nodeResolve({ preferBuiltins: true }),
+            commonjs(),
+            json(),
+            terser(),
+        ],
+        ...(dirs.length > 0 ? { external: isExternal } : {}),
+    }
+}
+
+/** 生成一个库包的 d.ts 配置（输入 src/<dir>/<sourceEntry>） */
+function makeDeclareConfig(pkg) {
+    return {
+        input: `./src/${pkg.dir}/${pkg.sourceEntry}`,
+        output: {
+            file: `./prod/${pkg.dir}/index.d.ts`,
+            format: 'esm',
+        },
+        plugins: [dts()],
+    }
+}
+
+const taskName = (pkg) => (pkg.dir === 'oc' ? 'Runtime' : pkg.dir === 'ui' ? 'UI' : pkg.dir[0].toUpperCase() + pkg.dir.slice(1))
+
+const bundledPackages = manifest.packages.filter((pkg) => pkg.bundle)
+
+const bundleConfigs = {}
+const declareConfigs = {}
+const bundleTasks = []
+const declareTasks = []
+
+for (const pkg of bundledPackages) {
+    const bundle = makeBundleConfig(pkg)
+    const declare = makeDeclareConfig(pkg)
+    bundleConfigs[`${pkg.dir}Config`] = bundle
+    declareConfigs[`${pkg.dir}DeclareConfig`] = declare
+    bundleTasks.push({ name: taskName(pkg), config: bundle })
+    declareTasks.push({ name: `${taskName(pkg)} Declarations`, config: declare })
+}
+
+/** CLI 有两个入口（start.js / index.js），单独维护 */
 const startConfig = {
     input: path.join(__dirname, '../dist/cli/start.js'),
     output: {
         file: './prod/cli/start.js',
-        format: 'esm'
+        format: 'esm',
     },
     plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
+        nodeResolve({ preferBuiltins: true }),
         commonjs(),
         json(),
         terser(),
     ],
     external(name) {
         return deps.includes(name)
-    }
+    },
 }
 
-/**
- * @type {import('rollup').RollupOptions}
- */
 const cliConfig = {
     input: './dist/cli/index.js',
     output: {
         file: './prod/cli/index.js',
-        format: 'esm'
+        format: 'esm',
     },
     plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
+        nodeResolve({ preferBuiltins: true }),
         commonjs(),
         json(),
         terser(),
     ],
     external(name) {
         return deps.includes(name)
-    }
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const coreConfig = {
-    input: './dist/core/index.js',
-    output: {
-        file: './prod/core/index.js',
-        format: 'esm',
-        paths: resolvePackagePath,
-        // 相对 import 被 external 时不要改写成相对输出路径，否则会变成 ./@sapdon/...
-        makeAbsoluteExternalsRelative: false,
     },
-    plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
-        commonjs(),
-        json(),
-        terser(),
-    ],
-    external(id) {
-        // utils 与 ui 各自是独立包：core 只保留裸包名引用
-        return isFromDist('utils', id) || isFromDist('ui', id)
-    }
 }
 
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const uiConfig = {
-    input: './dist/ui/index.js',
-    output: {
-        file: './prod/ui/index.js',
-        format: 'esm',
-        paths: resolvePackagePath,
-        makeAbsoluteExternalsRelative: false,
-    },
-    plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
-        commonjs(),
-        json(),
-        terser(),
-    ],
-    external(id) {
-        // ui 只依赖 utils（注册表 + 序列化），后者是独立包
-        return isFromDist('utils', id)
-    }
-}
-
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const ocConfig = {
-    input: './dist/oc/index.js',
-    output: {
-        file: './prod/oc/index.js',
-        format: 'esm'
-    },
-    plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
-        commonjs(),
-        json(),
-        terser(),
-    ]
-}
-
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const utilsConfig = {
-    input: './dist/utils/index.js',
-    output: {
-        file: './prod/utils/index.js',
-        format: 'esm'
-    },
-    plugins: [
-        nodeResolve({
-            preferBuiltins: true
-        }),
-        commonjs(),
-        json(),
-        terser(),
-    ]
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
 const cliDeclareConfig = {
     input: './src/cli/index.js',
     output: {
         file: './prod/cli/index.d.ts',
-        format: 'esm'
+        format: 'esm',
     },
-    plugins: [
-        dts()
-    ]
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const coreDeclareConfig = {
-    input: './src/core/index.js',
-    output: {
-        file: './prod/core/index.d.ts',
-        format: 'esm'
-    },
-    plugins: [
-        dts()
-    ]
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const uiDeclareConfig = {
-    input: './src/ui/index.ts',
-    output: {
-        file: './prod/ui/index.d.ts',
-        format: 'esm'
-    },
-    plugins: [
-        dts()
-    ]
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const ocDeclareConfig = {
-    input: './src/oc/index.ts',
-    output: {
-        file: './prod/oc/index.d.ts',
-        format: 'esm'
-    },
-    plugins: [
-        dts()
-    ]
-}
-
-/**
- * @type {import('rollup').RollupOptions}
- */
-const utilsDeclareConfig = {
-    input: './src/utils/index.ts',
-    output: {
-        file: './prod/utils/index.d.ts',
-        format: 'esm'
-    },
-    plugins: [
-        dts()
-    ]
+    plugins: [dts()],
 }
 
 module.exports = {
     startConfig,
     cliConfig,
-    coreConfig,
-    uiConfig,
-    ocConfig,
-    utilsConfig,
     cliDeclareConfig,
-    coreDeclareConfig,
-    uiDeclareConfig,
-    ocDeclareConfig,
-    utilsDeclareConfig
+    ...bundleConfigs,
+    ...declareConfigs,
+    bundleTasks,
+    declareTasks,
 }

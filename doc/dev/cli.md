@@ -163,7 +163,8 @@ scriptBundler.any(source, target)
 
 > 2026-11 起改为 `writeBuildPacket(packet, { projectPath, buildPath, projectName })`：数据包由 core 侧
 > `resolveBuild()` 解析成最终文件（贴图图集 / 组件脚本 / 注册索引），CLI 只负责写盘、清单与同步。
-> 下面的 `generateAddon()` 流程保留为历史参考，具体落盘规则（路径、清单、索引合并）仍然适用。
+> 支持 `files[].format`（`json` / `text` / `base64`）、`sources[].overwrite`、`indexBlocks[]`（见
+> [`build-protocol.md`](./build-protocol.md)）。下面的 `generateAddon()` 流程保留为历史参考，落盘规则仍然适用。
 
 `generateAddon()` 在 `submit` handler 中调用，负责将 `GRegistryServer.dataList` 中的注册数据写出为 JSON 文件：
 

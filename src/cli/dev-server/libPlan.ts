@@ -25,7 +25,10 @@ export interface LibPackageSpec {
     sources: string[]
 }
 
-/** 待同步清单：顺序即拷贝顺序（与历史行为一致） */
+/**
+ * 待同步清单：顺序即拷贝顺序（与历史行为一致）。
+ * ⚠️ 与仓库根 `packages.json` 保持一致（`tests/packages-manifest.test.mjs` 会比对，防漂移）。
+ */
 export const LIB_PACKAGES: LibPackageSpec[] = [
     { name: '@sapdon/utils', target: 'utils', sources: ['utils'] },
     { name: '@sapdon/core', target: 'core', sources: ['core'] },

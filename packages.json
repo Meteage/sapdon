@@ -1,0 +1,59 @@
+{
+    "packages": [
+        {
+            "name": "@sapdon/utils",
+            "dir": "utils",
+            "target": "utils",
+            "sources": ["utils"],
+            "sourceEntry": "index.ts",
+            "dependencies": [],
+            "bundle": true,
+            "lib": true,
+            "publish": true
+        },
+        {
+            "name": "@sapdon/ui",
+            "dir": "ui",
+            "target": "ui",
+            "sources": ["ui"],
+            "sourceEntry": "index.ts",
+            "dependencies": ["@sapdon/utils"],
+            "bundle": true,
+            "lib": true,
+            "publish": true
+        },
+        {
+            "name": "@sapdon/core",
+            "dir": "core",
+            "target": "core",
+            "sources": ["core"],
+            "sourceEntry": "index.js",
+            "dependencies": ["@sapdon/utils"],
+            "bundle": true,
+            "lib": true,
+            "publish": true
+        },
+        {
+            "name": "@sapdon/runtime",
+            "dir": "oc",
+            "target": "runtime",
+            "sources": ["oc", "runtime"],
+            "sourceEntry": "index.ts",
+            "dependencies": [],
+            "bundle": true,
+            "lib": true,
+            "publish": true
+        },
+        {
+            "name": "@sapdon/cli",
+            "dir": "cli",
+            "target": "cli",
+            "sources": ["cli"],
+            "sourceEntry": "index.js",
+            "dependencies": [],
+            "bundle": false,
+            "lib": true,
+            "publish": false
+        }
+    ]
+}

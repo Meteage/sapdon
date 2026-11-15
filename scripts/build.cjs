@@ -22,20 +22,23 @@ async function copyTemplates() {
 // `sapdon lib` 在同步时也会重写，但发布 tar 包里不能缺这些文件。
 async function writePackageJsons() {
   const pkg = JSON.parse(await fs.readFile(path.join(__dirname, '../package.json'), 'utf8'))
-  // v4：core / ui 都只依赖 utils（core 不再 re-export ui）。
-  // 版本锁步：几个包永远同一版本发布。
-  const packages = [
-    ['utils', '@sapdon/utils', {}],
-    ['ui', '@sapdon/ui', { '@sapdon/utils': pkg.version }],
-    ['core', '@sapdon/core', { '@sapdon/utils': pkg.version }],
-    ['oc', '@sapdon/runtime', {}],
-  ]
+  const manifest = JSON.parse(await fs.readFile(path.join(__dirname, '../packages.json'), 'utf8'))
 
-  for (const [dir, name, dependencies] of packages) {
-    const entry = { name, type: 'module', main: 'index.js', types: 'index.d.ts', version: pkg.version }
+  for (const item of manifest.packages) {
+    const dependencies = Object.fromEntries(
+      (item.dependencies ?? []).map((name) => [name, pkg.version])
+    )
+    const entry = {
+      name: item.name,
+      type: 'module',
+      main: 'index.js',
+      types: 'index.d.ts',
+      version: pkg.version,
+    }
     if (Object.keys(dependencies).length > 0) entry.dependencies = dependencies
+
     await fs.writeFile(
-      path.join(__dirname, '../prod', dir, 'package.json'),
+      path.join(__dirname, '../prod', item.dir, 'package.json'),
       JSON.stringify(entry, null, 2)
     )
   }
