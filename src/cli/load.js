@@ -2,7 +2,7 @@ import path from "path"
 import fs from "fs"
 import { saveFile } from "./utils.js"
 import { mergeGeneratedBlock } from '@sapdon/utils/componentIndex.js'
-import { BUILD_PROTOCOL } from '@sapdon/utils/protocol.js'
+import { BUILD_PROTOCOL, formatPacketIssues, validateBuildPacket } from '@sapdon/utils/protocol.js'
 
 // ── 生成物清单：用于精确清理「陈旧产物」（缺口 9）──
 // 只有**框架自己生成过**的文件才会被清理；用户 res/ 拷进来的文件与手写文件一律不碰。
@@ -109,6 +109,17 @@ export async function writeBuildPacket(packet, options) {
             `构建协议不匹配：CLI 期望 ${BUILD_PROTOCOL}，收到 ${packet?.protocol ?? '(空)'}。` +
             `请把项目里的 @sapdon/core 与 sapdon CLI 升到同一版本。`
         )
+    }
+
+    // 结构校验：CLI 是最后一道防线（也可能收到非 core 生产者发来的包）
+    const issues = validateBuildPacket(packet)
+    const errors = issues.filter((issue) => issue.level === 'error')
+    if (errors.length > 0) {
+        throw new Error(`构建包校验失败:\n${formatPacketIssues(errors)}`)
+    }
+    const warnings = issues.filter((issue) => issue.level === 'warning')
+    if (warnings.length > 0) {
+        console.warn(`[sapdon] 构建包校验警告:\n${formatPacketIssues(warnings)}`)
     }
 
     const previousFiles = readManifest(buildPath, projectName)

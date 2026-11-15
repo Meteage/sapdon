@@ -102,6 +102,135 @@ export interface BuildPacket {
     indexBlocks?: BuildIndexBlock[]
 }
 
+/** 一条校验问题 */
+export interface BuildPacketIssue {
+    level: 'error' | 'warning'
+    message: string
+    /** 关联的文件/源码路径（便于定位），可选 */
+    target?: string
+}
+
+const FILE_FORMATS = new Set(['json', 'text', 'base64'])
+
+/** 相对路径必须是正斜杠、非绝对、不能含 `..` / NUL；允许空串（如 blocks.json） */
+function isSafeRelativePath(value: unknown, allowEmpty = true): boolean {
+    if (typeof value !== 'string') return false
+    if (value === '') return allowEmpty
+    if (value.includes('\0') || value.includes('\\')) return false
+    if (value.startsWith('/') || /^[a-zA-Z]:/.test(value)) return false
+    return !value.split('/').some((segment) => segment === '..')
+}
+
+function isSafeFileName(value: unknown): boolean {
+    if (typeof value !== 'string' || value.length === 0) return false
+    if (value === '.' || value === '..') return false
+    return !/[/\\\0]/.test(value)
+}
+
+/**
+ * 结构校验（纯函数）。**不检查** `protocol`（由调用方决定兼容策略）。
+ *
+ * CLI 在落盘前跑一次；子进程在提交前也会跑一次并有插件校验器。
+ * 错误 = 拒绝落盘；警告 = 仍然落盘，但打日志。
+ */
+export function validateBuildPacket(packet: BuildPacket): BuildPacketIssue[] {
+    const issues: BuildPacketIssue[] = []
+    const error = (message: string, target?: string) => issues.push({ level: 'error', message, target })
+    const warning = (message: string, target?: string) => issues.push({ level: 'warning', message, target })
+
+    if (!packet || typeof packet !== 'object') {
+        error('BuildPacket 必须是一个对象')
+        return issues
+    }
+    if (!Array.isArray(packet.files)) {
+        error('BuildPacket.files 必须是数组')
+        return issues
+    }
+
+    const seenFiles = new Map<string, string>()
+
+    for (const [index, file] of packet.files.entries()) {
+        const label = `files[${index}]`
+        if (!file || typeof file !== 'object') {
+            error(`${label} 必须是对象`)
+            continue
+        }
+        if (file.root !== 'behavior' && file.root !== 'resource') {
+            error(`${label} 的 root 必须是 "behavior" 或 "resource"（收到 ${JSON.stringify(file.root)}）`, label)
+        }
+        if (!isSafeRelativePath(file.path)) {
+            error(`${label} 的 path 必须是安全的相对路径（不能绝对、不能含 ".."、反斜杠或 NUL）`, label)
+        }
+        if (!isSafeFileName(file.name)) {
+            error(`${label} 的 name 必须是非空文件名（不能含路径分隔符）`, label)
+        }
+        if (file.format !== undefined && !FILE_FORMATS.has(file.format)) {
+            error(`${label} 的 format 必须是 json / text / base64（收到 ${JSON.stringify(file.format)}）`, label)
+        }
+        if (file.ext !== undefined && !/^[A-Za-z0-9]+$/.test(file.ext)) {
+            warning(`${label} 的 ext 建议只使用字母/数字（收到 ${JSON.stringify(file.ext)}）`, label)
+        }
+        if (file.format === 'json' || file.format === undefined) {
+            if (file.data === undefined) error(`${label} 是 json 但 data 为 undefined`, label)
+        } else if (typeof file.data !== 'string') {
+            warning(`${label} 是 ${file.format}，data 不是字符串，落盘时会强制转成字符串`, label)
+        }
+
+        const key = `${file.root}|${file.path}|${file.name}.${file.ext ?? 'json'}`
+        if (seenFiles.has(key)) {
+            warning(`重复的文件 ${key}，后写入的会覆盖前一个（来自 ${seenFiles.get(key)}）`, label)
+        } else {
+            seenFiles.set(key, label)
+        }
+    }
+
+    const seenSources = new Map<string, string>()
+    for (const [index, source] of (packet.sources ?? []).entries()) {
+        const label = `sources[${index}]`
+        if (!source || typeof source !== 'object') {
+            error(`${label} 必须是对象`)
+            continue
+        }
+        if (!isSafeRelativePath(source.path, false)) {
+            error(`${label} 的 path 必须是安全的相对路径`, label)
+        }
+        if (typeof source.content !== 'string') {
+            error(`${label} 的 content 必须是字符串`, label)
+        }
+        if (typeof source.path === 'string') {
+            if (seenSources.has(source.path)) {
+                warning(`重复的源码文件 ${source.path}，后写入的会覆盖前一个`, label)
+            } else {
+                seenSources.set(source.path, label)
+            }
+        }
+    }
+
+    const blocks = packet.indexBlocks ?? (packet.indexBlock ? [packet.indexBlock] : [])
+    for (const [index, block] of blocks.entries()) {
+        const label = `indexBlocks[${index}]`
+        if (!block || typeof block !== 'object') {
+            error(`${label} 必须是对象`)
+            continue
+        }
+        if (!isSafeRelativePath(block.path, false)) {
+            error(`${label} 的 path 必须是安全的相对路径`, label)
+        }
+        if (typeof block.content !== 'string') {
+            error(`${label} 的 content 必须是字符串`, label)
+        }
+    }
+
+    return issues
+}
+
+/** 把问题列表格式化成多行文本（CLI / 子进程报错用） */
+export function formatPacketIssues(issues: BuildPacketIssue[]): string {
+    return issues
+        .map((issue) => `[${issue.level}]${issue.target ? ` ${issue.target}:` : ''} ${issue.message}`)
+        .join('\n')
+}
+
 /** 没有 CLI 上下文时（例如直接 `node main.mjs`）使用的默认值 */
 export function defaultBuildContext(): BuildContext {
     return {

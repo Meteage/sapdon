@@ -33,7 +33,8 @@
 
 ### 可扩展性
 
-- 新增 `addPacketResolver(fn, { priority })` 解析器管线：第三方包可以在 core 之前认领自己的注册项、追加文件；`@sapdon/core` 以 -100 兜底。`setBuildPacketBuilder` 保留为兼容入口。
+- 新增 `addPacketResolver(fn, { priority, id })` 解析器管线：第三方包可以在 core 之前认领自己的注册项、追加文件；`@sapdon/core` 以 -100 兜底；同 `id` 二次登记会替换旧实现。`setBuildPacketBuilder` 已废弃（调用会打警告）。
+- 新增 `addPacketValidator(fn, { id })` 与内置 `validateBuildPacket()`：root/path/name/format/json data 非法直接失败，重复文件给 warning；子进程提交前与 CLI 落盘前各校验一次。
 - `BuildPacket` 扩展：`files` 支持 `json` / `text` / `base64` 与自定义 `ext`；`sources.overwrite`；`indexBlocks[]`（可合并多个标记块文件）。
 - 仓库根 `packages.json` 成为包清单的单一事实来源：构建 bundle/d.ts、`prod/*/package.json`、`sapdon lib`、发布脚本都读它；`tests/packages-manifest.test.mjs` 防止漂移。
 - `@sapdon/cli` 增加编程式导出：`writeBuildPacket` / `writeLib` / `planLibCopies` / `packProject`。

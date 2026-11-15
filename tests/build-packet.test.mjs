@@ -137,3 +137,118 @@ test('协议版本不匹配时直接抛错', async () => {
         /构建协议不匹配/
     )
 })
+
+test('writeBuildPacket 拒绝结构错误的包（root 非法 / path 越界 / format 非法）', async () => {
+    const { projectPath, buildPath } = makeProject()
+    await assert.rejects(
+        () => writeBuildPacket({
+            protocol: BUILD_PROTOCOL,
+            files: [{ root: 'resourc', path: 'items/', name: 'a', data: {} }],
+        }, { projectPath, buildPath, projectName: 'proj' }),
+        /构建包校验失败[\s\S]*root 必须是/
+    )
+    await assert.rejects(
+        () => writeBuildPacket({
+            protocol: BUILD_PROTOCOL,
+            files: [{ root: 'behavior', path: '../escape/', name: 'a', data: {} }],
+        }, { projectPath, buildPath, projectName: 'proj' }),
+        /path 必须是安全的相对路径/
+    )
+    await assert.rejects(
+        () => writeBuildPacket({
+            protocol: BUILD_PROTOCOL,
+            files: [{ root: 'behavior', path: 'items/', name: 'a', data: {}, format: 'yaml' }],
+        }, { projectPath, buildPath, projectName: 'proj' }),
+        /format 必须是 json \/ text \/ base64/
+    )
+})
+
+// ── 结构校验（纯函数）────────────────────────────────────────────────────────
+
+const { validateBuildPacket } = await import('../dist/utils/protocol.js')
+
+const issuesOf = (files) => validateBuildPacket({ protocol: BUILD_PROTOCOL, files })
+
+test('validateBuildPacket：合法包没有 error', () => {
+    const issues = issuesOf([
+        { root: 'behavior', path: '', name: 'blocks', data: { format_version: '1.20.20' } },
+        { root: 'resource', path: 'textures/', name: 'note', data: 'x', format: 'text', ext: 'txt' },
+    ])
+    assert.equal(issues.filter((issue) => issue.level === 'error').length, 0)
+})
+
+test('validateBuildPacket：name 不能含路径分隔符、json 的 data 不能是 undefined', () => {
+    const issues = issuesOf([
+        { root: 'behavior', path: 'items/', name: 'a/b', data: {} },
+        { root: 'behavior', path: 'items/', name: 'c', data: undefined },
+    ])
+    const messages = issues.filter((issue) => issue.level === 'error').map((issue) => issue.message).join('\n')
+    assert.match(messages, /name 必须是非空文件名/)
+    assert.match(messages, /data 为 undefined/)
+})
+
+test('validateBuildPacket：重复文件给 warning，不阻断', () => {
+    const issues = issuesOf([
+        { root: 'behavior', path: 'items/', name: 'a', data: { v: 1 } },
+        { root: 'behavior', path: 'items/', name: 'a', data: { v: 2 } },
+    ])
+    assert.equal(issues.filter((issue) => issue.level === 'error').length, 0)
+    assert.equal(issues.filter((issue) => issue.level === 'warning').length, 1)
+})
+
+// ── 解析器幂等 / 校验器 / 兼容入口 ───────────────────────────────────────────
+
+test('addPacketResolver：同 id 二次登记会替换而不是叠加', async () => {
+    const { GRegistry, registry, addPacketResolver } = await freshRegistry()
+    GRegistry.register('a', 'behavior', 'items/', { from: 'entry' })
+
+    const makeResolver = (value) => () => ({
+        files: [{ root: 'behavior', path: 'items/', name: 'a', data: { value } }],
+    })
+    addPacketResolver(makeResolver(1), { id: 'pkg:demo', priority: 10 })
+    addPacketResolver(makeResolver(2), { id: 'pkg:demo', priority: 10 })
+
+    registry.submit()
+    assert.deepEqual(lastPacket().files, [{ root: 'behavior', path: 'items/', name: 'a', data: { value: 2 } }])
+})
+
+test('addPacketValidator：error 阻断提交，warning 只提示', async () => {
+    const first = await freshRegistry()
+    first.addPacketValidator(() => ({ level: 'error', message: '插件校验失败' }))
+    assert.throws(() => first.registry.submit(), /构建包校验失败[\s\S]*插件校验失败/)
+    assert.equal(posts.length, 0)
+
+    const second = await freshRegistry()
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => warnings.push(args.join(' '))
+    try {
+        second.addPacketValidator(() => ({ level: 'warning', message: '只是提醒' }))
+        second.registry.submit()
+    } finally {
+        console.warn = originalWarn
+    }
+    assert.equal(posts.length, 1)
+    assert.ok(warnings.join('\n').includes('只是提醒'))
+})
+
+test('setBuildPacketBuilder 仍可用，但会打废弃警告', async () => {
+    const { GRegistry, registry, setBuildPacketBuilder } = await freshRegistry()
+    GRegistry.register('a', 'behavior', 'items/', { v: 1 })
+
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => warnings.push(args.join(' '))
+    try {
+        setBuildPacketBuilder((entries) => ({
+            protocol: BUILD_PROTOCOL,
+            files: entries.map((entry) => ({ root: entry.root, path: entry.path, name: entry.name, data: entry.data })),
+        }))
+        registry.submit()
+    } finally {
+        console.warn = originalWarn
+    }
+
+    assert.ok(warnings.some((line) => line.includes('setBuildPacketBuilder 已废弃')))
+    assert.deepEqual(lastPacket().files, [{ root: 'behavior', path: 'items/', name: 'a', data: { v: 1 } }])
+})

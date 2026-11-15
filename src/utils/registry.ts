@@ -1,12 +1,15 @@
 import { transportPost } from "./transport/client.js"
 import {
     BUILD_PROTOCOL,
+    formatPacketIssues,
     readBuildContext,
+    validateBuildPacket,
     type BuildContext,
     type BuildEntry,
     type BuildIndexBlock,
     type BuildPacket,
     type BuildPacketFile,
+    type BuildPacketIssue,
     type BuildSourceFile,
     type PacketResolver,
 } from "./protocol.js"
@@ -41,6 +44,7 @@ let runningHooks = false
 export type PacketBuilder = (entries: RegistryEntry[], ctx: BuildContext) => BuildPacket
 
 interface RegisteredResolver {
+    id?: string
     priority: number
     fn: PacketResolver
 }
@@ -55,14 +59,87 @@ const packetResolvers: RegisteredResolver[] = []
  * - `consumed` 里的注册项不会再交给后面的解析器，也不会被默认映射成 `<name>.json`；
  * - 返回的文件与注册项 `root|path|name` 相同时，会自动视为认领该项（少写 `consumed` 的常见场景）。
  *
+ * @param options.id 幂等键：同一 `id` 再次登记会**替换**旧实现（热重载 / 重复 import 不会叠两份）
+ * @param options.priority 优先级，越大越先执行；替换时省略则沿用旧的优先级
  * @throws resolver 不是函数
  */
-export function addPacketResolver(resolver: PacketResolver, options: { priority?: number } = {}) {
+export function addPacketResolver(
+    resolver: PacketResolver,
+    options: { priority?: number; id?: string } = {}
+) {
     if (typeof resolver !== 'function') {
         throw new Error('addPacketResolver: resolver 必须是函数')
     }
-    packetResolvers.push({ fn: resolver, priority: options.priority ?? 0 })
+
+    if (options.id) {
+        const index = packetResolvers.findIndex((item) => item.id === options.id)
+        if (index !== -1) {
+            packetResolvers[index] = {
+                id: options.id,
+                fn: resolver,
+                priority: options.priority ?? packetResolvers[index].priority,
+            }
+            packetResolvers.sort((a, b) => b.priority - a.priority)
+            return
+        }
+    }
+
+    packetResolvers.push({ id: options.id, fn: resolver, priority: options.priority ?? 0 })
     packetResolvers.sort((a, b) => b.priority - a.priority)
+}
+
+/** 包校验器：返回问题列表（或单个问题）；抛错 = 构建失败 */
+export type PacketValidator = (
+    packet: BuildPacket,
+    ctx: BuildContext
+) => void | BuildPacketIssue | BuildPacketIssue[]
+
+interface RegisteredValidator {
+    id?: string
+    fn: PacketValidator
+}
+
+const packetValidators: RegisteredValidator[] = []
+
+/**
+ * 登记一个包校验器：在解析器全部执行完之后、POST 之前运行，看到的是**最终** `BuildPacket`。
+ *
+ * @param options.id 幂等键：同一 `id` 再次登记会替换旧实现
+ * @throws validator 不是函数
+ */
+export function addPacketValidator(validator: PacketValidator, options: { id?: string } = {}) {
+    if (typeof validator !== 'function') {
+        throw new Error('addPacketValidator: validator 必须是函数')
+    }
+    if (options.id) {
+        const index = packetValidators.findIndex((item) => item.id === options.id)
+        if (index !== -1) {
+            packetValidators[index] = { id: options.id, fn: validator }
+            return
+        }
+    }
+    packetValidators.push({ id: options.id, fn: validator })
+}
+
+/** 跑内置结构校验 + 所有插件校验器；有 error 就抛，warning 只打日志 */
+function runPacketValidators(packet: BuildPacket, ctx: BuildContext) {
+    const issues = validateBuildPacket(packet)
+
+    for (const { fn } of packetValidators) {
+        const result = fn(packet, ctx)
+        if (Array.isArray(result)) issues.push(...result)
+        else if (result) issues.push(result)
+    }
+
+    const warnings = issues.filter((issue) => issue.level === 'warning')
+    const errors = issues.filter((issue) => issue.level === 'error')
+
+    if (warnings.length > 0) {
+        console.warn(`[sapdon] 构建包校验警告:\n${formatPacketIssues(warnings)}`)
+    }
+    if (errors.length > 0) {
+        throw new Error(`构建包校验失败:\n${formatPacketIssues(errors)}`)
+    }
 }
 
 /**
@@ -74,6 +151,10 @@ export function setBuildPacketBuilder(builder: PacketBuilder) {
     if (typeof builder !== 'function') {
         throw new Error('setBuildPacketBuilder: builder 必须是函数')
     }
+    console.warn(
+        '[sapdon] setBuildPacketBuilder 已废弃：它会清空整条解析器链。' +
+        '请改用 addPacketResolver(fn, { id, priority }) 组合扩展。'
+    )
     packetResolvers.length = 0
     addPacketResolver(({ entries, ctx }) => {
         const packet = builder(entries as RegistryEntry[], ctx)
@@ -82,7 +163,7 @@ export function setBuildPacketBuilder(builder: PacketBuilder) {
             sources: packet.sources,
             indexBlocks: packet.indexBlocks ?? (packet.indexBlock ? [packet.indexBlock] : []),
         }
-    }, { priority: -1000 })
+    }, { priority: -1000, id: '__legacy_setBuildPacketBuilder__' })
 }
 
 const entryKey = (entry: BuildEntry) => `${entry.root}|${entry.path}|${entry.name}`
@@ -189,7 +270,9 @@ function submitBuild() {
         }
         return item
     })
-    const packet: BuildPacket = buildBuildPacket(serialized, readBuildContext())
+    const ctx = readBuildContext()
+    const packet: BuildPacket = buildBuildPacket(serialized, ctx)
+    runPacketValidators(packet, ctx)
     transportPost('submit', packet)
 }
 
