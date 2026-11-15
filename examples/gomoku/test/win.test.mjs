@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert";
 
 // 与 examples/gomoku/scripts/index.ts 中的棋盘/判定逻辑保持一致（副本）
-const N = 16;
+// 落子在交叉点：16 格 ⇒ 17 条线
+const N = 17;
 const makeBoard = () => new Int8Array(N * N);
 
 function checkWin(board, row, col) {
