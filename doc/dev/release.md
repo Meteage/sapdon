@@ -92,3 +92,19 @@ node -e "import('@sapdon/ui').then(m=>console.log(typeof m.SapdonFormUI))"
 | `EOTP` | 账号开启 2FA | 输入 OTP，或用 Automation/Bypass 2FA token |
 | 根包安装后找不到 core | 子包未先发布 | 按顺序重发 |
 | `构建协议不匹配` | 项目 core 与 CLI 版本不一致 | 同步升级到同一版本 |
+
+### 为什么 scoped 包失败是 404 而不是 403
+
+npm 对 `@scope/name` 在**scope 不存在**或**当前 token 没有该 scope 的写权限**时统一返回 `404 Not Found - PUT ...`，
+不能用 403 来区分。看到 `@sapdon/utils@4.0.0 could not be found or you do not have permission` 时，按下面顺序排查：
+
+1. 浏览器打开 `https://www.npmjs.com/org/sapdon`：
+   - 是你能管理的组织 → 进第 2 步；
+   - 提示不存在 → 打开 `https://www.npmjs.com/org/create` 创建 `sapdon`（公开包免费）；
+   - 是别人的组织 → 不能发 `@sapdon/*`，需要换 scope（会牵涉改名，先停下来确认）。
+2. `npm login` 后跑 `npm org ls sapdon`：能列出成员才算有权限。
+3. 检查 token：npmjs.com → Access Tokens → 该 token 的 **Packages and scopes** 必须包含 `@sapdon`，
+   权限为 **Read and write**；只授权了 `sapdon` 这个无 scope 包的 token 发不了 `@sapdon/*`。
+4. 重新跑 `npm run pub:packages`。
+
+`publish-packages.cjs` 在第一个包失败时就会停止，不会出现「utils 发出去了、core 没发」的半成品状态。
