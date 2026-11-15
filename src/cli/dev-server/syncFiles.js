@@ -244,14 +244,25 @@ export async function writeLib(projectPath, options = {}) {
             log(`[sapdon] ${item.skip}`)
             continue
         }
-        fs.cpSync(item.src, item.dest, { recursive: true, force: true })
-        fs.writeFileSync(path.join(item.dest, 'package.json'), JSON.stringify({
+        fs.cpSync(item.src, item.dest, { recursive: true, force: true });
+        // 保留源包声明的 dependencies（core → ui/utils），否则拷贝后的包在
+        // `npm i` / `npm ci` 眼里是不完整声明；运行时解析本身靠目录是否存在。
+        let sourceDependencies
+        try {
+            const sourcePkg = JSON.parse(fs.readFileSync(path.join(item.src, 'package.json'), 'utf-8'))
+            sourceDependencies = sourcePkg.dependencies
+        } catch { /* 测试夹具 / 旧产物没有 package.json */ }
+
+        const targetPkg = {
             name: item.name,
             type: 'module',
             main: 'index.js',
             types: 'index.d.ts',
             version: packageJson.version,
-        }))
+        }
+        if (sourceDependencies) targetPkg.dependencies = sourceDependencies
+
+        fs.writeFileSync(path.join(item.dest, 'package.json'), JSON.stringify(targetPkg))
         synced.push(item.name)
     }
 

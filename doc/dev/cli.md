@@ -55,7 +55,7 @@ src/cli/
 | `build <name>` | 完整构建 + 启动热更新（构建前会调用 `initResourceDir()`） |
 | `compile` | 构建当前目录（不启动 HMR）。⚠️ **不会**调用 `initResourceDir()`，即不重新生成 `res.hint.ts` |
 | `pack` | 把 `dev/<proj>_BP` + `dev/<proj>_RP` 打包为 `dev/<proj>.mcaddon`（**不构建**，直接打包现有产物） |
-| `lib` | 复制 `prod/core`、`prod/ui`、`prod/cli`、`prod/oc` 到 `node_modules/@sapdon/{core,ui,cli,runtime}` |
+| `lib` | 复制 `prod/utils`、`prod/core`、`prod/ui`、`prod/cli`、`prod/oc` 到 `node_modules/@sapdon/{utils,core,ui,cli,runtime}` |
 | `res` | 生成资源提示文件 `res.hint.ts` |
 | `config` | (占位) 读取 build.config |
 

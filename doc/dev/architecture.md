@@ -38,6 +38,11 @@ sapdon/
 
 `sapdon` CLI 二进制入口: `prod/cli/start.js`（`package.json` 中 `bin` 字段指定）。
 
+**跨包引用**：`prod/core` 与 `prod/ui` **不**把 `@sapdon/utils` / `@sapdon/ui` 打进自己的 bundle，
+而是保留同级相对路径（`../utils/index.js`、`../ui/index.js`）。安装后它们正好解析到
+`node_modules/@sapdon/{utils,ui}/index.js`，因此 core / ui / utils 共享**同一个**注册表与序列化实例。
+⚠️ 两个包各打一份 utils 会让 UI 注册的条目在 `registry.submit()` 里不可见（模块级状态各一份）。
+
 ---
 
 ## 2. 三层核心架构 (`src/core/`)

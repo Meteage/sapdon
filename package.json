@@ -5,7 +5,9 @@
         "build": "node scripts/build.cjs",
         "test": "tsc && tsc-alias && node --test \"tests/*.test.mjs\"",
         "build:demo": "cd examples/block_demo && npm run build",
-        "pub": "npm run build && npm publish"
+        "pub": "npm run build && npm publish",
+        "pub:packages": "node scripts/publish-packages.cjs",
+        "pub:packages:dry": "node scripts/publish-packages.cjs --dry-run"
     },
     "keywords": [
         "bedrock",

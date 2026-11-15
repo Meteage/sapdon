@@ -22,17 +22,21 @@ async function copyTemplates() {
 // `sapdon lib` 在同步时也会重写，但发布 tar 包里不能缺这些文件。
 async function writePackageJsons() {
   const pkg = JSON.parse(await fs.readFile(path.join(__dirname, '../package.json'), 'utf8'))
+  // core 运行时引用 @sapdon/ui 与 @sapdon/utils；ui 只引用 utils。
+  // 版本锁步：几个包永远同一版本发布。
   const packages = [
-    ['core', '@sapdon/core'],
-    ['ui', '@sapdon/ui'],
-    ['oc', '@sapdon/runtime'],
-    ['utils', '@sapdon/utils'],
+    ['utils', '@sapdon/utils', {}],
+    ['ui', '@sapdon/ui', { '@sapdon/utils': pkg.version }],
+    ['core', '@sapdon/core', { '@sapdon/utils': pkg.version, '@sapdon/ui': pkg.version }],
+    ['oc', '@sapdon/runtime', {}],
   ]
 
-  for (const [dir, name] of packages) {
+  for (const [dir, name, dependencies] of packages) {
+    const entry = { name, type: 'module', main: 'index.js', types: 'index.d.ts', version: pkg.version }
+    if (Object.keys(dependencies).length > 0) entry.dependencies = dependencies
     await fs.writeFile(
       path.join(__dirname, '../prod', dir, 'package.json'),
-      JSON.stringify({ name, type: 'module', main: 'index.js', types: 'index.d.ts', version: pkg.version }, null, 2)
+      JSON.stringify(entry, null, 2)
     )
   }
 }

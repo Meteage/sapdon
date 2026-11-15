@@ -87,16 +87,17 @@ const innerOf = (index) => cells[index].inner
 
 // ── 0. 产物来自新代码 ─────────────────────────────────────────────────────────
 
-test('prod/core/index.js 含新代码独有的字面量（防「prod 是旧的」）', async () => {
+test('prod/ui/index.js 含新代码独有的字面量（防「prod 是旧的」）', async () => {
+  // UI 已拆到 @sapdon/ui：运行期字面量在 prod/ui，类型仍由 core 的 d.ts 过渡期 re-export
   const [prod, dts] = await Promise.all([
-    readFile(new URL('../prod/core/index.js', import.meta.url), 'utf8'),
+    readFile(new URL('../prod/ui/index.js', import.meta.url), 'utf8'),
     readFile(new URL('../prod/core/index.d.ts', import.meta.url), 'utf8'),
   ])
-  assert.ok(prod.includes('slot_background_'), 'prod/core/index.js 缺 slot_background_ 前缀')
-  assert.ok(prod.includes('既没有 pos 也没有 offset'), 'prod/core/index.js 缺槽位校验文案')
-  assert.ok(prod.includes('A-Z a-z 0-9 _ -'), 'prod/core/index.js 缺门控键护栏文案')
-  assert.ok(prod.includes('addSlot'), 'prod/core/index.js 缺 addSlot')
-  assert.ok(prod.includes('addProgressSlot'), 'prod/core/index.js 缺 addProgressSlot')
+  assert.ok(prod.includes('slot_background_'), 'prod/ui/index.js 缺 slot_background_ 前缀')
+  assert.ok(prod.includes('既没有 pos 也没有 offset'), 'prod/ui/index.js 缺槽位校验文案')
+  assert.ok(prod.includes('A-Z a-z 0-9 _ -'), 'prod/ui/index.js 缺门控键护栏文案')
+  assert.ok(prod.includes('addSlot'), 'prod/ui/index.js 缺 addSlot')
+  assert.ok(prod.includes('addProgressSlot'), 'prod/ui/index.js 缺 addProgressSlot')
   for (const name of [
     'addSlot', 'setPanel', 'setGridOrigin', 'setSlotDefaults', 'addControl', 'addProgressSlot',
     'ProgressSlotOptions', 'ProgressClipDirection',
