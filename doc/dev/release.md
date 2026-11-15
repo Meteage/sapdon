@@ -41,9 +41,12 @@ dry-run 应该看到 4 个包：
 
 ```bash
 npm run pub:packages
+# 需要 2FA 时带验证码（已发布的包会自动跳过，OTP 过期可直接重跑）：
+npm run pub:packages -- --otp=123456
 ```
 
-会按 `packages.json` 的顺序执行 `npm publish --access public`；需要 OTP 时 npm 会提示。
+会按 `packages.json` 的顺序执行 `npm publish --access public`；`--dry-run` 现在用 `npm pack --dry-run`，
+只看 tarball，不会因为版本已存在而报错。
 
 ## 3. 发布根包
 
