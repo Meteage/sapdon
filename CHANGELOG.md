@@ -8,7 +8,7 @@
 
 ---
 
-## 未发布
+## 3.8.0
 
 ### 新增：多方块结构（`@sapdon/runtime`）
 
@@ -44,6 +44,58 @@
 
 - 新增 `registry.beforeSubmit(hook)` / `GRegistry.beforeSubmit(hook)`（同一张表）：`submit()` 序列化之前按登记顺序调用，钩子可以直接改已注册的实例（例如给物品补 `minecraft:tags`），也可以 `GRegistry.register()` 追加文件。钩子抛错 = 构建失败。
 - 新导出类型 `BeforeSubmitHook`、`RegistryEntry`（`src/core/index.js` 对 `registry.js` 改为 `export *`）。
+
+### 新增：UI 设计器支持容器屏槽位编辑（`tools/designer`）
+
+- 新增 **Slot 控件**（只在容器屏出现）：槽号 / `kind`（input / output / display）/ `cellSize` / 底图。画布上渲染成虚线格 + 槽号；锚点默认 `top_left`，因为 `pos` 是面板内左上像素坐标。
+- 容器屏代码生成从"占位注释"变成真实链路：`new ContainerUISystem(...).setPanel({ size }).addSlot({ slot, pos, kind?, cellSize?, background? })`，`pos` 取元素 `offset`；普通元素仍走 `addControl`。`grid_position` 与格位基座的换算仍由框架 `containerLayout.ts` 负责。
+- 新增 5 条诊断：`slot-outside-container`、`slot-number-invalid`、`slot-duplicate`、`slot-pos-missing`、`slot-anchor-not-top-left`。
+- 控件箱按屏幕类型过滤，非容器屏拖入 Slot 会被拦下并提示。
+- 新增 `tests/designer-container.test.mjs`（11 条）。
+
+### 新增：设计器对象树折叠与一批交互修复（`tools/designer`）
+
+- 对象树：容器行 ▼/▶ 折叠（折叠状态存 localStorage）、全收 / 全展；**只在选中变化时**展开祖先链。
+- 控件箱：组合件（`FormButtonGrid` / `FormButton` / `PagePanelManage`）只在 form 屏出现。
+- 门控模拟：切工程重置模拟值；「值」面板编辑时保持展开与焦点；`#form_text` 提供 tag 下拉；按引擎字符串减法（包含）语义求值。
+- 屏幕类型切换时载入对应示例（form → 手册、容器 → 发电机、hud → 空白），当前工程有内容时先确认。
+- 页面管理器：固定根层；页面板 / 容器下拉只列容器并排除自身、祖先、子项与重复；新增 `not-root` / `self` / `duplicate` / `not-container` 诊断与生成、预览守卫。
+- JSON 预览：`StackPanel.orientation` 改用 `setOrientation`（`addProp` 会被序列化覆盖）。
+
+### 新增：设计器内置示例「液体燃料发电机」（容器屏）
+
+- 按游戏内截图搭的容器屏示例：标题、左侧液位柱（底 + 液面）、燃料槽 36 / 输出槽 37、物品栏标签；画布 176×166（原版容器规格）。
+- 槽号从 36 起，避开原版背包的 0–35；下半部分背包由 `ContainerUISystem` 自动挂原版 `inventory_panel`，示例里不画。
+
+### 修复：设计器离屏渲染与服务边界（`tools/designer`）
+
+- 离屏渲染：Python 的输出改为按 UTF-8 捕获再转发，Windows 控制台不再把中文显示成乱码（`PYTHONIOENCODING` / `PYTHONUTF8`）。
+- `--zoom 0` 不再被当成"未传"（`||` 改 `??`）；`--page` 超出页数时给出提示，而不是静默取消门控、把所有页叠在一起。
+- 服务端：支持 `--port` / `-p`；Windows 上静态路径越界判断改为大小写不敏感；非法百分号编码返回 400（以前 500）。
+- `loadProject` 容忍 UTF-8 BOM，`rasterize` 改走 `loadProject`：Windows 记事本 / PowerShell 导出的 `.sui.json` 不再报 `JSON 解析失败`。
+
+### 修复：模板的自定义组件注册时机（`src/templates`）
+
+- 生成的注册索引从 `world.beforeEvents.worldInitialize` 改为 `system.beforeEvents.startup`：前者时机过晚，方块 JSON 里写了自定义组件会报
+  `this component was found in the input, but is not present in the Schema`。
+- js 模板 `build.config`：`@minecraft/server` 1.17.0 → 2.0.0，新增 `@minecraft/server-ui` 2.0.0；ts 模板 `@minecraft/server` 1.18.0-beta → 2.0.0。
+
+### 示例：五子棋改为 2×2 多方块 + 交叉点落子（`examples/gomoku`）
+
+- 落子从"16×16 格子中心"改为**交叉点**（16 格 ⇒ 17 条格线 ⇒ 17×17 = 289 个点），胜负判定与 `test/win.test.mjs` 同步。
+- 新增手持「五子棋棋盘」道具摆放 **2×2 多方块**：`nw` / `ne` / `sw` / `se` 四个自定义几何方块（逐面 UV，象限贴图拼接无缝），槽位点击走方块自定义组件的 `onPlayerInteract`（普通方块空手右键不会触发 `playerInteractWithBlock`）。
+- 棋子以实体同步到棋盘（小立方体 + 方块质感贴图），落子即生成、重开清场、**拆任意一块象限则整盘一起拆并销毁棋子**。
+- 表单 UI 重排：标题条（状态文字 + 关闭 + 重开）+ 棋盘，按钮不再压棋盘；尺寸按 GUI 缩放收敛到 168×186，避免被窗口裁掉。
+- 棋盘贴图重画：16 格、格线正好落在四分块中线上、含天元与四星位；整体提亮。
+- `build.config` 的 `versionType` 切到 `beta`（预览版调试）。
+- ⚠️ **示例行为变化**：旧存档里按格子落子的位置与现在 17×17 交叉点不兼容，需重开或重摆棋盘。
+
+### 文档
+
+- README 按标准仓库结构重写：定义句 → 五行示例与产物对照 → 特性 → 环境要求 → 安装 → 快速开始 → 构建期/运行期分层 → 能力表 → 文档索引 → 示例 → 贡献 → 从源码构建 → 许可证；新增英文版 `README.en.md` 并与中文版互链。
+- 新增 `doc/media`：透明立方体图标、构建输出封面、36 秒介绍片（含动画源文件与逐帧渲染脚本）。
+- `package.json` 的 `license` 由 `ISC` 改为 `MIT`，与 `LICENSE` 文件对齐。
+- 教程体系扩充并按体裁重组（`doc/user/tutorials`、任务型指南、`doc/en` 结构对齐），新增文档写作规范。
 
 ## 3.7.1
 
