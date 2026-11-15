@@ -13,7 +13,10 @@ export * from './factory/index.js'
 export * from './feature/index.js'
 export * from './feature-rule/index.js'
 export * from './item/index.js'
-export * from './ui/index.js'
+// 过渡期兼容：UI 的源码已独立到 `src/ui`（发布为 @sapdon/ui），
+// 这里继续 re-export，下游 `import { Label } from '@sapdon/core'` 不会断。
+// 计划在下个大版本移除这条 re-export。
+export * from '../ui/index.js'
 export * from './texture.js'
 export * from '../utils/index.js'
 // `GRegistry` 同时导出：框架没有专属工厂的数据（`loot_tables` / `trading` / `dialogue` …）

@@ -1,7 +1,7 @@
 // FormButtonGrid / FormButton 的产物契约（先 `npx tsc && npx tsc-alias`，再 `node tests/form-button-grid.test.mjs`）
 //
 // 来历：本文件原来是 `tests/ui-buttonpanel.test.mjs`，import 的是**早已删除**的
-// `dist/core/ui/systems/sapdon/sapdonButtonPanel.js`（`0682ccb`「introduce FormButton/FormButtonGrid,
+// `dist/ui/systems/sapdon/sapdonButtonPanel.js`（`0682ccb`「introduce FormButton/FormButtonGrid,
 // drop legacy text buttons」之后就不在 `src/` 里，见 `doc/dev/known-pitfalls.md` §7）。
 // 现在的等价物是 **`FormButtonGrid`（几何 + 绑定注入）+ `FormButton`（样式）**。
 //
@@ -13,9 +13,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { FormButtonGrid } from '../dist/core/ui/systems/sapdon/formButtonGrid.js'
-import { FormButton } from '../dist/core/ui/systems/sapdon/formButton.js'
-import { UIElement } from '../dist/core/ui/elements/index.js'
+import { FormButtonGrid } from '../dist/ui/systems/sapdon/formButtonGrid.js'
+import { FormButton } from '../dist/ui/systems/sapdon/formButton.js'
+import { UIElement } from '../dist/ui/elements/index.js'
 
 /** 格盘 Grid 的 JSON（`build()` 返回元素本体；`serialize()` 以元素 id 为顶层键） */
 function gridJson(grid) {

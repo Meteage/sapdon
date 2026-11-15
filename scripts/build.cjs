@@ -18,6 +18,25 @@ async function copyTemplates() {
 }
 
 // 更好的错误处理，包含更多上下文信息
+// 给 prod 下的每个子包写 package.json（版本与根包锁步）。
+// `sapdon lib` 在同步时也会重写，但发布 tar 包里不能缺这些文件。
+async function writePackageJsons() {
+  const pkg = JSON.parse(await fs.readFile(path.join(__dirname, '../package.json'), 'utf8'))
+  const packages = [
+    ['core', '@sapdon/core'],
+    ['ui', '@sapdon/ui'],
+    ['oc', '@sapdon/runtime'],
+    ['utils', '@sapdon/utils'],
+  ]
+
+  for (const [dir, name] of packages) {
+    await fs.writeFile(
+      path.join(__dirname, '../prod', dir, 'package.json'),
+      JSON.stringify({ name, type: 'module', main: 'index.js', types: 'index.d.ts', version: pkg.version }, null, 2)
+    )
+  }
+}
+
 class BuildError extends Error {
   constructor(message, taskName) {
     super(message)
@@ -90,6 +109,8 @@ async function startBuild() {
     await build('cmd', 'tsc', 'TypeScript 编译')
     await build('cmd', 'npx tsc-alias', '路径别名解析')
     await build('file', './scripts/buildTask.cjs', '生产环境构建')
+    spinner.text = '正在写子包 package.json...'
+    await writePackageJsons()
     await copyTemplates()
     
     if (!KEEP_DIST) {

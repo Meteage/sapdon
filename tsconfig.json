@@ -19,6 +19,9 @@
             "@sapdon/core/*": [
                 "./src/core/*"
             ],
+            "@sapdon/ui/*": [
+                "./src/ui/*"
+            ],
             "@sapdon/runtime/*": [
                 "./src/oc/*"
             ],

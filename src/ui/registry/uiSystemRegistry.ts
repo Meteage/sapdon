@@ -1,4 +1,4 @@
-import { GRegistry } from '@sapdon/core/registry.js'
+import { GRegistry } from '../../utils/registry.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyUI = any

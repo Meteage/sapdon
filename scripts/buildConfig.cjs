@@ -76,6 +76,26 @@ const coreConfig = {
 /**
  * @type {import('rollup').RollupOptions}
  */
+const uiConfig = {
+    input: './dist/ui/index.js',
+    output: {
+        file: './prod/ui/index.js',
+        format: 'esm'
+    },
+    plugins: [
+        nodeResolve({
+            preferBuiltins: true
+        }),
+        commonjs(),
+        json(),
+        terser(),
+    ]
+}
+
+
+/**
+ * @type {import('rollup').RollupOptions}
+ */
 const ocConfig = {
     input: './dist/oc/index.js',
     output: {
@@ -143,6 +163,20 @@ const coreDeclareConfig = {
 /**
  * @type {import('rollup').RollupOptions}
  */
+const uiDeclareConfig = {
+    input: './src/ui/index.ts',
+    output: {
+        file: './prod/ui/index.d.ts',
+        format: 'esm'
+    },
+    plugins: [
+        dts()
+    ]
+}
+
+/**
+ * @type {import('rollup').RollupOptions}
+ */
 const ocDeclareConfig = {
     input: './src/oc/index.ts',
     output: {
@@ -172,10 +206,12 @@ module.exports = {
     startConfig,
     cliConfig,
     coreConfig,
+    uiConfig,
     ocConfig,
     utilsConfig,
     cliDeclareConfig,
     coreDeclareConfig,
+    uiDeclareConfig,
     ocDeclareConfig,
     utilsDeclareConfig
 }

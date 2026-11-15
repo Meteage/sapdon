@@ -4,7 +4,7 @@
  * 运行：`node tests/designer-codegen.test.mjs`
  *
  * ★ 本文件的核心是**交叉验证**：把同一份示例工程分别用
- *   ① 编辑器的 `preview.js`（镜像实现）与 ② **真实框架类**（`dist/core/ui/**`，即 src/core/ui 的 tsc 产物）
+ *   ① 编辑器的 `preview.js`（镜像实现）与 ② **真实框架类**（`dist/ui/**`，即 src/ui 的 tsc 产物）
  *   各跑一遍，断言两边输出深度相等。这样框架序列化语义一变，测试先红 —— 不靠人肉保证镜像不漂移。
  *   交叉验证需要先 `npx tsc && npx tsc-alias`（与仓库既有测试约定一致）；缺 dist 时跳过并提示。
  *
@@ -27,9 +27,9 @@ import { schemaFor, widgetFor } from '../tools/designer/src/catalog.js'
 import { SAMPLE } from '../tools/designer/samples/gated_book.js'
 import { SAMPLE as GUIDEBOOK } from '../tools/designer/samples/guidebook.js'
 
-const DIST_INDEX = new URL('../dist/core/ui/index.js', import.meta.url)
+const DIST_INDEX = new URL('../dist/ui/index.js', import.meta.url)
 const hasDist = existsSync(DIST_INDEX)
-const SKIP_HINT = '缺少 dist/core/ui（先跑 `npx tsc && npx tsc-alias`）—— 交叉验证被跳过'
+const SKIP_HINT = '缺少 dist/ui（先跑 `npx tsc && npx tsc-alias`）—— 交叉验证被跳过'
 
 const { project: DOC, errors: LOAD_ERRORS } = loadProject(SAMPLE)
 
@@ -285,7 +285,7 @@ test('codegen：生成的 TS 语法有效（用 typescript 转译，不产生 er
 })
 
 // ---------------------------------------------------------------------------
-// ★ 交叉验证：真实框架类（dist/core/ui） vs 编辑器镜像
+// ★ 交叉验证：真实框架类（dist/ui） vs 编辑器镜像
 // ---------------------------------------------------------------------------
 
 /** 用真实框架类把模型节点搭出来（属性包 + 链式 setter 全部按 catalog 的 setter 名调用） */

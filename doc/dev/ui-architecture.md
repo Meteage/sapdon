@@ -1,4 +1,4 @@
-# UI 子系统架构（core/ui）
+# UI 子系统架构（`src/ui` / `@sapdon/ui`）
 
 Sapdon 的 UI 子系统把 Minecraft Bedrock 原生的 **JSON UI 声明式 schema**，翻译成一套**类型安全、链式调用、可序列化**的 TypeScript 对象模型；构建期把一个界面序列化成 `RP/ui/*.json` 包体，并注册进 `ui/_ui_defs.json`。原生是手写 JSON，Sapdon 用 TS 对象组出来再吐回 JSON。
 
@@ -9,7 +9,7 @@ Sapdon 的 UI 子系统把 Minecraft Bedrock 原生的 **JSON UI 声明式 schem
 ## 1. 文件布局
 
 ```
-src/core/ui/
+src/ui/
 ├── index.ts                 # 聚合导出
 ├── types.ts                 # 共享类型：Size2 / Offset2 / Anchor / Binding* / ModificationOperation
 ├── buttonMapping.ts         # ButtonMapping 输入映射类
@@ -30,7 +30,7 @@ src/core/ui/
     └── sapdon/              # ServerFormUI（表单路由壳）+ SapdonFormUI/SapdonGuideBook/FormButton/FormButtonGrid
 ```
 
-另：工厂入口 `src/core/factory/uiFactory.js`（`UiAPI`）提供 `createUISystem / createPanel / createImage / createLabel` 等创建入口。
+另：工厂入口 `src/ui/factory.ts`（`UiAPI`）提供 `createUISystem / createPanel / createImage / createLabel` 等创建入口。
 
 ---
 
@@ -200,7 +200,7 @@ elem.dataBinding.addDataBinding(
 
 ### 3.5 工厂统一入口
 
-`src/core/factory/uiFactory.js` 暴露 `UiAPI`（`createUISystem / createPanel / createImage / createLabel` 等），与 ItemAPI/EntityAPI 等并列。多数场景直接 `new UISystem(...)` / `new Panel(...)` 更灵活，工厂是兜底入口。
+`src/ui/factory.ts` 暴露 `UiAPI`（`createUISystem / createPanel / createImage / createLabel` 等），与 ItemAPI/EntityAPI 等并列。多数场景直接 `new UISystem(...)` / `new Panel(...)` 更灵活，工厂是兜底入口。
 
 ---
 

@@ -11,10 +11,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 
-import { PagePanelManage } from '../dist/core/ui/systems/sapdon/pagePanelManage.js'
-import { Panel } from '../dist/core/ui/elements/panel.js'
+import { PagePanelManage } from '../dist/ui/systems/sapdon/pagePanelManage.js'
+import { Panel } from '../dist/ui/elements/panel.js'
 
-const OK = existsSync(new URL('../dist/core/ui/systems/sapdon/pagePanelManage.js', import.meta.url))
+const OK = existsSync(new URL('../dist/ui/systems/sapdon/pagePanelManage.js', import.meta.url))
 const skip = OK ? false : '缺少 dist（先跑 npx tsc && npx tsc-alias）'
 
 const mkPanel = (id) => new Panel(id)

@@ -5,7 +5,7 @@
  *   （生成哪个 setter、进哪个属性包）、`preview.js`（JSON 键名与归属）**都只读这一份**。
  *   要加一个可编辑属性，只改这里 —— 照 `SLOT_CALIBRATION` 的"单一校准点"先例。
  *
- * 属性包 ↔ 框架类的对应关系来自 `src/core/ui/properties/**`（setter 名逐个核对过），
+ * 属性包 ↔ 框架类的对应关系来自 `src/ui/properties/**`（setter 名逐个核对过），
  * 归属错了产物就会多/少字段（`serialize()` 只拷属性包上**存在**的字段）。
  */
 

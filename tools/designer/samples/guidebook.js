@@ -3,7 +3,7 @@
  *
  * ★ 这份工程是**照着真产物抄的**，不是凭空画的：
  *   参考 `examples/guidebook_demo/dev/guidebook_demo_RP/ui/gateddemo_book.json`（SapdonGuideBook 的产物）
- *   与 `src/core/ui/systems/sapdon/sapdonGuideBook.ts` 的常量，逐节点对齐：
+ *   与 `src/ui/systems/sapdon/sapdonGuideBook.ts` 的常量，逐节点对齐：
  *
  *   - 根：`book_content_panel`（320×207）+ `book_buttons_panel`（320×207, layer 10）
  *   - 背景：`book_background` 只写 `texture: textures/ui/book_back` **不写 size** ⇒ 引擎缺省=铺满，

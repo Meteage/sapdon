@@ -184,12 +184,12 @@ node tests/designer-paint.test.mjs       # 绘制模型：纹理侧车/九宫格
 node tests/designer-textures.test.mjs    # 纹理路径解析 + ★实测：示例与目录建议里的贴图必须真在原版包里
 node tests/designer-highlight.test.mjs   # 代码/JSON 高亮：★"不改变原文"不变量 + 该着色的着上了
 node tests/designer-app.test.mjs         # 编辑器外壳：自带最小 DOM 桩，跑一遍真实操作路径（含贴图渲染/拖动）
-npx tsc && npx tsc-alias                 # 交叉验证需要 dist/core/ui（同仓库既有测试约定）
+npx tsc && npx tsc-alias                 # 交叉验证需要 dist/ui（同仓库既有测试约定）
 node tests/designer-codegen.test.mjs     # 代码生成 + ★ 与真实框架类交叉验证
 node tools/designer/tools/rasterize.mjs  # ★ 眼见为实：把画布渲染成 PNG 看一眼
 ```
 
-`designer-codegen` 里的 **★交叉验证** 是本工具的防漂移机制：同一份示例工程分别走「编辑器镜像实现」与「真实框架类（`dist/core/ui`）」，断言两边产物**深度相等**；还会**转译并真的执行生成出来的代码**，再对一次产物。框架序列化语义一变，这里先红。
+`designer-codegen` 里的 **★交叉验证** 是本工具的防漂移机制：同一份示例工程分别走「编辑器镜像实现」与「真实框架类（`dist/ui`）」，断言两边产物**深度相等**；还会**转译并真的执行生成出来的代码**，再对一次产物。框架序列化语义一变，这里先红。
 
 > ⚠️ 画布"看起来对" ≠ 真机对：原版模板内部、引擎侧集合实例、`uv`/`uv_size`、引擎字体度量都不模拟（缺口清单见设计文档 §5.3）。集合/门控类改动仍必须进游戏走一遍。
 

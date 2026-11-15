@@ -8,7 +8,7 @@
 //
 // 判据（§8 末尾）：**能同步的同步**；「源就是目标」/「源不存在」→ 打印一行说明并**跳过该包**，
 // 而不是整条命令 exit 1；真正的 IO 错误（权限、磁盘满）仍然抛。
-// 另外：框架仓库内部（CLI 来自 `prod/`）的既有行为必须不变 —— `core/cli/oc` 三个包照旧同步。
+// 另外：框架仓库内部（CLI 来自 `prod/`）的既有行为必须不变 —— `core/ui/cli/oc` 四个包照旧同步。
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -36,6 +36,7 @@ function makeFrameworkRoot(name, runtimeDirName) {
     }
     touch('core/index.js', '// core')
     touch('core/index.d.ts', '// core dts')
+    touch('ui/index.js', '// ui')
     touch('cli/index.js', '// cli')
     if (runtimeDirName) touch(`${runtimeDirName}/index.js`, '// runtime')
     return root
@@ -50,7 +51,7 @@ const item = (plan, name) => {
 // ---------------------------------------------------------------------------
 // ① 源 == 目标 → 跳过（原来的 ERR_FS_CP_EINVAL）
 // ---------------------------------------------------------------------------
-test('源与目标同一处（CLI 来自项目自己的 node_modules/@sapdon）→ 三个包全部跳过并说明', () => {
+test('源与目标同一处（CLI 来自项目自己的 node_modules/@sapdon）→ 四个包全部跳过并说明', () => {
     const proj = path.join(tmpRoot, 'proj-same')
     const modulesDir = path.join(proj, 'node_modules')
     // 源根 = 项目自己的 node_modules/@sapdon（这正是「CLI 从依赖解析到」时的源根）
@@ -63,7 +64,7 @@ test('源与目标同一处（CLI 来自项目自己的 node_modules/@sapdon）�
         exists: (dir) => !dir.endsWith(`${path.sep}oc`),
     })
 
-    assert.equal(plan.length, 3)
+    assert.equal(plan.length, 4)
     for (const entry of plan) {
         assert.equal(entry.skip !== null, true, `${entry.name} 应跳过`)
         assert.match(entry.skip, /源与目标同一处/)
@@ -92,7 +93,7 @@ test('真实目录 + 真实 writeLib：源 == 目标不再抛错，也不覆盖�
 
     assert.equal(plan.every((i) => i.skip !== null), true)
     const skipLines = lines.filter((l) => l.startsWith('[sapdon] 跳过'))
-    assert.equal(skipLines.length, 3, `应有 3 行跳过说明：${lines.join(' | ')}`)
+    assert.equal(skipLines.length, 4, `应有 4 行跳过说明：${lines.join(' | ')}`)
     assert.equal(lines.some((l) => l.includes('没有任何包可同步')), true)
     for (const spec of LIB_PACKAGES) {
         const pkgPath = path.join(sapdonDir, spec.target, 'package.json')
@@ -137,7 +138,7 @@ test('源根是框架 prod/ 布局（源目录叫 oc）→ runtime 从 oc/ 同�
 
     const plan = planLibCopies({ rootDir: fw, modulesDir })
 
-    assert.deepEqual(plan.map((i) => i.name), ['@sapdon/core', '@sapdon/cli', '@sapdon/runtime'])
+    assert.deepEqual(plan.map((i) => i.name), ['@sapdon/core', '@sapdon/ui', '@sapdon/cli', '@sapdon/runtime'])
     assert.equal(plan.every((i) => i.skip === null), true)
     assert.equal(path.basename(item(plan, '@sapdon/runtime').src), 'oc')
     assert.equal(item(plan, '@sapdon/runtime').dest, path.join(modulesDir, '@sapdon', 'runtime'))
@@ -170,11 +171,11 @@ test('oc/ 与 runtime/ 都不存在 → 跳过该包 + 一行说明（不抛）'
     assert.equal(runtime.dest, path.join(modulesDir, '@sapdon', 'runtime'))
 })
 
-test('源根本身整块不存在（dist 布局下直接跑）→ 三个包都跳过、一个都不抛', () => {
+test('源根本身整块不存在（dist 布局下直接跑）→ 四个包都跳过、一个都不抛', () => {
     const modulesDir = path.join(tmpRoot, 'proj-noroot', 'node_modules')
     const plan = planLibCopies({ rootDir: path.join(tmpRoot, 'not-there'), modulesDir })
 
-    assert.equal(plan.length, 3)
+    assert.equal(plan.length, 4)
     for (const entry of plan) {
         assert.equal(entry.src, null)
         assert.equal(entry.skip !== null, true)
@@ -184,7 +185,7 @@ test('源根本身整块不存在（dist 布局下直接跑）→ 三个包都�
 // ---------------------------------------------------------------------------
 // ⑤ 正常拷贝路径：真的拷过去 + 写 package.json
 // ---------------------------------------------------------------------------
-test('正常拷贝路径：core/ cli/ oc → node_modules/@sapdon/{core,cli,runtime}，并写出版本号', async () => {
+test('正常拷贝路径：core/ ui/ cli/ oc → node_modules/@sapdon/{core,ui,cli,runtime}，并写出版本号', async () => {
     const fw = makeFrameworkRoot('fw-ok', 'oc')
     const proj = path.join(tmpRoot, 'proj-ok')
     fs.mkdirSync(path.join(proj, 'node_modules'), { recursive: true })
@@ -195,6 +196,7 @@ test('正常拷贝路径：core/ cli/ oc → node_modules/@sapdon/{core,cli,runt
     assert.equal(plan.every((i) => i.skip === null), true)
     const targets = [
         ['@sapdon/core', 'core'],
+        ['@sapdon/ui', 'ui'],
         ['@sapdon/cli', 'cli'],
         ['@sapdon/runtime', 'runtime'],
     ]
@@ -205,7 +207,7 @@ test('正常拷贝路径：core/ cli/ oc → node_modules/@sapdon/{core,cli,runt
         assert.deepEqual(pkg, { name, type: 'module', main: 'index.js', types: 'index.d.ts', version: frameworkVersion })
     }
     assert.equal(fs.existsSync(path.join(proj, 'node_modules', '@sapdon', 'runtime', 'index.js')), true, 'runtime 的内容来自 oc/')
-    assert.equal(lines.some((l) => l.includes('已同步 @sapdon/core、@sapdon/cli、@sapdon/runtime')), true, lines.join(' | '))
+    assert.equal(lines.some((l) => l.includes('已同步 @sapdon/core、@sapdon/ui、@sapdon/cli、@sapdon/runtime')), true, lines.join(' | '))
 })
 
 test('框架仓库内部行为不变：已经存在的目标包被覆盖（时间戳/内容更新）', async () => {

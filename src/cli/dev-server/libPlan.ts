@@ -28,6 +28,7 @@ export interface LibPackageSpec {
 /** 待同步清单：顺序即拷贝顺序（与历史行为一致） */
 export const LIB_PACKAGES: LibPackageSpec[] = [
     { name: '@sapdon/core', target: 'core', sources: ['core'] },
+    { name: '@sapdon/ui', target: 'ui', sources: ['ui'] },
     { name: '@sapdon/cli', target: 'cli', sources: ['cli'] },
     { name: '@sapdon/runtime', target: 'runtime', sources: ['oc', 'runtime'] },
 ]

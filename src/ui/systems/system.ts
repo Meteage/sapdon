@@ -1,5 +1,5 @@
 import { UISystemRegistry } from '../registry/uiSystemRegistry.js'
-import { Serializer } from '../../../utils/index.js'
+import { Serializer } from '../../utils/index.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any

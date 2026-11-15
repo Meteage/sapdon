@@ -405,7 +405,7 @@ Qt 用信号槽连对象；sapdon 的 UI 里**没有回调**（`ui-lessons.md` �
 `tests/designer-codegen.test.mjs` 做两件事：
 
 1. **golden**：示例工程 → 生成的 TS 文本与 baseline 逐字节一致、`preview` 与 baseline JSON 深度相等；
-2. **交叉验证**：把**同一份示例工程**用**真实框架类**（`dist/core/ui/**`，即 `src/core/ui` 的 tsc 产物）构造一遍，断言 `system.toObject()` 与 `preview.js` 的输出**深度相等**。
+2. **交叉验证**：把**同一份示例工程**用**真实框架类**（`dist/ui/**`，即 `src/ui` 的 tsc 产物）构造一遍，断言 `system.toObject()` 与 `preview.js` 的输出**深度相等**。
 
 ⇒ 一旦框架的序列化语义变了（比如新增属性包并入顺序），第 2 条会**先红**，而不是等真机翻车。这是本工具唯一的"防镜像漂移"机制，**不要**为了让测试变绿而放宽它。
 
@@ -522,7 +522,7 @@ node tests/designer-textures.test.mjs
 # 4) 编辑器外壳：自带最小 DOM 桩，跑一遍真实操作路径（控件箱/树/属性/贴图渲染/选择器/撤销/门控）
 node tests/designer-app.test.mjs
 
-# 5) 代码生成 + 诊断 + ★与真实框架类的交叉验证（需要 dist/core/ui）
+# 5) 代码生成 + 诊断 + ★与真实框架类的交叉验证（需要 dist/ui）
 npx tsc && npx tsc-alias && node tests/designer-codegen.test.mjs
 
 # 6) 起编辑器（零依赖静态服务器 + 资源包纹理索引，默认 5178）

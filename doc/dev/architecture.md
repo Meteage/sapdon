@@ -10,15 +10,17 @@ Sapdon 是一个面向 Minecraft Bedrock 版 Addon 开发的 Node.js 工具链�
 sapdon/
 ├── src/
 │   ├── cli/           # CLI 应用：命令、构建管道、开发服务器、热更新
-│   ├── core/          # 核心库：DTO 定义、业务逻辑 API、工厂/注册层
+│   ├── core/          # 核心库：DTO 定义、业务逻辑 API、工厂/注册层、构建解析
+│   ├── ui/            # UI 库：JSON UI 对象模型与各类界面系统（发布为 @sapdon/ui）
 │   ├── oc/            # OC 运行时：ECS 游戏框架（运行时，用于 Script API）
 │   ├── templates/     # 项目模板 (js_sapdon, ts_sapdon)
 │   └── utils/         # 通用工具：序列化系统、类型、缓存
 ├── prod/              # 构建产物（发布到 npm）
 │   ├── cli/           # CLI 入口 (start.js, index.js)
 │   ├── core/          # 核心库
-│   ├── oc/            # OC 运行时
-│   └── utils/         # 工具库
+│   ├── ui/            # UI 库（@sapdon/ui）
+│   ├── oc/            # OC 运行时（@sapdon/runtime）
+│   └── utils/         # 工具库（注册表 / 序列化 / 构建协议）
 ├── scripts/           # 框架自身的构建脚本
 ├── examples/          # 示例项目
 └── doc/               # 文档
@@ -29,6 +31,7 @@ sapdon/
 | 包名 | 源文件 | 产物 |
 |------|--------|------|
 | `@sapdon/core` | `src/core/index.js` | `prod/core/index.js` |
+| `@sapdon/ui` | `src/ui/index.ts` | `prod/ui/index.js` |
 | `@sapdon/cli` | `src/cli/index.js` | `prod/cli/index.js` |
 | `@sapdon/runtime` | `src/oc/index.ts` | `prod/oc/index.js` |
 | `@sapdon/utils` | `src/utils/index.ts` | `prod/utils/index.js` |
@@ -146,6 +149,8 @@ class Item {
 
 ## 4. 数据流：从用户代码到 JSON 文件
 
+> 2026-11 起 CLI 已协议化（`sapdon-build/1`）：注册项在子进程里由 core 的 `resolveBuild()` 解析成最终文件包（图集、组件脚本、注册索引都在 core 完成），CLI 只负责写盘、清单与同步。下图里的 `generateAddon` 已由 `writeBuildPacket` 取代。
+
 ```
 用户代码 (main.ts)
     │
@@ -166,7 +171,7 @@ class Item {
 │   → 遍历 clientRegistry[]                              │
 │   → 调用每个 data 的 toObject() 获取最终 JSON 数据      │
 │   → transportPost('submit', data)                      │
-│     (src/core/transport/client.ts, HTTP POST fallback) │
+│     (src/utils/transport/client.ts, HTTP POST fallback) │
 └───────────────────────┬──────────────────────────────┘
                         │ HTTP POST
                         ▼
@@ -224,7 +229,7 @@ class Item {
 
 注册系统采用 **客户端-服务端** 架构，分为两个部分：
 
-### 客户端 (`src/core/registry.ts` + `src/core/transport/client.ts`)
+### 客户端 (`src/core/registry.ts` + `src/utils/transport/client.ts`)
 
 位于 core 模块，供用户代码在子进程中调用。依赖通用的 HTTP 客户端，不引入 CLI 代码：
 
@@ -232,9 +237,9 @@ class Item {
 |------|------|------|
 | `GRegistry` | `src/core/registry.ts` | 累加注册数据的客户端注册表 |
 | `GRegistry.register(name, root, path, data)` | `registry.ts` | 注册一个条目：文件名、根目录(behavior/resource)、子路径、数据实例 |
-| `GRegistry.submit()` | `registry.ts` | 调用所有 data 的 `toObject()`，然后 HTTP POST 到 dev server |
-| `registry.submit()` | `registry.ts` | 命名空间下的便捷入口 |
-| `transportPost()` | `src/core/transport/client.ts` | 通用 HTTP POST 客户端，端口可被 `SAPDON_DEV_SERVER_PORT` 环境变量覆盖 |
+| `GRegistry.submit()` | `src/utils/registry.ts` | 钩子 → 去重 → 校验 → `toObject()` → `resolveBuild()` → HTTP POST |
+| `registry.submit()` | `src/utils/registry.ts` | 与 `GRegistry.submit()` 等价（同一个管线） |
+| `transportPost()` | `src/utils/transport/client.ts` | 通用 HTTP POST 客户端，端口可被 `SAPDON_DEV_SERVER_PORT` 环境变量覆盖 |
 
 ### 服务端 (`src/cli/registryServer.ts`)
 
@@ -242,9 +247,7 @@ class Item {
 
 | 组件 | 说明 |
 |------|------|
-| `GRegistryServer` | 服务端注册表，接收并存储数据 |
-| `GRegistryServer.dataList` | 存储 `{ name, root, path, data }` 数组 |
-| `GRegistryServer.startServer()` | 注册 `submitGregistry` 和 `remote-logger` 的 HTTP handler |
+| `GRegistryServer.startServer()` | 只注册 `remote-logger` 的 HTTP handler；注册数据由 `build.js` 的 `submit` 接收并交给 `writeBuildPacket()` |
 
 ### 数据提交逻辑
 
@@ -292,8 +295,8 @@ export function submit() {
                                端口取 SAPDON_DEV_SERVER_PORT（默认 49037）
 7. runScript(main.ts)       →  rollup 编译 → cp.spawn(process.execPath, [file]) 执行
                                  子进程中用户代码执行并注册数据
-                                 HTTP POST 提交数据到 dev server
-                                 generateAddon() 生成 JSON 文件
+                                 HTTP POST 提交 BuildPacket 到 dev server
+                                 writeBuildPacket() 写最终文件包
                                ★ 检查子进程退出码，非 0 直接抛错
 8. bundleScripts()          →  rollup 打包 scripts/main.ts → scripts/index.js（await）
 9. syncDevFilesServer()     →  复制 BP/RP 到 Minecraft 开发包目录
@@ -303,7 +306,7 @@ export function submit() {
 
 **失败必须非 0 退出**：历史行为是构建脚本失败被吞掉、CLI 照样打印「构建完成」并 `exit 0`，于是 `dev/` 里留下的是旧产物。现在 `runOnChild()` 检查退出码、`scriptBundler` 打包失败即抛、CLI 顶层 catch `process.exit(1)`。⇒ **「构建成功」不可信**，成功的判据是**退出码 0** + 日志里出现 `处理数据: <name> <root> <path>`（`src/cli/load.js:210`）。
 
-⚠️ **不要用 `cp.fork`**：`fork` 一定会建立 IPC **命名管道**（受限环境下 `spawn EPERM`），而框架传输层走 **HTTP**（`src/core/transport/client.ts` → localhost），**从不使用 IPC**；`spawn(process.execPath, [file], { stdio: 'inherit' })` 是等价且更少依赖的写法（`src/cli/build.js:191-200`）。
+⚠️ **不要用 `cp.fork`**：`fork` 一定会建立 IPC **命名管道**（受限环境下 `spawn EPERM`），而框架传输层走 **HTTP**（`src/utils/transport/client.ts` → localhost），**从不使用 IPC**；`spawn(process.execPath, [file], { stdio: 'inherit' })` 是等价且更少依赖的写法（`src/cli/build.js:191-200`）。
 
 ### 6.3 关键文件职责
 
@@ -311,11 +314,11 @@ export function submit() {
 |------|------|
 | `src/cli/start.js` | CLI 入口，定义所有 commander 命令 |
 | `src/cli/build.js` | 构建编排器：`scriptBundler`、`buildProject()`、`runScript()` |
-| `src/cli/load.js` | `generateAddon()` — 遍历 dataList 写入 JSON 文件，生成纹理 JSON；陈旧产物清单清理；自定义组件注册索引合并 |
+| `src/cli/load.js` | `writeBuildPacket()` — 把 core 解析好的最终文件包写盘；陈旧产物清单清理；按标记合并自定义组件注册索引 |
 | `src/cli/init.js` | 项目初始化：脚手架生成、路径辅助（`getBuildDirBp/Rp` 固定大写 `_BP`/`_RP`） |
 | `src/cli/pack.js` | `packProject()` — 把 `dev/<proj>_BP`、`dev/<proj>_RP` 打包为 `.mcaddon` |
 | `src/cli/utils.ts` | `saveFile`、`readFile`、`copyFileSync` 等文件 I/O 工具 |
-| `src/cli/registryServer.ts` | `GRegistryServer` — 服务端注册表，注册 `submitGregistry` / `remote-logger` handler |
+| `src/cli/registryServer.ts` | `GRegistryServer.startServer()` — 只注册 `remote-logger` handler |
 | `src/cli/dev-server/server.ts` | `DevelopmentServer` — 构建时进程间通信的 HTTP 服务（**不是 IPC**） |
 | `src/cli/dev-server/client.js` | `cliRequest()` / `post()` — CLI 内部使用的 HTTP 客户端（remoteLogger 等） |
 | `src/cli/dev-server/hmr.js` | `hmr()` — 文件监听器，热更新触发重建 |
@@ -329,7 +332,7 @@ export function submit() {
 - **实现**: 原生 Node.js `http.createServer()`
 - **传输**: HTTP POST + JSON body
 - **通信模式**:
-  - 客户端（子进程中用户代码）：`transportPost(path, ...params)`（来自 `src/core/transport/client.ts`）
+  - 客户端（子进程中用户代码）：`transportPost(path, ...params)`（来自 `src/utils/transport/client.ts`）
   - 服务端（CLI 进程）：`server.handle(url, handler)`（来自 `src/cli/dev-server/server.ts`）
   - 编码/解码：`encode()`/`decode()`（基于 `JSON.stringify` + `jsonEncoderReplacer`）
 - **架构原则**: core 模块只包含通用 HTTP 客户端，不引用 CLI 代码。服务端逻辑全部位于 CLI 内部。
@@ -338,11 +341,10 @@ export function submit() {
 
 | Handler | 注册位置 | 用途 |
 |---------|---------|------|
-| `submitGregistry` | `registryServer.ts:12` | 接收注册数据、存入 `GRegistryServer.dataList`（由 `GRegistry.submit()` 提交，`core/registry.ts:52`） |
-| `submit` | `build.js:308` | 接收数据并触发 `generateAddon()` 写 JSON（由 `registry.submit()` 提交，`core/registry.ts:87`）；`buildMode === 'debug'` 时跳过生成 |
-| `remote-logger` | `registryServer.ts:16` | 游戏内 Script API 通过此 handler 发送日志到 CLI |
+| `submit` | `build.js` | 接收 `BuildPacket` 并交给 `writeBuildPacket()` 落盘；`buildMode === 'debug'` 时跳过生成 |
+| `remote-logger` | `registryServer.ts` | 游戏内 Script API 通过此 handler 发送日志到 CLI |
 
-⚠️ `GRegistry.submit()` 与 `registry.submit()` 是**两个不同入口、POST 到两个不同 handler**：前者只上传数据（供 dev server 侧的注册表使用），后者才触发 `generateAddon()` 落盘。用户项目里通常调用 `registry.submit()`。
+⚠️ `GRegistry.submit()` 与 `registry.submit()` 现在是**同一条管线**（钩子 → 去重 → 校验 → `toObject()` → `resolveBuild()` → POST `/submit`），历史差异已消失。
 
 ---
 

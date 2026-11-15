@@ -1,8 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { UIElement, Panel, Button, Image, Label, Grid, StackPanel, ScrollingPanel } from '../dist/core/ui/elements/index.js'
-import { Control, Layout, Text, Sprite, Input } from '../dist/core/ui/properties/index.js'
+import { UIElement, Panel, Button, Image, Label, Grid, StackPanel, ScrollingPanel } from '../dist/ui/elements/index.js'
+import { Control, Layout, Text, Sprite, Input } from '../dist/ui/properties/index.js'
 
 // 行为锁：严格 TS 迁移前后，UI 元素序列化输出必须逐字一致。
 // 关键不变量 —— 未赋值（可选）属性绝不泄漏进 JSON（for...in 只拷已被赋值字段）。

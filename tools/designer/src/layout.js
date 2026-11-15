@@ -1,7 +1,7 @@
 /**
  * 版面引擎（Sapdon UI Designer）
  *
- * 纯函数、**零 import**（照 `src/core/ui/systems/containerLayout.ts` 的先例），因此
+ * 纯函数、**零 import**（照 `src/ui/systems/containerLayout.ts` 的先例），因此
  * 既能在浏览器里驱动画布，也能被 `tests/designer-layout.test.mjs` 在 Node 里直接跑。
  *
  * 它镜像的是 **JSON UI 的锚点模型**（不是 Qt 的布局管理器）：

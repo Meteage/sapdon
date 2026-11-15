@@ -2,7 +2,7 @@
  * JSON UI 产物预览（Sapdon UI Designer）
  *
  * 本模块是 **`uic` 的等价物**：把工程模型摊成「框架真的会写出的 JSON UI」。
- * 它镜像 `src/core/ui/**` 的序列化语义（逐条核对过）：
+ * 它镜像 `src/ui/**` 的序列化语义（逐条核对过）：
  *
  *  1. `UIElement.serialize()`：`properties`（`type` + `addProp` 来的键）→ 合并各属性包自有字段
  *     → 并入 `$变量` → 输出 `{ [id@template]: json }`；**未赋值字段绝不出现**。
@@ -16,7 +16,7 @@
  *     `ServerFormUI` = `server_form.json` 路由壳（4 个元素 + 每条路由一个 gated factory）。
  *
  * ⚠️ 与真实框架产物的**逐字段一致性由 `tests/designer-codegen.test.mjs` 的交叉验证兜底**
- *    （跑真 `dist/core/ui/**` 对比）。**不要**为了让测试变绿而放宽那条断言。
+ *    （跑真 `dist/ui/**` 对比）。**不要**为了让测试变绿而放宽那条断言。
  *
  * 比较约定：框架会把 `DataBindingObject` **实例**直接塞进 `bindings`（原型不等于普通对象），
  * 所以比对与展示统一先做 `jsonNormalize()`（= 构建期真正落盘的那份 JSON）。

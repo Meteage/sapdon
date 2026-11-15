@@ -517,7 +517,7 @@
   3. 统一格位尺寸 = `setSlotDefaults({ cellSize })`（缺省 = 标定表 `cellSize`）；逐槽 `cellSize` 只是视觉尺寸。
 - **`offset` 相对的是格位模板的锚点**：`chest.chest_grid_item` → `common.container_item`
   （`ui_common.json:4770`）的 `anchor_from` / `anchor_to` **默认是 `center`**，框架会显式覆写成标定表的 `anchor`。
-- **规避（校准只改一行）**：全部换算集中在 `src/core/ui/systems/containerLayout.ts` 的 `SLOT_CALIBRATION`
+- **规避（校准只改一行）**：全部换算集中在 `src/ui/systems/containerLayout.ts` 的 `SLOT_CALIBRATION`
   （`anchor` / `originPadding` / `cellSize` / `columns` / `defaultGridOrigin`）。改 `anchor` 会**同时**改换算与写进产物的
   `anchor_from`/`anchor_to`（内层控件的锚点由 `anchorProps()` 取，不各写一份，避免两处不一致）。
   `originPadding` 是整体平移用的最后手段；`defaultGridOrigin` 是未调 `setGridOrigin` 时的网格原点
@@ -674,7 +674,7 @@
   （**不带 override**，让名字进入该控件的属性作用域）挂在同一个控件上，再加一条 view 绑定
   `source_property_name: "((#item_durability_total_amount - #item_durability_current_amount) / #item_durability_total_amount)"`
   → `target_property_name: "#clip_ratio"`。**Molang 算术写在 view 绑定里是框架自己用过的**：
-  `src/core/ui/systems/hud/hud.ts:35` 就是 `"(not (%.7s * #hud_title_text_string = 'PREFIX'))"`。
+  `src/ui/systems/hud/hud.ts:35` 就是 `"(not (%.7s * #hud_title_text_string = 'PREFIX'))"`。
   - ⚠️ **真机已验证（2026-09-12）：Molang 表达式读得到 collection 绑定** —— 箭头随进度动起来了（先前只在框架的 HUD 里见过它读 **global** 绑定）。
     兜底设计：把静态的 `arrow_inactive` 垫在下面，即使裁切不生效也还看得见一支箭头。
   - **★ 真机已验证：`#item_durability_current_amount` 是「已损耗量」，不是「剩余量」。**
@@ -731,7 +731,7 @@
 发现三条引擎缺省语义与直觉相反。它们不只影响编辑器 —— **凡是手写 JSON UI / 反推原版界面的场合都会踩**。
 
 - **① 缺省 `anchor_from` / `anchor_to` = `center`（不是 `top_left`）**
-  - 证据：`src/core/ui/systems/sapdon/sapdonGuideBook.ts` 的 `cover_title` 只写 `setAnchorTo('center')`；
+  - 证据：`src/ui/systems/sapdon/sapdonGuideBook.ts` 的 `cover_title` 只写 `setAnchorTo('center')`；
     真机截图里标题文字**端正落在黄色缎带内部**。若缺省是 `top_left`，盒子会偏移半个自身尺寸、一半跑到缎带外。
   - 症状（若按 top_left 理解）：所有未声明锚点的元素整体错位半个自身尺寸。
 - **② 缺省 `size` = 铺满父级（等价 `100%`），不是 0**
@@ -869,7 +869,7 @@
 ### 4.17 ★ 自定义方块容器的界面屏 = `data_driven_container.screen`（2026-10，block_container_test 真机）
 - **症状**：给「官方方块容器」`minecraft:block_entity.container` 做自定义界面，门控（`requires: ($new_container_title = '<键>')`）**挂在原版箱子屏 `chest.small_chest_screen` 上永不生效**——进游戏还是原版容器界面（标题仍是原始键）。而**实体容器**（承载实体 `minecraft:inventory` + 实体名字当标题）却能生效。
 - **原因**：引擎给**数据驱动方块容器**开的屏**不是**箱子屏，而是 **`data_driven_container.screen`**（原版文件 `ui/data_driven_container_screen.json`；官方 `bedrock-samples` **v1.26.60.29-preview** 起才收录，更早的 `1.21.130.26` 里**没有**这个文件）。它同样用 `$container_title` 做标题（`container_label@chest.chest_label`），并用 `$container_size` / `$container_rows_*`（`ChestScreenController::addStaticScreenVars` 从实时容器喂入）决定网格。
-- **规避**（框架已在 `ChestUISystem.registerContainerUI` 里做掉，见 `src/core/ui/systems/chest.ts`）：
+- **规避**（框架已在 `ChestUISystem.registerContainerUI` 里做掉，见 `src/ui/systems/chest.ts`）：
   1. `registerContainerUI(key, rootPanel)` **同时**向 `ui/chest_screen.json`（实体容器）与 **`ui/data_driven_container_screen.json`**（方块容器）注册同一条门控。
   2. ★ **项目要改这块屏，文件名必须与原版一致** `ui/data_driven_container_screen.json`（引擎按文件名覆盖/合并同名声明的 UI 文件；起个自定文件名如 `furnace_gate.json` **不生效**）。框架侧靠 `UISystem.name` = 文件名来保证：`new UISystem('data_driven_container:data_driven_container_screen', 'ui/')`。
   3. 门控键 = `UISystem.name`（`identifier` 冒号后半段）；方块的 `minecraft:block_entity.container.title` 必须等于该键。

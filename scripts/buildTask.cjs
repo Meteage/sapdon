@@ -10,10 +10,12 @@ const tasks = [
     { name: 'Start', config: buildConfigs.startConfig },
     { name: 'CLI', config: buildConfigs.cliConfig },
     { name: 'Core', config: buildConfigs.coreConfig },
+    { name: 'UI', config: buildConfigs.uiConfig },
     { name: 'OC', config: buildConfigs.ocConfig },
     { name: 'Utils', config: buildConfigs.utilsConfig },
     { name: 'CLI Declarations', config: buildConfigs.cliDeclareConfig },
     { name: 'Core Declarations', config: buildConfigs.coreDeclareConfig },
+    { name: 'UI Declarations', config: buildConfigs.uiDeclareConfig },
     { name: 'OC Declarations', config: buildConfigs.ocDeclareConfig },
     { name: 'Utils Declarations', config: buildConfigs.utilsDeclareConfig },
 ]

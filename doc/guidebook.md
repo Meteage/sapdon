@@ -215,7 +215,7 @@ interface GuideBookChapter {
 
 #### 索引分页的计算公式
 
-框架实现：`src/core/ui/systems/sapdon/sapdonGuideBook.ts` 的
+框架实现：`src/ui/systems/sapdon/sapdonGuideBook.ts` 的
 `IDX_*` 常量（`:73-90`）、`catCard()`（`:457`）、`addIndexColumn()`（`:486`）、`indexPageCount()`（`:515`）、
 `p0` 组装（`:574-585`）、`p1+` 组装（`:590-627`）。
 

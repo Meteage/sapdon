@@ -13,13 +13,13 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 
-import { SapdonFormUI } from '../dist/core/ui/systems/sapdon/sapdonFormUI.js'
-import { ServerFormUI } from '../dist/core/ui/systems/sapdon/serverFormUI.js'
-import { Panel } from '../dist/core/ui/elements/panel.js'
-import { Label } from '../dist/core/ui/elements/label.js'
-import { Layout } from '../dist/core/ui/properties/layout.js'
+import { SapdonFormUI } from '../dist/ui/systems/sapdon/sapdonFormUI.js'
+import { ServerFormUI } from '../dist/ui/systems/sapdon/serverFormUI.js'
+import { Panel } from '../dist/ui/elements/panel.js'
+import { Label } from '../dist/ui/elements/label.js'
+import { Layout } from '../dist/ui/properties/layout.js'
 
-const OK = existsSync(new URL('../dist/core/ui/systems/sapdon/sapdonFormUI.js', import.meta.url))
+const OK = existsSync(new URL('../dist/ui/systems/sapdon/sapdonFormUI.js', import.meta.url))
 const skip = OK ? false : '缺少 dist（先跑 npx tsc && npx tsc-alias）'
 
 /** 造一个内容面板 + 按键面板 */

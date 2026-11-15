@@ -5,4 +5,4 @@ export * from './featureFactory.js'
 export * from './itemExtra.js'
 export * from './itemFactory.js'
 export * from './recipeFactory.js'
-export * from './uiFactory.js'
+// `UiAPI` 已迁到 @sapdon/ui（这里不再直接导出；`@sapdon/core` 仍通过 re-export 保留兼容）

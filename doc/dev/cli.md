@@ -11,9 +11,9 @@ src/cli/
 ├── index.js                 # @sapdon/cli 包入口，导出 dev server 客户端
 ├── start.js                 # CLI 命令定义 (commander)，入口脚本
 ├── build.js                 # 构建编排器：bundler、manifest 生成、注册
-├── load.js                  # 处理注册数据，生成 JSON 文件 + 陈旧产物清理 + 注册索引合并
+├── load.js                  # writeBuildPacket：写最终文件包 + 陈旧产物清理 + 注册索引合并
 ├── pack.js                  # packProject() — 把 dev/<proj>_BP、_RP 打包为 .mcaddon
-├── registryServer.ts        # GRegistryServer — 服务端注册表，注册 submitGregistry / remote-logger handler
+├── registryServer.ts        # GRegistryServer.startServer() — 只注册 remote-logger handler
 ├── init.js                  # 项目初始化、路径辅助
 ├── utils.ts                 # 通用文件 I/O 工具
 ├── tools/
@@ -55,7 +55,7 @@ src/cli/
 | `build <name>` | 完整构建 + 启动热更新（构建前会调用 `initResourceDir()`） |
 | `compile` | 构建当前目录（不启动 HMR）。⚠️ **不会**调用 `initResourceDir()`，即不重新生成 `res.hint.ts` |
 | `pack` | 把 `dev/<proj>_BP` + `dev/<proj>_RP` 打包为 `dev/<proj>.mcaddon`（**不构建**，直接打包现有产物） |
-| `lib` | 复制 `prod/core`、`prod/cli`、`prod/oc` 到 `node_modules/@sapdon/{core,cli,runtime}` |
+| `lib` | 复制 `prod/core`、`prod/ui`、`prod/cli`、`prod/oc` 到 `node_modules/@sapdon/{core,ui,cli,runtime}` |
 | `res` | 生成资源提示文件 `res.hint.ts` |
 | `config` | (占位) 读取 build.config |
 
@@ -160,6 +160,10 @@ scriptBundler.any(source, target)
 ```
 
 ### `load.js` — 注册数据处理
+
+> 2026-11 起改为 `writeBuildPacket(packet, { projectPath, buildPath, projectName })`：数据包由 core 侧
+> `resolveBuild()` 解析成最终文件（贴图图集 / 组件脚本 / 注册索引），CLI 只负责写盘、清单与同步。
+> 下面的 `generateAddon()` 流程保留为历史参考，具体落盘规则（路径、清单、索引合并）仍然适用。
 
 `generateAddon()` 在 `submit` handler 中调用，负责将 `GRegistryServer.dataList` 中的注册数据写出为 JSON 文件：
 
