@@ -34,6 +34,10 @@
         "tsc-alias": "^1.8.13"
     },
     "dependencies": {
+        "@sapdon/core": "4.0.0",
+        "@sapdon/runtime": "4.0.0",
+        "@sapdon/ui": "4.0.0",
+        "@sapdon/utils": "4.0.0",
         "@rollup/plugin-commonjs": "^28.0.2",
         "@rollup/plugin-json": "^6.1.0",
         "@rollup/plugin-node-resolve": "^16.0.0",
