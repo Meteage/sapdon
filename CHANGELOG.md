@@ -8,6 +8,36 @@
 
 ---
 
+## 4.0.0
+
+> 迁移步骤见 [doc/user/migrate-v4.md](./doc/user/migrate-v4.md)。
+
+### 破坏性变更：UI 拆到 `@sapdon/ui`
+
+- `@sapdon/core` **不再导出 UI**。`Label` / `Panel` / `Image` / `Button` / `Grid` / `SapdonFormUI` /
+  `SapdonGuideBook` / `ContainerUISystem` / `HudUISystem` / `FormButtonGrid` / `UiAPI` 等一律改从
+  `@sapdon/ui` 导入。
+  迁移：把 `import { ..., Label, Panel } from '@sapdon/core'` 拆成
+  `import { ... } from '@sapdon/core'` + `import { Label, Panel } from '@sapdon/ui'`。
+- 新增独立发布包：`@sapdon/utils`、`@sapdon/ui`、`@sapdon/core`、`@sapdon/runtime`。
+  `sapdon` 包继续提供 CLI 与 `sapdon lib`；`sapdon lib` 现在同步 5 个包。
+- `@sapdon/core` 的运行时 bundle 不再内联 UI 与 utils：安装后 core/ui 共享
+  `node_modules/@sapdon/{utils,ui}` 的同一份注册表与序列化状态。
+
+### 破坏性变更：构建协议化
+
+- `registry.submit()` / `GRegistry.submit()` 现在提交 `sapdon-build/1` 的 `BuildPacket`：
+  core 在子进程里解析出最终文件（贴图图集、自定义组件脚本、注册索引），CLI 只负责落盘。
+  两个入口合并为同一管线。
+- 协议版本不匹配会直接报错：项目里的 `@sapdon/core` 与 `sapdon` CLI 必须同一版本。
+
+### 其他
+
+- `AddonManifest*` 类移到 `@sapdon/utils`（`@sapdon/core` 仍 re-export，兼容）。
+- 脚本打包的外部化规则改为 `@sapdon/`、`@minecraft/` 前缀。
+
+---
+
 ## 3.8.0
 
 ### 新增：多方块结构（`@sapdon/runtime`）

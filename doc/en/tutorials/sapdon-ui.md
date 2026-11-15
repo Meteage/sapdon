@@ -14,7 +14,7 @@ One `SapdonFormUI` instance = one route = one UI file.
 ```bash
 npm init -y
 npm install @minecraft/server@2.8.0 @minecraft/server-ui@2.1.0
-# @sapdon/core is synced automatically by the postinstall hook (`sapdon lib`)
+# @sapdon/core and @sapdon/ui are synced automatically by the postinstall hook (`sapdon lib`)
 ```
 
 ```
@@ -51,10 +51,11 @@ test_ui/
 ## 2. Imports
 
 ```typescript
+import { registry } from '@sapdon/core'
 import {
   Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonFormUI,
-  StackPanel, Text, registry
-} from '@sapdon/core'
+  StackPanel, Text
+} from '@sapdon/ui'
 ```
 
 ## 3. Content panel

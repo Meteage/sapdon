@@ -1,4 +1,5 @@
-import { BlockAPI, BlockComponent, ItemAPI, ItemComponent, ItemCategory, ContainerUISystem, registry } from '@sapdon/core'
+import { BlockAPI, BlockComponent, ItemAPI, ItemComponent, ItemCategory, registry } from '@sapdon/core'
+import { ContainerUISystem } from '@sapdon/ui'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 「原版复刻」示例：只用框架的 ContainerUISystem 复刻两个原版容器

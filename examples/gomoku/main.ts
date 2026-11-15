@@ -1,8 +1,10 @@
 import {
-    BlockAPI, BlockComponent, EntityAPI, EntityComponent, GRegistry, ItemAPI, ItemCategory, ItemComponent,
-    Button, ButtonMapping, DataBindingObject, Grid, GridProp, Image, Input, Label, Layout,
-    Panel, SapdonFormUI, Sprite, Text, UIElement, registry
+    BlockAPI, BlockComponent, EntityAPI, EntityComponent, GRegistry, ItemAPI, ItemCategory, ItemComponent, registry
 } from '@sapdon/core'
+import {
+    Button, ButtonMapping, DataBindingObject, Grid, GridProp, Image, Input, Label, Layout,
+    Panel, SapdonFormUI, Sprite, Text, UIElement
+} from '@sapdon/ui'
 
 // 落子点是**交叉点**（围棋/连珠）：16 格 → 17 条格线 → 17×17 个点。
 // 棋盘贴图也是 16 格，格线正好落在 12.5px 的整数倍上，棋子压在线上才是对的。

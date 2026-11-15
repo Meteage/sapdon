@@ -1,4 +1,5 @@
-import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, SapdonGuideBook, StackPanel, Label, Text, Panel, UIElement, Image, Sprite, RecipeAPI, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout, Grid, GridProp, HudProgressBar } from '@sapdon/core'
+import { ItemCategory, ItemAPI, ItemComponent, registry, EntityAPI, EntityComponent, NearestAttackableTargetBehavor, PickupItemsBehavior, RecipeAPI } from '@sapdon/core'
+import { SapdonGuideBook, StackPanel, Label, Text, Panel, UIElement, Image, Sprite, UISystemRegistry, HudUISystem, HudStatePanel, Control, Layout, Grid, GridProp, HudProgressBar } from '@sapdon/ui'
 
 const GolemMaxCount = 16; // 傀儡最大数量
 

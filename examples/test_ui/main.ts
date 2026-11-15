@@ -1,7 +1,8 @@
+import { registry } from '@sapdon/core'
 import {
     Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonFormUI,
-    StackPanel, Text, UIElement, registry
-} from '@sapdon/core'
+    StackPanel, Text, UIElement
+} from '@sapdon/ui'
 
 // ---------- 页 A：sapdon_ui:apple（内容面板 + 按键网格面板） ----------
 const apple_content_panel = new Panel("apple_content_panel")

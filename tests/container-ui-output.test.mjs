@@ -19,7 +19,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const { ContainerUISystem, ChestUISystem, Label, Text } = await import('../prod/core/index.js')
+const { ContainerUISystem, ChestUISystem, Label, Text } = await import('../prod/ui/index.js')
 
 // ── 小工具 ────────────────────────────────────────────────────────────────────
 
@@ -88,10 +88,10 @@ const innerOf = (index) => cells[index].inner
 // ── 0. 产物来自新代码 ─────────────────────────────────────────────────────────
 
 test('prod/ui/index.js 含新代码独有的字面量（防「prod 是旧的」）', async () => {
-  // UI 已拆到 @sapdon/ui：运行期字面量在 prod/ui，类型仍由 core 的 d.ts 过渡期 re-export
+  // v4：UI 完全独立，运行期与类型都在 prod/ui
   const [prod, dts] = await Promise.all([
     readFile(new URL('../prod/ui/index.js', import.meta.url), 'utf8'),
-    readFile(new URL('../prod/core/index.d.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../prod/ui/index.d.ts', import.meta.url), 'utf8'),
   ])
   assert.ok(prod.includes('slot_background_'), 'prod/ui/index.js 缺 slot_background_ 前缀')
   assert.ok(prod.includes('既没有 pos 也没有 offset'), 'prod/ui/index.js 缺槽位校验文案')
@@ -103,11 +103,11 @@ test('prod/ui/index.js 含新代码独有的字面量（防「prod 是旧的」�
     'ProgressSlotOptions', 'ProgressClipDirection',
     'setOutputSlots', 'resolveSlot', 'slotToGridPosition', 'posToOffset', 'validateSlotSpec',
   ]) {
-    assert.ok(dts.includes(name), `prod/core/index.d.ts 缺 ${name} 声明`)
+    assert.ok(dts.includes(name), `prod/ui/index.d.ts 缺 ${name} 声明`)
   }
-  assert.equal(dts.includes('setItemMatrix'), false, 'prod/core/index.d.ts 不该再有 setItemMatrix')
+  assert.equal(dts.includes('setItemMatrix'), false, 'prod/ui/index.d.ts 不该再有 setItemMatrix')
   // `enabled` 覆盖规则（2026-09-12）：文档文案只存在于新版 d.ts ⇒ 顺带当「prod 是新的」判据
-  assert.ok(dts.includes('给了就以此为准'), 'prod/core/index.d.ts 缺 enabled 覆盖规则的文案（prod 可能是旧的）')
+  assert.ok(dts.includes('给了就以此为准'), 'prod/ui/index.d.ts 缺 enabled 覆盖规则的文案（prod 可能是旧的）')
 })
 
 // ── 1. slot ↔ grid_position 一一对应 ──────────────────────────────────────────

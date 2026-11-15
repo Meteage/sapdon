@@ -1031,6 +1031,19 @@ cpSync(path.join(t,'oc'),   path.join(n,'@sapdon/runtime'), {recursive:true, for
   `package.json`）、目标落在源内部跳过、源目录名 `oc`、源目录名 `runtime`、两者都不存在、**正常拷贝路径**（三个包都落地且带版本号）、
   以及「真正的 IO 错误仍然抛」（目标位被同名文件占住时照样 reject）。
 
+### 8.1 拆包后 core / ui 必须共享同一份 utils（2026-11，v4）
+
+**症状**：拆包后 UI 页面不出现（`RP/ui/*.json` 少了、`_ui_defs` 只有一部分），或 `serialize()` 报找不到序列化器。
+
+**原因**：`GRegistry` 的注册数组、`beforeSubmit` 钩子表、`Serializer` 的 `WeakMap` 都是**模块级状态**。
+如果 `@sapdon/core` 与 `@sapdon/ui` 各自把 utils 打进 bundle，就是两份状态：UI 注册的条目在
+`registry.submit()` 里不可见，序列化器也查不到。
+
+**规避**：构建时把 utils externalize，两个包都保留**同级引用**（`../utils/index.js`），安装后落到同一个
+`node_modules/@sapdon/utils/index.js`；**不要**为了"自包含"把 utils 内联。
+判据：`prod/core/index.js` / `prod/ui/index.js` 里只应出现 `../utils/index.js`；`pub:packages:dry` 里
+`@sapdon/core` 的依赖必须包含 `@sapdon/utils`。
+
 ---
 
 ## 9. 世界生成（`feature` / `feature_rules`）

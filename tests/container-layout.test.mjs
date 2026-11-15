@@ -25,11 +25,11 @@ const {
   resolveSlot,
   slotToGridPosition,
   validateSlotSpec,
-} = await import('../prod/core/index.js')
+} = await import('../prod/ui/index.js')
 
 // ── 导出面 ────────────────────────────────────────────────────────────────────
 
-test('prod core 真的导出了 containerLayout 的全部纯函数', () => {
+test('prod ui 真的导出了 containerLayout 的全部纯函数', () => {
   for (const fn of [
     slotToGridPosition, gridDimensionsFor, cellBase, posToOffset, anchorProps,
     normalizeCellSize, normalizeBackground, validateSlotSpec, resolveSlot,

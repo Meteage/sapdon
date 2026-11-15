@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry, SapdonGuideBook, Label, Text, Image, Sprite, StackPanel } from '@sapdon/core'
+import { BlockAPI, BlockComponent, ItemAPI, ItemCategory, ItemComponent, registry } from '@sapdon/core'
+import { SapdonGuideBook, Label, Text, Image, Sprite, StackPanel } from '@sapdon/ui'
 import { BlockWire } from "./lib/wire.js";
 
 // === item_group 分割 ===

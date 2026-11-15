@@ -59,7 +59,7 @@ third_party_server_screen@common.base_screen   (type: screen)
 > 旧名 `SapdonServerUI` 已改名，**不留别名**：把 `import` 里的名字改成 `ServerFormUI` 即可。
 
 ```typescript
-import { ServerFormUI } from '@sapdon/core'
+import { ServerFormUI } from '@sapdon/ui'
 
 ServerFormUI.registerPage({
     panelId: "sapdon_ui:apple",          // title 精确匹配值（必须 sapdon_ui: 前缀）
@@ -100,7 +100,7 @@ ServerFormUI.registerPage({ panelId, name, contentPanel: contentRef, buttonsPane
 **一个 `SapdonFormUI` = 一个 UI 文件（`ui/<ns_nm>.json`）= 一条路由。**
 
 ```typescript
-import { SapdonFormUI, Panel } from '@sapdon/core'
+import { SapdonFormUI, Panel } from '@sapdon/ui'
 
 const content = new Panel('apple_content_panel') /* …组内容… */
 const buttons = new Panel('apple_buttons_panel') /* …放 FormButtonGrid… */
@@ -134,7 +134,7 @@ registry.submit()
 一个 UI 文件**只有一个根面板 `root`**，所以「多页面」不是多个根，而是在**同一份内容面板**里放多块面板、每块挂一条 `#form_text` 门控 —— 运行期脚本 `.body(tag)` 命中哪一块就显示哪一块（手册就是这套）。
 
 ```typescript
-import { PagePanelManage, Panel } from '@sapdon/core'
+import { PagePanelManage, Panel } from '@sapdon/ui'
 
 const content = new Panel('book_content_panel')
 new PagePanelManage(content)                          // ① 容器 + 链式
@@ -168,7 +168,7 @@ new PagePanelManage({                                 // ② 一次性给全（�
 构建按键格盘（内部一个 `Grid`，`collection_name: form_buttons`）。构造函数必填 `dimensions` + `size`；`addButton(index, btn, pos?)` 逐枚**注入集合/门控绑定**并定位（`FormButton` 只有加进格盘才生效）。
 
 ```typescript
-import { FormButton, FormButtonGrid } from '@sapdon/core'
+import { FormButton, FormButtonGrid } from '@sapdon/ui'
 
 const buttons = new FormButtonGrid("apple_buttons_grid", { dimensions: [2, 1], size: ["100%", "100%"] })
     .addButton(0, new FormButton("bt0").setAnchor("bottom_left"))
@@ -192,7 +192,7 @@ const buttons = new FormButtonGrid("apple_buttons_grid", { dimensions: [2, 1], s
 表单按钮（纯样式）封装：基底固定 `common.button`（**无文字 label**，绕开 `light_text_button` 的空 `binding_name` 坑），三态纹理由 `setTexture` 提供；集合/门控绑定由 `FormButtonGrid.addButton` 注入。
 
 ```typescript
-import { FormButton } from '@sapdon/core'
+import { FormButton } from '@sapdon/ui'
 
 new FormButton("bt0")
     .setTexture("textures/ui/..._default", "textures/ui/..._hover", "textures/ui/..._pressed")

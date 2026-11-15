@@ -24,7 +24,7 @@ import { schemaFor } from './catalog.js'
 import { gridDimensions } from './layout.js'
 import { flatten, managerNodes, screenKind, screenNamespace, screenOf, uiFileName } from './model.js'
 
-const CORE = '@sapdon/core'
+const UI = '@sapdon/ui'
 
 /** 保留字/非法标识符处理（`sapdon_ui:apple` 这类 id 不能直接当变量名） */
 const RESERVED = new Set(['break', 'case', 'catch', 'class', 'const', 'continue', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'let', 'static', 'yield', 'await'])
@@ -367,7 +367,7 @@ export function generate(doc) {
 
   const code = [
     ...header,
-    `import {\n${imports.map((i) => `    ${i},`).join('\n')}\n} from '${CORE}'`,
+    `import {\n${imports.map((i) => `    ${i},`).join('\n')}\n} from '${UI}'`,
     '',
     '// ---------- 元素（后序：先子后父） ----------',
     ...body,

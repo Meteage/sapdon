@@ -150,6 +150,8 @@ registerBlockComponent('demo:machine_tick', {
 
 **上手**：[快速入门](./doc/user/quick-start.md) · [教程导读](./doc/user/index.md) · [English edition](./doc/en/README.md)
 
+**升级**：[3.x → 4.0 迁移指南](./doc/user/migrate-v4.md)
+
 **教程**：[物品](./doc/user/tutorials/item.md) · [方块](./doc/user/tutorials/block.md) · [实体](./doc/user/tutorials/entity.md) · [配方](./doc/user/tutorials/recipe.md) · [UI](./doc/user/tutorials/sapdon-ui.md)
 
 **任务指南**：[加贴图](./doc/user/guides/textures.md) · [让脚本跑起来](./doc/user/guides/scripts.md) · [打包与分发](./doc/user/guides/packaging.md)

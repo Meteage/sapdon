@@ -1,4 +1,5 @@
-import { Image, Label, Panel, ServerUISystem, StackPanel, UIElement, UISystem, Layout, Sprite, Text, UISystemRegistry, registry } from '@sapdon/core'
+import { registry } from '@sapdon/core'
+import { Image, Label, Panel, StackPanel, UIElement, UISystem, Layout, Sprite, Text, UISystemRegistry } from '@sapdon/ui'
 
 
 const test_ui_root = new Panel("root_panel").enableDebug();
@@ -44,6 +45,6 @@ const test_ui_system = new UISystem("test:test_ui","ui/"); //添加ui系统
       
 //UISystemRegistry.addOuterUIdefs(["ui/其他ui.json"])  导入外部ui文件
 
-ServerUISystem.bindingTitlewithContent("test_test_ui","test.root_panel")
+// 旧版 `ServerUISystem.bindingTitlewithContent` 已移除；表单路由用 @sapdon/ui 的 ServerFormUI / SapdonFormUI。
 
 registry.submit()

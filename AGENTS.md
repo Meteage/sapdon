@@ -135,7 +135,7 @@ Minecraft Bedrock Addon 开发框架，提供类型安全的 TypeScript API，�
 
 ### NeoGuidebook 手册（游戏内书）接入要点
 - 构建时 `main.mjs` 用 `NeoGuidebook(identifier, "ui/", [320,207], {buttons,textures})` + `NeoGuidebookPage(...).addBookText/addCategoryTitle/addDoublePageStack`；自动生成 `dev/<proj>_RP/ui/<name>.json` 并写入 `server_form.json` 的 title 绑定；页面清单须写成 `scripts/guide_pages.js`（`export const PAGE_IDS = [...]`），因 dev server 是**模块拼接打包**，`import("./x.json")` 不会被处理，只能拼接 JS。
-- 自定义控件：`NeoGuidebookPage` 有 `addControl(control)` / `addStack(size, control, debug?)` 透传内部 StackPanel，可放任意 `UIElement`（Label/Image/Button…）或原生 JSON 控件对象；底层控件类（`Label/Text/Control/Image/Sprite/StackPanel/Layout` 等）在 `@sapdon/core` 的 UI 导出里。
+- 自定义控件：`NeoGuidebookPage` 有 `addControl(control)` / `addStack(size, control, debug?)` 透传内部 StackPanel，可放任意 `UIElement`（Label/Image/Button…）或原生 JSON 控件对象；底层控件类（`Label/Text/Control/Image/Sprite/StackPanel/Layout` 等）在 `@sapdon/ui` 的导出里。
 - 框架侧改完 `src/ui/systems/neoGuibook/*` 后：root `npm run build` 重建 prod，再进示例项目 `sapdon lib` 同步 node_modules；同步后验证 `node_modules/@sapdon/core/index.d.ts` 里有对应方法声明。
 - 运行时 `scripts/index.js` 里物品自定义组件 `onUse` → `new ActionFormData().title(书名不带命名空间).body(pageId)`；书名 = identifier 的 name 部分（`sapdon:guidebook` → title `"guidebook"`）。按钮文字是 JSON UI 绑定键名（`prev_button`/`next_button`/`home_button`/`item_0_button`…），非显示文本。
 - 多级目录/返回：子目录页用 `buildChapterList(prefix)` 指定不同前缀（如 `"sub"` → `sub_N_button`），避免 JSON UI 按钮 id 全局冲突；子分类页返回**用原生 prev**，不放自定义按钮，prev 目标由 `PAGE_PREV` 覆盖（`{ "page_source": pageIds.indexOf("page_index1"), ... }`，未列出的页走线性 `current-1`）。运行时跳转需数据驱动：`guide_pages.js` 同时导出 `PAGE_IDS`（index 顺序）、`PAGE_NAV`（每页 `[{key, target}]`，target 存 `pageIds.indexOf(page_id)` index）、`PAGE_PREV`；`openGuidebook` 按当前页查 `PAGE_NAV[page_id]` 渲染按钮。切勿直接存页 id 字符串作为 goto 目标。

@@ -1,4 +1,5 @@
-import { registry, SapdonGuideBook } from '@sapdon/core'
+import { registry } from '@sapdon/core'
+import { SapdonGuideBook } from '@sapdon/ui'
 
 // 帕秋莉式手册：INDEX 分类索引 → CAT:<id>|p<N> → ENT:<id>:<gi>|p<N>
 // 本手册用它"自己介绍自己"，向手册开发者展示这套手册系统自身的各种功能。

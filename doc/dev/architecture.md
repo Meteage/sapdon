@@ -4,6 +4,63 @@ Sapdon 是一个面向 Minecraft Bedrock 版 Addon 开发的 Node.js 工具链�
 
 ---
 
+## 0. 架构总览（2026-11 包拆分后）
+
+```
+构建期（Node 进程）                                     运行期（Bedrock）
+─────────────────────────────────────────────          ─────────────────────
+用户项目
+  main.ts ──import──▶ @sapdon/core / @sapdon/ui         scripts/*.ts
+  scripts/*.ts ──import──▶ @sapdon/runtime ───────────────────┘
+        │                                                    │
+        │ rollup → .tmp/<uuid>.js                            │ rollup
+        ▼                                                    ▼
+┌───────────────────────────────┐              ┌────────────────────────────┐
+│ 构建脚本子进程                 │              │ dev/<proj>_BP/scripts/      │
+│  core + ui 收集注册项          │              │   index.js（只含 runtime）  │
+│  resolveBuild(entries, ctx)    │              └────────────────────────────┘
+│    → BuildPacket（最终文件）   │
+└───────────────┬───────────────┘
+                │ HTTP POST /submit（localhost:49037，sapdon-build/1）
+                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ CLI（sapdon 进程）                                                   │
+│   dev server → writeBuildPacket(packet)                             │
+│   manifest / 陈旧产物清单 / res 同步 / 脚本打包 / sync / pack        │
+└───────────────┬─────────────────────────────────────────────────────┘
+                │ 写盘 + 同步
+                ▼
+   dev/<proj>_BP/ + dev/<proj>_RP/  ──sync──▶  development_*_packs/
+```
+
+**包依赖（必须无环）**
+
+```
+                    @sapdon/utils
+     serialize / registry / transport / protocol / manifest
+        ▲            ▲              ▲              ▲
+        │            │              │              │
+  @sapdon/core   @sapdon/ui    @sapdon/cli   @sapdon/runtime
+```
+
+**职责边界**
+
+| 包 | 阶段 | 负责 | 明确不负责 |
+|---|---|---|---|
+| `@sapdon/core` | 构建期 | addon DTO/API、`resolveBuild()`（图集 / 组件脚本 / 索引）、注册表客户端 | 写盘、目录映射、打包 |
+| `@sapdon/ui` | 构建期 | JSON UI 对象模型、`SapdonFormUI` / 手册 / 容器 / HUD | 文件输出 |
+| `@sapdon/cli` | 构建期（Node） | 命令、dev server、协议落盘、manifest、同步、pack | addon 语义（图集/索引等） |
+| `@sapdon/runtime` | 运行期 | ECS、组件注册、多方块、持久化 | 生成构建 JSON |
+| `@sapdon/utils` | 两者 | 序列化、注册表/传输、构建协议、manifest | 业务语义 |
+
+**三条硬约束**
+
+1. `core` / `ui` 不 import `cli`；`cli` 不 import `core` / `ui`。
+2. `ui` 不 import `core`，`core` 也不 import `ui`（v4 起完全解耦，UI 一律从 `@sapdon/ui` 导入）。
+3. `core` / `ui` 的 bundle 不内联 `utils`（保留 `../utils/index.js` 同级引用），否则注册表与序列化器会变成两份状态。
+
+---
+
 ## 1. 项目结构
 
 ```

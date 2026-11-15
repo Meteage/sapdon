@@ -26,7 +26,7 @@
 ```bash
 npm init -y
 npm install @minecraft/server@2.8.0 @minecraft/server-ui@2.1.0
-# @sapdon/core 由 postinstall 的 `sapdon lib` 自动同步
+# @sapdon/core / @sapdon/ui 由 postinstall 的 `sapdon lib` 自动同步
 ```
 
 项目结构：
@@ -71,10 +71,11 @@ test_ui/
 `main.ts` 是构建时脚本：声明 UI → 注册页面 → `registry.submit()` 生成所有 UI JSON。
 
 ```typescript
+import { registry } from '@sapdon/core'
 import {
     Button, FormButton, FormButtonGrid, Label, Layout, Panel, SapdonFormUI,
-    StackPanel, Text, registry
-} from '@sapdon/core'
+    StackPanel, Text
+} from '@sapdon/ui'
 ```
 
 ---
@@ -105,7 +106,7 @@ apple_content_panel.addControl(
 按键面板画在内容面板**上层**。两个表单按钮用 `FormButtonGrid`(grid 2×1) 摆到左右下角；右上角放一个普通退出键（不占表单集合）。
 
 ```typescript
-import { Button, FormButton, FormButtonGrid } from '@sapdon/core'
+import { Button, FormButton, FormButtonGrid } from '@sapdon/ui'
 
 const apple_buttons_panel = new Panel("apple_buttons_panel")
     .setLayout(new Layout().setSize(["40%", "40%"]))
@@ -135,7 +136,7 @@ const apple_buttons_panel = new Panel("apple_buttons_panel")
 `new SapdonFormUI("ns:nm", 内容根面板, 按钮根面板)` **一个 UI 文件 = 一条路由**：挂两个根面板 + 建页面根壳 + 注册路由一次办齐。
 
 ```typescript
-import { SapdonFormUI } from '@sapdon/core'
+import { SapdonFormUI } from '@sapdon/ui'
 
 new SapdonFormUI("sapdon_ui:apple", apple_content_panel, apple_buttons_panel)  // 生成 ui/sapdon_ui_apple.json
 
@@ -178,7 +179,7 @@ world.afterEvents.itemUse.subscribe((event) => {
 ## 7. 构建与部署
 
 ```bash
-npm i          # postinstall 自动执行 sapdon lib，同步 @sapdon/core
+npm i          # postinstall 自动执行 sapdon lib，同步 @sapdon/core / @sapdon/ui
 npm run build  # 构建并复制到开发包目录
 ```
 

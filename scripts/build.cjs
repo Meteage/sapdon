@@ -22,12 +22,12 @@ async function copyTemplates() {
 // `sapdon lib` 在同步时也会重写，但发布 tar 包里不能缺这些文件。
 async function writePackageJsons() {
   const pkg = JSON.parse(await fs.readFile(path.join(__dirname, '../package.json'), 'utf8'))
-  // core 运行时引用 @sapdon/ui 与 @sapdon/utils；ui 只引用 utils。
+  // v4：core / ui 都只依赖 utils（core 不再 re-export ui）。
   // 版本锁步：几个包永远同一版本发布。
   const packages = [
     ['utils', '@sapdon/utils', {}],
     ['ui', '@sapdon/ui', { '@sapdon/utils': pkg.version }],
-    ['core', '@sapdon/core', { '@sapdon/utils': pkg.version, '@sapdon/ui': pkg.version }],
+    ['core', '@sapdon/core', { '@sapdon/utils': pkg.version }],
     ['oc', '@sapdon/runtime', {}],
   ]
 

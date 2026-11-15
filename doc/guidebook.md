@@ -16,13 +16,13 @@
 ## 1. 引入
 
 ```ts
-import { SapdonGuideBook } from '@sapdon/core'
+import { SapdonGuideBook } from '@sapdon/ui'
 import { registry } from '@sapdon/core'
 ```
 
 配套类型：
 ```ts
-import type { GuideBookCategory, GuideBookChapter, GuideBookPageType } from '@sapdon/core'
+import type { GuideBookCategory, GuideBookChapter, GuideBookPageType } from '@sapdon/ui'
 ```
 
 ---
@@ -32,7 +32,8 @@ import type { GuideBookCategory, GuideBookChapter, GuideBookPageType } from '@sa
 在项目的 `main.ts`（框架构建入口）里：
 
 ```ts
-import { SapdonGuideBook, registry } from '@sapdon/core'
+import { SapdonGuideBook } from '@sapdon/ui'
+import { registry } from '@sapdon/core'
 
 const book = new SapdonGuideBook('mymod:book', [320, 207], 'textures/ui/book_back')
 
@@ -87,7 +88,7 @@ interface GuideBookLabels {
 框架自己渲染的**固定标签只有两个**：`CAT` 页章节列表的标题（默认 `章节`）和 `INDEX` 页索引卡列的标题（默认 `类别`）。它们可以被覆盖成任意字符串——**包括 lang 键**：
 
 ```ts
-import { SapdonGuideBook } from '@sapdon/core'
+import { SapdonGuideBook } from '@sapdon/ui'
 
 // 方式一：构造第 4 参
 const book = new SapdonGuideBook('mymod:book', [320, 207], 'textures/ui/book_back', {
@@ -415,7 +416,8 @@ cd my_guide
 
 **步骤 2：在 `main.ts` 里声明手册**
 ```ts
-import { SapdonGuideBook, registry } from '@sapdon/core'
+import { SapdonGuideBook } from '@sapdon/ui'
+import { registry } from '@sapdon/core'
 
 const book = new SapdonGuideBook('my_guide:book', [320, 207])
 

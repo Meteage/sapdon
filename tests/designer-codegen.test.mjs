@@ -161,7 +161,7 @@ test('诊断规则表每条都有标题与依据（防"裸规则"）', () => {
 
 test('codegen：只 import 用到的类，且是框架类而非 UIElement', () => {
   const { code, meta } = generate(DOC)
-  assert.ok(code.includes("} from '@sapdon/core'"))
+  assert.ok(code.includes("} from '@sapdon/ui'"))
   for (const need of ['Panel', 'Label', 'Image', 'StackPanel', 'FormButton', 'FormButtonGrid', 'SapdonFormUI', 'registry']) {
     assert.ok(meta.imports.includes(need), `缺 import: ${need}`)
   }
@@ -489,7 +489,7 @@ test('★交叉验证：转译并执行**生成出来的代码**，产物与本�
   // ① 换成真实 dist 的 import ② 剥掉 registry.submit()（会去 fetch dev-server）
   // ③ 把本文件的 UISystem 导出出来以便断言（生成代码里 `sapdon_ui` 是 SapdonFormUI 实例）
   const patched = code
-    .replace(/from '@sapdon\/core'/, `from '${DIST_INDEX.href}'`)
+    .replace(/from '@sapdon\/ui'/, `from '${DIST_INDEX.href}'`)
     .replace(/^registry\.submit\(\)$/m, '')
     .concat(`\nexport const __panel = ${meta.panelVar}.getSystem()\n`)
   assert.ok(patched.includes('__panel'), 'patched 代码应导出页面系统')
